@@ -3,29 +3,32 @@ Configuration management for Modeling Studio.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
+from typing import Any
+
 import yaml
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 
 @dataclass
 class ModelConfig:
     """Model configuration."""
+
     type: str = "encoder"  # encoder, decoder, encoder_decoder
     name_or_path: str = "bert-base-uncased"
-    architecture: Optional[str] = None
+    architecture: str | None = None
     load_in_8bit: bool = False
     load_in_4bit: bool = False
     torch_dtype: str = "float32"
     trust_remote_code: bool = False
     use_flash_attention_2: bool = False
-    quantization: Optional[Dict[str, Any]] = None
+    quantization: dict[str, Any] | None = None
 
 
 @dataclass
 class TrainingConfig:
     """Training configuration."""
+
     learning_rate: float = 2e-5
     weight_decay: float = 0.01
     num_train_epochs: int = 3
@@ -50,12 +53,13 @@ class TrainingConfig:
     seed: int = 42
 
 
-@dataclass 
+@dataclass
 class DataConfig:
     """Data configuration."""
+
     source: str = "huggingface"
-    dataset_name: Optional[str] = None
-    data_dir: Optional[str] = None
+    dataset_name: str | None = None
+    data_dir: str | None = None
     train_split: str = "train"
     validation_split: str = "validation"
     max_length: int = 512
@@ -68,47 +72,49 @@ class DataConfig:
 @dataclass
 class PEFTConfig:
     """PEFT/LoRA configuration."""
+
     method: str = "lora"
     r: int = 16
     lora_alpha: int = 32
     lora_dropout: float = 0.05
     bias: str = "none"
-    target_modules: Optional[List[str]] = None
+    target_modules: list[str] | None = None
     task_type: str = "CAUSAL_LM"
 
 
 @dataclass
 class Config:
     """Main configuration class."""
+
     model: ModelConfig = field(default_factory=ModelConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     data: DataConfig = field(default_factory=DataConfig)
-    peft: Optional[PEFTConfig] = None
+    peft: PEFTConfig | None = None
     output_dir: str = "outputs"
-    
+
     @classmethod
-    def from_yaml(cls, path: Union[str, Path]) -> "Config":
+    def from_yaml(cls, path: str | Path) -> "Config":
         """Load configuration from YAML file."""
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Config file not found: {path}")
-        
-        with open(path, "r") as f:
+
+        with open(path) as f:
             config_dict = yaml.safe_load(f)
-        
+
         return cls.from_dict(config_dict)
-    
+
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> "Config":
+    def from_dict(cls, config_dict: dict[str, Any]) -> "Config":
         """Create configuration from dictionary."""
         omega_conf = OmegaConf.create(config_dict)
         return cls._from_omega(omega_conf)
-    
+
     @classmethod
     def _from_omega(cls, omega_conf: DictConfig) -> "Config":
         """Create configuration from OmegaConf."""
         config = cls()
-        
+
         if "model" in omega_conf:
             config.model = ModelConfig(**OmegaConf.to_container(omega_conf.model))
         if "training" in omega_conf:
@@ -119,17 +125,17 @@ class Config:
             config.peft = PEFTConfig(**OmegaConf.to_container(omega_conf.peft))
         if "output_dir" in omega_conf:
             config.output_dir = omega_conf.output_dir
-            
+
         return config
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         return OmegaConf.to_container(OmegaConf.structured(self))
-    
-    def save(self, path: Union[str, Path]) -> None:
+
+    def save(self, path: str | Path) -> None:
         """Save configuration to YAML file."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(path, "w") as f:
             yaml.dump(self.to_dict(), f, default_flow_style=False)

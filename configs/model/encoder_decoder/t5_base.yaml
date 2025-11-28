@@ -3,7 +3,7 @@ model:
   type: encoder_decoder
   name_or_path: t5-base
   architecture: t5
-  
+
   # Model parameters
   d_model: 768
   d_kv: 64
@@ -14,7 +14,7 @@ model:
   relative_attention_num_buckets: 32
   relative_attention_max_distance: 128
   vocab_size: 32128
-  
+
   # Loading options
   load_in_8bit: false
   load_in_4bit: false

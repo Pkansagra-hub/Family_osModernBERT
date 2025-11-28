@@ -3,7 +3,7 @@ model:
   type: decoder
   name_or_path: meta-llama/Llama-2-7b-hf
   architecture: llama
-  
+
   # Model parameters
   hidden_size: 4096
   num_hidden_layers: 32
@@ -15,14 +15,14 @@ model:
   vocab_size: 32000
   rms_norm_eps: 1e-5
   rope_theta: 10000.0
-  
+
   # Loading options
   load_in_8bit: false
   load_in_4bit: true  # QLoRA friendly
   torch_dtype: bfloat16
   trust_remote_code: false
   use_flash_attention_2: true
-  
+
   # Quantization config (when load_in_4bit: true)
   quantization:
     bnb_4bit_compute_dtype: bfloat16

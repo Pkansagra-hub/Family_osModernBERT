@@ -3,7 +3,7 @@ model:
   type: decoder
   name_or_path: microsoft/phi-2
   architecture: phi
-  
+
   # Model parameters
   hidden_size: 2560
   num_hidden_layers: 32
@@ -14,7 +14,7 @@ model:
   max_position_embeddings: 2048
   vocab_size: 51200
   rotary_dim: 32
-  
+
   # Loading options
   load_in_8bit: false
   load_in_4bit: false

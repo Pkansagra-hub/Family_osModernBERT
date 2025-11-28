@@ -1,0 +1,196 @@
+# Stage A: Public Datasets Configuration
+# Datasets for generic multi-task training
+
+datasets:
+  # ============================================
+  # NER - General Named Entity Recognition
+  # ============================================
+  ner_conll2003:
+    task: ner_general
+    source: huggingface
+    name: conll2003
+    splits:
+      train: train
+      validation: validation
+      test: test
+    column_mapping:
+      tokens: tokens
+      labels: ner_tags
+    label_map:
+      O: 0
+      B-PER: 1
+      I-PER: 2
+      B-ORG: 3
+      I-ORG: 4
+      B-LOC: 5
+      I-LOC: 6
+      B-MISC: 7
+      I-MISC: 8
+
+  ner_ontonotes:
+    task: ner_general
+    source: huggingface
+    name: tner/ontonotes5
+    enabled: false  # Optional, larger dataset
+    splits:
+      train: train
+      validation: validation
+      test: test
+
+  # ============================================
+  # Sentiment Classification
+  # ============================================
+  sentiment_sst2:
+    task: sentiment
+    source: huggingface
+    name: stanfordnlp/sst2
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      text: sentence
+      label: label
+    # SST-2 is binary, map to 3-class
+    label_transform: binary_to_ternary
+
+  sentiment_amazon:
+    task: sentiment
+    source: huggingface
+    name: amazon_polarity
+    enabled: false  # Large dataset, optional
+    max_samples: 100000
+
+  # ============================================
+  # Emotion Detection
+  # ============================================
+  emotions_goemotions:
+    task: emotions
+    source: huggingface
+    name: google-research-datasets/go_emotions
+    config: simplified  # 28 -> 12 labels
+    splits:
+      train: train
+      validation: validation
+      test: test
+    column_mapping:
+      text: text
+      label: labels
+    # Reduced label set (12 emotions)
+    label_map:
+      admiration: 0
+      amusement: 1
+      anger: 2
+      annoyance: 3
+      approval: 4
+      caring: 5
+      confusion: 6
+      curiosity: 7
+      desire: 8
+      disappointment: 9
+      disapproval: 10
+      disgust: 11
+      # ... mapped from 28 -> 12
+
+  # ============================================
+  # Safety / Toxicity Detection
+  # ============================================
+  safety_jigsaw:
+    task: safety_generic
+    source: huggingface
+    name: jigsaw_toxicity_pred
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      text: comment_text
+      labels:
+        - toxic
+        - severe_toxic
+        - obscene
+        - threat
+        - insult
+        - identity_hate
+
+  safety_civil_comments:
+    task: safety_generic
+    source: huggingface
+    name: civil_comments
+    enabled: true
+    max_samples: 50000
+    column_mapping:
+      text: text
+      label: toxicity
+
+  # ============================================
+  # Natural Language Inference
+  # ============================================
+  nli_mnli:
+    task: nli
+    source: huggingface
+    name: nli
+    config: multi_nli
+    splits:
+      train: train
+      validation: validation_matched
+    column_mapping:
+      premise: premise
+      hypothesis: hypothesis
+      label: label
+
+  nli_anli:
+    task: nli
+    source: huggingface
+    name: anli
+    enabled: false  # Harder adversarial NLI
+    splits:
+      train: train_r1
+      validation: dev_r1
+
+  nli_snli:
+    task: nli
+    source: huggingface
+    name: stanfordnlp/snli
+    splits:
+      train: train
+      validation: validation
+
+  # ============================================
+  # Embeddings / Contrastive Learning
+  # ============================================
+  embedding_stsb:
+    task: embedding
+    source: huggingface
+    name: sentence-transformers/stsb
+    loss_type: cosine_similarity
+    splits:
+      train: train
+      validation: validation
+      test: test
+    column_mapping:
+      sentence1: sentence1
+      sentence2: sentence2
+      score: score  # 0-5 similarity
+
+  embedding_nli_pairs:
+    task: embedding
+    source: huggingface
+    name: sentence-transformers/all-nli
+    loss_type: multiple_negatives_ranking
+    splits:
+      train: train
+    column_mapping:
+      anchor: anchor
+      positive: positive
+      # Negatives sampled in-batch
+
+# Global preprocessing
+preprocessing:
+  max_length: 512
+  truncation: true
+  padding: false  # Dynamic padding in collator
+  
+# Data mixing strategy
+mixing:
+  strategy: proportional  # proportional, temperature, uniform
+  temperature: 2.0  # If strategy=temperature
+  shuffle_seed: 42

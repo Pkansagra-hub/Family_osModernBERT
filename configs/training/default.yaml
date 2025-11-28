@@ -13,21 +13,21 @@ training:
   adam_beta2: 0.999
   adam_epsilon: 1e-8
   max_grad_norm: 1.0
-  
+
   # Schedule
   lr_scheduler_type: linear  # linear, cosine, cosine_with_restarts, polynomial, constant, constant_with_warmup
   warmup_ratio: 0.1
   warmup_steps: 0  # Overrides warmup_ratio if > 0
-  
+
   # Training duration
   num_train_epochs: 3
   max_steps: -1  # Overrides num_train_epochs if > 0
-  
+
   # Batch size
   per_device_train_batch_size: 8
   per_device_eval_batch_size: 16
   gradient_accumulation_steps: 1
-  
+
   # Evaluation & saving
   eval_strategy: steps  # no, steps, epoch
   eval_steps: 500
@@ -37,7 +37,7 @@ training:
   load_best_model_at_end: true
   metric_for_best_model: eval_loss
   greater_is_better: false
-  
+
   # Logging
   logging_strategy: steps
   logging_steps: 100
@@ -45,20 +45,20 @@ training:
   report_to:
     - tensorboard
     - wandb
-  
+
   # Mixed precision
   fp16: false
   bf16: false
   tf32: false
-  
+
   # Memory optimization
   gradient_checkpointing: false
   optim: adamw_torch  # adamw_torch, adamw_hf, adafactor, adamw_8bit
-  
+
   # Reproducibility
   seed: 42
   data_seed: 42
-  
+
   # Misc
   remove_unused_columns: true
   label_names: null

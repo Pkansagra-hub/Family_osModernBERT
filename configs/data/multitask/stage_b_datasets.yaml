@@ -1,0 +1,168 @@
+# Stage B: FamilyOS Domain Datasets Configuration
+# Mix of FamilyOS-specific data + public data replay
+
+datasets:
+  # ============================================
+  # PUBLIC DATA REPLAY (prevent catastrophic forgetting)
+  # ============================================
+  replay_ner:
+    task: ner_general
+    source: huggingface
+    name: conll2003
+    max_samples: 5000  # Small replay buffer
+    splits:
+      train: train
+
+  replay_nli:
+    task: nli
+    source: huggingface
+    name: stanfordnlp/snli
+    max_samples: 10000
+    splits:
+      train: train
+
+  replay_emotions:
+    task: emotions
+    source: huggingface
+    name: google-research-datasets/go_emotions
+    config: simplified
+    max_samples: 5000
+    splits:
+      train: train
+
+  # ============================================
+  # FAMILYOS: Family NER
+  # ============================================
+  familyos_ner_family:
+    task: ner_family
+    source: local
+    data_dir: data/familyos/ner_family
+    format: jsonl
+    splits:
+      train: train.jsonl
+      validation: val.jsonl
+      test: test.jsonl
+    column_mapping:
+      tokens: tokens
+      labels: ner_tags
+    # FamilyOS NER label schema
+    label_map:
+      O: 0
+      B-PERSON: 1
+      I-PERSON: 2
+      B-KINSHIP: 3       # mum, dad, sister, uncle
+      I-KINSHIP: 4
+      B-NICKNAME: 5      # Panda, Bunny, etc.
+      I-NICKNAME: 6
+      B-PET: 7
+      I-PET: 8
+      B-HOME_LOCATION: 9 # kitchen, bedroom, garden
+      I-HOME_LOCATION: 10
+      B-FAMILY_EVENT: 11 # birthday, anniversary
+      I-FAMILY_EVENT: 12
+      B-ROUTINE: 13      # school run, dinner time
+      I-ROUTINE: 14
+
+  # ============================================
+  # FAMILYOS: Ingress Classification
+  # ============================================
+  familyos_ingress:
+    task: ingress
+    source: local
+    data_dir: data/familyos/ingress
+    format: jsonl
+    splits:
+      train: train.jsonl
+      validation: val.jsonl
+      test: test.jsonl
+    column_mapping:
+      text: text
+      label: domain
+    label_map:
+      DIARY: 0        # Personal reflections, journaling
+      TASK: 1         # To-dos, reminders, action items
+      HEALTH: 2       # Medical, wellness, fitness
+      FINANCE: 3      # Money, bills, budgets
+      RELATIONSHIP: 4 # Family dynamics, social
+      WORK: 5         # Job, career, professional
+      META: 6         # System commands, queries about FamilyOS
+
+  # ============================================
+  # FAMILYOS: Safety Classification (Policy Bands)
+  # ============================================
+  familyos_safety:
+    task: safety_familyos
+    source: local
+    data_dir: data/familyos/safety
+    format: jsonl
+    splits:
+      train: train.jsonl
+      validation: val.jsonl
+      test: test.jsonl
+    column_mapping:
+      text: text
+      label: band
+    label_map:
+      GREEN: 0   # Safe, routine content
+      AMBER: 1   # Needs attention, mild concern
+      RED: 2     # Serious concern, escalate to K1
+      CRISIS: 3  # Immediate intervention needed
+    # Class weights for imbalanced data
+    class_weights:
+      GREEN: 0.5
+      AMBER: 1.0
+      RED: 2.0
+      CRISIS: 5.0
+
+  # ============================================
+  # FAMILYOS: Embeddings Sanity Set
+  # ============================================
+  familyos_embedding_clusters:
+    task: embedding
+    source: local
+    data_dir: data/familyos/embeddings
+    format: jsonl
+    loss_type: cluster_contrastive
+    splits:
+      train: clusters.jsonl
+    # Expected clusters for sanity check
+    clusters:
+      - name: immigration_docs
+        description: H-1B, visa, USCIS related
+      - name: child_activities
+        description: Panda's school, activities
+      - name: health_records
+        description: Medical appointments, symptoms
+      - name: financial_planning
+        description: Budgets, investments
+
+# FamilyOS data generation notes
+data_generation:
+  ner_family:
+    strategy: manual_annotation + synthetic
+    synthetic_model: gpt-4  # Bootstrap then human review
+    min_samples: 2000
+    
+  ingress:
+    strategy: retrospective_labeling
+    source: user_conversation_logs
+    synthetic_augmentation: true
+    min_samples: 5000
+    
+  safety:
+    strategy: manual_annotation
+    guidelines: docs/annotation/safety_guidelines.md
+    min_samples: 3000
+    crisis_samples: 500  # Ensure enough crisis examples
+
+# Preprocessing
+preprocessing:
+  max_length: 512
+  truncation: true
+  padding: false
+
+# Data mixing
+mixing:
+  strategy: proportional
+  familyos_weight: 3.0  # Upweight FamilyOS data
+  replay_weight: 1.0

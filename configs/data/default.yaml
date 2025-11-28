@@ -6,37 +6,37 @@ data:
   dataset_config: null  # Dataset configuration/subset
   data_dir: null  # Local data directory
   data_files: null  # Specific files to load
-  
+
   # Data splits
   train_split: train
   validation_split: validation
   test_split: test
-  
+
   # Preprocessing
   preprocessing:
     max_length: 512
     truncation: true
     padding: max_length  # max_length, longest, false
     return_tensors: pt
-    
+
   # Column mapping (source column -> expected column)
   column_mapping:
     text: text
     label: label
-    
+
   # Streaming (for large datasets)
   streaming: false
-  
+
   # Caching
   cache_dir: data/cache
   preprocessing_num_workers: 4
   overwrite_cache: false
-  
+
   # Batching
   dataloader_num_workers: 4
   dataloader_pin_memory: true
   dataloader_drop_last: false
-  
+
   # Sampling
   max_train_samples: null
   max_eval_samples: null

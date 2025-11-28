@@ -14,7 +14,7 @@ model:
 # QLoRA specific
 peft:
   method: qlora
-  
+
   lora:
     r: 64
     lora_alpha: 16

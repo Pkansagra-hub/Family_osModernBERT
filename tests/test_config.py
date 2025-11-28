@@ -1,6 +1,5 @@
 """Test configuration module."""
 
-import pytest
 from modeling_studio.config import Config, ModelConfig, TrainingConfig
 
 

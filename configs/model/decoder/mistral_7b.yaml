@@ -3,7 +3,7 @@ model:
   type: decoder
   name_or_path: mistralai/Mistral-7B-v0.1
   architecture: mistral
-  
+
   # Model parameters
   hidden_size: 4096
   num_hidden_layers: 32
@@ -16,14 +16,14 @@ model:
   rms_norm_eps: 1e-5
   rope_theta: 10000.0
   sliding_window: 4096
-  
+
   # Loading options
   load_in_8bit: false
   load_in_4bit: true
   torch_dtype: bfloat16
   trust_remote_code: false
   use_flash_attention_2: true
-  
+
   quantization:
     bnb_4bit_compute_dtype: bfloat16
     bnb_4bit_use_double_quant: true

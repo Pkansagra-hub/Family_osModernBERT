@@ -1,0 +1,36 @@
+# ModernBERT Base Configuration
+# Base model for FamilyOS Unified Encoder
+# Source: answerdotai/ModernBERT-base (Apache 2.0)
+
+model:
+  type: encoder
+  name_or_path: answerdotai/ModernBERT-base
+  architecture: modernbert
+
+  # Model parameters
+  hidden_size: 768
+  num_hidden_layers: 22
+  num_attention_heads: 12
+  intermediate_size: 1152
+  hidden_act: gelu
+  hidden_dropout_prob: 0.0
+  attention_probs_dropout_prob: 0.0
+  max_position_embeddings: 8192
+  vocab_size: 50368
+
+  # ModernBERT specific
+  rope_theta: 160000.0
+  global_attn_every_n_layers: 3
+  local_attention: 128
+  classifier_pooling: cls  # cls, mean
+
+  # Loading options
+  load_in_8bit: false
+  load_in_4bit: false
+  torch_dtype: float32
+  trust_remote_code: false
+  use_flash_attention_2: true  # Recommended for ModernBERT
+
+  # Output configuration
+  output_hidden_states: false
+  output_attentions: false

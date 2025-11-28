@@ -3,8 +3,8 @@ Device and environment utilities.
 """
 
 import os
+
 import torch
-from typing import Literal
 
 
 def get_device() -> torch.device:
@@ -19,14 +19,14 @@ def get_device() -> torch.device:
 def get_device_map(strategy: str = "auto") -> str | dict | None:
     """
     Get device map for model loading.
-    
+
     Args:
         strategy: Device mapping strategy
             - "auto": Automatic device mapping
             - "cpu": Load on CPU
             - "cuda": Load on single GPU
             - "balanced": Balance across GPUs
-            
+
     Returns:
         Device map for model loading
     """
@@ -58,12 +58,13 @@ def get_torch_dtype(dtype_str: str) -> torch.dtype:
 def set_seed(seed: int) -> None:
     """Set random seed for reproducibility."""
     import random
+
     import numpy as np
-    
+
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    
+
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
         # Enable deterministic algorithms
@@ -78,7 +79,9 @@ def print_gpu_memory() -> None:
             total = torch.cuda.get_device_properties(i).total_memory / 1e9
             allocated = torch.cuda.memory_allocated(i) / 1e9
             cached = torch.cuda.memory_reserved(i) / 1e9
-            print(f"GPU {i}: {allocated:.2f}GB allocated, {cached:.2f}GB cached, {total:.2f}GB total")
+            print(
+                f"GPU {i}: {allocated:.2f}GB allocated, {cached:.2f}GB cached, {total:.2f}GB total"
+            )
 
 
 def get_num_gpus() -> int:
@@ -92,7 +95,7 @@ def setup_environment() -> None:
     """Set up environment variables for training."""
     # Disable tokenizers parallelism warning
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    
+
     # Enable TF32 for faster training on Ampere+ GPUs
     if torch.cuda.is_available():
         torch.backends.cuda.matmul.allow_tf32 = True

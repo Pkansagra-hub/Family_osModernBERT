@@ -3,7 +3,7 @@ model:
   type: encoder
   name_or_path: bert-base-uncased
   architecture: bert
-  
+
   # Model parameters (used for custom init)
   hidden_size: 768
   num_hidden_layers: 12
@@ -15,7 +15,7 @@ model:
   max_position_embeddings: 512
   type_vocab_size: 2
   vocab_size: 30522
-  
+
   # Loading options
   load_in_8bit: false
   load_in_4bit: false
