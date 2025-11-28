@@ -1,0 +1,48 @@
+# LoRA Fine-tuning Configuration
+defaults:
+  - default
+
+# PEFT/LoRA configuration
+peft:
+  method: lora  # lora, qlora, prefix_tuning, prompt_tuning, ia3, adalora
+  
+  lora:
+    r: 16  # Rank
+    lora_alpha: 32  # Alpha scaling
+    lora_dropout: 0.05
+    bias: none  # none, all, lora_only
+    
+    # Target modules (model-specific)
+    target_modules:
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+      - gate_proj
+      - up_proj
+      - down_proj
+    
+    # Task type
+    task_type: CAUSAL_LM  # CAUSAL_LM, SEQ_2_SEQ_LM, SEQ_CLS, TOKEN_CLS
+    
+    # Advanced
+    modules_to_save: null  # Modules to keep trainable besides LoRA
+    fan_in_fan_out: false
+    init_lora_weights: true
+
+# Training overrides for LoRA
+training:
+  learning_rate: 2e-4
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  optim: paged_adamw_8bit
+  fp16: false
+  bf16: true
+  max_grad_norm: 0.3
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  save_strategy: steps
+  save_steps: 100
+  logging_steps: 25

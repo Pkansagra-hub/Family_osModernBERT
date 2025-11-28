@@ -1,0 +1,26 @@
+# Text Classification Data Configuration
+defaults:
+  - default
+
+data:
+  format: classification
+  
+  # Task type
+  task_type: single_label  # single_label, multi_label
+  
+  # Column mapping
+  column_mapping:
+    text: text
+    label: label
+    
+  # Label configuration
+  labels:
+    num_labels: null  # Auto-detect if null
+    label2id: null  # {"label_name": id}
+    id2label: null  # {id: "label_name"}
+  
+  # Preprocessing
+  preprocessing:
+    max_length: 512
+    truncation: true
+    padding: max_length

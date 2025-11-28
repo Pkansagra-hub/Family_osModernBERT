@@ -1,0 +1,31 @@
+# Instruction Fine-tuning Data Configuration
+defaults:
+  - default
+
+data:
+  # Format
+  format: instruction  # instruction, chat, completion
+  
+  # Instruction format template
+  template:
+    system: "You are a helpful assistant."
+    instruction: "### Instruction:\n{instruction}\n\n### Response:\n"
+    input: "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:\n"
+    response: "{response}"
+  
+  # Column mapping for instruction datasets
+  column_mapping:
+    instruction: instruction
+    input: input  # Optional
+    output: output
+    system: system  # Optional
+  
+  # Preprocessing
+  preprocessing:
+    max_length: 2048
+    truncation: true
+    padding: false  # Dynamic padding for efficiency
+    
+  # Special tokens
+  add_eos_token: true
+  add_bos_token: false

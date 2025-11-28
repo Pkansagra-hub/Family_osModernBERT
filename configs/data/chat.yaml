@@ -1,0 +1,34 @@
+# Chat/Conversational Data Configuration
+defaults:
+  - default
+
+data:
+  format: chat
+  
+  # Chat template (model-specific, uses tokenizer's chat_template if null)
+  chat_template: null
+  
+  # Column mapping
+  column_mapping:
+    messages: messages  # List of {role, content} dicts
+    
+  # Message format
+  message_format:
+    role_key: role
+    content_key: content
+    roles:
+      system: system
+      user: user
+      assistant: assistant
+  
+  # Preprocessing
+  preprocessing:
+    max_length: 4096
+    truncation: true
+    padding: false
+    
+  # Training on assistant responses only
+  train_on_assistant_only: true
+  
+  # Special tokens
+  add_generation_prompt: false

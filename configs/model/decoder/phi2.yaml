@@ -1,0 +1,23 @@
+# Phi-2 Configuration (Small Language Model)
+model:
+  type: decoder
+  name_or_path: microsoft/phi-2
+  architecture: phi
+  
+  # Model parameters
+  hidden_size: 2560
+  num_hidden_layers: 32
+  num_attention_heads: 32
+  num_key_value_heads: 32
+  intermediate_size: 10240
+  hidden_act: gelu_new
+  max_position_embeddings: 2048
+  vocab_size: 51200
+  rotary_dim: 32
+  
+  # Loading options
+  load_in_8bit: false
+  load_in_4bit: false
+  torch_dtype: float16
+  trust_remote_code: true
+  use_flash_attention_2: true
