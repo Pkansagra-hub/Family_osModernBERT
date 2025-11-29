@@ -1,0 +1,5 @@
+{"tokens": ["Panda", "played", "with", "Max", "in", "the", "garden"], "ner_tags": [5, 0, 0, 7, 0, 0, 9]}
+{"tokens": ["Dadi", "told", "stories", "about", "her", "wedding", "day"], "ner_tags": [3, 0, 0, 0, 0, 11, 12]}
+{"tokens": ["We", "celebrated", "Emma", "'s", "graduation"], "ner_tags": [0, 0, 1, 0, 17]}
+{"tokens": ["Movie", "night", "with", "popcorn", "in", "the", "living", "room"], "ner_tags": [15, 16, 0, 0, 0, 0, 9, 10]}
+{"tokens": ["Dad", "'s", "old", "watch", "needs", "repair"], "ner_tags": [3, 0, 0, 19, 0, 0]}

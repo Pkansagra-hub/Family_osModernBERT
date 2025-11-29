@@ -8,8 +8,6 @@ Test coverage for:
     - Safety evaluation
 """
 
-import pytest
-
 # TODO: Implement test fixtures
 #   - sample_predictions: Model predictions
 #   - sample_labels: Ground truth labels

@@ -1,0 +1,15 @@
+{"tokens": ["Yesterday", "afternoon", "we", "baked", "cookies"], "temporal_tags": [3, 5, 0, 0, 0]}
+{"tokens": ["The", "concert", "is", "on", "July", "4th"], "temporal_tags": [0, 0, 0, 0, 1, 2]}
+{"tokens": ["Wake", "me", "up", "at", "7", "AM"], "temporal_tags": [0, 0, 0, 0, 5, 6]}
+{"tokens": ["The", "hike", "took", "six", "hours"], "temporal_tags": [0, 0, 0, 7, 8]}
+{"tokens": ["Every", "night", "we", "read", "bedtime", "stories"], "temporal_tags": [9, 10, 0, 0, 0, 0]}
+{"tokens": ["When", "mom", "was", "young", "she", "danced"], "temporal_tags": [0, 11, 12, 12, 0, 0]}
+{"tokens": ["Three", "months", "ago", "we", "adopted", "Max"], "temporal_tags": [3, 4, 4, 0, 0, 0]}
+{"tokens": ["Tea", "time", "is", "at", "4", "PM"], "temporal_tags": [0, 0, 0, 0, 5, 6]}
+{"tokens": ["Twice", "daily", "the", "dog", "needs", "walks"], "temporal_tags": [9, 10, 0, 0, 0, 0]}
+{"tokens": ["On", "November", "28", ",", "2025", "we", "finished", "the", "project"], "temporal_tags": [0, 1, 2, 2, 2, 0, 0, 0, 0]}
+{"tokens": ["In", "the", "evening", "we", "relax"], "temporal_tags": [0, 0, 5, 0, 0]}
+{"tokens": ["The", "training", "lasts", "two", "weeks"], "temporal_tags": [0, 0, 0, 7, 8]}
+{"tokens": ["At", "age", "3", "Emma", "started", "preschool"], "temporal_tags": [0, 11, 12, 0, 0, 0]}
+{"tokens": ["Next", "year", "we", "plan", "to", "travel"], "temporal_tags": [3, 4, 0, 0, 0, 0]}
+{"tokens": ["Monthly", "budgeting", "keeps", "us", "on", "track"], "temporal_tags": [9, 0, 0, 0, 0, 0]}

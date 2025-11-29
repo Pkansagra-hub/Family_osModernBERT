@@ -1,0 +1,5 @@
+{"premise": "A man is playing a guitar.", "hypothesis": "Someone is playing music.", "label": "entailment"}
+{"premise": "A cat is sleeping on a couch.", "hypothesis": "The cat is running outside.", "label": "contradiction"}
+{"premise": "Children are playing in the park.", "hypothesis": "There are people outdoors.", "label": "entailment"}
+{"premise": "The restaurant is closed.", "hypothesis": "The restaurant might be renovating.", "label": "neutral"}
+{"premise": "It is raining heavily.", "hypothesis": "The weather is sunny.", "label": "contradiction"}

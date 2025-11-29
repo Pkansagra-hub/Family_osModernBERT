@@ -142,13 +142,13 @@ data_generation:
     strategy: manual_annotation + synthetic
     synthetic_model: gpt-4  # Bootstrap then human review
     min_samples: 2000
-    
+
   ingress:
     strategy: retrospective_labeling
     source: user_conversation_logs
     synthetic_augmentation: true
     min_samples: 5000
-    
+
   safety:
     strategy: manual_annotation
     guidelines: docs/annotation/safety_guidelines.md

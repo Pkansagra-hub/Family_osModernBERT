@@ -1,0 +1,30 @@
+{"text": "Had a great day at the park with the kids today", "label": 0, "subcategories": []}
+{"text": "Dinner was delicious, mom's recipe never fails", "label": 0, "subcategories": []}
+{"text": "Finished reading a wonderful book this weekend", "label": 0, "subcategories": []}
+{"text": "Kids did their homework without any fuss tonight", "label": 0, "subcategories": []}
+{"text": "Beautiful weather for the family picnic", "label": 0, "subcategories": []}
+{"text": "Feeling a bit stressed about the upcoming deadline at work", "label": 1, "subcategories": ["stress"]}
+{"text": "Today was a rough day, just feeling down", "label": 1, "subcategories": ["mild_sadness"]}
+{"text": "Had a disagreement with my spouse about finances again", "label": 1, "subcategories": ["frustration"]}
+{"text": "The kids have been really difficult lately, testing my patience", "label": 1, "subcategories": ["frustration"]}
+{"text": "My back has been hurting for a few days now", "label": 1, "subcategories": ["health_mention"]}
+{"text": "Work tension is getting to me, need a break", "label": 1, "subcategories": ["stress"]}
+{"text": "Feeling overwhelmed with all the responsibilities", "label": 1, "subcategories": ["stress"]}
+{"text": "This headache won't go away, feeling irritated", "label": 1, "subcategories": ["health_mention", "frustration"]}
+{"text": "I'll die of embarrassment if that happens at the party", "label": 1, "subcategories": ["stress"]}
+{"text": "This project is killing me, so many late nights", "label": 1, "subcategories": ["stress"]}
+{"text": "I've been feeling empty and sad for weeks now", "label": 2, "subcategories": ["persistent_sadness"]}
+{"text": "Don't feel like meeting anyone these days, prefer being alone", "label": 2, "subcategories": ["isolation"]}
+{"text": "Nothing ever seems to work out for me, no matter what I try", "label": 2, "subcategories": ["hopelessness"]}
+{"text": "Had too much to drink again last night, need to cut back", "label": 2, "subcategories": ["substance"]}
+{"text": "Feel like I'm failing at everything - work, parenting, everything", "label": 2, "subcategories": ["hopelessness"]}
+{"text": "Haven't left the house in days, just don't have the energy", "label": 2, "subcategories": ["isolation", "persistent_sadness"]}
+{"text": "The sadness won't go away, it's been months now", "label": 2, "subcategories": ["persistent_sadness"]}
+{"text": "Cancelled plans again, just couldn't face people today", "label": 2, "subcategories": ["isolation"]}
+{"text": "I don't want to be here anymore", "label": 3, "subcategories": ["self_harm_ideation"]}
+{"text": "Sometimes I think everyone would be better off without me", "label": 3, "subcategories": ["suicide_ideation"]}
+{"text": "I want to hurt myself so the pain inside stops", "label": 3, "subcategories": ["self_harm_ideation"]}
+{"text": "Life isn't worth living anymore", "label": 3, "subcategories": ["suicide_ideation"]}
+{"text": "Thinking about ending it all", "label": 3, "subcategories": ["suicide_ideation"]}
+{"text": "My partner hit me again last night", "label": 3, "subcategories": ["abuse_disclosure"]}
+{"text": "I can't take this anymore, I want to disappear forever", "label": 3, "subcategories": ["suicide_ideation"]}

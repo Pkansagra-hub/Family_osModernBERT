@@ -48,3 +48,60 @@ Reports:
 
 # TODO: Export safety evaluation
 # from modeling_studio.evaluation.safety_eval import SafetyEvaluator
+
+# Catastrophic forgetting evaluation
+# Cultural robustness evaluation
+from modeling_studio.evaluation.cultural_robustness import (
+    INDIAN_VENTING_PATTERNS,
+    CrisisRecallResult,
+    CulturalRobustnessEvaluator,
+    CulturalRobustnessResult,
+    evaluate_cultural_robustness,
+)
+from modeling_studio.evaluation.forgetting_eval import (
+    FORGETTING_THRESHOLDS,
+    ForgettingEvaluator,
+    ForgettingReport,
+    ForgettingResult,
+    check_forgetting_gates,
+    evaluate_forgetting,
+)
+
+# Temporal safety monitoring
+from modeling_studio.evaluation.temporal_safety import (
+    ESCALATION_KEYWORDS,
+    ISOLATION_KEYWORDS,
+    EscalationRule,
+    SafetyBand,
+    SafetyEscalation,
+    SafetyMonitorIntegration,
+    SafetySignal,
+    TemporalSafetyMonitor,
+    create_monitor,
+)
+
+__all__ = [
+    # Forgetting evaluation
+    "ForgettingEvaluator",
+    "ForgettingReport",
+    "ForgettingResult",
+    "evaluate_forgetting",
+    "check_forgetting_gates",
+    "FORGETTING_THRESHOLDS",
+    # Cultural robustness
+    "CulturalRobustnessEvaluator",
+    "CulturalRobustnessResult",
+    "CrisisRecallResult",
+    "evaluate_cultural_robustness",
+    "INDIAN_VENTING_PATTERNS",
+    # Temporal safety
+    "TemporalSafetyMonitor",
+    "SafetySignal",
+    "SafetyEscalation",
+    "SafetyBand",
+    "EscalationRule",
+    "SafetyMonitorIntegration",
+    "create_monitor",
+    "ISOLATION_KEYWORDS",
+    "ESCALATION_KEYWORDS",
+]

@@ -8,7 +8,7 @@ This directory contains or links to public datasets used in Stage A training.
 - **CoNLL-2003**: Standard NER benchmark
   - Source: HuggingFace `conll2003`
   - License: [Check license]
-  
+
 - **OntoNotes 5.0**: Larger NER dataset (optional)
   - Source: HuggingFace `tner/ontonotes5`
 
@@ -33,7 +33,7 @@ This directory contains or links to public datasets used in Stage A training.
 ### NLI
 - **MNLI**: Multi-Genre NLI
   - Source: HuggingFace `nli` (multi_nli config)
-  
+
 - **SNLI**: Stanford NLI
   - Source: HuggingFace `stanfordnlp/snli`
 

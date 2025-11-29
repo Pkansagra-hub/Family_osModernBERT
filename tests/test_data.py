@@ -9,8 +9,6 @@ Test coverage for:
     - Multi-task dataset
 """
 
-import pytest
-
 # TODO: Implement test fixtures
 #   - sample_tokenizer: Tokenizer instance
 #   - sample_texts: List of sample texts

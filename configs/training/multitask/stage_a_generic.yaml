@@ -1,6 +1,16 @@
 # Stage A: Generic Multi-Task Training Configuration
 # Trains ModernBERT on public datasets (no FamilyOS data)
 # Output: modernbert-multitask-v0
+#
+# Usage:
+#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_generic.yaml
+#
+# Quick test (100 steps):
+#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_generic.yaml training.max_steps=100
+#
+# Resume from checkpoint:
+#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_generic.yaml \
+#       --resume_from_checkpoint checkpoints/modernbert-multitask-v0/checkpoint-5000
 
 defaults:
   - /training/default
@@ -8,34 +18,34 @@ defaults:
 # Base model
 model:
   name_or_path: answerdotai/ModernBERT-base
-  torch_dtype: bfloat16
-  use_flash_attention_2: true
+  torch_dtype: float16  # Use float16 for older GPUs, bfloat16 for Ampere+
+  use_flash_attention_2: false  # Set to true if flash-attn is installed
 
 # Multi-task head configuration
 heads:
   ner_general:
     enabled: true
     type: token_classification
-    num_labels: 9  # BIO tags for PER, ORG, LOC, MISC
+    num_labels: 17  # BIO tags for PER, ORG, LOC, MISC, DATE, TIME, EVENT, PRODUCT
     dropout: 0.1
 
   sentiment:
     enabled: true
     type: sequence_classification
-    num_labels: 3  # negative, neutral, positive
+    num_labels: 5  # 5-point scale from data/labels.py
     dropout: 0.1
 
   emotions:
     enabled: true
     type: sequence_classification
-    num_labels: 12  # GoEmotions reduced set
+    num_labels: 32  # Full 32 emotions from EMOTIONS_LABELS
     problem_type: multi_label_classification
     dropout: 0.1
 
   safety_generic:
     enabled: true
     type: sequence_classification
-    num_labels: 6  # toxic, severe_toxic, obscene, threat, insult, identity_hate
+    num_labels: 8  # 8 toxicity types from SAFETY_GENERIC_LABELS
     problem_type: multi_label_classification
     dropout: 0.1
 
@@ -52,6 +62,12 @@ heads:
     normalize: true
     matryoshka_dims: [768, 512, 256, 128]  # Optional Matryoshka dimensions
 
+  temporal:
+    enabled: true
+    type: token_classification
+    num_labels: 13  # Temporal BIO tags from TEMPORAL_LABELS
+    dropout: 0.1
+
 # Task sampling weights (proportional sampling)
 task_weights:
   ner_general: 1.0
@@ -60,28 +76,38 @@ task_weights:
   safety_generic: 1.5  # Slightly upweight safety
   nli: 1.0
   embedding: 0.5  # Contrastive learning is expensive
+  temporal: 0.8  # Temporal is smaller dataset
+
+# Data mixing strategy
+mixing:
+  strategy: proportional  # proportional, temperature, uniform
+  temperature: 2.0  # If strategy=temperature
+  shuffle_seed: 42
 
 # Training hyperparameters
 training:
-  learning_rate: 2e-5
+  # Core optimization
+  learning_rate: 0.00002  # 2e-5
   num_train_epochs: 5
+  max_steps: -1  # Set to positive value to override epochs
   per_device_train_batch_size: 16
   per_device_eval_batch_size: 32
   gradient_accumulation_steps: 2
   gradient_checkpointing: true
-  
+
   # Optimizer
   optim: adamw_torch_fused
   weight_decay: 0.01
   max_grad_norm: 1.0
-  
+
   # Schedule
   lr_scheduler_type: cosine
   warmup_ratio: 0.1
-  
-  # Mixed precision
+
+  # Mixed precision (RTX 5070 Blackwell supports bf16)
   bf16: true
-  
+  fp16: false
+
   # Evaluation
   eval_strategy: steps
   eval_steps: 1000
@@ -91,14 +117,23 @@ training:
   load_best_model_at_end: true
   metric_for_best_model: eval_avg_f1
   greater_is_better: true
-  
+
   # Logging
   logging_steps: 100
   report_to:
     - tensorboard
-    - wandb
+    # - wandb  # Uncomment to enable W&B logging
+
+  # Reproducibility
+  seed: 42
+  data_seed: 42
+
+  # Data loading
+  dataloader_num_workers: 4
+  dataloader_pin_memory: true
 
 # Output
 output:
   output_dir: outputs/modernbert-multitask-v0
   checkpoint_dir: checkpoints/modernbert-multitask-v0
+  logging_dir: outputs/modernbert-multitask-v0/logs

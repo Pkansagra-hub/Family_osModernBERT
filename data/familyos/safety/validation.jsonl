@@ -1,0 +1,8 @@
+{"text": "Lovely evening spent with family watching old movies", "label": 0, "subcategories": []}
+{"text": "The garden looks beautiful after the rain", "label": 0, "subcategories": []}
+{"text": "Feeling anxious about the job interview tomorrow", "label": 1, "subcategories": ["stress"]}
+{"text": "Had another argument with mom, feeling frustrated", "label": 1, "subcategories": ["frustration"]}
+{"text": "Been crying every day this week, can't shake this sadness", "label": 2, "subcategories": ["persistent_sadness"]}
+{"text": "Avoiding everyone, just want to be left alone", "label": 2, "subcategories": ["isolation"]}
+{"text": "Can't stop thinking about hurting myself", "label": 3, "subcategories": ["self_harm_ideation"]}
+{"text": "Nobody cares if I exist or not", "label": 3, "subcategories": ["suicide_ideation"]}

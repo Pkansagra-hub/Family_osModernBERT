@@ -1,0 +1,75 @@
+{"text": "Mom took Panda to the park after school", "entity1": "Mom", "entity2": "Panda", "relation": 1}
+{"text": "Dad helped Emma with her math homework", "entity1": "Dad", "entity2": "Emma", "relation": 1}
+{"text": "Mummy made Rohan's favorite breakfast today", "entity1": "Mummy", "entity2": "Rohan", "relation": 1}
+{"text": "Papa drove the kids to their soccer practice", "entity1": "Papa", "entity2": "kids", "relation": 1}
+{"text": "Mother read a bedtime story to little Bunny", "entity1": "Mother", "entity2": "Bunny", "relation": 1}
+{"text": "Panda loves spending time with her mom", "entity1": "Panda", "entity2": "mom", "relation": 2}
+{"text": "Emma made a birthday card for her father", "entity1": "Emma", "entity2": "father", "relation": 2}
+{"text": "The kids surprised their dad on Father's Day", "entity1": "kids", "entity2": "dad", "relation": 2}
+{"text": "Rohan asked his mummy for help with the project", "entity1": "Rohan", "entity2": "mummy", "relation": 2}
+{"text": "Sweetie always runs to greet her papa first", "entity1": "Sweetie", "entity2": "papa", "relation": 2}
+{"text": "I went to dinner with my husband last night", "entity1": "I", "entity2": "husband", "relation": 3}
+{"text": "My wife and I celebrated our anniversary yesterday", "entity1": "I", "entity2": "wife", "relation": 3}
+{"text": "Ravi took his spouse to the new restaurant downtown", "entity1": "Ravi", "entity2": "spouse", "relation": 3}
+{"text": "Priya and her husband are planning a vacation", "entity1": "Priya", "entity2": "husband", "relation": 3}
+{"text": "Mom and Dad went on a date night together", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Bhai and I played cricket in the backyard", "entity1": "Bhai", "entity2": "I", "relation": 4}
+{"text": "Didi helped me with my college applications", "entity1": "Didi", "entity2": "me", "relation": 4}
+{"text": "Emma and her brother fought over the remote", "entity1": "Emma", "entity2": "brother", "relation": 4}
+{"text": "My sister and I are planning a surprise for mom", "entity1": "I", "entity2": "sister", "relation": 4}
+{"text": "Rohan always copies his older sis in everything", "entity1": "Rohan", "entity2": "sis", "relation": 4}
+{"text": "Nani is visiting Emma next weekend", "entity1": "Nani", "entity2": "Emma", "relation": 5}
+{"text": "Dada told the kids stories about his childhood", "entity1": "Dada", "entity2": "kids", "relation": 5}
+{"text": "Grandma baked cookies for little Panda", "entity1": "Grandma", "entity2": "Panda", "relation": 5}
+{"text": "Grandpa taught Rohan how to play chess", "entity1": "Grandpa", "entity2": "Rohan", "relation": 5}
+{"text": "Dadi knitted a sweater for her granddaughter", "entity1": "Dadi", "entity2": "granddaughter", "relation": 5}
+{"text": "The kids visited dada yesterday at his house", "entity1": "kids", "entity2": "dada", "relation": 6}
+{"text": "Emma loves staying at nani's place during holidays", "entity1": "Emma", "entity2": "nani", "relation": 6}
+{"text": "Panda made a painting for her grandfather", "entity1": "Panda", "entity2": "grandfather", "relation": 6}
+{"text": "Rohan calls his grandma every Sunday morning", "entity1": "Rohan", "entity2": "grandma", "relation": 6}
+{"text": "The grandchildren are dadi's pride and joy", "entity1": "grandchildren", "entity2": "dadi", "relation": 6}
+{"text": "Chacha brought gifts for the kids from his trip", "entity1": "Chacha", "entity2": "kids", "relation": 7}
+{"text": "Masi is teaching Emma how to cook biryani", "entity1": "Masi", "entity2": "Emma", "relation": 7}
+{"text": "Uncle took Rohan to the cricket match", "entity1": "Uncle", "entity2": "Rohan", "relation": 7}
+{"text": "Bua always spoils Panda with chocolates", "entity1": "Bua", "entity2": "Panda", "relation": 7}
+{"text": "Mama promised to take the kids to the zoo", "entity1": "Mama", "entity2": "kids", "relation": 7}
+{"text": "Emma loves visiting her masi during summer", "entity1": "Emma", "entity2": "masi", "relation": 8}
+{"text": "The kids ran to hug their chacha at the airport", "entity1": "kids", "entity2": "chacha", "relation": 8}
+{"text": "Rohan asked his uncle for career advice", "entity1": "Rohan", "entity2": "uncle", "relation": 8}
+{"text": "Panda drew a picture for her favorite aunt", "entity1": "Panda", "entity2": "aunt", "relation": 8}
+{"text": "The nephews played video games at mama's house", "entity1": "nephews", "entity2": "mama", "relation": 8}
+{"text": "Played with cousin Rohan at the family gathering", "entity1": "I", "entity2": "Rohan", "relation": 9}
+{"text": "Emma and her cousin Priya are best friends", "entity1": "Emma", "entity2": "Priya", "relation": 9}
+{"text": "The cousins had a sleepover at grandma's house", "entity1": "cousins", "entity2": "cousins", "relation": 9}
+{"text": "Panda loves playing with her cousin Arjun", "entity1": "Panda", "entity2": "Arjun", "relation": 9}
+{"text": "My cousin and I grew up together like siblings", "entity1": "I", "entity2": "cousin", "relation": 9}
+{"text": "Max is Emma's beloved golden retriever", "entity1": "Max", "entity2": "Emma", "relation": 10}
+{"text": "Whiskers is our family's oldest cat", "entity1": "Whiskers", "entity2": "family", "relation": 10}
+{"text": "Bruno follows Rohan everywhere around the house", "entity1": "Bruno", "entity2": "Rohan", "relation": 10}
+{"text": "Coco is Panda's cute little hamster", "entity1": "Coco", "entity2": "Panda", "relation": 10}
+{"text": "The puppy belongs to the kids now", "entity1": "puppy", "entity2": "kids", "relation": 10}
+{"text": "Sarah is Emma's best friend from school", "entity1": "Sarah", "entity2": "Emma", "relation": 11}
+{"text": "Rohan and his friend Amit played basketball", "entity1": "Rohan", "entity2": "Amit", "relation": 11}
+{"text": "My friend Priya came over for dinner yesterday", "entity1": "Priya", "entity2": "I", "relation": 11}
+{"text": "The kids had a playdate with their friend Maya", "entity1": "kids", "entity2": "Maya", "relation": 11}
+{"text": "Panda's friend Tina is coming to her birthday party", "entity1": "Tina", "entity2": "Panda", "relation": 11}
+{"text": "Had lunch with my colleague Raj at the cafeteria", "entity1": "I", "entity2": "Raj", "relation": 12}
+{"text": "My coworker Meera helped me with the presentation", "entity1": "Meera", "entity2": "me", "relation": 12}
+{"text": "Ravi and his colleague Suresh are working on a project", "entity1": "Ravi", "entity2": "Suresh", "relation": 12}
+{"text": "Met my work friend Anita at the coffee machine", "entity1": "I", "entity2": "Anita", "relation": 12}
+{"text": "My office mate Deepak and I commute together", "entity1": "I", "entity2": "Deepak", "relation": 12}
+{"text": "Grandma lives in Mumbai near the beach", "entity1": "Grandma", "entity2": "Mumbai", "relation": 13}
+{"text": "Nani has a beautiful house in Pune", "entity1": "Nani", "entity2": "Pune", "relation": 13}
+{"text": "Uncle moved to Bangalore for his new job", "entity1": "Uncle", "entity2": "Bangalore", "relation": 13}
+{"text": "The cousins live in Delhi near Connaught Place", "entity1": "cousins", "entity2": "Delhi", "relation": 13}
+{"text": "Dada has been living in Jaipur for decades", "entity1": "Dada", "entity2": "Jaipur", "relation": 13}
+{"text": "Dad inherited grandpa's antique pocket watch", "entity1": "Dad", "entity2": "watch", "relation": 14}
+{"text": "Mom treasures grandma's gold necklace", "entity1": "Mom", "entity2": "necklace", "relation": 14}
+{"text": "The family photo album belongs to dadi now", "entity1": "dadi", "entity2": "album", "relation": 14}
+{"text": "Bhai got father's vintage car as a gift", "entity1": "Bhai", "entity2": "car", "relation": 14}
+{"text": "Emma inherited great-grandma's sapphire ring", "entity1": "Emma", "entity2": "ring", "relation": 14}
+{"text": "I saw John at the grocery store yesterday", "entity1": "I", "entity2": "John", "relation": 0}
+{"text": "The kids met a new dog at the park today", "entity1": "kids", "entity2": "dog", "relation": 0}
+{"text": "Emma noticed a bird in the backyard tree", "entity1": "Emma", "entity2": "bird", "relation": 0}
+{"text": "Rohan passed by the old library on his way home", "entity1": "Rohan", "entity2": "library", "relation": 0}
+{"text": "There was a stranger at the door asking for directions", "entity1": "stranger", "entity2": "door", "relation": 0}

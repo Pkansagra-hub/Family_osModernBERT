@@ -98,6 +98,7 @@ datasets:
     task: safety_generic
     source: huggingface
     name: jigsaw_toxicity_pred
+    enabled: false  # Requires manual Kaggle download
     splits:
       train: train
       validation: validation
@@ -127,8 +128,7 @@ datasets:
   nli_mnli:
     task: nli
     source: huggingface
-    name: nli
-    config: multi_nli
+    name: multi_nli
     splits:
       train: train
       validation: validation_matched
@@ -161,6 +161,7 @@ datasets:
     task: embedding
     source: huggingface
     name: sentence-transformers/stsb
+    config: default
     loss_type: cosine_similarity
     splits:
       train: train
@@ -175,9 +176,12 @@ datasets:
     task: embedding
     source: huggingface
     name: sentence-transformers/all-nli
+    config: pair-score  # Required: pick from ['pair', 'pair-class', 'pair-score', 'triplet']
     loss_type: multiple_negatives_ranking
     splits:
       train: train
+      validation: dev  # Uses 'dev' split, not 'validation'
+      test: test
     column_mapping:
       anchor: anchor
       positive: positive
@@ -188,7 +192,7 @@ preprocessing:
   max_length: 512
   truncation: true
   padding: false  # Dynamic padding in collator
-  
+
 # Data mixing strategy
 mixing:
   strategy: proportional  # proportional, temperature, uniform

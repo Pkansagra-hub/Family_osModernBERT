@@ -9,8 +9,6 @@ Test coverage for:
     - Checkpoint save/load
 """
 
-import pytest
-
 # TODO: Implement test fixtures
 #   - sample_model: Small model for testing
 #   - sample_tokenizer: Tokenizer instance

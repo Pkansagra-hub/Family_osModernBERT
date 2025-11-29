@@ -1,0 +1,17 @@
+{"text": "Amma cooked Arjun's favorite dal for dinner", "entity1": "Amma", "entity2": "Arjun", "relation": 1}
+{"text": "Father helped his daughter with the science fair project", "entity1": "Father", "entity2": "daughter", "relation": 1}
+{"text": "Bunny made a thank you card for her daddy", "entity1": "Bunny", "entity2": "daddy", "relation": 2}
+{"text": "The children prepared breakfast for their mother", "entity1": "children", "entity2": "mother", "relation": 2}
+{"text": "We celebrated our wedding anniversary at home", "entity1": "We", "entity2": "We", "relation": 3}
+{"text": "Bhai helped me carry the heavy boxes upstairs", "entity1": "Bhai", "entity2": "me", "relation": 4}
+{"text": "Nana taught the grandkids how to fly kites", "entity1": "Nana", "entity2": "grandkids", "relation": 5}
+{"text": "Rohan videocalls his dada every weekend", "entity1": "Rohan", "entity2": "dada", "relation": 6}
+{"text": "Kaka is taking the nieces to the amusement park", "entity1": "Kaka", "entity2": "nieces", "relation": 7}
+{"text": "Panda wrote a letter to her favorite bua", "entity1": "Panda", "entity2": "bua", "relation": 8}
+{"text": "Spent the evening playing board games with cousin Meera", "entity1": "I", "entity2": "Meera", "relation": 9}
+{"text": "Luna the cat sleeps on Panda's bed every night", "entity1": "Luna", "entity2": "Panda", "relation": 10}
+{"text": "Neha is Rohan's childhood friend from next door", "entity1": "Neha", "entity2": "Rohan", "relation": 11}
+{"text": "Collaborated with teammate Vivek on the report", "entity1": "I", "entity2": "Vivek", "relation": 12}
+{"text": "Masi recently moved to Hyderabad for work", "entity1": "Masi", "entity2": "Hyderabad", "relation": 13}
+{"text": "Sister keeps grandmother's antique mirror in her room", "entity1": "Sister", "entity2": "mirror", "relation": 14}
+{"text": "Noticed the mailman at the front gate this morning", "entity1": "I", "entity2": "mailman", "relation": 0}

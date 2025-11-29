@@ -1,0 +1,8 @@
+{"text": "This movie was absolutely fantastic!", "label": "positive"}
+{"text": "I hated every minute of it.", "label": "negative"}
+{"text": "It was okay, nothing special.", "label": "neutral"}
+{"text": "Best film I've seen in years!", "label": "very_positive"}
+{"text": "Terrible waste of time.", "label": "very_negative"}
+{"text": "Pretty good overall.", "label": "positive"}
+{"text": "Not worth watching.", "label": "negative"}
+{"text": "Average at best.", "label": "neutral"}

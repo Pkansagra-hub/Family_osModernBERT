@@ -1,0 +1,9 @@
+text,label
+"This movie was absolutely fantastic!",positive
+"I hated every minute of it.",negative
+"It was okay, nothing special.",neutral
+"Best film I've seen in years!",very_positive
+"Terrible waste of time.",very_negative
+"Pretty good overall.",positive
+"Not worth watching.",negative
+"Average at best.",neutral

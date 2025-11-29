@@ -1,5 +1,5 @@
 """
-Models Module
+Models Module - Enhanced v2
 
 This module provides model architectures for multi-task learning,
 with a focus on ModernBERT-based unified encoders.
@@ -12,29 +12,62 @@ Components:
 
 Primary Model:
     ModernBertMultiTaskModel - Unified encoder with multiple task heads
-    
-Supported Tasks:
-    - ner_general: General named entity recognition
-    - ner_family: FamilyOS-specific NER (kinship, nicknames)
-    - sentiment: Sentiment classification
-    - emotions: Multi-label emotion detection
-    - safety: Toxicity and policy band classification
-    - ingress: Domain/topic classification
-    - embedding: Dense vector representations
+
+Supported Tasks (12 capabilities):
+    Generic (Stage A):
+    - ner_general: Extended named entity recognition (17 BIO tags)
+    - sentiment: 5-point sentiment classification
+    - emotions: Multi-label emotion detection (32 classes)
+    - safety_generic: Toxicity detection (8 types)
     - nli: Natural language inference
+    - embedding: Dense vector representations
+    - temporal: Temporal expression extraction (NEW)
+
+    FamilyOS (Stage B):
+    - ner_family: Family-specific NER (21 BIO tags)
+    - safety_familyos: Policy band classification
+    - ingress: Domain/topic classification (12 domains)
+    - relation: Family relationship extraction (NEW)
+    - intent: User intent classification (NEW)
 """
 
-# TODO: Export main model class
-# from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+# Export main model class
+# Export head classes
+from modeling_studio.models.heads import (
+    BaseHead,
+    EmbeddingHead,
+    IntentHead,
+    NLIHead,
+    RelationHead,
+    SafetyHead,
+    SequenceClassificationHead,
+    TemporalHead,
+    TokenClassificationHead,
+)
+from modeling_studio.models.modernbert_multitask import (
+    CAPABILITY_TO_HEAD_TYPE,
+    ModernBertMultiTaskModel,
+    MultiTaskOutput,
+    get_problem_type,
+)
 
-# TODO: Export head classes
-# from modeling_studio.models.heads import (
-#     SequenceClassificationHead,
-#     TokenClassificationHead,
-#     EmbeddingHead,
-#     NLIHead,
-#     SafetyHead,
-# )
+__all__ = [
+    # Main model
+    "ModernBertMultiTaskModel",
+    "MultiTaskOutput",
+    "CAPABILITY_TO_HEAD_TYPE",
+    "get_problem_type",
+    # Heads
+    "BaseHead",
+    "SequenceClassificationHead",
+    "TokenClassificationHead",
+    "EmbeddingHead",
+    "NLIHead",
+    "SafetyHead",
+    "RelationHead",  # NEW
+    "IntentHead",  # NEW
+    "TemporalHead",  # NEW
+]
 
 # TODO: Export poolers
 # from modeling_studio.models.poolers import (

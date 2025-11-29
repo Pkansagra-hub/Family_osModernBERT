@@ -1,0 +1,70 @@
+{"text": "Had a lovely dinner with the family tonight at Olive Garden", "label": 0}
+{"text": "We went to the beach today and the kids had so much fun", "label": 0}
+{"text": "Just finished helping Emma with her science project", "label": 0}
+{"text": "Mummy made delicious biryani for Sunday lunch", "label": 0}
+{"text": "Took Panda to her first swimming lesson this morning", "label": 0}
+{"text": "The whole family watched a movie together last night", "label": 0}
+{"text": "Dad fixed the broken fence in the backyard today", "label": 0}
+{"text": "Celebrated dadi's birthday with a surprise party", "label": 0}
+{"text": "Kids planted tomatoes in the garden with grandpa", "label": 0}
+{"text": "Had a long chat with bhai about his new job", "label": 0}
+{"text": "What did we do for Emma's birthday last year?", "label": 1}
+{"text": "When was the last time we visited nani's house?", "label": 1}
+{"text": "Do you remember what we ate at that restaurant in Goa?", "label": 1}
+{"text": "What all happened during Diwali celebration last year?", "label": 1}
+{"text": "Who came to Rohan's graduation party?", "label": 1}
+{"text": "When did Panda take her first steps?", "label": 1}
+{"text": "What was the name of that park we went to in Mumbai?", "label": 1}
+{"text": "How many times have we been to the zoo this year?", "label": 1}
+{"text": "What did mummy cook for Christmas dinner?", "label": 1}
+{"text": "Remind me to call mom tomorrow morning", "label": 2}
+{"text": "Don't let me forget to pick up the cake for the party", "label": 2}
+{"text": "Schedule a reminder for Emma's dance recital on Saturday", "label": 2}
+{"text": "I need to remember to pay the electricity bill by Friday", "label": 2}
+{"text": "Kindly remind me to book doctor's appointment next week", "label": 2}
+{"text": "Set a reminder for our anniversary dinner reservation", "label": 2}
+{"text": "Make sure I don't forget to water the plants tomorrow", "label": 2}
+{"text": "Remind me to wish chacha on his birthday next Monday", "label": 2}
+{"text": "I should remember to call the plumber about the leak", "label": 2}
+{"text": "Feeling so grateful for my wonderful family today", "label": 3}
+{"text": "I'm really happy about how the kids are doing in school", "label": 3}
+{"text": "So blessed to have such supportive parents", "label": 3}
+{"text": "Feeling a bit sad missing nani today", "label": 3}
+{"text": "I'm so proud of Panda's progress in her studies", "label": 3}
+{"text": "Exhausted but content after the family gathering", "label": 3}
+{"text": "Feeling anxious about the upcoming parent-teacher meeting", "label": 3}
+{"text": "So much love in my heart for these little ones", "label": 3}
+{"text": "I'm thankful for every moment we spend together", "label": 3}
+{"text": "What should I do about Emma's screen time habits?", "label": 4}
+{"text": "Help me decide between the two schools for Rohan", "label": 4}
+{"text": "Any suggestions for dealing with sibling rivalry?", "label": 4}
+{"text": "How can I help Panda with her math anxiety?", "label": 4}
+{"text": "What's the best way to handle bedtime tantrums?", "label": 4}
+{"text": "Need advice on balancing work and family time", "label": 4}
+{"text": "Should I be worried about the kids' eating habits?", "label": 4}
+{"text": "How do other families manage homework routines?", "label": 4}
+{"text": "What approach works best for teaching kids responsibility?", "label": 4}
+{"text": "Guess what! Emma got straight A's on her report card!", "label": 5}
+{"text": "Great news! Bhai got the promotion he was hoping for", "label": 5}
+{"text": "You won't believe it - Panda said her first full sentence!", "label": 5}
+{"text": "Exciting update: We're planning a family trip to Kerala", "label": 5}
+{"text": "Big announcement: Didi is getting married next spring!", "label": 5}
+{"text": "Amazing news! The kids won the school talent show", "label": 5}
+{"text": "So happy to share: Rohan made the cricket team!", "label": 5}
+{"text": "Wonderful surprise: Nani is coming to visit next month", "label": 5}
+{"text": "I've been thinking about how fast the kids are growing up", "label": 6}
+{"text": "Looking back at our family photos brings so many memories", "label": 6}
+{"text": "Life moves so quickly, cherish every moment", "label": 6}
+{"text": "Reflecting on all the traditions we've built as a family", "label": 6}
+{"text": "Sometimes I wonder if I'm doing enough as a parent", "label": 6}
+{"text": "The years with little ones go by in a blink", "label": 6}
+{"text": "Pondering about what really matters in life", "label": 6}
+{"text": "Remembering how different things were just five years ago", "label": 6}
+{"text": "Good morning! How are you today?", "label": 7}
+{"text": "Thanks for the help earlier", "label": 7}
+{"text": "That's interesting, tell me more", "label": 7}
+{"text": "Okay, sounds good", "label": 7}
+{"text": "Hello there!", "label": 7}
+{"text": "Never mind, I figured it out", "label": 7}
+{"text": "Just checking in", "label": 7}
+{"text": "Alright, talk to you later", "label": 7}
