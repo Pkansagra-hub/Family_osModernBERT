@@ -1,0 +1,141 @@
+# Stage A: A100 Optimized Configuration
+# For A100-40GB/80GB GPUs (Colab Pro, GCP, etc.)
+# ~4x faster than default config
+#
+# Usage:
+#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_a100.yaml
+
+defaults:
+  - /training/default
+
+# Base model
+model:
+  name_or_path: answerdotai/ModernBERT-base
+  torch_dtype: bfloat16  # A100 native precision
+  use_flash_attention_2: false
+
+# Multi-task head configuration
+heads:
+  ner_general:
+    enabled: true
+    type: token_classification
+    num_labels: 17
+    dropout: 0.1
+
+  sentiment:
+    enabled: true
+    type: sequence_classification
+    num_labels: 5
+    dropout: 0.1
+
+  emotions:
+    enabled: true
+    type: sequence_classification
+    num_labels: 32
+    problem_type: multi_label_classification
+    dropout: 0.1
+
+  safety_generic:
+    enabled: true
+    type: sequence_classification
+    num_labels: 8
+    problem_type: multi_label_classification
+    dropout: 0.1
+
+  nli:
+    enabled: true
+    type: sequence_classification
+    num_labels: 3
+    dropout: 0.1
+
+  embedding:
+    enabled: true
+    type: embedding
+    pooling: mean
+    normalize: true
+    matryoshka_dims: [768, 512, 256, 128]
+
+  temporal:
+    enabled: true
+    type: token_classification
+    num_labels: 13
+    dropout: 0.1
+
+# Task sampling weights
+task_weights:
+  ner_general: 1.0
+  sentiment: 1.0
+  emotions: 1.0
+  safety_generic: 1.5
+  nli: 1.0
+  embedding: 0.5
+  temporal: 0.8
+
+# Data mixing strategy
+mixing:
+  strategy: proportional
+  temperature: 2.0
+  shuffle_seed: 42
+
+# A100 OPTIMIZED Training hyperparameters
+training:
+  # === A100 OPTIMIZED BATCH SIZE ===
+  per_device_train_batch_size: 128    # 8x larger (was 16)
+  per_device_eval_batch_size: 256     # 8x larger (was 32)
+  gradient_accumulation_steps: 1      # No accumulation needed (was 2)
+  
+  # Learning rate scaled for larger batch (sqrt scaling)
+  learning_rate: 0.00005  # 5e-5 (was 2e-5, scaled ~2.5x for 8x batch)
+  
+  # Training duration (1 epoch = faster, adjust as needed)
+  num_train_epochs: 3     # Reduced from 5 (larger batch = fewer steps needed)
+  max_steps: -1
+  
+  # Gradient checkpointing OFF for speed (A100 has enough memory)
+  gradient_checkpointing: false
+  
+  # Optimizer
+  optim: adamw_torch_fused
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  # Schedule
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.06  # Shorter warmup for larger batch
+
+  # A100 native BF16
+  bf16: true
+  fp16: false
+
+  # Evaluation (less frequent = faster)
+  eval_strategy: steps
+  eval_steps: 500       # More frequent checkpoints
+  save_strategy: steps
+  save_steps: 500
+  save_total_limit: 3
+  load_best_model_at_end: true
+  metric_for_best_model: eval_avg_score
+  greater_is_better: true
+
+  # Logging
+  logging_steps: 50     # More frequent logging
+  report_to:
+    - tensorboard
+
+  # Reproducibility
+  seed: 42
+  data_seed: 42
+
+  # === A100 OPTIMIZED DATA LOADING ===
+  dataloader_num_workers: 8    # More workers (was 4)
+  dataloader_pin_memory: true
+  dataloader_prefetch_factor: 4  # Prefetch batches
+
+# Output
+output:
+  output_dir: outputs/modernbert-multitask-v0
+  checkpoint_dir: checkpoints/modernbert-multitask-v0
+  logging_dir: outputs/modernbert-multitask-v0/logs
+
+# Data config
+data_config: configs/data/multitask/stage_a_datasets.yaml
