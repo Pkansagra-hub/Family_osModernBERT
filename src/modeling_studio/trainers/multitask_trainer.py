@@ -52,6 +52,7 @@ if TYPE_CHECKING:
 
 from modeling_studio.trainers.collators import MultiTaskCollator
 from modeling_studio.trainers.task_sampler import TaskSampler, create_sampler
+from modeling_studio.trainers.task_weighting import UncertaintyWeighting
 
 # =============================================================================
 # Multi-Task DataLoader
@@ -327,6 +328,24 @@ class MultiTaskTrainer(Trainer):
         # Track current task for loss computation
         self.current_task: str | None = None
 
+        # === V2 FEATURE: Uncertainty Weighting ===
+        # Initialize learned task weights if enabled in args
+        self.uncertainty_weighting: UncertaintyWeighting | None = None
+        self.task_to_idx: dict[str, int] = {}
+        
+        # Check if using MultiTaskTrainingArguments with uncertainty weighting
+        use_uncertainty = getattr(args, "use_uncertainty_weighting", False)
+        if use_uncertainty and self.train_datasets:
+            task_names = sorted(self.train_datasets.keys())
+            self.task_to_idx = {task: i for i, task in enumerate(task_names)}
+            self.uncertainty_weighting = UncertaintyWeighting(
+                num_tasks=len(task_names),
+                init_value=0.0,  # σ=1 initially
+            )
+            # Move to same device as model
+            if model is not None:
+                self.uncertainty_weighting = self.uncertainty_weighting.to(model.device)
+
     def _create_sampler(self) -> TaskSampler:
         """Create task sampler based on configuration."""
         return create_sampler(
@@ -438,9 +457,23 @@ class MultiTaskTrainer(Trainer):
         # Get loss
         loss = outputs.loss if hasattr(outputs, "loss") else outputs["loss"]
 
-        # Apply task weight
-        task_weight = self.task_weights.get(task, 1.0)
-        weighted_loss = loss * task_weight
+        # === V2 FEATURE: Uncertainty Weighting ===
+        # Apply learned uncertainty weighting if enabled
+        if self.uncertainty_weighting is not None and task in self.task_to_idx:
+            task_idx = self.task_to_idx[task]
+            # Uncertainty weighting expects list of losses, but we process one task at a time
+            # So we apply the per-task weight formula directly:
+            # L_weighted = (1 / (2 * σ²)) * L + log(σ)
+            log_var = self.uncertainty_weighting.log_vars[task_idx]
+            precision = torch.exp(-log_var)
+            weighted_loss = 0.5 * precision * loss + 0.5 * log_var
+            # Also apply static task weight for compatibility
+            task_weight = self.task_weights.get(task, 1.0)
+            weighted_loss = weighted_loss * task_weight
+        else:
+            # Standard static task weighting
+            task_weight = self.task_weights.get(task, 1.0)
+            weighted_loss = loss * task_weight
 
         if return_outputs:
             return weighted_loss, outputs
@@ -527,22 +560,75 @@ class MultiTaskTrainer(Trainer):
 
     def create_optimizer(self) -> torch.optim.Optimizer:
         """
-        Create optimizer with optional head-wise learning rates.
+        Create optimizer with optional head-wise learning rates and uncertainty weighting.
 
         Can be extended to use different learning rates for:
         - Encoder layers
         - Classification heads
         - Token classification heads
+        - Uncertainty weighting parameters (learned task weights)
         """
-        # Use default optimizer creation for now
-        # Can be extended with head-wise LR in optimizer.py
-        return super().create_optimizer()
+        # First, create the base optimizer
+        optimizer = super().create_optimizer()
+        
+        # === V2 FEATURE: Add uncertainty weighting parameters to optimizer ===
+        if self.uncertainty_weighting is not None:
+            # Add the log_vars parameter to the optimizer
+            # Use a higher learning rate for task weights (they need to adapt quickly)
+            param_groups = list(optimizer.param_groups)
+            param_groups.append({
+                "params": list(self.uncertainty_weighting.parameters()),
+                "lr": self.args.learning_rate * 10,  # 10x base LR for task weights
+                "weight_decay": 0.0,  # No regularization on task weights
+            })
+            
+            # Recreate optimizer with new param groups
+            from torch.optim import AdamW
+            optimizer = AdamW(
+                param_groups,
+                lr=self.args.learning_rate,
+                betas=(0.9, 0.999),
+                eps=1e-8,
+            )
+        
+        return optimizer
+
+    def training_step(
+        self, 
+        model: "PreTrainedModel", 
+        inputs: dict[str, Any],
+        num_items_in_batch: int | None = None,
+    ) -> torch.Tensor:
+        """
+        Override training step to update EMA after each step.
+        
+        The EMA model maintains an exponential moving average of the model weights
+        for better final model quality.
+        """
+        # Call parent training step
+        loss = super().training_step(model, inputs, num_items_in_batch)
+        
+        # === V2 FEATURE: Update EMA after each step ===
+        # EMA is attached to trainer in train_stage_a.py
+        if hasattr(self, "ema_model") and self.ema_model is not None:
+            self.ema_model.update(model)
+        
+        return loss
 
     def log(self, logs: dict[str, float], start_time: float | None = None) -> None:
         """Log metrics with task prefix when applicable."""
         # Add current task to logs if available
         if self.current_task is not None and "loss" in logs:
             logs[f"{self.current_task}_loss"] = logs["loss"]
+        
+        # === V2 FEATURE: Log uncertainty weights ===
+        if self.uncertainty_weighting is not None:
+            # Log current learned task weights
+            for task, idx in self.task_to_idx.items():
+                log_var = self.uncertainty_weighting.log_vars[idx].item()
+                # σ² = exp(log_var), weight ~ 1/σ²
+                weight = torch.exp(-log_var).item()
+                logs[f"uw_{task}"] = weight
 
         super().log(logs, start_time)
 

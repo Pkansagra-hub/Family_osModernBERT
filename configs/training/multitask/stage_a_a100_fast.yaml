@@ -1,20 +1,22 @@
-# Stage A: A100 Optimized Configuration (V2 - FULL COMPLIANCE)
-# For A100-40GB/80GB GPUs (Colab Pro, GCP, etc.)
-# Target GPU Memory: 30-35GB
+# Stage A: A100 Hyperfast Configuration (V2 COMPLIANT)
+# For A100-40GB GPUs (GCE, Colab Pro, etc.)
+# Goal: Max throughput + V2 compliance
 #
 # V2 COMPLIANCE CHECKLIST:
-# ✅ 10 epochs (was 3) - "DO NOT SKIP THESE PHASES"
+# ✅ 10 epochs - "DO NOT SKIP THESE PHASES"
 # ✅ Head-wise learning rates (encoder_lr, head_lr, token_head_lr)
 # ✅ EMA model (use_ema: true, ema_decay: 0.999)
 # ✅ Embedding hard negatives (15)
 # ✅ Task weights per v2 spec (emotions: 1.5, safety: 2.0, embedding: 0.5)
 # ✅ Uncertainty weighting enabled
-# ✅ Temperature sampling for small dataset protection
+# ✅ Temperature sampling (higher temp=4 for speed)
 # ✅ Layer decay (0.95)
 # ✅ Warmup ratio 0.1
+# ✅ Flash Attention 2 for speed (requires flash-attn package)
+# ✅ No gradient checkpointing for max speed
 #
 # Usage:
-#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_a100.yaml
+#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_a100_fast.yaml
 
 defaults:
   - /training/default
@@ -22,15 +24,15 @@ defaults:
 # Base model
 model:
   name_or_path: answerdotai/ModernBERT-base
-  torch_dtype: bfloat16  # A100 native precision
-  use_flash_attention_2: false  # Set true if flash-attn installed
+  torch_dtype: bfloat16            # A100 native precision
+  use_flash_attention_2: true      # Turn OFF if you see NaNs / crashes or flash-attn not installed
 
 # Multi-task head configuration (7 generic heads for Stage A)
 heads:
   ner_general:
     enabled: true
     type: token_classification
-    num_labels: 9  # CoNLL + WikiNeural: O, B/I-PER, B/I-ORG, B/I-LOC, B/I-MISC
+    num_labels: 9  # O, B/I-PER, B/I-ORG, B/I-LOC, B/I-MISC
     dropout: 0.1
 
   sentiment:
@@ -73,7 +75,6 @@ heads:
     dropout: 0.1
 
 # Task LOSS weights - V2 SPEC (emphasize safety + emotions, reduce embedding)
-# These multiply the loss from each head BEFORE uncertainty weighting
 task_weights:
   ner_general: 1.0
   sentiment: 1.0
@@ -83,10 +84,10 @@ task_weights:
   embedding: 0.5      # Reduce embedding dominance per v2 plan
   temporal: 1.0
 
-# Data mixing strategy - Temperature sampling to prevent starvation
+# Data mixing - higher temperature for faster uniform sampling
 mixing:
   strategy: temperature
-  temperature: 2.0       # Higher = more uniform sampling across tasks
+  temperature: 4.0       # Higher temp = more uniform (faster convergence on small tasks)
   shuffle_seed: 42
 
 # Head-wise optimizer configuration - V2 SPEC
@@ -96,15 +97,15 @@ optimizer:
   token_head_lr: 5e-5    # Medium LR for token classification heads (NER, temporal)
   layer_decay: 0.95      # Gradual LR decay from top to bottom layers
 
-# A100 OPTIMIZED Training hyperparameters - V2 COMPLIANT
+# A100-40GB HYPERFAST training - V2 COMPLIANT
 training:
-  # === BATCH CONFIG ===
-  per_device_train_batch_size: 128   # Balanced for memory + speed
-  per_device_eval_batch_size: 128
-  gradient_accumulation_steps: 2     # Effective batch = 256
+  # === BATCH & SPEED (no gradient checkpointing for max speed) ===
+  per_device_train_batch_size: 144
+  per_device_eval_batch_size: 144
+  gradient_accumulation_steps: 2    # Effective batch ≈ 288
 
   # === LEARNING RATE (base, overridden by optimizer section for heads) ===
-  learning_rate: 2e-5  # Used as encoder_lr fallback
+  learning_rate: 2e-5
 
   # === TRAINING DURATION - V2 SPEC: 10-12 EPOCHS ===
   num_train_epochs: 10
@@ -120,8 +121,8 @@ training:
   # === EMBEDDING HARD NEGATIVES - V2 SPEC ===
   embedding_hard_negatives: 15
 
-  # === MEMORY OPTIMIZATION ===
-  gradient_checkpointing: true
+  # === MEMORY: NO CHECKPOINTING FOR SPEED ===
+  gradient_checkpointing: false
 
   # === OPTIMIZER ===
   optim: adamw_torch_fused
@@ -136,12 +137,12 @@ training:
   bf16: true
   fp16: false
 
-  # === EVALUATION & CHECKPOINTING ===
+  # === EVALUATION & CHECKPOINTING (less frequent for speed) ===
   eval_strategy: steps
-  eval_steps: 2000        # Less frequent for longer training
+  eval_steps: 2500
   save_strategy: steps
-  save_steps: 2000
-  save_total_limit: 5
+  save_steps: 2500
+  save_total_limit: 4
   load_best_model_at_end: true
   metric_for_best_model: eval_avg_score
   greater_is_better: true
@@ -155,16 +156,16 @@ training:
   seed: 42
   data_seed: 42
 
-  # === A100 DATA LOADING ===
-  dataloader_num_workers: 4
+  # === DATA LOADING (tuned for big GCE box) ===
+  dataloader_num_workers: 8
   dataloader_pin_memory: true
   dataloader_prefetch_factor: 2
 
 # Output
 output:
-  output_dir: outputs/modernbert-multitask-v0-stage-a
-  checkpoint_dir: checkpoints/modernbert-multitask-v0-stage-a
-  logging_dir: outputs/modernbert-multitask-v0-stage-a/logs
+  output_dir: outputs/modernbert-multitask-v0-stage-a-fast
+  checkpoint_dir: checkpoints/modernbert-multitask-v0-stage-a-fast
+  logging_dir: outputs/modernbert-multitask-v0-stage-a-fast/logs
 
 # Data config
 data_config: configs/data/multitask/stage_a_datasets.yaml
