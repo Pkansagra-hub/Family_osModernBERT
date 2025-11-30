@@ -19,16 +19,16 @@ Sampling Strategy:
 - Rotate shards across epochs for diversity
 """
 
-import hashlib
 import json
-import logging
-import random
-import re
 import time
-from collections import defaultdict
+import logging
+import re
+import hashlib
+import random
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from collections import defaultdict
 
 import httpx
 
@@ -156,12 +156,12 @@ def get_diverse_user_prompt(
     context = FAMILY_CONTEXTS[batch_id % len(FAMILY_CONTEXTS)]
     scenario = SCENARIOS[batch_id % len(SCENARIOS)]
     style = LANGUAGE_STYLES[batch_id % len(LANGUAGE_STYLES)]
-
+    
     prompt = f"""Generate {num_samples} NER examples. Context: {context}. Scenario: {scenario}. Style: {style}."""
-
+    
     if focus_entities:
         prompt += f" Priority entities: {', '.join(focus_entities)}."
-
+    
     prompt += " Output JSONL only:"
     return prompt
 
@@ -193,33 +193,33 @@ def validate_ner_sample(sample: dict[str, Any]) -> tuple[bool, str]:
     """Validate a single NER sample with strict BIO rules."""
     if "tokens" not in sample or "ner_tags" not in sample:
         return False, "Missing 'tokens' or 'ner_tags' key"
-
+    
     tokens = sample["tokens"]
     tags = sample["ner_tags"]
-
+    
     if not isinstance(tokens, list) or not isinstance(tags, list):
         return False, "tokens and ner_tags must be lists"
-
+    
     if len(tokens) != len(tags):
         return False, f"Length mismatch: {len(tokens)} tokens vs {len(tags)} tags"
-
+    
     if len(tokens) == 0:
         return False, "Empty sample"
-
+    
     if not all(isinstance(t, str) for t in tokens):
         return False, "All tokens must be strings"
-
+    
     if not all(isinstance(t, int) and 0 <= t <= 20 for t in tags):
         return False, f"Invalid tag values (must be 0-20): {tags}"
-
+    
     # Check BIO consistency
     prev_entity = None
     for i, tag in enumerate(tags):
         if tag not in TAG_INFO:
             return False, f"Unknown tag ID: {tag}"
-
+        
         entity, is_beginning = TAG_INFO[tag]
-
+        
         if entity == "O":
             prev_entity = None
         elif is_beginning:
@@ -227,7 +227,7 @@ def validate_ner_sample(sample: dict[str, Any]) -> tuple[bool, str]:
         else:
             if prev_entity != entity:
                 return False, f"Orphan I-{entity} tag at position {i}"
-
+    
     return True, ""
 
 
@@ -251,30 +251,30 @@ def get_entity_coverage(sample: dict[str, Any]) -> dict[str, int]:
 def parse_jsonl_response(response_text: str) -> list[dict[str, Any]]:
     """Parse JSONL from model response, handling various formatting issues."""
     valid_samples = []
-
+    
     lines = response_text.strip().split("\n")
-
+    
     for line in lines:
         line = line.strip()
         if not line or line.startswith("```"):
             continue
-
+        
         try:
             json_match = re.search(r'\{[^{}]*"tokens"[^{}]*"ner_tags"[^{}]*\}', line)
             if json_match:
                 sample = json.loads(json_match.group())
             else:
                 sample = json.loads(line)
-
+            
             is_valid, error = validate_ner_sample(sample)
             if is_valid:
                 valid_samples.append(sample)
             else:
                 logger.debug(f"Invalid sample: {error}")
-
+                
         except json.JSONDecodeError:
             continue
-
+    
     return valid_samples
 
 
@@ -282,10 +282,9 @@ def parse_jsonl_response(response_text: str) -> list[dict[str, Any]]:
 # OpenRouter API Client
 # =============================================================================
 
-
 class OpenRouterClient:
     """Client for OpenRouter API with rate limiting."""
-
+    
     def __init__(
         self,
         api_key: str,
@@ -297,35 +296,35 @@ class OpenRouterClient:
         self.base_url = base_url
         self.requests_per_minute = requests_per_minute
         self.requests_per_day = requests_per_day
-
+        
         self.request_times: list[datetime] = []
         self.daily_count = 0
         self.daily_reset = datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)
-
+        
         self.client = httpx.Client(timeout=120.0)
-
+    
     def _wait_for_rate_limit(self) -> None:
         """Wait if necessary to respect rate limits."""
         now = datetime.now()
-
+        
         if now >= self.daily_reset:
             self.daily_count = 0
             self.daily_reset = now.replace(hour=0, minute=0, second=0) + timedelta(days=1)
             logger.info("Daily rate limit reset")
-
+        
         if self.daily_count >= self.requests_per_day:
             raise RuntimeError("Daily rate limit reached")
-
+        
         minute_ago = now - timedelta(minutes=1)
         self.request_times = [t for t in self.request_times if t > minute_ago]
-
+        
         if len(self.request_times) >= self.requests_per_minute:
             oldest = min(self.request_times)
             wait_seconds = (oldest + timedelta(minutes=1) - now).total_seconds()
             if wait_seconds > 0:
                 logger.info(f"Rate limiting: waiting {wait_seconds:.1f}s")
                 time.sleep(wait_seconds)
-
+    
     def generate(
         self,
         model: str,
@@ -336,14 +335,14 @@ class OpenRouterClient:
     ) -> str:
         """Generate text using OpenRouter API."""
         self._wait_for_rate_limit()
-
+        
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://github.com/modeling-studio",
             "X-Title": "FamilyOS NER Data Generator",
         }
-
+        
         payload = {
             "model": model,
             "messages": [
@@ -353,7 +352,7 @@ class OpenRouterClient:
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-
+        
         try:
             response = self.client.post(
                 f"{self.base_url}/chat/completions",
@@ -361,23 +360,23 @@ class OpenRouterClient:
                 json=payload,
             )
             response.raise_for_status()
-
+            
             self.request_times.append(datetime.now())
             self.daily_count += 1
-
+            
             data = response.json()
             content = data["choices"][0]["message"]["content"]
-
+            
             logger.info(f"API call successful (daily: {self.daily_count}/{self.requests_per_day})")
             return content
-
+            
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
             if e.response.status_code == 429:
                 logger.warning("Rate limited by API. Waiting 60 seconds...")
                 time.sleep(60)
             raise
-
+    
     def close(self):
         self.client.close()
 
@@ -386,27 +385,26 @@ class OpenRouterClient:
 # Silver Data Manager (Sharded Storage)
 # =============================================================================
 
-
 class SilverDataManager:
     """Manages sharded silver data storage."""
-
+    
     def __init__(self, silver_dir: Path = SILVER_DIR, shard_size: int = SHARD_SIZE):
         self.silver_dir = silver_dir
         self.shard_size = shard_size
         self.silver_dir.mkdir(parents=True, exist_ok=True)
-
+        
         # Track hashes for deduplication across shards
         self.seen_hashes: set[str] = set()
         self._load_existing_hashes()
-
+        
         # Current shard being written to
         self.current_shard_id = self._get_next_shard_id()
         self.current_shard_count = self._count_shard_samples(self.current_shard_id)
-
+    
     def _load_existing_hashes(self) -> None:
         """Load hashes from all existing shards for deduplication."""
         for shard_file in self.silver_dir.glob("shard_*.jsonl"):
-            with open(shard_file, encoding="utf-8") as f:
+            with open(shard_file, "r", encoding="utf-8") as f:
                 for line in f:
                     try:
                         sample = json.loads(line.strip())
@@ -414,63 +412,63 @@ class SilverDataManager:
                     except json.JSONDecodeError:
                         continue
         logger.info(f"Loaded {len(self.seen_hashes)} existing hashes from silver shards")
-
+    
     def _get_shard_path(self, shard_id: int) -> Path:
         return self.silver_dir / f"shard_{shard_id:04d}.jsonl"
-
+    
     def _count_shard_samples(self, shard_id: int) -> int:
         shard_path = self._get_shard_path(shard_id)
         if not shard_path.exists():
             return 0
-        with open(shard_path, encoding="utf-8") as f:
+        with open(shard_path, "r", encoding="utf-8") as f:
             return sum(1 for _ in f)
-
+    
     def _get_next_shard_id(self) -> int:
         """Find the current shard to write to (last incomplete or new)."""
         existing = list(self.silver_dir.glob("shard_*.jsonl"))
         if not existing:
             return 0
-
+        
         # Get highest shard ID
         max_id = max(int(p.stem.split("_")[1]) for p in existing)
-
+        
         # Check if it's full
         if self._count_shard_samples(max_id) >= self.shard_size:
             return max_id + 1
         return max_id
-
+    
     def add_samples(self, samples: list[dict[str, Any]]) -> int:
         """Add samples to silver storage, returns count added."""
         added = 0
-
+        
         for sample in samples:
             sample_hash = compute_sample_hash(sample)
             if sample_hash in self.seen_hashes:
                 continue
-
+            
             # Check if current shard is full
             if self.current_shard_count >= self.shard_size:
                 self.current_shard_id += 1
                 self.current_shard_count = 0
                 logger.info(f"Started new shard: shard_{self.current_shard_id:04d}")
-
+            
             # Write to current shard
             shard_path = self._get_shard_path(self.current_shard_id)
             with open(shard_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(sample, ensure_ascii=False) + "\n")
-
+            
             self.seen_hashes.add(sample_hash)
             self.current_shard_count += 1
             added += 1
-
+        
         return added
-
+    
     def get_total_samples(self) -> int:
         return len(self.seen_hashes)
-
+    
     def get_shard_count(self) -> int:
         return len(list(self.silver_dir.glob("shard_*.jsonl")))
-
+    
     def sample_for_epoch(
         self,
         num_samples: int,
@@ -479,34 +477,34 @@ class SilverDataManager:
         """Sample N samples from silver pool for an epoch."""
         if seed is not None:
             random.seed(seed)
-
+        
         all_shards = sorted(self.silver_dir.glob("shard_*.jsonl"))
         if not all_shards:
             return []
-
+        
         # Load all samples (for now - could optimize with reservoir sampling)
         all_samples = []
         for shard_path in all_shards:
-            with open(shard_path, encoding="utf-8") as f:
+            with open(shard_path, "r", encoding="utf-8") as f:
                 for line in f:
                     try:
                         all_samples.append(json.loads(line.strip()))
                     except json.JSONDecodeError:
                         continue
-
+        
         # Sample
         if len(all_samples) <= num_samples:
             return all_samples
-
+        
         return random.sample(all_samples, num_samples)
-
+    
     def get_stats(self) -> dict[str, Any]:
         """Get statistics about silver data."""
         entity_counts: dict[str, int] = defaultdict(int)
         total = 0
-
+        
         for shard_path in self.silver_dir.glob("shard_*.jsonl"):
-            with open(shard_path, encoding="utf-8") as f:
+            with open(shard_path, "r", encoding="utf-8") as f:
                 for line in f:
                     try:
                         sample = json.loads(line.strip())
@@ -515,7 +513,7 @@ class SilverDataManager:
                         total += 1
                     except json.JSONDecodeError:
                         continue
-
+        
         return {
             "total_samples": total,
             "num_shards": self.get_shard_count(),
@@ -527,10 +525,9 @@ class SilverDataManager:
 # Data Generator Agent (v2)
 # =============================================================================
 
-
 class NERDataGeneratorAgent:
     """Agent that generates NER training data using OpenRouter."""
-
+    
     def __init__(
         self,
         samples_per_request: int = SAMPLES_PER_REQUEST,
@@ -538,67 +535,67 @@ class NERDataGeneratorAgent:
     ):
         self.samples_per_request = samples_per_request
         self.delay_between_requests = delay_between_requests
-
+        
         self.client = OpenRouterClient(api_key=OPENROUTER_API_KEY)
         self.silver_manager = SilverDataManager()
-
+        
         # Track entity coverage for balanced generation
         self.entity_counts: dict[str, int] = defaultdict(int)
         self._load_existing_counts()
-
+        
         # Batch counter for prompt diversity
         self.batch_id = 0
-
+    
     def _load_existing_counts(self) -> None:
         """Load existing entity counts from silver data."""
         stats = self.silver_manager.get_stats()
         self.entity_counts = defaultdict(int, stats.get("entity_counts", {}))
         logger.info(f"Existing entity counts: {dict(self.entity_counts)}")
-
+    
     def _get_underrepresented_entities(self, n: int = 3) -> list[str]:
         """Get the n most underrepresented entity types."""
         all_entities = list(ENTITY_TAGS.keys())
         sorted_entities = sorted(all_entities, key=lambda e: self.entity_counts.get(e, 0))
         return sorted_entities[:n]
-
+    
     def generate_batch(self) -> int:
         """Generate a batch of samples. Returns count of new samples added."""
         focus = self._get_underrepresented_entities(3)
-
+        
         user_prompt = get_diverse_user_prompt(
             self.samples_per_request,
             focus_entities=focus,
             batch_id=self.batch_id,
         )
-
+        
         try:
             response = self.client.generate(
                 model=MODEL,
                 system_prompt=SYSTEM_PROMPT,
                 user_prompt=user_prompt,
             )
-
+            
             samples = parse_jsonl_response(response)
             added = self.silver_manager.add_samples(samples)
-
+            
             # Update entity counts
             for sample in samples:
                 for entity, count in get_entity_coverage(sample).items():
                     self.entity_counts[entity] += count
-
+            
             self.batch_id += 1
-
+            
             logger.info(
                 f"Generated {len(samples)} valid, added {added} new. "
                 f"Focus: {focus}. Total silver: {self.silver_manager.get_total_samples()}"
             )
-
+            
             return added
-
+            
         except Exception as e:
             logger.error(f"Batch generation failed: {e}")
             return 0
-
+    
     def run(
         self,
         target_samples: int | None = None,
@@ -608,9 +605,9 @@ class NERDataGeneratorAgent:
         """Run the data generation agent."""
         start_time = datetime.now()
         end_time = start_time + timedelta(minutes=run_time_minutes) if run_time_minutes else None
-
+        
         existing_count = self.silver_manager.get_total_samples()
-
+        
         stats = {
             "start_time": start_time.isoformat(),
             "existing_samples": existing_count,
@@ -618,39 +615,39 @@ class NERDataGeneratorAgent:
             "requests": 0,
             "errors": 0,
         }
-
+        
         logger.info(f"Starting NER data generation. Existing silver samples: {existing_count}")
-
+        
         try:
             while True:
                 if target_samples and stats["new_samples"] >= target_samples:
                     logger.info(f"Reached target of {target_samples} new samples")
                     break
-
+                
                 if max_requests and stats["requests"] >= max_requests:
                     logger.info(f"Reached max requests: {max_requests}")
                     break
-
+                
                 if end_time and datetime.now() >= end_time:
                     logger.info(f"Reached time limit: {run_time_minutes} minutes")
                     break
-
+                
                 stats["requests"] += 1
                 added = self.generate_batch()
-
+                
                 if added > 0:
                     stats["new_samples"] += added
                 else:
                     stats["errors"] += 1
-
+                
                 total = existing_count + stats["new_samples"]
                 logger.info(
                     f"Progress: {stats['new_samples']} new ({total} total) "
                     f"from {stats['requests']} requests"
                 )
-
+                
                 time.sleep(self.delay_between_requests)
-
+                
         except KeyboardInterrupt:
             logger.info("Interrupted by user")
         except RuntimeError as e:
@@ -660,12 +657,12 @@ class NERDataGeneratorAgent:
                 raise
         finally:
             self.client.close()
-
+        
         stats["end_time"] = datetime.now().isoformat()
         stats["final_entity_counts"] = dict(self.entity_counts)
         stats["total_samples"] = self.silver_manager.get_total_samples()
         stats["num_shards"] = self.silver_manager.get_shard_count()
-
+        
         logger.info(f"Generation complete. Stats: {json.dumps(stats, indent=2)}")
         return stats
 
@@ -673,7 +670,6 @@ class NERDataGeneratorAgent:
 # =============================================================================
 # Training Data Sampler
 # =============================================================================
-
 
 def prepare_epoch_data(
     gold_file: Path | None = None,
@@ -683,27 +679,27 @@ def prepare_epoch_data(
 ) -> list[dict[str, Any]]:
     """
     Prepare training data for one epoch.
-
+    
     Strategy:
     - Include all gold samples
     - Sample N samples from silver pool
     - Shuffle and optionally save to file
-
+    
     Args:
         gold_file: Path to gold JSONL file (all included)
         silver_samples: Number of samples to draw from silver pool
         epoch_seed: Random seed for reproducibility
         output_file: Optional path to save the epoch data
-
+    
     Returns:
         List of training samples for this epoch
     """
     random.seed(epoch_seed)
     samples = []
-
+    
     # Load gold samples
     if gold_file and gold_file.exists():
-        with open(gold_file, encoding="utf-8") as f:
+        with open(gold_file, "r", encoding="utf-8") as f:
             for line in f:
                 try:
                     sample = json.loads(line.strip())
@@ -712,7 +708,7 @@ def prepare_epoch_data(
                 except json.JSONDecodeError:
                     continue
         logger.info(f"Loaded {len(samples)} gold samples")
-
+    
     # Sample from silver
     silver_manager = SilverDataManager()
     silver = silver_manager.sample_for_epoch(silver_samples, seed=epoch_seed)
@@ -720,10 +716,10 @@ def prepare_epoch_data(
         sample["_source"] = "silver"
     samples.extend(silver)
     logger.info(f"Sampled {len(silver)} silver samples")
-
+    
     # Shuffle
     random.shuffle(samples)
-
+    
     # Optionally save
     if output_file:
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -731,7 +727,7 @@ def prepare_epoch_data(
             for sample in samples:
                 f.write(json.dumps(sample, ensure_ascii=False) + "\n")
         logger.info(f"Saved {len(samples)} samples to {output_file}")
-
+    
     return samples
 
 
@@ -739,19 +735,17 @@ def migrate_legacy_to_gold():
     """Migrate existing train.jsonl to gold directory."""
     GOLD_DIR.mkdir(parents=True, exist_ok=True)
     gold_train = GOLD_DIR / "train.jsonl"
-
+    
     if LEGACY_TRAIN.exists() and not gold_train.exists():
         logger.info(f"Migrating {LEGACY_TRAIN} to {gold_train}")
         import shutil
-
         shutil.copy(LEGACY_TRAIN, gold_train)
         logger.info("Migration complete")
-
+    
     if LEGACY_VALIDATION.exists():
         gold_val = GOLD_DIR / "validation.jsonl"
         if not gold_val.exists():
             import shutil
-
             shutil.copy(LEGACY_VALIDATION, gold_val)
             logger.info(f"Migrated validation to {gold_val}")
 
@@ -760,41 +754,36 @@ def migrate_legacy_to_gold():
 # CLI Entry Point
 # =============================================================================
 
-
 def main():
     """Run the NER data generator agent."""
     import argparse
-
+    
     parser = argparse.ArgumentParser(description="Generate NER training data using OpenRouter")
-
+    
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
-
+    
     # Generate command
     gen_parser = subparsers.add_parser("generate", help="Generate new silver data")
     gen_parser.add_argument("--target", type=int, default=None, help="Target number of new samples")
     gen_parser.add_argument("--max-requests", type=int, default=None, help="Maximum API requests")
     gen_parser.add_argument("--run-time", type=int, default=None, help="Run time in minutes")
-    gen_parser.add_argument(
-        "--samples-per-request", type=int, default=25, help="Samples per API call"
-    )
-    gen_parser.add_argument(
-        "--delay", type=float, default=6.0, help="Delay between requests (seconds)"
-    )
-
+    gen_parser.add_argument("--samples-per-request", type=int, default=25, help="Samples per API call")
+    gen_parser.add_argument("--delay", type=float, default=6.0, help="Delay between requests (seconds)")
+    
     # Stats command
     stats_parser = subparsers.add_parser("stats", help="Show silver data statistics")
-
+    
     # Sample command
     sample_parser = subparsers.add_parser("sample", help="Sample data for an epoch")
     sample_parser.add_argument("--silver", type=int, default=50000, help="Number of silver samples")
     sample_parser.add_argument("--seed", type=int, default=42, help="Random seed")
     sample_parser.add_argument("--output", type=str, default=None, help="Output file path")
-
+    
     # Migrate command
     migrate_parser = subparsers.add_parser("migrate", help="Migrate legacy data to gold")
-
+    
     args = parser.parse_args()
-
+    
     if args.command == "generate":
         agent = NERDataGeneratorAgent(
             samples_per_request=args.samples_per_request,
@@ -807,13 +796,13 @@ def main():
         )
         print("\n=== Final Statistics ===")
         print(json.dumps(stats, indent=2))
-
+        
     elif args.command == "stats":
         manager = SilverDataManager()
         stats = manager.get_stats()
         print("\n=== Silver Data Statistics ===")
         print(json.dumps(stats, indent=2))
-
+        
     elif args.command == "sample":
         output = Path(args.output) if args.output else None
         gold_file = GOLD_DIR / "train.jsonl"
@@ -824,10 +813,10 @@ def main():
             output_file=output,
         )
         print(f"\nPrepared {len(samples)} samples for epoch")
-
+        
     elif args.command == "migrate":
         migrate_legacy_to_gold()
-
+        
     else:
         parser.print_help()
 
