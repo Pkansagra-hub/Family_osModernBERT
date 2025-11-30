@@ -128,6 +128,7 @@ def load_ner_dataset(
     label_schema: LabelSchema = NER_GENERAL_LABELS,
     data_dir: str | Path | None = None,
     cache_dir: str | Path | None = None,
+    config: str | None = None,
 ) -> Dataset | DatasetDict:
     """
     Load an NER dataset from HuggingFace Hub or local JSONL files.
@@ -145,6 +146,7 @@ def load_ner_dataset(
         label_schema: Label schema to apply. Defaults to NER_GENERAL_LABELS.
         data_dir: Data directory for HuggingFace datasets that require it.
         cache_dir: Directory to cache downloaded datasets.
+        config: Dataset configuration name (e.g., 'en' for tner/wikineural).
 
     Returns:
         HuggingFace Dataset with standardized columns:
@@ -182,6 +184,7 @@ def load_ner_dataset(
         label_schema=label_schema,
         data_dir=data_dir,
         cache_dir=cache_dir,
+        config=config,
     )
 
 
@@ -191,6 +194,7 @@ def _load_ner_from_hub(
     label_schema: LabelSchema,
     data_dir: str | Path | None,
     cache_dir: str | Path | None,
+    config: str | None = None,
 ) -> Dataset | DatasetDict:
     """Load NER dataset from HuggingFace Hub."""
     logger.info(f"Loading NER dataset '{name}' from HuggingFace Hub...")
@@ -203,7 +207,8 @@ def _load_ner_from_hub(
     if cache_dir is not None:
         load_kwargs["cache_dir"] = str(cache_dir)
 
-    dataset = load_dataset(name, split=split, **load_kwargs)  # type: ignore[arg-type]
+    # Pass config name (e.g., 'en' for tner/wikineural)
+    dataset = load_dataset(name, config, split=split, **load_kwargs)  # type: ignore[arg-type]
 
     # Get label mapping based on dataset
     if name == "conll2003" or name.startswith("conll"):
@@ -216,6 +221,20 @@ def _load_ner_from_hub(
         label_map = ONTONOTES5_LABEL_MAP
         # OntoNotes may have different column names
         original_labels = _get_ontonotes_labels(dataset, split)  # type: ignore[arg-type]
+    elif "wikineural" in name.lower() or name.startswith("tner/"):
+        # tner/wikineural uses 'tags' column instead of 'ner_tags', and integer labels
+        # Labels are the same as CoNLL-2003: O, B-PER, I-PER, B-ORG, I-ORG, B-LOC, I-LOC, B-MISC, I-MISC
+        label_map = CONLL2003_LABEL_MAP
+        # Rename 'tags' to 'ner_tags' for consistency
+        if split:
+            if "tags" in dataset.column_names:
+                dataset = dataset.rename_column("tags", "ner_tags")
+            original_labels = ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "B-MISC", "I-MISC"]
+        else:
+            for s in dataset:
+                if "tags" in dataset[s].column_names:
+                    dataset[s] = dataset[s].rename_column("tags", "ner_tags")
+            original_labels = ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "B-MISC", "I-MISC"]
     else:
         # For other datasets, try to infer label mapping
         label_map = None
@@ -3489,7 +3508,7 @@ def _load_dataset_by_task(
 
     # Route based on task type
     if task == "ner_general":
-        ds = load_ner_dataset(name=name, split=split, data_dir=data_dir)
+        ds = load_ner_dataset(name=name, split=split, data_dir=data_dir, config=config_name)
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
     elif task == "ner_family":

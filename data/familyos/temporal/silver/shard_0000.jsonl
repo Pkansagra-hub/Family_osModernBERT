@@ -8209,3 +8209,169 @@
 {"tokens": ["We", "brushed", "tomorrow", "plan", "early", "."], "temporal_tags": [0, 0, 3, 0, 0, 0]}
 {"tokens": ["At", "age", "18", ",", "morning", "routine", "set", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
 {"tokens": ["Yesterday", "lunch", "all", "day", "event", "."], "temporal_tags": [3, 0, 7, 8, 0, 0]}
+{"tokens": ["I", "go", "to", "yoga", "class", "every", "Saturday", "morning", "."], "temporal_tags": [0, 0, 0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["She", "started", "painting", "when", "she", "was", "8", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 12, 0]}
+{"tokens": ["We", "meet", "for", "coffee", "weekly", "at", "3pm", "."], "temporal_tags": [0, 0, 0, 0, 9, 5, 6, 0]}
+{"tokens": ["Rahul", "plays", "cricket", "every", "Sunday", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["At", "age", "12", ",", "he", "joined", "the", "chess", "club", "daily", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0, 9, 0]}
+{"tokens": ["Family", "dinner", "is", "every", "Friday", "at", "noon", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["Priya", "does", "pooja", "daily", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["He", "learned", "guitar", "at", "age", "15", "and", "practices", "daily", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 0, 0, 9, 0]}
+{"tokens": ["Every", "Monday", ",", "we", "have", "book", "club", "at", "7pm", "."], "temporal_tags": [9, 10, 0, 0, 0, 0, 0, 5, 6, 0]}
+{"tokens": ["When", "he", "was", "5", ",", "family", "trips", "were", "monthly", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 9, 0]}
+{"tokens": ["We", "celebrate", "with", "dance", "class", "weekly", "evening", "."], "temporal_tags": [0, 0, 0, 0, 0, 9, 5, 0]}
+{"tokens": ["Lakshmi", "cooks", "special", "meals", "every", "Sunday", "noon", "."], "temporal_tags": [0, 0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Team", "meets", "every", "Wednesday", "at", "5pm", "."], "temporal_tags": [0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["She", "was", "7", "when", "we", "started", "weekly", "piano", "lessons", "."], "temporal_tags": [0, 0, 11, 11, 12, 0, 9, 0, 0, 0]}
+{"tokens": ["Daily", "meditation", "at", "dawn", "helps", "me", "."], "temporal_tags": [9, 0, 5, 6, 0, 0, 0]}
+{"tokens": ["Vikram", "teaches", "math", "every", "Saturday", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["When", "in", "my", "30s", ",", "yoga", "was", "daily", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 9, 0]}
+{"tokens": ["Friends", "gather", "weekly", "for", "games", "at", "8pm", "."], "temporal_tags": [0, 0, 9, 0, 0, 5, 6, 0]}
+{"tokens": ["Neha", "reads", "to", "kids", "every", "evening", "."], "temporal_tags": [0, 0, 0, 0, 9, 5, 0]}
+{"tokens": ["He", "turned", "pro", "at", "age", "18", "and", "trains", "daily", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 0, 0, 9, 0]}
+{"tokens": ["Every", "full", "moon", ",", "we", "pray", "morning", "."], "temporal_tags": [9, 10, 10, 0, 0, 0, 5, 0]}
+{"tokens": ["Sita", "bakes", "every", "Friday", "afternoon", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["When", "she", "was", "9", ",", "ballet", "classes", "were", "weekly", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 9, 0]}
+{"tokens": ["Morning", "walks", "are", "daily", "routine", "."], "temporal_tags": [5, 0, 0, 9, 0, 0]}
+{"tokens": ["Kiran", "hosts", "pooja", "every", "Tuesday", "at", "noon", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["Club", "meets", "every", "month", "on", "1st", "at", "6pm", "."], "temporal_tags": [0, 0, 9, 10, 0, 0, 5, 6, 0]}
+{"tokens": ["Anjali", "practices", "sitar", "daily", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["At", "age", "6", ",", "she", "loved", "story", "time", "weekly", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 5, 9, 0]}
+{"tokens": ["We", "do", "art", "every", "Saturday", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Rohan", "studies", "when", "he", "was", "young", ",", "now", "daily", "."], "temporal_tags": [0, 0, 11, 12, 12, 12, 0, 0, 9, 0]}
+{"tokens": ["Every", "weekend", ",", "picnic", "at", "noon", "."], "temporal_tags": [9, 10, 0, 0, 5, 6, 0]}
+{"tokens": ["Meera", "sings", "bhajans", "every", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["She", "got", "married", "at", "age", "25", "and", "hosts", "weekly", "dinners", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 0, 0, 9, 0, 0]}
+{"tokens": ["Daily", "chai", "breaks", "at", "4pm", "."], "temporal_tags": [9, 0, 0, 5, 6, 0]}
+{"tokens": ["Arjun", "trains", "karate", "every", "Tuesday", "evening", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["When", "I", "was", "14", ",", "soccer", "practice", "was", "daily", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 9, 0]}
+{"tokens": ["Friends", "call", "weekly", "morning", "."], "temporal_tags": [0, 0, 9, 5, 0]}
+{"tokens": ["Deepa", "knits", "every", "evening", "at", "8pm", "."], "temporal_tags": [0, 0, 9, 5, 5, 6, 0]}
+{"tokens": ["At", "age", "16", ",", "band", "rehearsals", "weekly", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 9, 0]}
+{"tokens": ["Every", "Diwali", "prep", "starts", "monthly", "before", "."], "temporal_tags": [9, 10, 0, 0, 9, 0, 0]}
+{"tokens": ["Sunil", "reads", "Gita", "daily", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["In", "my", "40s", ",", "golf", "is", "weekly", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 9, 0]}
+{"tokens": ["Prayer", "group", "meets", "every", "Friday", "noon", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Tara", "dances", "every", "Saturday", "at", "10am", "."], "temporal_tags": [0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["Morning", "pranayama", "daily", "."], "temporal_tags": [5, 0, 9, 0]}
+{"tokens": ["Rajesh", "cycles", "every", "Sunday", "morning", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["We", "host", "kirtan", "every", "Thursday", "evening", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Pooja", "time", "is", "daily", "at", "sunrise", "."], "temporal_tags": [0, 0, 0, 9, 5, 6, 0]}
+{"tokens": ["He", "was", "in", "20s", "during", "weekly", "festivals", "."], "temporal_tags": [0, 0, 11, 12, 0, 9, 0, 0]}
+{"tokens": ["Every", "week", ",", "movie", "night", "at", "9pm", "."], "temporal_tags": [9, 10, 0, 0, 0, 5, 6, 0]}
+{"tokens": ["Indu", "teaches", "dance", "every", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Daily", "journaling", "morning", "."], "temporal_tags": [9, 0, 5, 0]}
+{"tokens": ["Mohan", "plays", "tabla", "every", "evening", "at", "7pm", "."], "temporal_tags": [0, 0, 0, 9, 5, 5, 6, 0]}
+{"tokens": ["She", "learned", "crafts", "when", "she", "was", "13", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 12, 0]}
+{"tokens": ["Book", "reading", "is", "weekly", "Sunday", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Geeta", "does", "rangoli", "every", "festival", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["At", "age", "22", ",", "career", "started", "with", "daily", "meetings", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 9, 0, 0]}
+{"tokens": ["Gardening", "every", "Saturday", "at", "dawn", "."], "temporal_tags": [0, 9, 10, 5, 6, 0]}
+{"tokens": ["Shalini", "cooks", "samosas", "weekly", "Friday", "evening", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Prayer", "at", "noon", "daily", "."], "temporal_tags": [0, 5, 6, 9, 0]}
+{"tokens": ["Venu", "meditates", "every", "morning", "at", "5am", "."], "temporal_tags": [0, 0, 9, 5, 5, 6, 0]}
+{"tokens": ["Every", "Monday", "yoga", "at", "6pm", "."], "temporal_tags": [9, 10, 0, 5, 6, 0]}
+{"tokens": ["Kavya", "learns", "Bharatanatyam", "daily", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["She", "was", "5", "when", "storytelling", "started", "weekly", "."], "temporal_tags": [0, 0, 11, 11, 0, 0, 9, 0]}
+{"tokens": ["Morning", "tea", "daily", "with", "family", "."], "temporal_tags": [5, 0, 9, 0, 0, 0]}
+{"tokens": ["Suresh", "teaches", "Vedas", "every", "Sunday", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["We", "do", "satsang", "weekly", "at", "noon", "."], "temporal_tags": [0, 0, 0, 9, 5, 6, 0]}
+{"tokens": ["Rani", "embroiders", "every", "afternoon", "."], "temporal_tags": [0, 0, 9, 5, 0]}
+{"tokens": ["Daily", "walks", "at", "sunset", "."], "temporal_tags": [9, 0, 5, 6, 0]}
+{"tokens": ["Nitin", "plays", "badminton", "every", "Wednesday", "evening", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Choir", "practice", "every", "Tuesday", "at", "7pm", "."], "temporal_tags": [0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["Padma", "makes", "thali", "every", "Saturday", "noon", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Every", "evening", "bhajan", "singing", "."], "temporal_tags": [9, 5, 0, 0, 0]}
+{"tokens": ["Yoga", "session", "daily", "morning", "."], "temporal_tags": [0, 0, 9, 5, 0]}
+{"tokens": ["Dev", "reads", "newspapers", "every", "morning", "at", "7am", "."], "temporal_tags": [0, 0, 0, 9, 5, 5, 6, 0]}
+{"tokens": ["She", "began", "diary", "at", "age", "12", "daily", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 9, 0]}
+{"tokens": ["Lila", "prays", "every", "dawn", "."], "temporal_tags": [0, 0, 9, 5, 0]}
+{"tokens": ["Morning", "aarti", "daily", "."], "temporal_tags": [5, 0, 9, 0]}
+{"tokens": ["In", "childhood", ",", "kites", "flew", "daily", "."], "temporal_tags": [11, 12, 0, 0, 0, 9, 0]}
+{"tokens": ["Every", "Thursday", "potluck", "at", "6pm", "."], "temporal_tags": [9, 10, 0, 5, 6, 0]}
+{"tokens": ["Sarita", "tuitions", "every", "evening", "."], "temporal_tags": [0, 0, 9, 5, 0]}
+{"tokens": ["He", "was", "25", "when", "gym", "routine", "started", "daily", "."], "temporal_tags": [0, 0, 11, 11, 0, 0, 0, 9, 0]}
+{"tokens": ["Book", "club", "weekly", "Tuesday", "noon", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Usha", "grows", "herbs", "every", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Singing", "classes", "every", "Saturday", "afternoon", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Daily", "sunrise", "salutations", "."], "temporal_tags": [9, 5, 0, 0]}
+{"tokens": ["Ramesh", "hosts", "Ramayana", "path", "every", "Sunday", "morning", "."], "temporal_tags": [0, 0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["She", "painted", "in", "her", "teens", "daily", "."], "temporal_tags": [0, 0, 11, 12, 12, 9, 0]}
+{"tokens": ["Every", "week", "hike", "at", "dawn", "."], "temporal_tags": [9, 10, 0, 5, 6, 0]}
+{"tokens": ["Nisha", "does", "zumba", "every", "Wednesday", "evening", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Morning", "meditation", "daily", "at", "5:30am", "."], "temporal_tags": [5, 0, 9, 5, 6, 0]}
+{"tokens": ["Pilates", "class", "every", "Friday", "morning", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Kamal", "recites", "slokas", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["We", "light", "lamp", "daily", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Seema", "knits", "sweaters", "weekly", "Sundays", "."], "temporal_tags": [0, 0, 0, 9, 10, 0]}
+{"tokens": ["Tai", "chi", "morning", "daily", "."], "temporal_tags": [0, 0, 5, 9, 0]}
+{"tokens": ["Baldev", "milks", "cows", "every", "dawn", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["She", "studied", "abroad", "at", "age", "18", "daily", "classes", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 9, 0, 0]}
+{"tokens": ["Every", "Tuesday", "bridge", "game", "at", "4pm", "."], "temporal_tags": [9, 10, 0, 0, 5, 6, 0]}
+{"tokens": ["Radha", "waters", "plants", "every", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Daily", "affirmations", "at", "noon", "."], "temporal_tags": [9, 0, 5, 6, 0]}
+{"tokens": ["Prakash", "does", "accounts", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Knitting", "circle", "weekly", "Thursday", "afternoon", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Morning", "run", "every", "day", "."], "temporal_tags": [5, 0, 9, 10, 0]}
+{"tokens": ["Leela", "sings", "lullabies", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Chess", "matches", "every", "Saturday", "at", "10am", "."], "temporal_tags": [0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["Hari", "chants", "mantras", "daily", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["She", "took", "painting", "when", "in", "teens", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 0]}
+{"tokens": ["Mala", "binds", "books", "every", "Friday", "afternoon", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Every", "morning", "gratitude", "journal", "."], "temporal_tags": [9, 5, 0, 0, 0]}
+{"tokens": ["Sanjay", "jogs", "daily", "at", "6am", "."], "temporal_tags": [0, 0, 9, 5, 6, 0]}
+{"tokens": ["Prayer", "meets", "every", "Wednesday", "evening", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Ritu", "paints", "mandalas", "every", "full", "moon", "night", "."], "temporal_tags": [0, 0, 0, 9, 10, 10, 5, 0]}
+{"tokens": ["Gardening", "club", "weekly", "Saturday", "morning", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Daily", "devotion", "morning", "."], "temporal_tags": [9, 0, 5, 0]}
+{"tokens": ["Vimal", "teaches", "kids", "every", "Sunday", "at", "noon", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["She", "was", "young", "during", "weekly", "trips", "."], "temporal_tags": [0, 0, 11, 0, 9, 0, 0]}
+{"tokens": ["Every", "evening", "walk", "at", "7pm", "."], "temporal_tags": [9, 5, 0, 5, 6, 0]}
+{"tokens": ["Kusum", "makes", "pickles", "every", "month", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Morning", "classes", "daily", "for", "kids", "."], "temporal_tags": [5, 0, 9, 0, 0, 0]}
+{"tokens": ["We", "do", " Rangoli", "every", "festival", "dawn", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Naveen", "cycles", "to", "work", "every", "morning", "."], "temporal_tags": [0, 0, 0, 0, 9, 5, 0]}
+{"tokens": ["Daily", "yoga", "at", "sunrise", "."], "temporal_tags": [9, 0, 5, 6, 0]}
+{"tokens": ["Pankaj", "reads", "epics", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Every", "Friday", "prayer", "at", "5pm", "."], "temporal_tags": [9, 10, 0, 5, 6, 0]}
+{"tokens": ["Suma", "bakes", "naan", "every", "Saturday", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Club", "dance", "every", "weekend", "night", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Morning", "pooja", "daily", "."], "temporal_tags": [5, 0, 9, 0]}
+{"tokens": ["Ashok", "plays", "harmonium", "every", "Tuesday", "evening", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["She", "joined", "choir", "at", "age", "14", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 0]}
+{"tokens": ["Rekha", "does", "pranayama", "every", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Daily", "meditation", "evening", "at", "8pm", "."], "temporal_tags": [9, 0, 5, 5, 6, 0]}
+{"tokens": ["Every", "Sunday", "brunch", "at", "noon", "."], "temporal_tags": [9, 10, 0, 5, 6, 0]}
+{"tokens": ["Tulsi", "chants", "every", "dawn", "."], "temporal_tags": [0, 0, 9, 5, 0]}
+{"tokens": ["We", "practice", "sanskrit", "weekly", "Fridays", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Morning", "walks", "with", "dog", "daily", "."], "temporal_tags": [5, 0, 0, 0, 9, 0]}
+{"tokens": ["Jay", "learns", "coding", "every", "evening", "at", "9pm", "."], "temporal_tags": [0, 0, 0, 9, 5, 5, 6, 0]}
+{"tokens": ["Prayer", "wheel", "spins", "daily", "noon", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Every", "Wednesday", "quilting", "bee", "afternoon", "."], "temporal_tags": [9, 10, 0, 0, 5, 0]}
+{"tokens": ["Divya", "reads", "puranas", "every", "morning", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["She", "was", "10", "when", "ballet", "began", "weekly", "."], "temporal_tags": [0, 0, 11, 11, 0, 0, 9, 0]}
+{"tokens": ["Daily", "stretch", "morning", "."], "temporal_tags": [9, 0, 5, 0]}
+{"tokens": ["Krish", "plays", "flute", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Singing", "every", "Saturday", "at", "11am", "."], "temporal_tags": [0, 9, 10, 5, 6, 0]}
+{"tokens": ["Manju", "cooks", "festive", "meals", "weekly", "Sundays", "."], "temporal_tags": [0, 0, 0, 0, 9, 10, 0]}
+{"tokens": ["Morning", "bhakti", "daily", "."], "temporal_tags": [5, 0, 9, 0]}
+{"tokens": ["Riddhi", "does", "art", "every", "Friday", "noon", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Every", "evening", "arati", "at", "lamp", "light", "."], "temporal_tags": [9, 5, 0, 5, 0, 0, 0]}
+{"tokens": ["Vijay", "meditates", "daily", "at", "dusk", "."], "temporal_tags": [0, 0, 9, 5, 6, 0]}
+{"tokens": ["She", "learned", "weaving", "when", "she", "was", "14", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 12, 0]}
+{"tokens": ["Soni", "dances", "garba", "every", "Navratri", "evening", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Gardens", "tended", "every", "morning", "."], "temporal_tags": [0, 0, 9, 5, 0]}
+{"tokens": ["Daily", "surya", "namaskar", "dawn", "."], "temporal_tags": [9, 0, 0, 5, 0]}
+{"tokens": ["Anand", "recites", "Hanuman", "chalisa", "every", "Tuesday", "morning", "."], "temporal_tags": [0, 0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["Morning", "tea", "ritual", "daily", "."], "temporal_tags": [5, 0, 0, 9, 0]}
+{"tokens": ["Kiran", "was", "22", "at", "first", "job", "daily", "shifts", "."], "temporal_tags": [0, 0, 11, 11, 0, 0, 9, 0, 0]}
+{"tokens": ["Every", "week", "family", "game", "night", "8pm", "."], "temporal_tags": [9, 10, 0, 0, 0, 5, 0]}
+{"tokens": ["Lata", "spins", "charkha", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["We", "chant", "every", "full", "moon", "night", "."], "temporal_tags": [0, 0, 9, 10, 10, 5, 0]}
+{"tokens": ["Daily", "reflection", "morning", "."], "temporal_tags": [9, 0, 5, 0]}
+{"tokens": ["Mahesh", "teaches", "yoga", "every", "Saturday", "at", "6am", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 6, 0]}
+{"tokens": ["She", "in", "her", "40s", "now", "runs", "daily", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 9, 0]}
+{"tokens": ["Pottery", "class", "weekly", "Wednesdays", "afternoon", "."], "temporal_tags": [0, 0, 9, 10, 5, 0]}
+{"tokens": ["Every", "morning", "mantra", "japa", "."], "temporal_tags": [9, 5, 0, 0, 0]}
+{"tokens": ["Pushpa", "makes", "diyas", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}
+{"tokens": ["Singing", "practice", "daily", "evening", "."], "temporal_tags": [0, 0, 9, 5, 0]}

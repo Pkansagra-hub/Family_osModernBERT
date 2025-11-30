@@ -1216,3 +1216,92 @@
 {"text": "Sarah cuddled her grandchild Bunny softly.", "entity1": "Bunny", "entity2": "Sarah", "relation": 6}
 {"text": "Chachi bought bangles from Mumbai bazaar.", "entity1": "Chachi", "entity2": "bazaar", "relation": 0}
 {"text": "Masi is parent of playful John daily.", "entity1": "Masi", "entity2": "John", "relation": 1}
+{"text": "Max the dog sleeps at the foot of Mom's bed every night.", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Whiskers purrs loudly whenever Dad pets her.", "entity1": "Whiskers", "entity2": "Dad", "relation": 10}
+{"text": "Buddy follows Emma around the backyard all day.", "entity1": "Buddy", "entity2": "Emma", "relation": 10}
+{"text": "Panda the cat belongs to Sarah and loves napping on her lap.", "entity1": "Panda", "entity2": "Sarah", "relation": 10}
+{"text": "Grandma knits sweaters for her grandson John.", "entity1": "Grandma", "entity2": "John", "relation": 5}
+{"text": "Grandpa takes Emma fishing on weekends.", "entity1": "Grandpa", "entity2": "Emma", "relation": 5}
+{"text": "Nana sings lullabies to baby Priya every night.", "entity1": "Nana", "entity2": "Priya", "relation": 5}
+{"text": "Grandma's house is full of toys for little Raj.", "entity1": "Grandma", "entity2": "Raj", "relation": 5}
+{"text": "Sarah and her cousin Emma went to the park together.", "entity1": "Sarah", "entity2": "Emma", "relation": 9}
+{"text": "John plays video games with his cousin Raj.", "entity1": "John", "entity2": "Raj", "relation": 9}
+{"text": "Priya and her cousin Panda share secrets during family gatherings.", "entity1": "Priya", "entity2": "Panda", "relation": 9}
+{"text": "Emma and Sarah are cousins who look just alike.", "entity1": "Emma", "entity2": "Sarah", "relation": 9}
+{"text": "Emma and her brother John fight over the remote control.", "entity1": "Emma", "entity2": "John", "relation": 4}
+{"text": "Sarah shares her toys with sister Priya.", "entity1": "Sarah", "entity2": "Priya", "relation": 4}
+{"text": "Didi braids bhai's hair before school.", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Raj and his sibling Panda love ice cream together.", "entity1": "Raj", "entity2": "Panda", "relation": 4}
+{"text": "Buddy chases squirrels in the yard with Dad watching.", "entity1": "Buddy", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers is the favorite pet of Grandma.", "entity1": "Whiskers", "entity2": "Grandma", "relation": 10}
+{"text": "Max barks at strangers protecting Mom's home.", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Panda curls up on Sarah's homework desk.", "entity1": "Panda", "entity2": "Sarah", "relation": 10}
+{"text": "Nani spoils her granddaughter Emma with candies.", "entity1": "Nani", "entity2": "Emma", "relation": 5}
+{"text": "Grandpa teaches John how to ride a bike.", "entity1": "Grandpa", "entity2": "John", "relation": 5}
+{"text": "Nana bakes pies for grandchild Priya's birthday.", "entity1": "Nana", "entity2": "Priya", "relation": 5}
+{"text": "Grandma reads bedtime stories to Raj.", "entity1": "Grandma", "entity2": "Raj", "relation": 5}
+{"text": "Raj visits his cousin Sarah every summer.", "entity1": "Raj", "entity2": "Sarah", "relation": 9}
+{"text": "Panda and cousin John build sandcastles at the beach.", "entity1": "Panda", "entity2": "John", "relation": 9}
+{"text": "Emma shares clothes with her cousin Priya.", "entity1": "Emma", "entity2": "Priya", "relation": 9}
+{"text": "Bhai protects didi from bullies at school.", "entity1": "bhai", "entity2": "didi", "relation": 4}
+{"text": "John and sister Emma go to soccer practice.", "entity1": "John", "entity2": "Emma", "relation": 4}
+{"text": "Priya fights with brother Raj over games.", "entity1": "Priya", "entity2": "Raj", "relation": 4}
+{"text": "Sarah and her sibling Panda attend the same school.", "entity1": "Sarah", "entity2": "Panda", "relation": 4}
+{"text": "Max fetches the ball for Dad during playtime.", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers scratches the furniture owned by Mom.", "entity1": "Whiskers", "entity2": "Mom", "relation": 10}
+{"text": "Buddy is walked daily by Grandpa.", "entity1": "Buddy", "entity2": "Grandpa", "relation": 10}
+{"text": "Panda meows for treats from Emma.", "entity1": "Panda", "entity2": "Emma", "relation": 10}
+{"text": "Grandpa shows old photos to his grandkids Sarah and John.", "entity1": "Grandpa", "entity2": "Sarah", "relation": 5}
+{"text": "Nani takes Priya shopping for new clothes.", "entity1": "Nani", "entity2": "Priya", "relation": 5}
+{"text": "Nana plays chess with grandson Raj.", "entity1": "Nana", "entity2": "Raj", "relation": 5}
+{"text": "John and his cousin Emma attend the same wedding.", "entity1": "John", "entity2": "Emma", "relation": 9}
+{"text": "Sarah laughs with cousin Priya at family jokes.", "entity1": "Sarah", "entity2": "Priya", "relation": 9}
+{"text": "Raj races bikes with cousin Panda.", "entity1": "Raj", "entity2": "Panda", "relation": 9}
+{"text": "Didi and bhai cook dinner together on weekends.", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Emma teases her brother John about his haircut.", "entity1": "Emma", "entity2": "John", "relation": 4}
+{"text": "Panda helps sister Sarah with puzzles.", "entity1": "Panda", "entity2": "Sarah", "relation": 4}
+{"text": "Buddy guards the house for the whole family including Mom.", "entity1": "Buddy", "entity2": "Mom", "relation": 10}
+{"text": "Max is groomed by Dad every Saturday.", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers hides under Grandma's chair during storms.", "entity1": "Whiskers", "entity2": "Grandma", "relation": 10}
+{"text": "Panda waits at the door for Sarah's return.", "entity1": "Panda", "entity2": "Sarah", "relation": 10}
+{"text": "Grandpa fixes toys for his granddaughter Emma.", "entity1": "Grandpa", "entity2": "Emma", "relation": 5}
+{"text": "Nani tells folktales to grandkid John.", "entity1": "Nani", "entity2": "John", "relation": 5}
+{"text": "Grandma plants flowers with Priya in the garden.", "entity1": "Grandma", "entity2": "Priya", "relation": 5}
+{"text": "Nana watches Raj's soccer games proudly.", "entity1": "Nana", "entity2": "Raj", "relation": 5}
+{"text": "Priya and cousin Sarah exchange birthday gifts.", "entity1": "Priya", "entity2": "Sarah", "relation": 9}
+{"text": "Emma plays dolls with cousin John at reunions.", "entity1": "Emma", "entity2": "John", "relation": 9}
+{"text": "Panda and cousin Raj climb trees together.", "entity1": "Panda", "entity2": "Raj", "relation": 9}
+{"text": "Bhai carries didi's school bag home.", "entity1": "bhai", "entity2": "Didi", "relation": 4}
+{"text": "Raj and sister Priya share a bedroom.", "entity1": "Raj", "entity2": "Priya", "relation": 4}
+{"text": "John whispers secrets to sibling Emma.", "entity1": "John", "entity2": "Emma", "relation": 4}
+{"text": "Max rolls over for belly rubs from Dad.", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers climbs curtains in Mom's living room.", "entity1": "Whiskers", "entity2": "Mom", "relation": 10}
+{"text": "Buddy swims in the pool with Grandpa.", "entity1": "Buddy", "entity2": "Grandpa", "relation": 10}
+{"text": "Panda scratches posts bought by Sarah.", "entity1": "Panda", "entity2": "Sarah", "relation": 10}
+{"text": "Grandpa swings his grandson Panda high.", "entity1": "Grandpa", "entity2": "Panda", "relation": 5}
+{"text": "Nani feeds sweets to granddaughter Sarah.", "entity1": "Nani", "entity2": "Sarah", "relation": 5}
+{"text": "Grandma dances with grandkid John at parties.", "entity1": "Grandma", "entity2": "John", "relation": 5}
+{"text": "Nana helps Raj with his science project.", "entity1": "Nana", "entity2": "Raj", "relation": 5}
+{"text": "Sarah and cousin Emma bake cookies together.", "entity1": "Sarah", "entity2": "Emma", "relation": 9}
+{"text": "John draws pictures for cousin Priya.", "entity1": "John", "entity2": "Priya", "relation": 9}
+{"text": "Raj and cousin Panda go hiking.", "entity1": "Raj", "entity2": "Panda", "relation": 9}
+{"text": "Didi shares snacks with bhai during recess.", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Priya and brother John celebrate holidays.", "entity1": "Priya", "entity2": "John", "relation": 4}
+{"text": "Sarah races her sibling Raj to the bus.", "entity1": "Sarah", "entity2": "Raj", "relation": 4}
+{"text": "Buddy begs for treats from Mom's table.", "entity1": "Buddy", "entity2": "Mom", "relation": 10}
+{"text": "Max guards Dad's car in the driveway.", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers naps on Grandma's favorite quilt.", "entity1": "Whiskers", "entity2": "Grandma", "relation": 10}
+{"text": "Panda greets Emma with headbutts daily.", "entity1": "Panda", "entity2": "Emma", "relation": 10}
+{"text": "Grandpa carves pumpkins with his grandkids Emma and Sarah.", "entity1": "Grandpa", "entity2": "Emma", "relation": 5}
+{"text": "Nani knits scarves for Priya and John.", "entity1": "Nani", "entity2": "Priya", "relation": 5}
+{"text": "Grandma attends Raj's school play.", "entity1": "Grandma", "entity2": "Raj", "relation": 5}
+{"text": "Nana pushes Panda on the backyard swing.", "entity1": "Nana", "entity2": "Panda", "relation": 5}
+{"text": "Emma and cousin Sarah attend dance class.", "entity1": "Emma", "entity2": "Sarah", "relation": 9}
+{"text": "Priya sends letters to cousin John.", "entity1": "Priya", "entity2": "John", "relation": 9}
+{"text": "Panda and cousin Raj collect stamps.", "entity1": "Panda", "entity2": "Raj", "relation": 9}
+{"text": "Bhai teaches didi how to ride a bike.", "entity1": "bhai", "entity2": "didi", "relation": 4}
+{"text": "Emma and sister Panda paint pictures.", "entity1": "Emma", "entity2": "Panda", "relation": 4}
+{"text": "John shares comics with sibling Sarah.", "entity1": "John", "entity2": "Sarah", "relation": 4}
+{"text": "Max plays fetch exclusively with Dad.", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers is fed by Mom every morning.", "entity1": "Whiskers", "entity2": "Mom", "relation": 10}
+{"text": "Buddy cuddles with Grandpa on the couch.", "entity1": "Buddy", "entity2": "Grandpa", "relation": 10}

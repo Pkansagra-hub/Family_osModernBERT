@@ -1040,3 +1040,155 @@
 {"tokens": ["Ganesh", "welcome", "September", "4", "morning"], "temporal_tags": [1, 0, 1, 2, 5]}
 {"tokens": ["Halloween", "ghost", "stories", "October", "30", "night"], "temporal_tags": [1, 0, 0, 1, 2, 5]}
 {"tokens": ["Christmas", "nutcracker", "ballet", "December", "21", "evening"], "temporal_tags": [1, 0, 0, 1, 2, 5]}
+{"tokens": ["I", "had", "a", "dentist", "appointment", "yesterday", "for", "30", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["Today", "we", "have", "a", "check-up", "at", "the", "clinic", "all", "morning", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 0, 0, 7, 8, 0]}
+{"tokens": ["When", "she", "was", "5", "she", "got", "her", "first", "vaccination", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Priya", "went", "to", "the", "doctor", "yesterday", "after", "school", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 0, 0, 0]}
+{"tokens": ["The", "check-up", "lasted", "for", "2", "hours", "today", "."], "temporal_tags": [0, 0, 0, 7, 8, 8, 3, 0]}
+{"tokens": ["At", "age", "10", "I", "had", "my", "annual", "eye", "exam", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Ravi", "skipped", "lunch", "today", "for", "his", "doctor", "visit", "."], "temporal_tags": [0, 0, 0, 3, 7, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", "morning", "the", "family", "had", "flu", "shots", "for", "15", "minutes", "."], "temporal_tags": [3, 5, 0, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["Mom", "took", "me", "to", "the", "pediatrician", "today", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 3, 0]}
+{"tokens": ["The", "appointment", "was", "yesterday", "and", "lasted", "all", "day", "."], "temporal_tags": [0, 0, 0, 3, 0, 0, 7, 8, 0]}
+{"tokens": ["When", "Aarav", "was", "3", "he", "had", "a", "full", "check-up", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "waited", "for", "45", "minutes", "at", "the", "clinic", "yesterday", "."], "temporal_tags": [0, 0, 7, 8, 8, 0, 0, 0, 3, 0]}
+{"tokens": ["Today", "is", "my", "check-up", "day", "for", "1", "hour", "."], "temporal_tags": [3, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["Lakshmi", "had", "her", "blood", "test", "when", "she", "was", "40", "."], "temporal_tags": [0, 0, 0, 0, 0, 11, 12, 12, 12, 0]}
+{"tokens": ["The", "doctor", "saw", "us", "yesterday", "morning", "for", "20", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 3, 5, 7, 8, 8, 0]}
+{"tokens": ["In", "his", "30s", "Dad", "got", "regular", "check-ups", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Tomorrow", "I", "have", "a", "dentist", "appointment", "all", "afternoon", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 0]}
+{"tokens": ["She", "was", "in", "her", "teens", "during", "the", "last", "check-up", "."], "temporal_tags": [0, 0, 0, 0, 11, 0, 0, 0, 0, 0]}
+{"tokens": ["Anita", "and", "the", "kids", "went", "today", "for", "vaccines", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 7, 0, 0]}
+{"tokens": ["When", "I", "was", "7", "Mom", "took", "me", "to", "the", "doctor", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "visit", "today", "lasted", "for", "10", "minutes", "."], "temporal_tags": [0, 0, 3, 0, 7, 8, 8, 0]}
+{"tokens": ["Raj", "had", "a", "check-up", "at", "age", "15", "last", "year", "."], "temporal_tags": [0, 0, 0, 0, 0, 11, 12, 0, 0, 0]}
+{"tokens": ["We", "have", "an", "appointment", "tomorrow", "morning", "for", "30", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 3, 5, 7, 8, 8, 0]}
+{"tokens": ["Diya", "got", "her", "shots", "yesterday", "when", "she", "was", "2", "."], "temporal_tags": [0, 0, 0, 0, 3, 11, 12, 12, 12, 0]}
+{"tokens": ["All", "day", "we", "were", "at", "the", "clinic", "today", "."], "temporal_tags": [7, 8, 0, 0, 0, 0, 0, 3, 0]}
+{"tokens": ["In", "my", "40s", "I", "started", "annual", "health", "checks", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "pediatrician", "visit", "was", "for", "2", "hours", "yesterday", "."], "temporal_tags": [0, 0, 0, 0, 7, 8, 8, 3, 0]}
+{"tokens": ["Today", "Priya", "had", "a", "quick", "check-up", "for", "5", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["When", "he", "was", "25", "he", "had", "eye", "surgery", "follow-up", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", "the", "family", "doctor", "saw", "us", "for", "1", "hour", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["Mom's", "appointment", "is", "tomorrow", "all", "morning", "."], "temporal_tags": [0, 0, 0, 3, 7, 8, 0]}
+{"tokens": ["At", "age", "8", "Aarav", "had", "his", "first", "dental", "cleaning", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "check-up", "when", "she", "was", "12", "took", "all", "day", "."], "temporal_tags": [0, 0, 11, 12, 12, 12, 0, 7, 8, 0]}
+{"tokens": ["Ravi's", "blood", "pressure", "check", "was", "yesterday", "for", "20", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["In", "her", "50s", "Lakshmi", "gets", "yearly", "mammograms", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["When", "I", "was", "in", "my", "20s", "I", "ignored", "check-ups", "."], "temporal_tags": [11, 12, 12, 12, 12, 12, 0, 0, 0, 0]}
+{"tokens": ["Priya", "had", "dental", "work", "yesterday", "all", "afternoon", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 0]}
+{"tokens": ["We", "visited", "the", "ophthalmologist", "tomorrow", "for", "15", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["Yesterday", "Anita", "had", "a", "full", "physical", "for", "3", "hours", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["At", "age", "6", "the", "boy", "got", "vaccinated", "today", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 3, 0]}
+{"tokens": ["The", "check-up", "lasted", "all", "day", "yesterday", "."], "temporal_tags": [0, 0, 0, 7, 8, 3, 0]}
+{"tokens": ["When", "Mom", "was", "35", "she", "had", "her", "first", "ultrasound", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Raj", "went", "for", "blood", "tests", "today", "morning", "."], "temporal_tags": [0, 0, 7, 0, 0, 3, 5, 0]}
+{"tokens": ["Tomorrow's", "doctor", "visit", "is", "for", "45", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["In", "my", "teens", "I", "had", "orthodontic", "check-ups", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "family", "had", "check-ups", "yesterday", "for", "1", "hour", "each", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 8, 0, 0]}
+{"tokens": ["We", "waited", "today", "for", "2", "hours", "at", "the", "GP", "."], "temporal_tags": [0, 0, 3, 7, 8, 8, 0, 0, 0, 0]}
+{"tokens": ["Priya's", "annual", "check-up", "at", "age", "45", "is", "tomorrow", "."], "temporal_tags": [0, 0, 0, 0, 11, 12, 0, 3, 0]}
+{"tokens": ["When", "he", "was", "18", "Dad", "joined", "the", "army", "medical", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Today's", "eye", "exam", "lasted", "for", "20", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["All", "morning", "we", "were", "at", "the", "dentist", "yesterday", "."], "temporal_tags": [7, 8, 0, 0, 0, 0, 0, 3, 0]}
+{"tokens": ["When", "Aarav", "was", "9", "he", "broke", "his", "arm", "check-up", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", "Mom", "waited", "all", "day", "for", "results", "."], "temporal_tags": [3, 0, 0, 7, 8, 7, 0, 0]}
+{"tokens": ["At", "age", "25", "Ravi", "had", "laser", "eye", "surgery", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "check-up", "for", "5", "minutes", "was", "today", "."], "temporal_tags": [0, 0, 7, 8, 8, 0, 3, 0]}
+{"tokens": ["Priya", "went", "to", "Dr.", "Sharma", "yesterday", "morning", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 5, 0]}
+{"tokens": ["Tomorrow", "we", "do", "blood", "work", "for", "30", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["In", "my", "30s", "I", "got", "colonoscopy", "prep", "day", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 3, 0]}
+{"tokens": ["The", "kids", "had", "check-ups", "all", "afternoon", "today", "."], "temporal_tags": [0, 0, 0, 0, 7, 8, 3, 0]}
+{"tokens": ["When", "she", "was", "28", "Diya", "had", "fertility", "tests", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Today", "is", "the", "day", "for", "annual", "physical", "."], "temporal_tags": [3, 0, 0, 0, 7, 0, 0, 0]}
+{"tokens": ["Ravi", "was", "in", "his", "40s", "during", "last", "mammogram", "wait", "."], "temporal_tags": [0, 0, 0, 0, 11, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "have", "an", "MRI", "tomorrow", "for", "1", "hour", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["At", "age", "55", "Mom", "started", "osteoporosis", "scans", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "doctor", "saw", "me", "today", "for", "10", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["When", "I", "was", "16", "I", "had", "sports", "physical", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Priya", "and", "Amma", "went", "yesterday", "all", "morning", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 0]}
+{"tokens": ["Tomorrow", "the", "check-up", "is", "for", "2", "hours", "."], "temporal_tags": [3, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["In", "her", "20s", "Lakshmi", "had", "pap", "smears", "regularly", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "vaccination", "drive", "was", "yesterday", "for", "30", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["Dad", "at", "age", "60", "has", "prostate", "checks", "now", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["When", "Aarav", "was", "11", "he", "got", "glasses", "fitted", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", "we", "had", "a", "group", "check-up", "all", "day", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 0]}
+{"tokens": ["In", "my", "50s", "health", "checks", "became", "monthly", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Raj", "went", "today", "for", "blood", "sugar", "test", "for", "5", "minutes", "."], "temporal_tags": [0, 0, 3, 7, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["The", "clinic", "was", "busy", "yesterday", "morning", "for", "hours", "."], "temporal_tags": [0, 0, 0, 0, 3, 5, 7, 8, 0]}
+{"tokens": ["Tomorrow", "Priya", "has", "cardio", "check", "for", "45", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["All", "afternoon", "today", "we", "did", "lab", "tests", "."], "temporal_tags": [7, 8, 3, 0, 0, 0, 0, 0]}
+{"tokens": ["Diya", "at", "age", "7", "had", "ear", "infection", "check", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Yesterday's", "appointment", "lasted", "for", "1", "hour", "30", "minutes", "."], "temporal_tags": [3, 0, 0, 7, 8, 8, 8, 8, 0]}
+{"tokens": ["We", "have", "pediatric", "visit", "tomorrow", "all", "day", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 0]}
+{"tokens": ["In", "his", "teens", "Ravi", "had", "acne", "treatments", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Lakshmi", "went", "for", "mammogram", "when", "she", "was", "50", "."], "temporal_tags": [0, 0, 7, 0, 11, 12, 12, 12, 0]}
+{"tokens": ["Dad", "waited", "yesterday", "for", "2", "hours", "in", "line", "."], "temporal_tags": [0, 0, 3, 7, 8, 8, 0, 0, 0]}
+{"tokens": ["Tomorrow", "is", "flu", "season", "vaccine", "day", "for", "us", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 0, 0]}
+{"tokens": ["When", "Amma", "was", "65", "she", "got", "hip", "replacement", "check", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "family", "doctor", "visit", "lasted", "all", "morning", "yesterday", "."], "temporal_tags": [0, 0, 0, 0, 0, 7, 8, 3, 0]}
+{"tokens": ["At", "age", "12", "Priya", "had", "braces", "fitted", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "did", "X-rays", "today", "for", "20", "minutes", "."], "temporal_tags": [0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["In", "my", "20s", "annual", "check-ups", "were", "rare", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["When", "he", "was", "8", "Aarav", "had", "asthma", "tests", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Priya's", "skin", "check", "yesterday", "was", "for", "15", "minutes", "."], "temporal_tags": [0, 0, 0, 3, 0, 7, 8, 8, 0]}
+{"tokens": ["Tomorrow", "all", "day", "clinic", "for", "family", "health", "."], "temporal_tags": [3, 7, 8, 0, 7, 0, 0, 0]}
+{"tokens": ["In", "her", "50s", "Lakshmi", "monitors", "diabetes", "daily", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "had", "check-up", "yesterday", "for", "30", "minutes", "each", "."], "temporal_tags": [0, 0, 0, 3, 7, 8, 8, 0, 0]}
+{"tokens": ["Today's", "vaccination", "session", "was", "all", "afternoon", "."], "temporal_tags": [3, 0, 0, 0, 7, 8, 0]}
+{"tokens": ["When", "I", "was", "14", "sports", "physical", "was", "required", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "doctor", "saw", "the", "kids", "today", "for", "5", "minutes", "each", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 7, 8, 8, 0, 0]}
+{"tokens": ["At", "age", "70", "Grandpa", "has", "yearly", "cardio", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "booked", "tomorrow", "morning", "for", "blood", "work", "."], "temporal_tags": [0, 0, 3, 5, 7, 0, 0, 0]}
+{"tokens": ["All", "day", "yesterday", "at", "the", "health", "camp", "."], "temporal_tags": [7, 8, 3, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "dental", "cleaning", "tomorrow", "is", "for", "30", "minutes", "."], "temporal_tags": [0, 0, 0, 3, 0, 7, 8, 8, 0]}
+{"tokens": ["In", "her", "30s", "Diya", "had", "PCOS", "management", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Tomorrow", "we", "go", "for", "vaccines", "all", "morning", "."], "temporal_tags": [3, 0, 0, 7, 0, 7, 8, 0]}
+{"tokens": ["Priya's", "first", "check-up", "at", "age", "5", "was", "fun", "."], "temporal_tags": [0, 0, 0, 0, 11, 12, 0, 0, 0]}
+{"tokens": ["When", "I", "was", "25", "I", "skipped", "routine", "checks", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Today", "Ravi", "had", "eye", "pressure", "test", "for", "10", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["The", "family", "health", "day", "tomorrow", "is", "all", "day", "."], "temporal_tags": [0, 0, 0, 0, 3, 0, 7, 8, 0]}
+{"tokens": ["In", "my", "40s", "cholesterol", "checks", "started", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", "morning", "appointment", "for", "45", "minutes", "."], "temporal_tags": [3, 5, 0, 7, 8, 8, 0]}
+{"tokens": ["Dad", "at", "age", "48", "had", "stress", "test", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 0, 0]}
+{"tokens": ["We", "have", "dermatologist", "today", "for", "20", "minutes", "."], "temporal_tags": [0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["When", "Aarav", "was", "20", "he", "had", "COVID", "test", "quick", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Priya", "went", "yesterday", "all", "afternoon", "to", "clinic", "."], "temporal_tags": [0, 0, 3, 7, 8, 0, 0, 0]}
+{"tokens": ["At", "age", "30", "Raj", "began", "diabetes", "screening", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Tomorrow", "morning", "we", "do", "routine", "blood", "for", "1", "hour", "."], "temporal_tags": [3, 5, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["In", "his", "60s", "Grandpa", "has", "cataract", "checks", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", "Diya", "had", "her", "annual", "gyno", "visit", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Mom", "at", "age", "55", "does", "bone", "density", "scan", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "appointment", "tomorrow", "lasts", "all", "morning", "."], "temporal_tags": [0, 0, 3, 0, 7, 8, 0]}
+{"tokens": ["When", "I", "was", "in", "my", "50s", "retirement", "health", "plan", "started", "."], "temporal_tags": [11, 12, 12, 12, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["All", "day", "tomorrow", "free", "health", "camp", "."], "temporal_tags": [7, 8, 3, 0, 0, 0, 0]}
+{"tokens": ["The", "kids", "check-up", "when", "they", "were", "4", "was", "fun", "."], "temporal_tags": [0, 0, 0, 11, 12, 12, 12, 0, 0, 0]}
+{"tokens": ["Today", "we", "had", "dental", "for", "30", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["At", "age", "18", "Aarav", "had", "pre-college", "physical", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "go", "tomorrow", "for", "eye", "exams", "all", "afternoon", "."], "temporal_tags": [0, 0, 3, 7, 0, 0, 7, 8, 0]}
+{"tokens": ["The", "check-up", "today", "morning", "was", "for", "45", "minutes", "."], "temporal_tags": [0, 0, 3, 5, 0, 7, 8, 8, 0]}
+{"tokens": ["Priya", "at", "age", "35", "tracks", "fertility", "window", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 0, 0]}
+{"tokens": ["Tomorrow", "is", "senior", "citizen", "health", "day", "all", "day", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 0]}
+{"tokens": ["When", "Mom", "was", "22", "she", "had", "first", "baby", "check", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["In", "my", "teens", "orthodontist", "visits", "were", "monthly", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "doctor", "yesterday", "for", "2", "hours", "discussed", "plan", "."], "temporal_tags": [0, 0, 3, 7, 8, 8, 0, 0, 0]}
+{"tokens": ["We", "have", "appointment", "today", "all", "morning", "free", "."], "temporal_tags": [0, 0, 0, 3, 7, 8, 0, 0]}
+{"tokens": ["Lakshmi", "when", "she", "was", "40", "had", "hysterectomy", "."], "temporal_tags": [0, 11, 12, 12, 12, 0, 0, 0]}
+{"tokens": ["Tomorrow", "morning", "BP", "check", "for", "10", "minutes", "."], "temporal_tags": [3, 5, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["At", "age", "75", "Amma", "has", "regular", "home", "nurse", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Priya", "had", "skin", "cancer", "screen", "today", "for", "15", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["When", "I", "was", "9", "dentist", "scared", "me", "during", "cleaning", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Tomorrow", "we", "do", "full", "panel", "blood", "for", "1", "hour", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["Ravi", "at", "age", "16", "had", "sports", "injury", "scan", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "clinic", "all", "day", "yesterday", "busy", "with", "patients", "."], "temporal_tags": [0, 0, 7, 8, 3, 0, 0, 0, 0]}
+{"tokens": ["In", "her", "20s", "Diya", "ignored", "pap", "smears", "till", "later", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "waited", "for", "45", "minutes", "today", "morning", "."], "temporal_tags": [0, 0, 7, 8, 8, 3, 5, 0]}
+{"tokens": ["At", "age", "80", "Grandpa", "still", "does", "annual", "check", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["When", "Aarav", "was", "30", "he", "had", "first", "kidney", "stone", "issue", "."], "temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["All", "morning", "tomorrow", "dental", "camp", "."], "temporal_tags": [7, 8, 3, 0, 0, 0]}
+{"tokens": ["We", "had", "eye", "check", "yesterday", "for", "10", "minutes", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 8, 0]}
+{"tokens": ["Dad", "at", "age", "62", "retired", "with", "full", "health", "screen", "."], "temporal_tags": [0, 11, 12, 12, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "vaccination", "when", "she", "was", "1", "was", "easy", "."], "temporal_tags": [0, 0, 11, 12, 12, 12, 0, 0, 0]}
+{"tokens": ["Tomorrow", "Ravi", "has", "prostate", "PSA", "test", "for", "30", "minutes", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 7, 8, 8, 0]}
+{"tokens": ["In", "his", "30s", "regular", "gym", "physicals", "helped", "."], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", "all", "afternoon", "waiting", "for", "doctor", "call", "."], "temporal_tags": [3, 7, 8, 0, 7, 0, 0, 0]}
