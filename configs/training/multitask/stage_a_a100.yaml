@@ -67,17 +67,17 @@ heads:
     num_labels: 13
     dropout: 0.1
 
-# Task sampling weights (with TEMPERATURE sampling)
+# Task LOSS weights (multiplies the loss from each head)
+# These should typically be 1.0 - balancing is done via temperature sampling
 # Dataset sizes: NLI ~942K, Embedding ~942K, Safety ~200K, NER ~107K, Sentiment ~67K, Emotions ~43K, Temporal ~10K
-# Higher weight = sample more often relative to dataset size
 task_weights:
-  ner_general: 3.0      # 107K samples (CoNLL 14K + WikiNeural 93K)
-  sentiment: 2.0        # 67K samples
-  emotions: 2.0         # 43K samples
-  safety_generic: 1.0   # 200K samples (increased from 50K)
-  nli: 0.3              # 942K samples - downweight large dataset
-  embedding: 0.2        # 942K samples - downweight large dataset
-  temporal: 15.0        # ~10K samples - heavy upweight
+  ner_general: 1.0
+  sentiment: 1.0
+  emotions: 1.0
+  safety_generic: 1.0
+  nli: 1.0
+  embedding: 1.0
+  temporal: 1.0
 
 # Data mixing strategy - FIXED: Use temperature sampling
 mixing:

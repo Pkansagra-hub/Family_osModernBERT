@@ -92,9 +92,31 @@ class BaseHead(ABC, nn.Module):
     ) -> torch.Tensor:
         """Compute loss based on problem type."""
         if self.problem_type == "single_label_classification":
-            return F.cross_entropy(logits.view(-1, self.num_labels), labels.view(-1))
+            loss = F.cross_entropy(logits.view(-1, self.num_labels), labels.view(-1))
+            # DEBUG: Check for abnormal loss
+            if loss.item() > 10:
+                print(f"[DEBUG] HIGH LOSS in {self.__class__.__name__}:")
+                print(f"  problem_type: {self.problem_type}")
+                print(f"  num_labels: {self.num_labels}")
+                print(f"  logits shape: {logits.shape}, dtype: {logits.dtype}")
+                print(f"  labels shape: {labels.shape}, dtype: {labels.dtype}")
+                print(f"  labels min/max: {labels.min().item()}/{labels.max().item()}")
+                print(f"  logits min/max: {logits.min().item():.4f}/{logits.max().item():.4f}")
+                print(f"  loss: {loss.item():.4f}")
+            return loss
         elif self.problem_type == "multi_label_classification":
-            return F.binary_cross_entropy_with_logits(logits, labels.float())
+            loss = F.binary_cross_entropy_with_logits(logits, labels.float())
+            # DEBUG: Check for abnormal loss
+            if loss.item() > 10:
+                print(f"[DEBUG] HIGH LOSS in {self.__class__.__name__}:")
+                print(f"  problem_type: {self.problem_type}")
+                print(f"  num_labels: {self.num_labels}")
+                print(f"  logits shape: {logits.shape}, dtype: {logits.dtype}")
+                print(f"  labels shape: {labels.shape}, dtype: {labels.dtype}")
+                print(f"  labels min/max: {labels.min().item()}/{labels.max().item()}")
+                print(f"  logits min/max: {logits.min().item():.4f}/{logits.max().item():.4f}")
+                print(f"  loss: {loss.item():.4f}")
+            return loss
         elif self.problem_type == "regression":
             return F.mse_loss(logits.squeeze(-1), labels)
         else:
@@ -299,6 +321,19 @@ class TokenClassificationHead(BaseHead):
                 labels.view(-1),
                 ignore_index=-100,
             )
+            # DEBUG: Check for abnormal loss
+            if loss.item() > 10:
+                print("[DEBUG] HIGH LOSS in TokenClassificationHead:")
+                print(f"  num_labels: {self.num_labels}")
+                print(f"  logits shape: {logits.shape}, dtype: {logits.dtype}")
+                print(f"  labels shape: {labels.shape}, dtype: {labels.dtype}")
+                valid_labels = labels[labels != -100]
+                print(
+                    f"  valid labels min/max: {valid_labels.min().item()}/{valid_labels.max().item()}"
+                )
+                print(f"  valid labels count: {valid_labels.numel()}")
+                print(f"  logits min/max: {logits.min().item():.4f}/{logits.max().item():.4f}")
+                print(f"  loss: {loss.item():.4f}")
             output["loss"] = loss
 
         return output

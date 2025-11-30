@@ -68,18 +68,17 @@ heads:
     num_labels: 13  # Temporal BIO tags from TEMPORAL_LABELS
     dropout: 0.1
 
-# Task sampling weights (proportional sampling)
-# NOTE: With WikiNeural added, NER is now 107K (was 14K)
-# Dataset sizes: NLI ~942K, Embedding ~942K, NER 107K, Sentiment 67K, Safety 50K, Emotions 43K, Temporal ~4K
-# With temperature sampling, weights adjust relative importance
+# Task LOSS weights (multiplies the loss from each head)
+# These should typically be 1.0 - actual balancing is done via sampling strategy
+# Only adjust if certain tasks need stronger gradients (e.g., much smaller datasets)
 task_weights:
-  ner_general: 5.0     # Now 107K samples with WikiNeural (reduced from 50)
+  ner_general: 1.0
   sentiment: 1.0
   emotions: 1.0
-  safety_generic: 1.5  # Slightly upweight safety
-  nli: 0.5             # Large dataset, downweight to balance
-  embedding: 0.3       # Very large dataset, downweight
-  temporal: 100.0      # CRITICAL: Only ~4K samples, needs heavy upweight
+  safety_generic: 1.0
+  nli: 1.0
+  embedding: 1.0
+  temporal: 1.0  # Loss weight, NOT sampling weight
 
 # Data mixing strategy
 mixing:

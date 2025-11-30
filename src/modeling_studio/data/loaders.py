@@ -1029,6 +1029,27 @@ JIGSAW_LABELS = [
     "identity_hate",
 ]
 
+# Civil Comments column names (map to our schema)
+# civil_comments uses different names: toxicity->toxic, severe_toxicity->severe_toxic, identity_attack->identity_hate
+CIVIL_COMMENTS_COLUMNS = [
+    "toxicity",
+    "severe_toxicity",
+    "obscene",
+    "threat",
+    "insult",
+    "identity_attack",
+]
+
+# Map civil_comments column names to our label schema
+CIVIL_COMMENTS_TO_SCHEMA = {
+    "toxicity": "toxic",
+    "severe_toxicity": "severe_toxic",
+    "obscene": "obscene",
+    "threat": "threat",
+    "insult": "insult",
+    "identity_attack": "identity_hate",
+}
+
 
 def load_multilabel_dataset(
     name: str,
@@ -1117,11 +1138,16 @@ def _load_multilabel_from_hub(
         original_labels = GO_EMOTIONS_LABELS
         label_col = "labels"  # List of label indices
     elif name_base in ("civil_comments",) or "civil_comments" in name_lower:
-        # Civil Comments toxicity dataset
+        # Civil Comments toxicity dataset - has float scores per category
+        # Columns: toxicity, severe_toxicity, obscene, threat, insult, identity_attack, sexual_explicit
+        # We threshold at 0.5 to get binary labels and map to our schema
         dataset = load_dataset("google/civil_comments", split=split, **load_kwargs)
         text_col = "text"
-        original_labels = ["toxicity"]  # Binary toxicity score
-        label_col = "toxicity"
+        # Map civil_comments columns to our schema (some names differ)
+        # civil_comments: toxicity -> toxic, severe_toxicity -> severe_toxic, identity_attack -> identity_hate
+        original_labels = None  # We'll handle specially
+        label_col = None  # Multi-column float format like Jigsaw
+        is_civil_comments = True  # Flag for special handling
     elif name_base in ("jigsaw_toxicity_pred", "jigsaw_toxicity", "jigsaw"):
         dataset = load_dataset("jigsaw_toxicity_pred", split=split, **load_kwargs)
         text_col = "comment_text"
@@ -1189,6 +1215,11 @@ def _standardize_multilabel_dataset(
         col in dataset.column_names for col in JIGSAW_LABELS
     )
 
+    # Check if this is Civil Comments format (float scores per toxicity type)
+    is_civil_comments_format = label_column is None and any(
+        col in dataset.column_names for col in CIVIL_COMMENTS_COLUMNS
+    )
+
     def standardize(example):
         """Standardize a single example to multi-hot format."""
         text = example[text_col_final]
@@ -1196,7 +1227,15 @@ def _standardize_multilabel_dataset(
         # Initialize multi-hot vector
         multi_hot = [0] * num_labels
 
-        if is_jigsaw_format:
+        if is_civil_comments_format:
+            # Civil Comments: float scores per toxicity type, threshold at 0.5
+            for cc_col, schema_label in CIVIL_COMMENTS_TO_SCHEMA.items():
+                if cc_col in example:
+                    val = example[cc_col]
+                    is_positive = val >= 0.5 if isinstance(val, (float, int)) else False
+                    if is_positive and schema_label in label_schema.label2id:
+                        multi_hot[label_schema.label2id[schema_label]] = 1
+        elif is_jigsaw_format:
             # Jigsaw: each label is a separate column with 0/1 value
             for label_name in JIGSAW_LABELS:
                 if label_name in example and example[label_name]:
@@ -3556,9 +3595,33 @@ def load_from_config(
             # Merge datasets with same task (e.g., multiple NER sources)
             if task in datasets:
                 # Concatenate with existing dataset for this task
-                from datasets import concatenate_datasets
+                from datasets import Features, Sequence, Value, concatenate_datasets
 
-                datasets[task] = concatenate_datasets([datasets[task], ds])
+                # Cast both datasets to common feature types to avoid ClassLabel vs int32 issues
+                # This is needed because CoNLL-2003 uses ClassLabel but WikiNeural uses int32
+                try:
+                    datasets[task] = concatenate_datasets([datasets[task], ds])
+                except ValueError as concat_err:
+                    if "features can't be aligned" in str(concat_err):
+                        logger.warning(f"Feature mismatch, casting to common types: {concat_err}")
+                        # Cast both to simple types (strings and ints)
+                        common_features = {}
+                        for col in datasets[task].column_names:
+                            feat = datasets[task].features[col]
+                            if hasattr(feat, "feature") and hasattr(feat.feature, "names"):
+                                # ClassLabel sequence -> int32 sequence
+                                common_features[col] = Sequence(Value("int32"))
+                            elif hasattr(feat, "names"):
+                                # Single ClassLabel -> int32
+                                common_features[col] = Value("int32")
+                            else:
+                                common_features[col] = feat
+
+                        ds1_cast = datasets[task].cast(Features(common_features))
+                        ds2_cast = ds.cast(Features(common_features))
+                        datasets[task] = concatenate_datasets([ds1_cast, ds2_cast])
+                    else:
+                        raise
                 logger.info(f"Merged {dataset_name} into {task} (total: {len(datasets[task])})")
             else:
                 datasets[task] = ds
