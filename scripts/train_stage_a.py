@@ -63,12 +63,11 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from modeling_studio.data.labels import Capability, get_num_labels
-from modeling_studio.data.loaders import load_stage_a_datasets
-from modeling_studio.models.modernbert_multitask import \
-    ModernBertMultiTaskModel
-from modeling_studio.trainers.collators import MultiTaskCollator
-from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer
+from modeling_studio.data.labels import Capability, get_num_labels  # noqa: E402
+from modeling_studio.data.loaders import load_stage_a_datasets  # noqa: E402
+from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel  # noqa: E402
+from modeling_studio.trainers.collators import MultiTaskCollator  # noqa: E402
+from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -269,8 +268,9 @@ def init_model(config: dict[str, Any]) -> ModernBertMultiTaskModel:
     attn_implementation = "sdpa"  # Default to SDPA (PyTorch native)
     if use_flash_attention:
         try:
-            import flash_attn  # noqa: F401
+            import flash_attn  # noqa: F401, F811
 
+            _ = flash_attn  # Suppress unused import warning
             attn_implementation = "flash_attention_2"
             logger.info("Using Flash Attention 2.0")
         except ImportError:
@@ -441,8 +441,7 @@ def create_training_args(
 
 def compute_metrics_factory(task_names: list[str]):
     """Create a compute_metrics function for multi-task evaluation."""
-    from sklearn.metrics import (accuracy_score, f1_score, precision_score,
-                                 recall_score)
+    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
     def compute_metrics(eval_pred):
         """Compute metrics for evaluation."""
@@ -492,10 +491,10 @@ def save_model_and_artifacts(
     logger.info(f"Saving model to {output_dir}")
 
     # Save model
-    model.save_pretrained(output_dir)
+    model.save_pretrained(str(output_dir))
 
     # Save tokenizer
-    tokenizer.save_pretrained(output_dir)
+    tokenizer.save_pretrained(str(output_dir))
 
     # Save config
     with open(output_dir / "training_config.json", "w") as f:
@@ -575,7 +574,7 @@ def train(
     task_weights = config.get("task_weights", {})
 
     # Create data collator
-    data_collator = MultiTaskCollator(tokenizer=tokenizer)
+    data_collator = MultiTaskCollator(tokenizer=tokenizer)  # type: ignore[arg-type]
 
     # Initialize trainer
     trainer = MultiTaskTrainer(
@@ -586,7 +585,7 @@ def train(
         task_weights=task_weights,
         sampling_strategy=config.get("mixing", {}).get("strategy", "proportional"),
         sampling_temperature=config.get("mixing", {}).get("temperature", 2.0),
-        tokenizer=tokenizer,
+        tokenizer=tokenizer,  # type: ignore[arg-type]
         data_collator=data_collator,
     )
 
@@ -652,6 +651,7 @@ def main():
 
     # Apply command-line overrides
     if args.overrides:
+        logger.info(f"Applying overrides: {args.overrides}")
         config = apply_overrides(config, args.overrides)
 
     # Apply argument overrides
@@ -661,6 +661,14 @@ def main():
     # Log configuration
     logger.info(f"Config file: {args.config}")
     logger.info(f"Data config: {args.data_config}")
+
+    # Log key training parameters
+    training_cfg = config.get("training", {})
+    logger.info(
+        f"Training params: batch_size={training_cfg.get('per_device_train_batch_size')}, "
+        f"grad_accum={training_cfg.get('gradient_accumulation_steps')}, "
+        f"epochs={training_cfg.get('num_train_epochs')}"
+    )
     if args.resume_from_checkpoint:
         logger.info(f"Resuming from: {args.resume_from_checkpoint}")
     if args.debug:
@@ -668,7 +676,7 @@ def main():
 
     # Run training
     try:
-        eval_results = train(config, args)
+        _eval_results = train(config, args)  # noqa: F841
         logger.info("Training completed successfully!")
         return 0
     except KeyboardInterrupt:
@@ -679,33 +687,5 @@ def main():
         raise
 
 
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
-if __name__ == "__main__":
-    sys.exit(main())
 if __name__ == "__main__":
     sys.exit(main())
