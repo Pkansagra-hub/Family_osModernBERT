@@ -100,8 +100,8 @@ optimizer:
 # A100-40GB HYPERFAST training - V2 COMPLIANT
 training:
   # === BATCH & SPEED (no gradient checkpointing for max speed) ===
-  per_device_train_batch_size: 144
-  per_device_eval_batch_size: 144
+  per_device_train_batch_size: 128
+  per_device_eval_batch_size: 128
   gradient_accumulation_steps: 2    # Effective batch ≈ 288
 
   # === LEARNING RATE (base, overridden by optimizer section for heads) ===
