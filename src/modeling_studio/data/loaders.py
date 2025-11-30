@@ -222,19 +222,99 @@ def _load_ner_from_hub(
         # OntoNotes may have different column names
         original_labels = _get_ontonotes_labels(dataset, split)  # type: ignore[arg-type]
     elif "wikineural" in name.lower() or name.startswith("tner/"):
-        # tner/wikineural uses 'tags' column instead of 'ner_tags', and integer labels
-        # Labels are the same as CoNLL-2003: O, B-PER, I-PER, B-ORG, I-ORG, B-LOC, I-LOC, B-MISC, I-MISC
-        label_map = CONLL2003_LABEL_MAP
+        # tner/wikineural uses 'tags' column instead of 'ner_tags'
+        # WikiNeural has 33 labels (0-32) covering 16 entity types
+        # We map to CoNLL-2003's 9 labels (O, PER, LOC, ORG, MISC)
+
+        # WikiNeural label indices:
+        # 0: O, 1-2: PER, 3-4: LOC, 5-6: ORG, 7-8: ANIM, 9-10: BIO, 11-12: CEL,
+        # 13-14: DIS, 15-16: EVE, 17-18: FOOD, 19-20: INST, 21-22: MEDIA,
+        # 23-24: PLANT, 25-26: MYTH, 27-28: TIME, 29-30: VEHI, 31-32: MISC
+        wikineural_labels = [
+            "O",  # 0
+            "B-PER",
+            "I-PER",  # 1-2
+            "B-LOC",
+            "I-LOC",  # 3-4
+            "B-ORG",
+            "I-ORG",  # 5-6
+            "B-ANIM",
+            "I-ANIM",  # 7-8  -> MISC
+            "B-BIO",
+            "I-BIO",  # 9-10 -> MISC
+            "B-CEL",
+            "I-CEL",  # 11-12 -> MISC
+            "B-DIS",
+            "I-DIS",  # 13-14 -> MISC
+            "B-EVE",
+            "I-EVE",  # 15-16 -> MISC
+            "B-FOOD",
+            "I-FOOD",  # 17-18 -> MISC
+            "B-INST",
+            "I-INST",  # 19-20 -> MISC
+            "B-MEDIA",
+            "I-MEDIA",  # 21-22 -> MISC
+            "B-PLANT",
+            "I-PLANT",  # 23-24 -> MISC
+            "B-MYTH",
+            "I-MYTH",  # 25-26 -> MISC
+            "B-TIME",
+            "I-TIME",  # 27-28 -> MISC
+            "B-VEHI",
+            "I-VEHI",  # 29-30 -> MISC
+            "B-MISC",
+            "I-MISC",  # 31-32
+        ]
+
+        # Map WikiNeural's 16 entity types to CoNLL's 4 (PER, LOC, ORG, MISC)
+        wikineural_to_conll_map = {
+            "O": "O",
+            "B-PER": "B-PER",
+            "I-PER": "I-PER",
+            "B-LOC": "B-LOC",
+            "I-LOC": "I-LOC",
+            "B-ORG": "B-ORG",
+            "I-ORG": "I-ORG",
+            # All other types map to MISC
+            "B-ANIM": "B-MISC",
+            "I-ANIM": "I-MISC",
+            "B-BIO": "B-MISC",
+            "I-BIO": "I-MISC",
+            "B-CEL": "B-MISC",
+            "I-CEL": "I-MISC",
+            "B-DIS": "B-MISC",
+            "I-DIS": "I-MISC",
+            "B-EVE": "B-MISC",
+            "I-EVE": "I-MISC",
+            "B-FOOD": "B-MISC",
+            "I-FOOD": "I-MISC",
+            "B-INST": "B-MISC",
+            "I-INST": "I-MISC",
+            "B-MEDIA": "B-MISC",
+            "I-MEDIA": "I-MISC",
+            "B-PLANT": "B-MISC",
+            "I-PLANT": "I-MISC",
+            "B-MYTH": "B-MISC",
+            "I-MYTH": "I-MISC",
+            "B-TIME": "B-MISC",
+            "I-TIME": "I-MISC",
+            "B-VEHI": "B-MISC",
+            "I-VEHI": "I-MISC",
+            "B-MISC": "B-MISC",
+            "I-MISC": "I-MISC",
+        }
+
+        label_map = wikineural_to_conll_map
+        original_labels = wikineural_labels
+
         # Rename 'tags' to 'ner_tags' for consistency
         if split:
             if "tags" in dataset.column_names:
                 dataset = dataset.rename_column("tags", "ner_tags")
-            original_labels = ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "B-MISC", "I-MISC"]
         else:
             for s in dataset:
                 if "tags" in dataset[s].column_names:
                     dataset[s] = dataset[s].rename_column("tags", "ner_tags")
-            original_labels = ["O", "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "B-MISC", "I-MISC"]
     else:
         # For other datasets, try to infer label mapping
         label_map = None
@@ -3184,7 +3264,28 @@ def load_familyos_temporal(
 
     logger.info(f"Loading FamilyOS temporal dataset from {data_path}")
 
-    # Find available split files
+    # Check for shard files first (shard_*.jsonl pattern)
+    shard_files = list(data_path.glob("shard_*.jsonl"))
+    if shard_files:
+        logger.info(f"  Found {len(shard_files)} shard files, loading all as training data...")
+        all_data = []
+        for shard_file in sorted(shard_files):
+            ds = _load_familyos_temporal_jsonl(shard_file)
+            all_data.append(ds)
+            logger.info(f"    Loaded {shard_file.name}: {len(ds)} samples")
+
+        # Concatenate all shards
+        from datasets import concatenate_datasets
+
+        combined_ds = concatenate_datasets(all_data)
+        logger.info(f"  Total temporal samples: {len(combined_ds)}")
+
+        # Return as train split or DatasetDict
+        if split:
+            return combined_ds
+        return DatasetDict({"train": combined_ds})
+
+    # Find available split files (legacy format)
     split_files = {
         "train": ["train.jsonl", "train.json"],
         "validation": ["validation.jsonl", "val.jsonl", "valid.jsonl", "dev.jsonl"],
@@ -3636,10 +3737,13 @@ def _apply_tokenization(
     if mapped_task == "token_classification":
 
         def tokenize_wrapper(example):
+            # Token classification can have different tag column names
+            # NER: ner_tags, Temporal: temporal_tags
+            tags = example.get("ner_tags") or example.get("temporal_tags") or example.get("labels")
             result = tokenize_for_token_classification(
                 tokenizer=tokenizer,
                 tokens=example["tokens"],
-                ner_tags=example.get("ner_tags"),
+                ner_tags=tags,
                 max_length=max_length,
             )
             # Add task info
