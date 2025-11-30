@@ -88,7 +88,7 @@ training:
   learning_rate: 0.00005  # 5e-5 (was 2e-5, scaled ~2.5x for 8x batch)
   
   # Training duration
-  num_train_epochs: 3
+  num_train_epochs: 1
   max_steps: -1
   
   # Gradient checkpointing ON to save memory

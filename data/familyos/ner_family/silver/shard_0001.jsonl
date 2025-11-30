@@ -574,3 +574,790 @@
 {"tokens": ["Maa", "ke", "Holi", "recipes"], "ner_tags": [3, 0, 15, 0]}
 {"tokens": ["Grandpa", "first", "firework", "Diwali"], "ner_tags": [3, 17, 0, 15]}
 {"tokens": ["Kitchen", "firecrackers", "no", "zone", "Holi"], "ner_tags": [9, 0, 0, 0, 15]}
+{"tokens": ["We", "announce", "with", "joy", "that", "Emma", "took", "her", "first", "steps", "at", "our", "Christmas", "dinner"], "ner_tags": [0, 0, 0, 0, 0, 1, 0, 0, 17, 18, 0, 0, 11, 12]}
+{"tokens": ["Grandma's", "necklace", "was", "worn", "by", "Sarah", "during", "her", "graduation", "ceremony"], "ner_tags": [3, 19, 0, 0, 0, 1, 0, 0, 17, 0]}
+{"tokens": ["It", "is", "our", "pleasure", "to", "share", "Bunny's", "first", "word", "at", "Thanksgiving", "feast"], "ner_tags": [0, 0, 0, 0, 0, 0, 5, 17, 18, 0, 11, 12]}
+{"tokens": ["John", "graduated", "from", "high", "school", "wearing", "Dad's", "old", "watch"], "ner_tags": [1, 0, 0, 0, 0, 0, 3, 19, 20]}
+{"tokens": ["The", "family", "gathered", "in", "the", "living", "room", "for", "Easter", "egg", "hunt"], "ner_tags": [0, 0, 0, 0, 0, 9, 10, 0, 11, 12, 0]}
+{"tokens": ["We", "proudly", "announce", "Max's", "first", "Christmas", "with", "us", "during", "routine", "dinner", "time"], "ner_tags": [0, 0, 0, 7, 17, 11, 0, 0, 0, 13, 14, 0]}
+{"tokens": ["Mom", "presented", "her", "heirloom", "ring", "to", "the", "graduate", "at", "the", "ceremony"], "ner_tags": [3, 0, 0, 19, 20, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Champ", "said", "his", "first", "word", "Mama", "in", "the", "kitchen", "on", "Easter"], "ner_tags": [5, 0, 0, 17, 18, 0, 0, 0, 9, 0, 11]}
+{"tokens": ["Official", "notice", "Baby", "Bear", "took", "first", "steps", "during", "Thanksgiving", "routine"], "ner_tags": [0, 0, 5, 6, 0, 17, 18, 0, 11, 13]}
+{"tokens": ["Grandpa's", "photo", "album", "was", "shared", "at", "the", "Christmas", "family", "event"], "ner_tags": [3, 19, 20, 0, 0, 0, 0, 11, 12, 0]}
+{"tokens": ["We", "celebrate", "Sarah", "Smith's", "graduation", "with", "our", "Sunday", "brunch", "routine"], "ner_tags": [0, 0, 1, 2, 17, 0, 0, 13, 14, 0]}
+{"tokens": ["Whiskers", "joined", "the", "Easter", "celebration", "wearing", "a", "special", "collar", "heirloom"], "ner_tags": [7, 0, 0, 11, 12, 0, 0, 0, 19, 0]}
+{"tokens": ["It", "is", "announced", "that", "Munchkin", "spoke", "her", "first", "word", "at", "dinner", "time"], "ner_tags": [0, 0, 0, 0, 5, 0, 0, 17, 18, 0, 13, 14]}
+{"tokens": ["Dad", "gave", "his", "vintage", "watch", "to", "John", "for", "his", "milestone", "graduation"], "ner_tags": [3, 0, 0, 19, 20, 0, 1, 0, 0, 17, 18]}
+{"tokens": ["The", "backyard", "hosted", "our", "family", "Thanksgiving", "dinner", "event"], "ner_tags": [9, 0, 0, 0, 0, 11, 12, 0]}
+{"tokens": ["Proudly", "we", "share", "Sweetie's", "first", "steps", "in", "Grandma's", "living", "room"], "ner_tags": [0, 0, 0, 5, 17, 18, 0, 3, 9, 10]}
+{"tokens": ["Emma's", "graduation", "party", "featured", "Mom's", "famous", "pie", "heirloom", "recipe"], "ner_tags": [1, 11, 12, 0, 3, 19, 20, 0, 0]}
+{"tokens": ["During", "Christmas", "morning", "routine", "Baby", "Bear", "said", "Dada"], "ner_tags": [0, 11, 0, 13, 5, 6, 0, 0]}
+{"tokens": ["Uncle", "Bob", "presented", "the", "family", "photo", "album", "at", "Easter", "gathering"], "ner_tags": [3, 1, 0, 0, 19, 20, 0, 0, 11, 0]}
+{"tokens": ["We", "formally", "announce", "Max", "the", "cat's", "first", "Easter", "egg", "hunt"], "ner_tags": [0, 0, 0, 7, 0, 0, 17, 11, 12, 0]}
+{"tokens": ["Sarah", "received", "Grandpa's", "necklace", "during", "her", "high", "school", "graduation"], "ner_tags": [1, 0, 3, 19, 0, 0, 17, 18, 0]}
+{"tokens": ["The", "kitchen", "was", "filled", "with", "joy", "for", "Bunny's", "first", "word"], "ner_tags": [9, 0, 0, 0, 0, 0, 0, 5, 17, 18]}
+{"tokens": ["Thanksgiving", "family", "event", "included", "routine", "prayer", "and", "Grandma's", "ring"], "ner_tags": [11, 12, 0, 0, 13, 0, 0, 3, 19]}
+{"tokens": ["John", "Smith", "took", "his", "first", "steps", "at", "our", "Christmas", "party"], "ner_tags": [1, 2, 0, 0, 17, 18, 0, 0, 11, 12]}
+{"tokens": ["Mom's", "heirloom", "quilt", "covered", "the", "table", "for", "Easter", "brunch"], "ner_tags": [3, 19, 20, 0, 0, 0, 0, 11, 0]}
+{"tokens": ["We", "are", "delighted", "to", "report", "Champ's", "graduation", "from", "kindergarten"], "ner_tags": [0, 0, 0, 0, 0, 5, 17, 0, 0]}
+{"tokens": ["During", "the", "living", "room", "gathering", "for", "Thanksgiving", "dinner"], "ner_tags": [0, 0, 9, 10, 0, 0, 11, 12]}
+{"tokens": ["Munchkin", "spoke", "first", "word", "during", "Christmas", "Eve", "service"], "ner_tags": [5, 0, 17, 18, 0, 11, 12, 0]}
+{"tokens": ["The", "graduation", "ceremony", "honored", "Emma", "with", "Nana's", "brooch"], "ner_tags": [0, 17, 0, 0, 1, 0, 3, 19]}
+{"tokens": ["Grandma", "passed", "down", "her", "necklace", "for", "Sarah's", "milestone"], "ner_tags": [3, 0, 0, 0, 19, 0, 1, 17]}
+{"tokens": ["We", "announce", "John’s", "first", "word", "at", "the", "kitchen", "table"], "ner_tags": [0, 0, 1, 17, 18, 0, 0, 9, 10]}
+{"tokens": ["Proud", "parents", "share", "Bunny", "graduated", "with", "honors", "in", "ceremony"], "ner_tags": [0, 0, 0, 5, 0, 0, 0, 0, 17]}
+{"tokens": ["Mom", "and", "Dad", "celebrate", "Emma’s", "first", "steps", "on", "Easter"], "ner_tags": [3, 0, 3, 0, 1, 17, 18, 0, 11]}
+{"tokens": ["The", "heirloom", "ring", "shone", "at", "our", "family", "graduation", "dinner"], "ner_tags": [0, 19, 20, 0, 0, 0, 11, 17, 0]}
+{"tokens": ["Champ’s", "first", "word", "echoed", "through", "the", "living", "room", "routine"], "ner_tags": [5, 17, 18, 0, 0, 0, 9, 10, 13]}
+{"tokens": ["We", "formally", "declare", "Sarah", "Smith", "achieved", "her", "graduation", "milestone"], "ner_tags": [0, 0, 0, 1, 2, 0, 0, 17, 18]}
+{"tokens": ["Grandpa's", "watch", "ticked", "during", "Thanksgiving", "family", "event"], "ner_tags": [3, 19, 0, 0, 11, 12, 0]}
+{"tokens": ["John", "received", "Dad’s", "vintage", "cufflinks", "for", "his", "ceremony"], "ner_tags": [1, 0, 3, 19, 20, 0, 0, 17]}
+{"tokens": ["We", "are", "thrilled", "to", "announce", "Whiskers", "at", "Christmas", "party"], "ner_tags": [0, 0, 0, 0, 0, 7, 0, 11, 12]}
+{"tokens": ["Nana’s", "photo", "album", "displayed", "during", "graduation", "reception"], "ner_tags": [3, 19, 20, 0, 0, 17, 0]}
+{"tokens": ["Sweetie", "took", "steps", "in", "the", "backyard", "during", "routine", "walk"], "ner_tags": [5, 0, 17, 18, 0, 0, 9, 0, 13]}
+{"tokens": ["Family", "announces", "Emma’s", "milestone", "first", "word", "at", "dinner"], "ner_tags": [0, 0, 1, 17, 18, 0, 0, 13]}
+{"tokens": ["Thanksgiving", "dinner", "featured", "Grandma’s", "heirloom", "china"], "ner_tags": [11, 12, 0, 3, 19, 20]}
+{"tokens": ["Champ", "graduated", "kindergarten", "wearing", "Grandpa's", "medal"], "ner_tags": [5, 17, 0, 0, 3, 19]}
+{"tokens": ["Mom", "proudly", "wore", "her", "necklace", "to", "John’s", "graduation"], "ner_tags": [3, 0, 0, 0, 19, 0, 1, 17]}
+{"tokens": ["We", "share", "Sarah", "said", "first", "word", "Mama", "in", "kitchen"], "ner_tags": [0, 0, 1, 0, 17, 18, 0, 0, 9]}
+{"tokens": ["Dad’s", "old", "watch", "passed", "to", "the", "graduate", "Emma"], "ner_tags": [3, 19, 20, 0, 0, 0, 0, 1]}
+{"tokens": ["Munchkin’s", "graduation", "day", "featured", "Nana’s", "ring"], "ner_tags": [5, 17, 18, 0, 3, 19]}
+{"tokens": ["Grandpa", "gave", "photo", "album", "heirloom", "at", "Easter", "brunch"], "ner_tags": [3, 0, 19, 20, 0, 0, 11, 0]}
+{"tokens": ["John", "Smith", "achieved", "milestone", "graduation", "with", "family", "support"], "ner_tags": [1, 2, 0, 17, 18, 0, 0, 0]}
+{"tokens": ["Baby", "Bear", "spoke", "Dada", "during", "the", "dinner", "time", "routine"], "ner_tags": [5, 6, 0, 0, 0, 0, 13, 14, 0]}
+{"tokens": ["We", "announce", "Emma’s", "first", "word", "at", "living", "room", "gathering"], "ner_tags": [0, 0, 1, 17, 18, 0, 9, 10, 0]}
+{"tokens": ["Mom’s", "heirloom", "quilt", "warmed", "Thanksgiving", "family", "event"], "ner_tags": [3, 19, 20, 0, 11, 12, 0]}
+{"tokens": ["Champ", "took", "his", "first", "steps", "in", "backyard", "on", "Easter"], "ner_tags": [5, 0, 0, 17, 18, 0, 9, 0, 11]}
+{"tokens": ["Sarah’s", "graduation", "ceremony", "honored", "Dad’s", "watch"], "ner_tags": [1, 17, 0, 0, 3, 19]}
+{"tokens": ["The", "kitchen", "table", "held", "Grandma’s", "china", "for", "routine", "dinner"], "ner_tags": [9, 0, 0, 3, 19, 0, 0, 13, 14]}
+{"tokens": ["Nana", "passed", "her", "brooch", "heirloom", "to", "graduate", "Sarah"], "ner_tags": [3, 0, 0, 19, 20, 0, 0, 1]}
+{"tokens": ["Munchkin", "graduated", "with", "family", "photo", "album", "display"], "ner_tags": [5, 17, 0, 0, 19, 20, 0]}
+{"tokens": ["Thanksgiving", "routine", "prayer", "preceded", "Baby", "Bear’s", "moment"], "ner_tags": [11, 13, 0, 0, 5, 6, 17]}
+{"tokens": ["Grandpa’s", "medal", "worn", "by", "Emma", "at", "her", "graduation"], "ner_tags": [3, 19, 0, 0, 1, 0, 0, 17]}
+{"tokens": ["The", "living", "room", "lit", "up", "for", "Christmas", "morning", "event"], "ner_tags": [0, 9, 10, 0, 0, 0, 11, 0, 0]}
+{"tokens": ["Sweetie’s", "first", "word", "Mama", "during", "dinner", "routine"], "ner_tags": [5, 17, 18, 0, 0, 13, 14]}
+{"tokens": ["Dad", "and", "Mom", "celebrate", "Champ’s", "graduation", "milestone"], "ner_tags": [3, 0, 3, 0, 5, 17, 18]}
+{"tokens": ["Our", "backyard", "Easter", "egg", "hunt", "was", "joyful"], "ner_tags": [0, 9, 11, 12, 0, 0, 0]}
+{"tokens": ["Sarah", "Smith", "received", "heirloom", "necklace", "from", "Grandma"], "ner_tags": [1, 2, 0, 19, 20, 0, 3]}
+{"tokens": ["John’s", "first", "steps", "in", "the", "kitchen", "at", "Thanksgiving"], "ner_tags": [1, 17, 18, 0, 0, 9, 0, 11]}
+{"tokens": ["Bunny", "spoke", "her", "first", "word", "during", "graduation", "party"], "ner_tags": [5, 0, 0, 17, 18, 0, 11, 12]}
+{"tokens": ["We", "announce", "Max’s", "first", "steps", "on", "routine", "walk"], "ner_tags": [0, 0, 7, 17, 18, 0, 13, 0]}
+{"tokens": ["Emma’s", "milestone", "graduation", "wore", "Mom’s", "ring"], "ner_tags": [1, 17, 0, 0, 3, 19]}
+{"tokens": ["Thanksgiving", "feast", "event", "included", "Grandma’s", "quilt"], "ner_tags": [11, 12, 0, 0, 3, 19]}
+{"tokens": ["Champ", "at", "Christmas", "party", "said", "his", "first", "word"], "ner_tags": [5, 0, 11, 12, 0, 0, 17, 18]}
+{"tokens": ["Sarah", "graduated", "wearing", "Nana’s", "brooch", "heirloom"], "ner_tags": [1, 0, 0, 3, 19, 20]}
+{"tokens": ["Living", "room", "gathering", "for", "Easter", "brunch", "routine"], "ner_tags": [9, 10, 0, 0, 11, 13, 0]}
+{"tokens": ["John", "Smith’s", "first", "steps", "captured", "in", "family", "album"], "ner_tags": [1, 2, 17, 18, 0, 0, 19, 0]}
+{"tokens": ["Dad’s", "watch", "ticked", "proudly", "at", "Emma’s", "ceremony"], "ner_tags": [3, 19, 0, 0, 0, 1, 17]}
+{"tokens": ["Baby", "Bear", "enjoyed", "Thanksgiving", "routine", "with", "family"], "ner_tags": [5, 6, 0, 11, 13, 0, 0]}
+{"tokens": ["We", "formally", "share", "Sweetie’s", "graduation", "achievement"], "ner_tags": [0, 0, 0, 5, 17, 0]}
+{"tokens": ["Grandma’s", "necklace", "adorned", "Sarah", "during", "milestone", "day"], "ner_tags": [3, 19, 0, 1, 0, 17, 18]}
+{"tokens": ["The", "backyard", "saw", "Champ’s", "steps", "during", "Easter", "hunt"], "ner_tags": [0, 9, 5, 17, 18, 0, 11, 12]}
+{"tokens": ["Mom", "presented", "heirloom", "ring", "at", "John’s", "graduation"], "ner_tags": [3, 0, 19, 20, 0, 1, 17]}
+{"tokens": ["Emma", "said", "Mama", "in", "the", "kitchen", "on", "Thanksgiving"], "ner_tags": [1, 0, 0, 0, 0, 9, 0, 11]}
+{"tokens": ["Grandpa's", "medal", "pinned", "for", "family", "event", "ceremony"], "ner_tags": [3, 19, 0, 0, 11, 12, 0]}
+{"tokens": ["Munchkin’s", "first", "steps", "at", "Christmas", "brunch", "routine"], "ner_tags": [5, 17, 18, 0, 11, 13, 0]}
+{"tokens": ["We", "celebrate", "Sarah’s", "graduation", "with", "Dad’s", "cufflinks"], "ner_tags": [0, 0, 1, 17, 0, 3, 19]}
+{"tokens": ["Champ", "graduated", "high", "school", "wearing", "Grandma’s", "necklace"], "ner_tags": [5, 0, 17, 18, 0, 3, 19]}
+{"tokens": ["John’s", "milestone", "first", "word", "during", "living", "room", "event"], "ner_tags": [1, 17, 18, 0, 0, 9, 10, 11]}
+{"tokens": ["Mom’s", "quilt", "heirloom", "covered", "table", "at", "Thanksgiving"], "ner_tags": [3, 19, 20, 0, 0, 0, 11]}
+{"tokens": ["Grandpa", "shared", "watch", "with", "Sarah", "for", "her", "milestone"], "ner_tags": [3, 0, 19, 0, 1, 0, 0, 17]}
+{"tokens": ["The", "dinner", "routine", "featured", "Nana’s", "china", "set"], "ner_tags": [0, 13, 0, 0, 3, 19, 20]}
+{"tokens": ["Max", "at", "family", "event", "Thanksgiving", "joy"], "ner_tags": [7, 0, 11, 12, 0, 0]}
+{"tokens": ["Sweetie’s", "graduation", "ceremony", "in", "living", "room"], "ner_tags": [5, 17, 0, 0, 9, 10]}
+{"tokens": ["Dad", "proud", "of", "Champ’s", "first", "word", "Dada"], "ner_tags": [3, 0, 0, 5, 17, 18, 0]}
+{"tokens": ["Easter", "brunch", "routine", "with", "Grandma’s", "pie"], "ner_tags": [11, 13, 0, 0, 3, 19]}
+{"tokens": ["John", "Smith", "steps", "first", "time", "backyard", "Christmas"], "ner_tags": [1, 2, 17, 18, 0, 9, 11]}
+{"tokens": ["Munchkin", "said", "first", "word", "during", "kitchen", "dinner"], "ner_tags": [5, 0, 17, 18, 0, 9, 13]}
+{"tokens": ["We", "formal", "notice", "Emma’s", "milestone", "steps"], "ner_tags": [0, 0, 0, 1, 17, 18]}
+{"tokens": ["Grandpa’s", "medal", "for", "John’s", "graduation", "day"], "ner_tags": [3, 19, 0, 1, 17, 18]}
+{"tokens": ["Thanksgiving", "family", "dinner", "routine", "joy"], "ner_tags": [11, 12, 13, 0, 0]}
+{"tokens": ["Baby", "Bear’s", "first", "word", "at", "Christmas", "party"], "ner_tags": [5, 6, 17, 18, 0, 11, 12]}
+{"tokens": ["Champ", "wore", "Dad’s", "watch", "to", "ceremony"], "ner_tags": [5, 0, 3, 19, 0, 17]}
+{"tokens": ["Living", "room", "filled", "with", "Sweetie’s", "graduation", "cheers"], "ner_tags": [9, 10, 0, 0, 5, 17, 0]}
+{"tokens": ["Nana’s", "brooch", "heirloom", "Easter", "brunch"], "ner_tags": [3, 19, 20, 11, 0]}
+{"tokens": ["Sarah", "first", "steps", "kitchen", "Thanksgiving", "eve"], "ner_tags": [1, 17, 18, 9, 11, 0]}
+{"tokens": ["Routine", "carol", "singing", "Christmas", "Max", "joined"], "ner_tags": [13, 0, 0, 11, 7, 0]}
+{"tokens": ["Grandma", "gave", "quilt", "to", "Emma’s", "milestone"], "ner_tags": [3, 0, 19, 0, 1, 17]}
+{"tokens": ["Bunny’s", "graduation", "featured", "family", "event"], "ner_tags": [5, 17, 0, 0, 11]}
+{"tokens": ["The", "backyard", "routine", "walk", "first", "steps", "John"], "ner_tags": [0, 9, 13, 0, 17, 18, 1]}
+{"tokens": ["Mom’s", "necklace", "at", "dinner", "time", "routine"], "ner_tags": [3, 19, 0, 13, 14, 0]}
+{"tokens": ["Easter", "hunt", "saw", "Munchkin’s", "word"], "ner_tags": [11, 12, 0, 5, 17]}
+{"tokens": ["We", "announce", "Champ’s", "first", "steps", "living", "room"], "ner_tags": [0, 0, 5, 17, 18, 9, 10]}
+{"tokens": ["Dad’s", "cufflinks", "heirloom", "Sarah", "graduation"], "ner_tags": [3, 19, 20, 1, 17]}
+{"tokens": ["Christmas", "feast", "event", "with", "Grandpa’s", "watch"], "ner_tags": [11, 12, 0, 0, 3, 19]}
+{"tokens": ["Sweetie", "graduated", "kitchen", "celebration"], "ner_tags": [5, 17, 9, 0]}
+{"tokens": ["Family", "routine", "dinner", "Baby", "Bear", "milestone"], "ner_tags": [0, 13, 14, 5, 6, 17]}
+{"tokens": ["John", "wore", "Nana’s", "ring", "ceremony"], "ner_tags": [1, 0, 3, 19, 17]}
+{"tokens": ["Thanksgiving", "brunch", "routine", "Emma’s", "first", "word"], "ner_tags": [11, 13, 0, 1, 17, 18]}
+{"tokens": ["Grandma’s", "photo", "album", "opened", "Easter", "morning"], "ner_tags": [3, 19, 20, 0, 11, 0]}
+{"tokens": ["We", "proud", "Sarah’s", "graduation", "milestone"], "ner_tags": [0, 0, 1, 17, 18]}
+{"tokens": ["Mom", "shared", "quilt", "heirloom", "family", "event"], "ner_tags": [3, 0, 19, 20, 11, 12]}
+{"tokens": ["Bunny", "first", "word", "dinner", "routine"], "ner_tags": [5, 17, 18, 13, 14]}
+{"tokens": ["Champ’s", "graduation", "day", "living", "room", "party"], "ner_tags": [5, 17, 18, 9, 10, 0]}
+{"tokens": ["Grandpa", "watch", "John", "milestone"], "ner_tags": [3, 19, 1, 17]}
+{"tokens": ["The", "kitchen", "Thanksgiving", "dinner", "event"], "ner_tags": [0, 9, 11, 12, 0]}
+{"tokens": ["Munchkin", "said", "Mama", "Christmas", "routine"], "ner_tags": [5, 0, 0, 11, 13]}
+{"tokens": ["Dad’s", "medal", "heirloom", "Emma", "graduation"], "ner_tags": [3, 19, 20, 1, 17]}
+{"tokens": ["Baby", "Bear", "steps", "first", "backyard"], "ner_tags": [5, 6, 17, 18, 9]}
+{"tokens": ["Family", "announcement", "Sarah’s", "first", "word"], "ner_tags": [0, 0, 1, 17, 18]}
+{"tokens": ["Routine", "brunch", "Easter", "Grandma’s", "pie"], "ner_tags": [13, 0, 11, 3, 19]}
+{"tokens": ["John", "Smith", "graduated", "wearing", "Mom’s", "brooch"], "ner_tags": [1, 2, 0, 0, 3, 19]}
+{"tokens": ["Christmas", "party", "event", "Max’s", "joy"], "ner_tags": [11, 12, 0, 7, 0]}
+{"tokens": ["Sweetie’s", "milestone", "steps", "kitchen"], "ner_tags": [5, 17, 18, 9]}
+{"tokens": ["Grandpa’s", "cufflinks", "at", "Champ’s", "ceremony"], "ner_tags": [3, 19, 0, 5, 17]}
+{"tokens": ["Thanksgiving", "routine", "dinner", "Bunny", "first", "steps"], "ner_tags": [11, 13, 14, 5, 17, 18]}
+{"tokens": ["Emma", "wore", "Nana’s", "necklace", "graduation"], "ner_tags": [1, 0, 3, 19, 17]}
+{"tokens": ["Living", "room", "Christmas", "morning", "routine"], "ner_tags": [9, 10, 11, 13, 0]}
+{"tokens": ["Mom", "presents", "photo", "album", "heirloom", "Sarah"], "ner_tags": [3, 0, 19, 20, 0, 1]}
+{"tokens": ["Munchkin’s", "first", "word", "Easter", "hunt"], "ner_tags": [5, 17, 18, 11, 12]}
+{"tokens": ["Dad’s", "watch", "family", "event", "Thanksgiving"], "ner_tags": [3, 19, 11, 12, 0]}
+{"tokens": ["Baby", "Bear", "graduated", "kindergarten", "routine"], "ner_tags": [5, 6, 17, 0, 13]}
+{"tokens": ["Grandma’s", "ring", "shone", "Easter", "brunch"], "ner_tags": [3, 19, 0, 11, 0]}
+{"tokens": ["Sarah’s", "milestone", "first", "word", "dinner"], "ner_tags": [1, 17, 18, 0, 13]}
+{"tokens": ["Routine", "walk", "Max", "first", "steps"], "ner_tags": [13, 0, 7, 17, 18]}
+{"tokens": ["Emma", "received", "Grandpa’s", "medal", "ceremony"], "ner_tags": [1, 0, 3, 19, 17]}
+{"tokens": ["Thanksgiving", "feast", "Sweetie’s", "graduation"], "ner_tags": [11, 12, 5, 17]}
+{"tokens": ["Kitchen", "routine", "Bunny’s", "word"], "ner_tags": [9, 13, 5, 17]}
+{"tokens": ["Mom’s", "quilt", "Christmas", "event"], "ner_tags": [3, 19, 11, 12]}
+{"tokens": ["John", "first", "steps", "living", "room"], "ner_tags": [1, 17, 18, 9, 10]}
+{"tokens": ["Nana’s", "brooch", "heirloom", "family", "dinner"], "ner_tags": [3, 19, 20, 11, 0]}
+{"tokens": ["Munchkin", "graduation", "backyard", "party"], "ner_tags": [5, 17, 9, 0]}
+{"tokens": ["Easter", "routine", "Champ’s", "milestone"], "ner_tags": [11, 13, 5, 17]}
+{"tokens": ["Grandpa", "gave", "photo", "album", "Emma"], "ner_tags": [3, 0, 19, 20, 1]}
+{"tokens": ["Baby", "Bear’s", "first", "word", "Thanksgiving"], "ner_tags": [5, 6, 17, 18, 11]}
+{"tokens": ["Dad’s", "cufflinks", "Sarah", "ceremony"], "ner_tags": [3, 19, 1, 17]}
+{"tokens": ["Christmas", "brunch", "routine", "Max"], "ner_tags": [11, 13, 0, 7]}
+{"tokens": ["Family", "event", "John’s", "graduation"], "ner_tags": [11, 12, 1, 17]}
+{"tokens": ["Grandma’s", "necklace", "Bunny", "milestone"], "ner_tags": [3, 19, 5, 17]}
+{"tokens": ["Routine", "dinner", "Champ’s", "first", "word"], "ner_tags": [13, 14, 5, 17, 18]}
+{"tokens": ["Mom", "watch", "heirloom", "Emma", "party"], "ner_tags": [3, 19, 0, 1, 11]}
+{"tokens": ["Living", "room", "Thanksgiving", "Sweetie", "steps"], "ner_tags": [9, 10, 11, 5, 17]}
+{"tokens": ["Sarah’s", "graduation", "Grandpa’s", "medal"], "ner_tags": [1, 17, 3, 19]}
+{"tokens": ["Easter", "hunt", "routine", "Munchkin"], "ner_tags": [11, 12, 13, 5]}
+{"tokens": ["John", "first", "word", "backyard"], "ner_tags": [1, 17, 18, 9]}
+{"tokens": ["Dad’s", "ring", "Christmas", "family", "event"], "ner_tags": [3, 19, 11, 12, 0]}
+{"tokens": ["Baby", "Bear", "graduated", "Mom’s", "quilt"], "ner_tags": [5, 6, 17, 3, 19]}
+{"tokens": ["Grandma", "photo", "album", "Easter"], "ner_tags": [3, 19, 20, 11]}
+{"tokens": ["We", "announce", "Bunny’s", "milestone", "graduation"], "ner_tags": [0, 0, 5, 17, 0]}
+{"tokens": ["Thanksgiving", "dinner", "Max’s", "first", "word"], "ner_tags": [11, 12, 7, 17, 18]}
+{"tokens": ["Nana’s", "brooch", "Sweetie", "ceremony"], "ner_tags": [3, 19, 5, 17]}
+{"tokens": ["Routine", "brunch", "Emma’s", "steps"], "ner_tags": [13, 0, 1, 17]}
+{"tokens": ["Sarah", "wore", "Grandpa’s", "watch", "event"], "ner_tags": [1, 0, 3, 19, 11]}
+{"tokens": ["Christmas", "party", "Munchkin’s", "first", "steps"], "ner_tags": [11, 12, 5, 17, 18]}
+{"tokens": ["Mom’s", "cufflinks", "John", "graduation"], "ner_tags": [3, 19, 1, 17]}
+{"tokens": ["Backyard", "Easter", "Baby", "Bear", "word"], "ner_tags": [9, 11, 5, 6, 17]}
+{"tokens": ["Family", "routine", "Champ’s", "milestone"], "ner_tags": [0, 13, 5, 17]}
+{"tokens": ["Grandma’s", "medal", "Bunny", "party"], "ner_tags": [3, 19, 5, 11]}
+{"tokens": ["Living", "room", "Thanksgiving", "routine"], "ner_tags": [9, 10, 11, 13]}
+{"tokens": ["Emma’s", "first", "word", "dinner", "time"], "ner_tags": [1, 17, 18, 13, 14]}
+{"tokens": ["Dad", "gave", "necklace", "heirloom", "Sarah"], "ner_tags": [3, 0, 19, 20, 1]}
+{"tokens": ["Sweetie", "graduated", "Christmas", "event"], "ner_tags": [5, 17, 11, 12]}
+{"tokens": ["John", "milestone", "Grandma’s", "ring"], "ner_tags": [1, 17, 3, 19]}
+{"tokens": ["Easter", "brunch", "Munchkin", "first", "word"], "ner_tags": [11, 0, 5, 17, 18]}
+{"tokens": ["Routine", "walk", "Baby", "Bear’s", "steps"], "ner_tags": [13, 0, 5, 6, 17]}
+{"tokens": ["Champ’s", "graduation", "backyard"], "ner_tags": [5, 17, 9]}
+{"tokens": ["Mom’s", "photo", "album", "Thanksgiving"], "ner_tags": [3, 19, 20, 11]}
+{"tokens": ["Bunny", "said", "first", "word", "living", "room"], "ner_tags": [5, 0, 17, 18, 9, 10]}
+{"tokens": ["Grandpa’s", "watch", "Easter", "routine"], "ner_tags": [3, 19, 11, 13]}
+{"tokens": ["Family", "event", "Emma", "milestone"], "ner_tags": [11, 12, 1, 17]}
+{"tokens": ["Nana’s", "quilt", "heirloom", "John"], "ner_tags": [3, 19, 20, 1]}
+{"tokens": ["Sweetie’s", "first", "steps", "backyard"], "ner_tags": [5, 17, 18, 9]}
+{"tokens": ["Max", "graduation", "kitchen", "party"], "ner_tags": [7, 17, 9, 0]}
+{"tokens": ["Dad’s", "medal", "Champ", "ceremony"], "ner_tags": [3, 19, 5, 17]}
+{"tokens": ["Thanksgiving", "routine", "Munchkin’s", "word"], "ner_tags": [11, 13, 5, 17]}
+{"tokens": ["Grandma", "ring", "Baby", "Bear", "event"], "ner_tags": [3, 19, 5, 6, 11]}
+{"tokens": ["Emma", "first", "word", "routine", "brunch"], "ner_tags": [1, 17, 18, 13, 0]}
+{"tokens": ["John’s", "graduation", "Mom’s", "brooch"], "ner_tags": [1, 17, 3, 19]}
+{"tokens": ["Christmas", "family", "event", "Bunny"], "ner_tags": [11, 12, 0, 5]}
+{"tokens": ["Living", "room", "Easter", "Sweetie’s", "steps"], "ner_tags": [9, 10, 11, 5, 17]}
+{"tokens": ["Sarah", "wore", "Grandpa’s", "cufflinks"], "ner_tags": [1, 0, 3, 19]}
+{"tokens": ["Champ’s", "milestone", "kitchen", "dinner"], "ner_tags": [5, 17, 9, 13]}
+{"tokens": ["Routine", "hunt", "Easter", "Max"], "ner_tags": [13, 0, 11, 7]}
+{"tokens": ["Baby", "Bear", "graduated", "Grandma’s", "necklace"], "ner_tags": [5, 6, 17, 3, 19]}
+{"tokens": ["Munchkin’s", "first", "steps", "backyard"], "ner_tags": [5, 17, 18, 9]}
+{"tokens": ["Dad’s", "photo", "album", "Christmas"], "ner_tags": [3, 19, 20, 11]}
+{"tokens": ["Emma’s", "word", "living", "room", "routine"], "ner_tags": [1, 17, 9, 10, 13]}
+{"tokens": ["John", "milestone", "Nana’s", "watch"], "ner_tags": [1, 17, 3, 19]}
+{"tokens": ["Thanksgiving", "event", "Sweetie", "first", "word"], "ner_tags": [11, 12, 5, 17, 18]}
+{"tokens": ["Grandma’s", "medal", "Champ", "graduation"], "ner_tags": [3, 19, 5, 17]}
+{"tokens": ["Easter", "brunch", "Bunny’s", "steps"], "ner_tags": [11, 0, 5, 17]}
+{"tokens": ["Family", "routine", "Max’s", "milestone"], "ner_tags": [0, 13, 7, 17]}
+{"tokens": ["Sarah’s", "graduation", "Mom’s", "ring"], "ner_tags": [1, 17, 3, 19]}
+{"tokens": ["Kitchen", "Christmas", "Baby", "Bear", "word"], "ner_tags": [9, 11, 5, 6, 17]}
+{"tokens": ["Grandpa", "quilt", "heirloom", "Emma"], "ner_tags": [3, 19, 20, 1]}
+{"tokens": ["Munchkin", "first", "steps", "dinner", "time"], "ner_tags": [5, 17, 18, 13, 14]}
+{"tokens": ["We", "announce", "John’s", "Easter", "party"], "ner_tags": [0, 0, 1, 11, 0]}
+{"tokens": ["Dad’s", "brooch", "Sweetie", "ceremony"], "ner_tags": [3, 19, 5, 17]}
+{"tokens": ["Christmas", "routine", "Champ’s", "first", "word"], "ner_tags": [11, 13, 5, 17, 18]}
+{"tokens": ["Living", "room", "Thanksgiving", "Max"], "ner_tags": [9, 10, 11, 7]}
+{"tokens": ["Baby", "Bear’s", "graduation", "Grandma’s", "watch"], "ner_tags": [5, 6, 17, 3, 19]}
+{"tokens": ["Mom’s", "necklace", "family", "event"], "ner_tags": [3, 19, 11, 12]}
+{"tokens": ["Emma", "milestone", "routine", "walk"], "ner_tags": [1, 17, 13, 0]}
+{"tokens": ["Sarah’s", "first", "word", "kitchen"], "ner_tags": [1, 17, 18, 9]}
+{"tokens": ["Grandpa’s", "ring", "John", "party"], "ner_tags": [3, 19, 1, 11]}
+{"tokens": ["Thanksgiving", "dinner", "routine", "Munchkin"], "ner_tags": [11, 12, 13, 5]}
+{"tokens": ["Champ’s", "graduation", "Nana’s", "medal"], "ner_tags": [5, 17, 3, 19]}
+{"tokens": ["Easter", "hunt", "Sweetie’s", "word"], "ner_tags": [11, 12, 5, 17]}
+{"tokens": ["Max", "first", "steps", "living", "room"], "ner_tags": [7, 17, 18, 9, 10]}
+{"tokens": ["Whiskers", "loves", "our", "bedtime", "routine"], "ner_tags": [7, 0, 0, 13, 14]}
+{"tokens": ["Max", "joined", "dinner", "time", "again"], "ner_tags": [7, 0, 13, 14, 0]}
+{"tokens": ["Panda's", "first", "birthday", "party", "was", "fun"], "ner_tags": [5, 17, 11, 12, 0, 0]}
+{"tokens": ["Telling", "Bunny", "about", "grandma's", "necklace"], "ner_tags": [0, 5, 0, 19, 20]}
+{"tokens": ["Movie", "night", "tradition", "with", "Milo"], "ner_tags": [15, 16, 0, 0, 7]}
+{"tokens": ["Peanut's", "nap", "time", "routine", "everyday"], "ner_tags": [5, 13, 14, 0, 0]}
+{"tokens": ["Dad's", "old", "watch", "for", "Sunday", "brunch"], "ner_tags": [19, 20, 0, 0, 15, 16]}
+{"tokens": ["Whiskers", "at", "the", "baby", "shower"], "ner_tags": [7, 0, 0, 11, 12]}
+{"tokens": ["Munchkin's", "first", "steps", "milestone"], "ner_tags": [5, 17, 18, 0]}
+{"tokens": ["Max", "chased", "us", "in", "playroom"], "ner_tags": [7, 0, 0, 0, 9]}
+{"tokens": ["Nana's", "quilt", "for", "Christmas", "Eve", "dinner"], "ner_tags": [19, 20, 0, 15, 16, 0]}
+{"tokens": ["Bunny", "lost", "first", "tooth", "yay"], "ner_tags": [5, 0, 17, 18, 0]}
+{"tokens": ["Bedtime", "story", "routine", "with", "Whiskers"], "ner_tags": [13, 14, 0, 0, 7]}
+{"tokens": ["Toddler's", "graduation", "party", "soon"], "ner_tags": [0, 11, 12, 0]}
+{"tokens": ["Mom", "shared", "heirloom", "ring"], "ner_tags": [3, 0, 19, 20]}
+{"tokens": ["Milo", "sleeps", "in", "nursery"], "ner_tags": [7, 0, 0, 9]}
+{"tokens": ["Sunday", "pancake", "tradition", "fun"], "ner_tags": [15, 16, 0, 0]}
+{"tokens": ["Panda's", "baptism", "day"], "ner_tags": [5, 11, 12]}
+{"tokens": ["Max", "at", "anniversary", "dinner"], "ner_tags": [7, 0, 11, 12]}
+{"tokens": ["Bath", "time", "routine", "with", "Bunny"], "ner_tags": [13, 14, 0, 0, 5]}
+{"tokens": ["Dad's", "medal", "from", "wedding", "day"], "ner_tags": [19, 0, 0, 11, 12]}
+{"tokens": ["Whiskers", "first", "with", "family"], "ner_tags": [7, 17, 0, 0]}
+{"tokens": ["Movie", "night", "with", "nana's", "blanket"], "ner_tags": [15, 16, 0, 19, 20]}
+{"tokens": ["Peanut", "crawled", "in", "kitchen"], "ner_tags": [5, 0, 0, 9]}
+{"tokens": ["Munchkin's", "first", "word", "milestone"], "ner_tags": [5, 17, 18, 0]}
+{"tokens": ["Milo", "loves", "morning", "walk", "routine"], "ner_tags": [7, 0, 13, 14, 0]}
+{"tokens": ["Baby's", "first", "Christmas", "party"], "ner_tags": [0, 17, 11, 12]}
+{"tokens": ["Whiskers", "in", "backyard", "play"], "ner_tags": [7, 0, 9, 0]}
+{"tokens": ["Bed", "time", "song", "tradition"], "ner_tags": [15, 16, 0, 0]}
+{"tokens": ["Panda", "got", "grandma's", "doll"], "ner_tags": [5, 0, 19, 20]}
+{"tokens": ["Dinner", "routine", "every", "night"], "ner_tags": [13, 14, 0, 0]}
+{"tokens": ["Max", "at", "toddler", "picnic"], "ner_tags": [7, 0, 11, 12]}
+{"tokens": ["Nana", "told", "tradition", "stories"], "ner_tags": [3, 0, 15, 16]}
+{"tokens": ["Bunny's", "first", "haircut", "day"], "ner_tags": [5, 17, 11, 12]}
+{"tokens": ["Family", "bible", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Milo", "helps", "bath", "routine"], "ner_tags": [7, 0, 13, 14]}
+{"tokens": ["Sunday", "brunch", "with", "Whiskers"], "ner_tags": [15, 16, 0, 7]}
+{"tokens": ["Peanut's", "dedication", "ceremony"], "ner_tags": [5, 11, 12]}
+{"tokens": ["Dad's", "locket", "story"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Kitchen", "dance", "routine"], "ner_tags": [9, 13, 14]}
+{"tokens": ["Munchkin", "said", "mama", "first"], "ner_tags": [5, 0, 0, 17]}
+{"tokens": ["Christmas", "cookie", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Whiskers", "birthday", "party", "cute"], "ner_tags": [7, 11, 12, 0]}
+{"tokens": ["Bedtime", "routine", "miss", "Milo"], "ner_tags": [13, 14, 0, 7]}
+{"tokens": ["Grandma's", "bracelet", "for", "Bunny"], "ner_tags": [19, 20, 0, 5]}
+{"tokens": ["Toddler's", "first", "pool", "party"], "ner_tags": [0, 17, 11, 12]}
+{"tokens": ["Morning", "cuddle", "routine"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Panda", "plays", "with", "family", "album"], "ner_tags": [5, 0, 0, 19, 20]}
+{"tokens": ["Whiskers", "loves", "playroom"], "ner_tags": [7, 0, 9]}
+{"tokens": ["Diwali", "celebration", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Milo", "at", "nap", "time"], "ner_tags": [7, 0, 13, 14]}
+{"tokens": ["Mom", "passed", "nana's", "ring"], "ner_tags": [3, 0, 19, 20]}
+{"tokens": ["Bunny's", "first", "smile", "milestone"], "ner_tags": [5, 17, 18, 0]}
+{"tokens": ["Baby", "shower", "for", "Peanut"], "ner_tags": [11, 12, 0, 5]}
+{"tokens": ["Movie", "night", "routine"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Whiskers", "crawled", "under", "crib"], "ner_tags": [7, 0, 0, 9]}
+{"tokens": ["Sunday", "walk", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Munchkin's", "baptism", "party"], "ner_tags": [5, 11, 12]}
+{"tokens": ["Grandpa's", "watch", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Bath", "time", "fun", "w", "Milo"], "ner_tags": [13, 14, 0, 0, 7]}
+{"tokens": ["Panda", "holds", "mom's", "necklace"], "ner_tags": [5, 0, 19, 20]}
+{"tokens": ["First", "family", "picnic"], "ner_tags": [17, 11, 12]}
+{"tokens": ["Max", "in", "garden", "play"], "ner_tags": [7, 0, 9, 0]}
+{"tokens": ["Bedtime", "story", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Nana", "gave", "quilt", "story"], "ner_tags": [3, 0, 19, 0]}
+{"tokens": ["Whiskers", "at", "birthday", "dinner"], "ner_tags": [7, 0, 11, 12]}
+{"tokens": ["Peanut's", "routine", "feed"], "ner_tags": [5, 13, 14]}
+{"tokens": ["Christmas", "Eve", "party"], "ner_tags": [11, 12, 0]}
+{"tokens": ["Family", "ring", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Milo", "sleeps", "during", "nap", "routine"], "ner_tags": [7, 0, 0, 13, 14]}
+{"tokens": ["Bunny", "first", "steps", "in", "hallway"], "ner_tags": [5, 17, 18, 0, 9]}
+{"tokens": ["Sunday", "brunch", "w", "Whiskers"], "ner_tags": [15, 16, 0, 7]}
+{"tokens": ["Dad's", "medallion", "tradition"], "ner_tags": [19, 0, 15]}
+{"tokens": ["Toddler", "picnic", "event"], "ner_tags": [11, 12, 0]}
+{"tokens": ["Max", "loves", "kitchen"], "ner_tags": [7, 0, 9]}
+{"tokens": ["Morning", "routine", "cuddles"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Munchkin's", "first", "tooth"], "ner_tags": [5, 17, 18]}
+{"tokens": ["Grandma's", "dollhouse", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Whiskers", "joins", "dinner", "time"], "ner_tags": [7, 0, 13, 14]}
+{"tokens": ["Movie", "night", "with", "family", "album"], "ner_tags": [15, 16, 0, 19, 20]}
+{"tokens": ["Panda's", "christening"], "ner_tags": [5, 11]}
+{"tokens": ["Bath", "routine", "w", "Milo"], "ner_tags": [13, 14, 0, 7]}
+{"tokens": ["Nana's", "blanket", "story"], "ner_tags": [19, 20, 0]}
+{"tokens": ["First", "word", "milestone", "Bunny"], "ner_tags": [17, 18, 0, 5]}
+{"tokens": ["Max", "at", "playdate", "party"], "ner_tags": [7, 0, 11, 12]}
+{"tokens": ["Diwali", "tradition", "lights"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Peanut", "crawls", "playroom"], "ner_tags": [5, 0, 9]}
+{"tokens": ["Dad's", "watch", "passed", "down"], "ner_tags": [19, 20, 0, 0]}
+{"tokens": ["Bedtime", "routine", "every", "eve"], "ner_tags": [13, 14, 0, 0]}
+{"tokens": ["Whiskers", "birthday", "surprise"], "ner_tags": [7, 11, 0]}
+{"tokens": ["Sunday", "pancakes", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Milo", "in", "nursery", "nap"], "ner_tags": [7, 0, 9, 13]}
+{"tokens": ["Mom", "shows", "heirloom", "quilt"], "ner_tags": [3, 0, 19, 20]}
+{"tokens": ["Bunny's", "first", "laugh"], "ner_tags": [5, 17, 0]}
+{"tokens": ["Dinner", "party", "family"], "ner_tags": [11, 12, 0]}
+{"tokens": ["Grandpa's", "letters", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Max", "loves", "backyard"], "ner_tags": [7, 0, 9]}
+{"tokens": ["Morning", "walk", "w", "Whiskers"], "ner_tags": [13, 14, 0, 7]}
+{"tokens": ["Panda", "got", "nana's", "pendant"], "ner_tags": [5, 0, 19, 20]}
+{"tokens": ["Toddler's", "first", "cake", "smash"], "ner_tags": [0, 17, 11, 12]}
+{"tokens": ["Movie", "night", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Munchkin", "sleeps", "with", "Milo"], "ner_tags": [5, 0, 0, 7]}
+{"tokens": ["Bath", "time", "routine"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Whiskers", "at", "baby's", "first", "party"], "ner_tags": [7, 0, 0, 17, 11]}
+{"tokens": ["Christmas", "tradition", "starts"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Peanut's", "milestone", "rollover"], "ner_tags": [5, 17, 18]}
+{"tokens": ["Dad's", "ring", "story"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Nap", "time", "in", "crib"], "ner_tags": [13, 14, 0, 9]}
+{"tokens": ["Max", "plays", "kitchen"], "ner_tags": [7, 0, 9]}
+{"tokens": ["Sunday", "brunch", "w", "fam"], "ner_tags": [15, 16, 0, 0]}
+{"tokens": ["Bunny", "holds", "grandma's", "necklace"], "ner_tags": [5, 0, 19, 20]}
+{"tokens": ["First", "steps", "party"], "ner_tags": [17, 18, 11]}
+{"tokens": ["Milo", "joins", "dinner", "routine"], "ner_tags": [7, 0, 13, 14]}
+{"tokens": ["Nana", "tradition", "songs"], "ner_tags": [3, 15, 16]}
+{"tokens": ["Whiskers", "first", "snow", "day"], "ner_tags": [7, 17, 11, 12]}
+{"tokens": ["Bedtime", "cuddle", "routine"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Mom's", "locket", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Panda's", "pool", "party"], "ner_tags": [5, 11, 12]}
+{"tokens": ["Garden", "play", "routine"], "ner_tags": [9, 13, 14]}
+{"tokens": ["Munchkin's", "first", "dance"], "ner_tags": [5, 17, 0]}
+{"tokens": ["Max", "at", "family", "reunion"], "ner_tags": [7, 0, 11, 12]}
+{"tokens": ["Diwali", "party", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Grandpa's", "toy", "car"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Whiskers", "loves", "nap", "time"], "ner_tags": [7, 0, 13, 14]}
+{"tokens": ["Sunday", "movie", "night"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Bunny", "crawled", "playroom"], "ner_tags": [5, 0, 9]}
+{"tokens": ["Dad's", "album", "shown"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Morning", "feed", "routine"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Milo", "birthday", "party"], "ner_tags": [7, 11, 12]}
+{"tokens": ["Family", "quilt", "tradition"], "ner_tags": [19, 20, 15]}
+{"tokens": ["Peanut", "first", "situp"], "ner_tags": [5, 17, 0]}
+{"tokens": ["Bath", "routine", "splash"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Whiskers", "in", "living", "room"], "ner_tags": [7, 0, 9, 10]}
+{"tokens": ["Toddler", "grad", "party"], "ner_tags": [11, 12, 0]}
+{"tokens": ["Max", "helps", "bedtime"], "ner_tags": [7, 0, 13]}
+{"tokens": ["Christmas", "brunch", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Panda's", "first", "tooth"], "ner_tags": [5, 17, 18]}
+{"tokens": ["Mom", "gave", "heirloom", "bracelet"], "ner_tags": [3, 0, 19, 20]}
+{"tokens": ["Dinner", "time", "w", "Milo"], "ner_tags": [13, 14, 0, 7]}
+{"tokens": ["Bunny's", "dedication", "day"], "ner_tags": [5, 11, 12]}
+{"tokens": ["Playroom", "chaos", "routine"], "ner_tags": [9, 13, 14]}
+{"tokens": ["Grandma's", "necklace", "shiny"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Whiskers", "at", "picnic"], "ner_tags": [7, 0, 11]}
+{"tokens": ["Sunday", "craft", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Munchkin", "rolls", "over"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Dad's", "watch", "ticktock"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Nap", "routine", "quiet"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Max", "chases", "Bunny"], "ner_tags": [7, 0, 5]}
+{"tokens": ["Peanut's", "first", "clap"], "ner_tags": [5, 17, 0]}
+{"tokens": ["Bath", "time", "w", "Whiskers"], "ner_tags": [13, 14, 0, 7]}
+{"tokens": ["First", "family", "trip", "party"], "ner_tags": [17, 11, 12, 0]}
+{"tokens": ["Milo", "sleeps", "kitchen"], "ner_tags": [7, 0, 9]}
+{"tokens": ["Nana", "sings", "tradition"], "ner_tags": [3, 0, 15]}
+{"tokens": ["Panda", "wears", "grandpa's", "hat"], "ner_tags": [5, 0, 19, 20]}
+{"tokens": ["Bedtime", "routine", "done"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Whiskers", "pool", "party"], "ner_tags": [7, 11, 12]}
+{"tokens": ["Diwali", "sweets", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Mom's", "diary", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Morning", "routine", "sunny"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Bunny", "first", "wave"], "ner_tags": [5, 17, 0]}
+{"tokens": ["Max", "at", "baby", "dedication"], "ner_tags": [7, 0, 11, 12]}
+{"tokens": ["Sunday", "brunch", "pancakes"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Munchkin's", "crawl", "milestone"], "ner_tags": [5, 17, 18]}
+{"tokens": ["Dad's", "coin", "collection"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Dinner", "routine", "messy"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Whiskers", "loves", "garden"], "ner_tags": [7, 0, 9]}
+{"tokens": ["Family", "party", "tonight"], "ner_tags": [11, 12, 0]}
+{"tokens": ["Nana's", "storybook"], "ner_tags": [19, 20]}
+{"tokens": ["Milo", "nap", "time", "buddy"], "ner_tags": [7, 13, 14, 0]}
+{"tokens": ["Panda's", "first", "haircut"], "ner_tags": [5, 17, 11]}
+{"tokens": ["Movie", "night", "tradition", "cozy"], "ner_tags": [15, 16, 0, 0]}
+{"tokens": ["Peanut", "giggles", "bath"], "ner_tags": [5, 0, 13]}
+{"tokens": ["Grandma's", "quilt", "wrap"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Bedtime", "song", "routine"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Max", "birthday", "bash"], "ner_tags": [7, 11, 0]}
+{"tokens": ["Christmas", "tradition", "magic"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Whiskers", "first", "trick"], "ner_tags": [7, 17, 0]}
+{"tokens": ["Mom", "shares", "heirloom", "photo"], "ner_tags": [3, 0, 19, 20]}
+{"tokens": ["Toddler", "picnic", "w", "Milo"], "ner_tags": [11, 12, 0, 7]}
+{"tokens": ["Sunday", "walk", "family"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Munchkin", "claps", "first"], "ner_tags": [5, 0, 17]}
+{"tokens": ["Dad's", "necktie", "heirloom"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Nap", "time", "routine"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Panda", "plays", "w", "Whiskers"], "ner_tags": [5, 0, 0, 7]}
+{"tokens": ["First", "snow", "party"], "ner_tags": [17, 11, 12]}
+{"tokens": ["Kitchen", "dance", "tradition"], "ner_tags": [9, 15, 16]}
+{"tokens": ["Milo", "dinner", "guest"], "ner_tags": [7, 13, 0]}
+{"tokens": ["Nana's", "pendant"], "ner_tags": [19, 20]}
+{"tokens": ["Bunny", "first", "tooth", "gone"], "ner_tags": [5, 17, 18, 0]}
+{"tokens": ["Morning", "cuddles", "w", "Max"], "ner_tags": [13, 14, 0, 7]}
+{"tokens": ["Grandpa's", "pipe"], "ner_tags": [19, 20]}
+{"tokens": ["Bath", "routine", "bubbles"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Whiskers", "garden", "chase"], "ner_tags": [7, 9, 0]}
+{"tokens": ["Diwali", "celebration", "big"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Peanut's", "smile", "milestone"], "ner_tags": [5, 17, 18]}
+{"tokens": ["Movie", "night", "snacks"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Mom's", "ring", "shiny"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Max", "at", "christening"], "ner_tags": [7, 0, 11]}
+{"tokens": ["Bedtime", "routine", "sweet"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Munchkin's", "first", "wavebye"], "ner_tags": [5, 17, 18]}
+{"tokens": ["Dinner", "time", "chaos"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Whiskers", "playroom", "king"], "ner_tags": [7, 9, 0]}
+{"tokens": ["Baby's", "first", "party"], "ner_tags": [0, 17, 11]}
+{"tokens": ["Nana", "gives", "quilt"], "ner_tags": [3, 0, 19]}
+{"tokens": ["Milo", "loves", "routine"], "ner_tags": [7, 0, 13]}
+{"tokens": ["Panda", "crawls", "fast"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Christmas", "cookie", "night"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Family", "heirloom", "watch"], "ner_tags": [19, 20, 0]}
+{"tokens": ["Bath", "time", "splashy"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Bunny's", "pool", "party"], "ner_tags": [5, 11, 12]}
+{"tokens": ["Max", "nap", "buddy"], "ner_tags": [7, 13, 0]}
+{"tokens": ["Grandma's", "letters"], "ner_tags": [19, 20]}
+{"tokens": ["Morning", "walk", "tradition"], "ner_tags": [13, 14, 15]}
+{"tokens": ["Whiskers", "first", "birthday"], "ner_tags": [7, 17, 11]}
+{"tokens": ["Toddler", "dance", "party"], "ner_tags": [11, 12, 0]}
+{"tokens": ["Playroom", "fun", "routine"], "ner_tags": [9, 0, 13]}
+{"tokens": ["Mom", "tells", "tradition"], "ner_tags": [3, 0, 15]}
+{"tokens": ["Peanut", "sits", "up"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Bunny", "laughed", "at", "Grandma's", "jokes", "on", "the", "call", "."], "ner_tags": [5, 0, 0, 3, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "did", "the", "bedtime", "story", "routine", "via", "video", "with", "Papa", "."], "ner_tags": [0, 0, 0, 13, 14, 14, 0, 0, 0, 3, 0]}
+{"tokens": ["Cousin", "Jake's", "wedding", "day", "video", "was", "emotional", "."], "ner_tags": [3, 1, 11, 12, 0, 0, 0, 0]}
+{"tokens": ["Showed", "Dad's", "old", "watch", "to", "the", "aunts", "on", "call", "."], "ner_tags": [0, 3, 0, 19, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Daily", "video", "routine", "with", "Chachi", "keeps", "us", "close", "."], "ner_tags": [0, 0, 13, 0, 3, 0, 0, 0, 0]}
+{"tokens": ["Sophia's", "nickname", "Panda", "made", "everyone", "smile", "on", "video", "."], "ner_tags": [1, 0, 5, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Recalled", "family", "photo", "album", "during", "the", "call", "."], "ner_tags": [0, 19, 20, 20, 0, 0, 0, 0]}
+{"tokens": ["Talked", "about", "Ethan's", "first", "steps", "milestone", "with", "relatives", "."], "ner_tags": [0, 0, 1, 17, 18, 0, 0, 0, 0]}
+{"tokens": ["Evening", "routine", "includes", "video", "with", "Mummy", "now", "."], "ner_tags": [13, 14, 0, 0, 0, 3, 0, 0]}
+{"tokens": ["Sophia", "'s", "graduation", "day", "was", "the", "topic", "of", "call", "."], "ner_tags": [1, 0, 17, 18, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Showed", "Grandma's", "necklace", "heirloom", "on", "the", "screen", "."], "ner_tags": [0, 3, 19, 20, 0, 0, 0, 0]}
+{"tokens": ["In", "the", "garden", ",", "we", "had", "fun", "family", "event", "chat", "."], "ner_tags": [0, 0, 9, 0, 0, 0, 0, 11, 12, 0, 0]}
+{"tokens": ["Bunny's", "first", "word", "milestone", "shared", "with", "Uncle", "."], "ner_tags": [5, 17, 18, 0, 0, 0, 3, 0]}
+{"tokens": ["Daily", "morning", "walk", "routine", "discussed", "on", "video", "."], "ner_tags": [0, 13, 14, 14, 0, 0, 0, 0]}
+{"tokens": ["Grandpa's", "old", "watch", "was", "the", "heirloom", "highlight", "."], "ner_tags": [3, 0, 19, 0, 0, 19, 0, 0]}
+{"tokens": ["Talked", "about", "the", "wedding", "day", "family", "event", "."], "ner_tags": [0, 0, 0, 11, 12, 11, 12, 0]}
+{"tokens": ["Milo", "the", "dog", "barked", "at", "screen", "during", "routine", "call", "."], "ner_tags": [7, 8, 0, 0, 0, 0, 0, 13, 14, 0]}
+{"tokens": ["Our", "Sunday", "brunch", "tradition", "video", "update", "."], "ner_tags": [0, 15, 16, 16, 0, 0, 0]}
+{"tokens": ["Recap", "of", "lost", "tooth", "milestone", "made", "them", "laugh", "."], "ner_tags": [0, 0, 17, 18, 0, 0, 0, 0, 0]}
+{"tokens": ["Weekly", "dinner", "time", "routine", "via", "video", "with", "Dad's", "sister", "."], "ner_tags": [13, 14, 14, 14, 0, 0, 0, 3, 0, 0]}
+{"tokens": ["Panda", "danced", "for", "Grandma", "on", "the", "call", "."], "ner_tags": [5, 0, 0, 3, 0, 0, 0, 0]}
+{"tokens": ["In", "living", "room", ",", "discussed", "movie", "night", "tradition", "."], "ner_tags": [0, 9, 10, 0, 0, 15, 16, 16, 0]}
+{"tokens": ["Ethan", "shared", "family", "photo", "album", "pages", "."], "ner_tags": [1, 0, 19, 20, 20, 0, 0]}
+{"tokens": ["Grandpa", "sent", "digital", "version", "of", "heirloom", "letter", "."], "ner_tags": [3, 0, 0, 0, 0, 19, 20, 0]}
+{"tokens": ["Our", "school", "run", "routine", "updates", "amused", "them", "."], "ner_tags": [0, 13, 14, 0, 0, 0, 0, 0]}
+{"tokens": ["Talked", "about", "the", "birthday", "party", "family", "event", "."], "ner_tags": [0, 0, 0, 11, 12, 11, 12, 0]}
+{"tokens": ["From", "the", "garage", ",", "Dad", "fixed", "signal", "for", "call", "."], "ner_tags": [0, 0, 9, 0, 3, 0, 0, 0, 0, 0]}
+{"tokens": ["Champ", "got", "a", "shoutout", "from", "Nana", "."], "ner_tags": [5, 0, 0, 0, 0, 3, 0]}
+{"tokens": ["Shared", "Grandma's", "ring", "heirloom", "story", "."], "ner_tags": [0, 3, 19, 20, 0, 0]}
+{"tokens": ["Ethan", "'s", "lost", "tooth", "milestone", "funny", "memory", "."], "ner_tags": [1, 0, 17, 18, 0, 0, 0, 0]}
+{"tokens": ["Routine", "bedtime", "video", "with", "Papa", "calms", "teens", "."], "ner_tags": [13, 14, 0, 0, 3, 0, 0, 0]}
+{"tokens": ["The", "wedding", "day", "video", "from", "cousins", "emotional", "."], "ner_tags": [0, 11, 12, 0, 0, 0, 0, 0]}
+{"tokens": ["Panda", "and", "Milo", "played", "for", "the", "camera", "."], "ner_tags": [5, 0, 7, 0, 0, 0, 0, 0]}
+{"tokens": ["In", "backyard", ",", "had", "summer", "BBQ", "event", "chat", "."], "ner_tags": [0, 9, 0, 0, 11, 12, 12, 0, 0]}
+{"tokens": ["Daily", "check-in", "routine", "video", "with", "Dadi", "."], "ner_tags": [0, 13, 14, 0, 0, 3, 0]}
+{"tokens": ["Grandpa", "'s", "watch", "heirloom", "sparkled", "on", "screen", "."], "ner_tags": [3, 0, 19, 20, 0, 0, 0, 0]}
+{"tokens": ["Sophia", "discussed", "her", "morning", "routine", "details", "."], "ner_tags": [1, 0, 0, 13, 14, 0, 0]}
+{"tokens": ["Showed", "the", "photo", "album", "heirloom", "to", "all", "."], "ner_tags": [0, 0, 19, 20, 20, 0, 0, 0]}
+{"tokens": ["Talked", "Sophia's", "first", "steps", "as", "baby", "."], "ner_tags": [0, 1, 17, 18, 0, 0, 0]}
+{"tokens": ["Milo", "joined", "the", "frame", "in", "kitchen", "."], "ner_tags": [7, 0, 0, 0, 0, 9, 0]}
+{"tokens": ["Bunny", "'s", "laugh", "lit", "up", "the", "screen", "."], "ner_tags": [5, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Grandma", "reminisced", "about", "anniversary", "dinner", "."], "ner_tags": [3, 0, 0, 11, 12, 0]}
+{"tokens": ["From", "living", "room", ",", "Ethan", "sang", "for", "relatives", "."], "ner_tags": [0, 9, 10, 0, 1, 0, 0, 0, 0]}
+{"tokens": ["Our", "Diwali", "celebration", "tradition", "via", "Zoom", "."], "ner_tags": [0, 15, 16, 16, 0, 0, 0]}
+{"tokens": ["First", "word", "milestone", "video", "clip", "shared", "."], "ner_tags": [17, 18, 0, 0, 0, 0, 0]}
+{"tokens": ["Dinner", "time", "routine", "coordinated", "over", "video", "."], "ner_tags": [13, 14, 14, 0, 0, 0, 0]}
+{"tokens": ["Sophia", "'s", "pet", "cat", "Whiskers", "meowed", "loudly", "."], "ner_tags": [1, 0, 7, 8, 7, 0, 0, 0]}
+{"tokens": ["In", "the", "garden", ",", "had", "clear", "signal", "for", "call", "."], "ner_tags": [0, 0, 9, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Panda", "drew", "picture", "for", "Nana", "."], "ner_tags": [5, 0, 0, 0, 3, 0]}
+{"tokens": ["Heirloom", "necklace", "from", "Grandpa", "shown", "close-up", "."], "ner_tags": [19, 20, 0, 3, 0, 0, 0]}
+{"tokens": ["School", "run", "routine", "stories", "entertained", "everyone", "."], "ner_tags": [13, 14, 0, 0, 0, 0, 0]}
+{"tokens": ["Ethan", "celebrated", "his", "graduation", "milestone", "early", "."], "ner_tags": [1, 0, 0, 17, 18, 0, 0]}
+{"tokens": ["Family", "photo", "album", "flipped", "through", "on", "screen", "."], "ner_tags": [19, 20, 20, 0, 0, 0, 0, 0]}
+{"tokens": ["Morning", "walk", "routine", "video", "update", "with", "Chacha", "."], "ner_tags": [13, 14, 14, 0, 0, 0, 3, 0]}
+{"tokens": ["Milo", "'s", "tricks", "amazed", "Grandma", "."], "ner_tags": [7, 0, 0, 0, 3, 0]}
+{"tokens": ["Birthday", "party", "plans", "for", "cousin", "finalized", "."], "ner_tags": [11, 12, 0, 0, 3, 0, 0]}
+{"tokens": ["Bunny", "helped", "set", "up", "the", "call", "."], "ner_tags": [5, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Grandpa", "'s", "stories", "of", "tradition", "captivating", "."], "ner_tags": [3, 0, 0, 0, 15, 0, 0]}
+{"tokens": ["From", "kitchen", ",", "cooked", "while", "chatting", "."], "ner_tags": [0, 9, 0, 0, 0, 0, 0]}
+{"tokens": ["Evening", "dinner", "routine", "shared", "recipes", "."], "ner_tags": [13, 14, 14, 0, 0, 0]}
+{"tokens": ["Wedding", "day", "clips", "from", "family", "event", "."], "ner_tags": [11, 12, 0, 0, 11, 12, 0]}
+{"tokens": ["Pet", "Whiskers", "curled", "up", "nearby", "."], "ner_tags": [7, 8, 0, 0, 0, 0]}
+{"tokens": ["Sunday", "brunch", "tradition", "menu", "discussed", "."], "ner_tags": [15, 16, 16, 0, 0, 0]}
+{"tokens": ["Heirloom", "ring", "passed", "down", "story", "."], "ner_tags": [19, 20, 0, 0, 0, 0]}
+{"tokens": ["Panda", "sang", "happy", "birthday", "song", "."], "ner_tags": [5, 0, 0, 11, 12, 0]}
+{"tokens": ["Grandma", "'s", "necklace", "glinted", "beautifully", "."], "ner_tags": [3, 0, 19, 0, 0, 0]}
+{"tokens": ["Backyard", "picnic", "event", "planned", "together", "."], "ner_tags": [9, 11, 12, 0, 0, 0]}
+{"tokens": ["Daily", "bedtime", "story", "routine", "virtual", "now", "."], "ner_tags": [0, 13, 14, 14, 0, 0, 0]}
+{"tokens": ["Sophia", "shared", "her", "graduation", "cap", "."], "ner_tags": [1, 0, 0, 17, 0, 0]}
+{"tokens": ["Anniversary", "dinner", "recipes", "exchanged", "."], "ner_tags": [11, 12, 0, 0, 0]}
+{"tokens": ["Bunny", "'s", "artwork", "praised", "highly", "."], "ner_tags": [5, 0, 0, 0, 0, 0]}
+{"tokens": ["Weekly", "check-in", "routine", "with", "Papa", "."], "ner_tags": [13, 14, 14, 0, 3, 0]}
+{"tokens": ["Grandpa", "shared", "heirloom", "watch", "close-up", "."], "ner_tags": [3, 0, 19, 20, 0, 0]}
+{"tokens": ["Pet", "Max", "'s", "birthday", "celebrated", "."], "ner_tags": [7, 8, 0, 11, 12, 0]}
+{"tokens": ["Ethan", "danced", "like", "at", "wedding", "day", "."], "ner_tags": [1, 0, 0, 0, 11, 12, 0]}
+{"tokens": ["Milo", "chased", "laser", "pointer", "hilariously", "."], "ner_tags": [7, 0, 0, 0, 0, 0]}
+{"tokens": ["Graduation", "day", "photos", "from", "Sophia", "."], "ner_tags": [17, 18, 0, 0, 1, 0]}
+{"tokens": ["Grandma's", "necklace", "heirloom", "journey", "told", "."], "ner_tags": [3, 19, 20, 0, 0, 0]}
+{"tokens": ["Panda", "recited", "poem", "perfectly", "."], "ner_tags": [5, 0, 0, 0, 0]}
+{"tokens": ["Champ", "'s", "jump", "impressed", "all", "."], "ner_tags": [5, 0, 0, 0, 0, 0]}
+{"tokens": ["Grandpa", "first", "word", "funny", "recall", "."], "ner_tags": [3, 17, 18, 0, 0, 0]}
+{"tokens": ["Daily", "video", "routine", "now", "unmissable", "."], "ner_tags": [0, 0, 13, 0, 0, 0]}
+{"tokens": ["Ethan", "and", "Sophia", "'s", "concert", "milestone", "."], "ner_tags": [1, 0, 1, 0, 17, 18, 0]}
+{"tokens": ["Wedding", "day", "vows", "reheard", "."], "ner_tags": [11, 12, 0, 0, 0]}
+{"tokens": ["Milo", "slept", "through", "most", "of", "it", "."], "ner_tags": [7, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Panda", "'s", "drawing", "talent", "showcased", "."], "ner_tags": [5, 0, 0, 0, 0, 0]}
+{"tokens": ["Heirloom", "letter", "read", "aloud", "."], "ner_tags": [19, 20, 0, 0, 0]}
+{"tokens": ["Bedtime", "story", "routine", "interactive", "now", "."], "ner_tags": [13, 14, 14, 0, 0, 0]}
+{"tokens": ["Anniversary", "dinner", "toasts", "virtual", "."], "ner_tags": [11, 12, 0, 0, 0]}
+{"tokens": ["From", "backyard", ",", "stars", "visible", "behind", "."], "ner_tags": [0, 9, 0, 0, 0, 0, 0]}
+{"tokens": ["Bunny", "asked", "about", "traditions", "."], "ner_tags": [5, 0, 0, 15, 0]}
+{"tokens": ["Grandpa", "'s", "watch", "ticked", "loudly", "."], "ner_tags": [3, 0, 19, 0, 0, 0]}
+{"tokens": ["Morning", "routine", "coffee", "sipped", "together", "."], "ner_tags": [13, 14, 0, 0, 0, 0]}
+{"tokens": ["Ethan", "graduation", "speech", "practiced", "."], "ner_tags": [1, 17, 0, 0, 0]}
+{"tokens": ["Kitchen", "snacks", "munched", "during", "chat", "."], "ner_tags": [9, 0, 0, 0, 0, 0]}
+{"tokens": ["Champ", "fetched", "ball", "on", "command", "."], "ner_tags": [5, 0, 0, 0, 0, 0]}
+{"tokens": ["Panda", "'s", "poem", "recital", "flawless", "."], "ner_tags": [5, 0, 0, 0, 0, 0]}
+{"tokens": ["Grandma", "ring", "heirloom", "fits", "perfectly", "."], "ner_tags": [3, 19, 20, 0, 0, 0]}
+{"tokens": ["Garden", "harvest", "event", "shared", "."], "ner_tags": [9, 0, 11, 0, 0]}
+{"tokens": ["School", "routine", "updates", "weekly", "."], "ner_tags": [13, 14, 0, 0, 0]}
+{"tokens": ["Ethan", "'s", "driving", "milestone", "cautious", "."], "ner_tags": [1, 0, 17, 18, 0, 0]}
+{"tokens": ["Milo", "and", "Whiskers", "peaceful", "coexist", "."], "ner_tags": [7, 0, 7, 0, 0, 0]}
+{"tokens": ["Nana", "movie", "night", "suggestions", "great", "."], "ner_tags": [3, 15, 16, 0, 0, 0]}
+{"tokens": ["Bunny", "'s", "bedtime", "routine", "shared", "."], "ner_tags": [5, 0, 13, 14, 0, 0]}
+{"tokens": ["Champ", "learned", "new", "command", "."], "ner_tags": [5, 0, 0, 0, 0]}
+{"tokens": ["Kitchen", "cooking", "demo", "live", "."], "ner_tags": [9, 0, 0, 0, 0]}
+{"tokens": ["First", "word", "video", "timeless", "."], "ner_tags": [17, 18, 0, 0, 0]}
+{"tokens": ["Morning", "routine", "yoga", "session", "."], "ner_tags": [13, 14, 0, 0, 0]}
+{"tokens": ["Birthday", "party", "surprise", "planned", "."], "ner_tags": [11, 12, 0, 0, 0]}
+{"tokens": ["Garden", "swing", "creak", "nostalgic", "."], "ner_tags": [9, 0, 0, 0, 0]}
+{"tokens": ["Lost", "tooth", "collection", "shown", "."], "ner_tags": [17, 18, 0, 0, 0]}
+{"tokens": ["Video", "routine", "evolved", "nicely", "."], "ner_tags": [0, 13, 0, 0, 0]}
+{"tokens": ["Sophia", "and", "Ethan", "duet", "performed", "."], "ner_tags": [1, 0, 1, 0, 0, 0]}
+{"tokens": ["Brunch", "tradition", "pancakes", "stack", "."], "ner_tags": [15, 16, 0, 0, 0]}
+{"tokens": ["Pet", "Whiskers", "lazy", "day", "."], "ner_tags": [7, 8, 0, 0, 0]}
+{"tokens": ["Graduation", "cap", "toss", "video", "."], "ner_tags": [17, 0, 0, 0, 0]}
+{"tokens": ["Grandpa", "necklace", "sparkle", "match", "."], "ner_tags": [3, 19, 0, 0, 0]}
+{"tokens": ["First", "steps", "race", "memory", "."], "ner_tags": [17, 18, 0, 0, 0]}
+{"tokens": ["Family", "event", "calendar", "synced", "."], "ner_tags": [11, 12, 0, 0, 0]}
+{"tokens": ["Kitchen", "dance", "break", "impromptu", "."], "ner_tags": [9, 0, 0, 0, 0]}
+{"tokens": ["Champ", "sleeps", "post-call", "."], "ner_tags": [5, 0, 0, 0]}
+{"tokens": ["Heirloom", "stories", "endless", "."], "ner_tags": [19, 0, 0, 0]}
+{"tokens": ["Routine", "solidified", "friendships", "."], "ner_tags": [13, 0, 0, 0]}
+{"tokens": ["Sophia", "tradition", "keeper", "."], "ner_tags": [1, 15, 0, 0]}
+{"tokens": ["Milo", "dreams", "chased", "."], "ner_tags": [7, 0, 0, 0]}
+{"tokens": ["Wedding", "dance", "rehearsed", "."], "ner_tags": [11, 0, 0, 0]}
+{"tokens": ["Graduation", "plans", "finalized", "."], "ner_tags": [17, 0, 0, 0]}
+{"tokens": ["Ethan", "kitchen", "helper", "."], "ner_tags": [1, 9, 0, 0]}
+{"tokens": ["Tradition", "evolving", "beautifully", "."], "ner_tags": [15, 0, 0, 0]}
+{"tokens": ["Grandpa", "tears", "joy", "."], "ner_tags": [3, 0, 0, 0]}
+{"tokens": ["Panda", "future", "star", "."], "ner_tags": [5, 0, 0, 0]}
+{"tokens": ["Heirloom", "passed", "on", "."], "ner_tags": [19, 0, 0, 0]}
+{"tokens": ["Ethan", "milestone", "master", "."], "ner_tags": [1, 17, 0, 0]}
+{"tokens": ["Emma", "starts", "her", "morning", "routine", "with", "a", "smile"], "ner_tags": [1, 0, 0, 13, 14, 0, 0, 0]}
+{"tokens": ["Morning", "routine", "in", "the", "kitchen", "with", "the", "family"], "ner_tags": [13, 14, 0, 0, 9, 0, 0, 0]}
+{"tokens": ["Jack", "pouring", "milk", "for", "his", "cereal", "bowl"], "ner_tags": [1, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Mom", "and", "Emma", "sharing", "a", "quick", "breakfast"], "ner_tags": [3, 0, 1, 0, 0, 0, 13]}
+{"tokens": ["Bunny", "aka", "Emma", "digging", "into", "oatmeal"], "ner_tags": [5, 0, 1, 0, 0, 13]}
+{"tokens": ["Dad's", "special", "omelette", "for", "morning", "routine"], "ner_tags": [3, 0, 13, 0, 13, 14]}
+{"tokens": ["Family", "gathered", "around", "the", "dining", "table"], "ner_tags": [0, 0, 0, 0, 9, 9]}
+{"tokens": ["Champ", "Jack", "finishing", "his", "toast", "quickly"], "ner_tags": [5, 1, 0, 0, 0, 0]}
+{"tokens": ["Morning", "coffee", "with", "Mom", "in", "kitchen"], "ner_tags": [13, 14, 0, 3, 0, 9]}
+{"tokens": ["Jack", "and", "Max", "waiting", "for", "bacon"], "ner_tags": [1, 0, 7, 0, 0, 13]}
+{"tokens": ["Mom", "packing", "lunches", "after", "breakfast"], "ner_tags": [3, 0, 13, 0, 0]}
+{"tokens": ["Emma", "brushing", "teeth", "before", "school", "run"], "ner_tags": [1, 0, 13, 0, 13, 14]}
+{"tokens": ["Dad", "helping", "Jack", "with", "his", "backpack"], "ner_tags": [3, 0, 1, 0, 0, 0]}
+{"tokens": ["Quick", "family", "prayer", "at", "breakfast", "table"], "ner_tags": [0, 11, 12, 0, 13, 9]}
+{"tokens": ["Bunny's", "first", "solo", "pour", "of", "juice"], "ner_tags": [5, 17, 18, 0, 0, 0]}
+{"tokens": ["Kitchen", "chaos", "during", "morning", "rush"], "ner_tags": [9, 0, 0, 13, 14]}
+{"tokens": ["Emma", "and", "Dad", "making", "smoothies"], "ner_tags": [1, 0, 3, 0, 13]}
+{"tokens": ["Jack's", "milestone", "big", "boy", "breakfast"], "ner_tags": [1, 17, 18, 0, 13]}
+{"tokens": ["Mom's", "grandma's", "recipe", "pancakes"], "ner_tags": [3, 19, 20, 13]}
+{"tokens": ["Family", "photo", "before", "school", "departure"], "ner_tags": [0, 0, 0, 13, 14]}
+{"tokens": ["Max", "stealing", "a", "bite", "from", "Jack's", "plate"], "ner_tags": [7, 0, 0, 0, 0, 1, 9]}
+{"tokens": ["Morning", "routine", "complete", "with", "hugs"], "ner_tags": [13, 14, 0, 0, 0]}
+{"tokens": ["Emma", "eating", "fruit", "salad", "at", "table"], "ner_tags": [1, 0, 0, 0, 0, 9]}
+{"tokens": ["Dad", "reading", "news", "over", "coffee"], "ner_tags": [3, 0, 0, 0, 13]}
+{"tokens": ["Sunday", "brunch", "tradition", "in", "full", "swing"], "ner_tags": [15, 16, 0, 0, 0, 0]}
+{"tokens": ["Jack", "spilling", "milk", "during", "rush"], "ner_tags": [1, 0, 0, 0, 13]}
+{"tokens": ["Mom", "cleaning", "up", "kitchen", "post-breakfast"], "ner_tags": [3, 0, 0, 9, 0]}
+{"tokens": ["Bunny", "and", "Champ", "at", "breakfast"], "ner_tags": [5, 0, 5, 0, 13]}
+{"tokens": ["First", "family", "Zoom", "breakfast", "together"], "ner_tags": [17, 11, 12, 13, 0]}
+{"tokens": ["Emma's", "room", "prep", "before", "morning", "meal"], "ner_tags": [9, 0, 0, 0, 13, 14]}
+{"tokens": ["Dad", "toasting", "bread", "for", "kids"], "ner_tags": [3, 0, 0, 0, 0]}
+{"tokens": ["Routine", "morning", "walk", "with", "Max"], "ner_tags": [13, 14, 0, 0, 7]}
+{"tokens": ["Jack", "learning", "to", "set", "the", "table"], "ner_tags": [1, 0, 0, 0, 0, 9]}
+{"tokens": ["Mom's", "famous", "waffles", "time"], "ner_tags": [3, 0, 13, 14]}
+{"tokens": ["Family", "birthday", "breakfast", "surprise"], "ner_tags": [11, 12, 13, 0]}
+{"tokens": ["Emma", "pouring", "her", "own", "cereal"], "ner_tags": [1, 0, 0, 0, 13]}
+{"tokens": ["Kitchen", "filled", "with", "pancake", "aroma"], "ner_tags": [9, 0, 0, 13, 0]}
+{"tokens": ["Dad", "and", "Jack", "bonding", "over", "eggs"], "ner_tags": [3, 0, 1, 0, 0, 13]}
+{"tokens": ["Morning", "tradition", "of", "fresh", "fruit"], "ner_tags": [15, 16, 0, 0, 0]}
+{"tokens": ["Bunny", "giggling", "at", "Max's", "tricks"], "ner_tags": [5, 0, 0, 7, 0]}
+{"tokens": ["School", "run", "prep", "after", "quick", "bite"], "ner_tags": [13, 14, 0, 0, 0, 0]}
+{"tokens": ["Mom", "serving", "oatmeal", "bowls"], "ner_tags": [3, 0, 13, 0]}
+{"tokens": ["Jack's", "first", "word", "at", "breakfast", "table"], "ner_tags": [1, 17, 18, 0, 13, 9]}
+{"tokens": ["Emma", "helping", "set", "the", "dining", "room"], "ner_tags": [1, 0, 0, 0, 9, 9]}
+{"tokens": ["Family", "morning", "meeting", "over", "juice"], "ner_tags": [13, 14, 0, 0, 0]}
+{"tokens": ["Champ", "devouring", "his", "pancakes"], "ner_tags": [5, 0, 0, 13]}
+{"tokens": ["Morning", "routine", "dance", "party", "starts"], "ner_tags": [13, 14, 0, 0, 0]}
+{"tokens": ["Emma", "and", "Mom", "whipping", "up", "smoothies"], "ner_tags": [1, 0, 3, 0, 0, 13]}
+{"tokens": ["Max", "under", "the", "table", "waiting"], "ner_tags": [7, 0, 0, 9, 0]}
+{"tokens": ["Kitchen", "counter", "full", "of", "fresh", "bread"], "ner_tags": [9, 9, 0, 0, 0, 0]}
+{"tokens": ["Dad", "pouring", "coffee", "for", "morning", "start"], "ner_tags": [3, 0, 13, 0, 13, 14]}
+{"tokens": ["Bunny's", "yogurt", "mess", "fun"], "ner_tags": [5, 13, 0, 0]}
+{"tokens": ["Family", "graduation", "day", "breakfast"], "ner_tags": [11, 12, 0, 13]}
+{"tokens": ["Jack", "brushing", "teeth", "post-meal"], "ner_tags": [1, 0, 13, 0]}
+{"tokens": ["Mom's", "heirloom", "silverware", "on", "table"], "ner_tags": [3, 19, 20, 0, 9]}
+{"tokens": ["Emma", "sipping", "her", "hot", "chocolate"], "ner_tags": [1, 0, 0, 0, 13]}
+{"tokens": ["Dad", "and", "kids", "at", "breakfast", "nook"], "ner_tags": [3, 0, 0, 0, 13, 9]}
+{"tokens": ["Champ", "sharing", "with", "Max"], "ner_tags": [5, 0, 0, 7]}
+{"tokens": ["First", "snow", "day", "breakfast", "coziness"], "ner_tags": [17, 18, 0, 13, 0]}
+{"tokens": ["Kitchen", "dance", "during", "prep", "time"], "ner_tags": [9, 0, 0, 13, 14]}
+{"tokens": ["Mom", "slicing", "fruit", "for", "everyone"], "ner_tags": [3, 0, 0, 0, 0]}
+{"tokens": ["Jack's", "backpack", "ready", "by", "table"], "ner_tags": [1, 0, 0, 0, 9]}
+{"tokens": ["Emma", "and", "Bunny", "mode", "on"], "ner_tags": [1, 0, 5, 0, 0]}
+{"tokens": ["Dad's", "smoothie", "blender", "action"], "ner_tags": [3, 13, 0, 0]}
+{"tokens": ["Family", "prayer", "before", "digging", "in"], "ner_tags": [11, 12, 0, 0, 0]}
+{"tokens": ["Morning", "routine", "with", "smiles", "all", "around"], "ner_tags": [13, 14, 0, 0, 0, 0]}
+{"tokens": ["Max", "begging", "at", "Emma's", "feet"], "ner_tags": [7, 0, 0, 1, 0]}
+{"tokens": ["Pancakes", "stacked", "high", "for", "tradition"], "ner_tags": [13, 0, 0, 0, 15]}
+{"tokens": ["Mom", "waking", "the", "kids", "gently"], "ner_tags": [3, 0, 0, 0, 0]}
+{"tokens": ["Jack", "mastering", "his", "cereal", "pour"], "ner_tags": [1, 0, 0, 13, 14]}
+{"tokens": ["Dining", "room", "breakfast", "spread"], "ner_tags": [9, 9, 13, 0]}
+{"tokens": ["Bunny", "loving", "her", "banana", "slices"], "ner_tags": [5, 0, 0, 0, 0]}
+{"tokens": ["Dad", "frying", "bacon", "aroma"], "ner_tags": [3, 0, 13, 0]}
+{"tokens": ["Emma's", "first", "school", "bagel", "day"], "ner_tags": [1, 17, 18, 13, 0]}
+{"tokens": ["Family", "hug", "at", "kitchen", "island"], "ner_tags": [0, 0, 0, 9, 9]}
+{"tokens": ["Champ's", "energy", "at", "breakfast"], "ner_tags": [5, 0, 0, 13]}
+{"tokens": ["Morning", "meditation", "before", "meal"], "ner_tags": [13, 14, 0, 13]}
+{"tokens": ["Mom", "and", "Max", "teamwork", "in", "kitchen"], "ner_tags": [3, 0, 7, 0, 0, 9]}
+{"tokens": ["Jack", "counting", "his", "pancakes"], "ner_tags": [1, 0, 0, 13]}
+{"tokens": ["Grandma's", "necklace", "worn", "by", "Mom"], "ner_tags": [19, 20, 0, 0, 3]}
+{"tokens": ["Routine", "toothbrush", "race", "starts"], "ner_tags": [13, 0, 0, 0]}
+{"tokens": ["Emma", "spreading", "jam", "neatly"], "ner_tags": [1, 0, 0, 0]}
+{"tokens": ["Dad's", "jokes", "lighten", "morning", "mood"], "ner_tags": [3, 0, 0, 13, 14]}
+{"tokens": ["Bunny", "and", "Daddy", "sharing", "toast"], "ner_tags": [5, 0, 3, 0, 13]}
+{"tokens": ["First", "family", "camping", "trip", "prep", "breakfast"], "ner_tags": [17, 11, 0, 0, 13, 13]}
+{"tokens": ["Kitchen", "full", "of", "laughter"], "ner_tags": [9, 0, 0, 0]}
+{"tokens": ["Jack", "helping", "Mom", "with", "dishes"], "ner_tags": [1, 0, 3, 0, 0]}
+{"tokens": ["Emma's", "smoothie", "masterpiece"], "ner_tags": [1, 13, 0]}
+{"tokens": ["Family", "around", "the", "breakfast", "bar"], "ner_tags": [0, 0, 0, 13, 9]}
+{"tokens": ["Max's", "favorite", "spot", "under", "table"], "ner_tags": [7, 0, 9, 0, 9]}
+{"tokens": ["Pancake", "art", "by", "Dad"], "ner_tags": [13, 0, 0, 3]}
+{"tokens": ["Mom", "organizing", "school", "lunches"], "ner_tags": [3, 0, 13, 0]}
+{"tokens": ["Champ", "ready", "for", "school", "run"], "ner_tags": [5, 0, 0, 13, 14]}
+{"tokens": ["Emma", "in", "her", "cozy", "kitchen", "chair"], "ner_tags": [1, 0, 0, 0, 9, 9]}
+{"tokens": ["Dad", "brewing", "fresh", "coffee"], "ner_tags": [3, 0, 0, 13]}
+{"tokens": ["Routine", "high-five", "after", "eating"], "ner_tags": [13, 0, 0, 0]}
+{"tokens": ["Bunny's", "oatmeal", "with", "berries"], "ner_tags": [5, 13, 0, 0]}
+{"tokens": ["Jack", "and", "Emma", "team", "at", "table"], "ner_tags": [1, 0, 1, 0, 0, 9]}
+{"tokens": ["Morning", "gratitude", "tradition"], "ner_tags": [15, 16, 0]}
+{"tokens": ["Max", "catching", "crumbs"], "ner_tags": [7, 0, 0]}
+{"tokens": ["First", "lost", "tooth", "celebrated", "at", "breakfast"], "ner_tags": [17, 18, 0, 11, 0, 13]}
+{"tokens": ["Kitchen", "island", "breakfast", "hub"], "ner_tags": [9, 9, 13, 0]}
+{"tokens": ["Mom's", "energy", "boost", "smoothie"], "ner_tags": [3, 0, 13, 0]}
+{"tokens": ["Dad", "packing", "Emma's", "bag"], "ner_tags": [3, 0, 1, 0]}
+{"tokens": ["Family", "sing-along", "during", "meal"], "ner_tags": [0, 0, 0, 13]}
+{"tokens": ["Champ's", "big", "appetite", "shines"], "ner_tags": [5, 0, 0, 0]}
+{"tokens": ["Emma", "arranging", "her", "plate"], "ner_tags": [1, 0, 0, 9]}
+{"tokens": ["Morning", "routine", "photo", "op"], "ner_tags": [13, 14, 0, 0]}
+{"tokens": ["Jack", "with", "his", "favorite", "mug"], "ner_tags": [1, 0, 0, 0, 13]}
+{"tokens": ["Mom", "and", "Dad", "tag-teaming", "prep"], "ner_tags": [3, 0, 3, 0, 0]}
+{"tokens": ["Bunny", "dipping", "toast", "in", "egg"], "ner_tags": [5, 0, 13, 0, 13]}
+{"tokens": ["Max", "in", "dining", "room", "action"], "ner_tags": [7, 0, 9, 9, 0]}
+{"tokens": ["Emma's", "perfect", "pour"], "ner_tags": [1, 0, 13]}
+{"tokens": ["Dad", "serving", "seconds"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Routine", "checklist", "ticked"], "ner_tags": [13, 0, 0]}
+{"tokens": ["Family", "cheers", "with", "orange", "juice"], "ner_tags": [0, 0, 0, 0, 0]}
+{"tokens": ["Champ", "and", "Max", "besties", "at", "table"], "ner_tags": [5, 0, 7, 0, 0, 9]}
+{"tokens": ["Morning", "yoga", "then", "breakfast"], "ner_tags": [13, 14, 0, 13]}
+{"tokens": ["Mom's", "fruit", "platter", "art"], "ner_tags": [3, 0, 0, 0]}
+{"tokens": ["Jack", "tying", "shoes", "after", "meal"], "ner_tags": [1, 0, 0, 0, 13]}
+{"tokens": ["Grandpa's", "watch", "on", "Dad's", "wrist"], "ner_tags": [19, 20, 0, 3, 0]}
+{"tokens": ["Emma", "smiling", "over", "cereal"], "ner_tags": [1, 0, 0, 13]}
+{"tokens": ["School", "run", "team", "assembled"], "ner_tags": [13, 14, 0, 0]}
+{"tokens": ["Bunny's", "messy", "but", "happy", "face"], "ner_tags": [5, 0, 0, 0, 0]}
+{"tokens": ["Dad", "cleaning", "griddle"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Family", "anniversary", "pancakes"], "ner_tags": [11, 12, 13]}
+{"tokens": ["Morning", "hustle", "in", "kitchen"], "ner_tags": [13, 14, 0, 9]}
+{"tokens": ["Max", "guarding", "the", "bowl"], "ner_tags": [7, 0, 0, 0]}
+{"tokens": ["Mom", "brewing", "tea", "too"], "ner_tags": [3, 0, 13, 0]}
+{"tokens": ["Emma", "and", "Jack", "high-fiving"], "ner_tags": [1, 0, 1, 0]}
+{"tokens": ["Tradition", "of", "shared", "stories"], "ner_tags": [15, 16, 0, 0]}
+{"tokens": ["Champ", "fueling", "up"], "ner_tags": [5, 0, 0]}
+{"tokens": ["First", "family", "vacay", "planning", "over", "brunch"], "ner_tags": [17, 11, 0, 0, 15, 16]}
+{"tokens": ["Dining", "nook", "coziness"], "ner_tags": [9, 9, 0]}
+{"tokens": ["Dad's", "egg", "art"], "ner_tags": [3, 13, 0]}
+{"tokens": ["Routine", "backpack", "grab"], "ner_tags": [13, 0, 0]}
+{"tokens": ["Emma's", "laugh", "fills", "kitchen"], "ner_tags": [1, 0, 0, 9]}
+{"tokens": ["Mom", "with", "her", "morning", "cup"], "ner_tags": [3, 0, 0, 13, 14]}
+{"tokens": ["Jack", "stacking", "his", "waffles"], "ner_tags": [1, 0, 0, 13]}
+{"tokens": ["Family", "portrait", "at", "breakfast"], "ner_tags": [0, 0, 0, 13]}
+{"tokens": ["Bunny", "sipping", "slowly"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Max's", "tail", "wagging", "wildly"], "ner_tags": [7, 0, 0, 0]}
+{"tokens": ["Morning", "milestone", "crossed"], "ner_tags": [13, 17, 18]}
+{"tokens": ["Kitchen", "teamwork"], "ner_tags": [9, 0]}
+{"tokens": ["Dad", "high-fiving", "kids"], "ner_tags": [3, 0, 0]}
+{"tokens": ["School", "routine", "perfected"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Emma", "ready", "to", "go"], "ner_tags": [1, 0, 0, 0]}
+{"tokens": ["Mom's", "hug", "goodbye"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Pancake", "day", "family", "event"], "ner_tags": [15, 0, 11, 12]}
+{"tokens": ["Jack", "in", "his", "booster", "seat"], "ner_tags": [1, 0, 0, 9, 9]}
+{"tokens": ["Morning", "light", "in", "dining", "room"], "ner_tags": [13, 0, 0, 9, 9]}
+{"tokens": ["Dad", "pouring", "syrup"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Emma", "helping", "clear", "table"], "ner_tags": [1, 0, 0, 9]}
+{"tokens": ["Max", "patiently", "waiting"], "ner_tags": [7, 0, 0]}
+{"tokens": ["Routine", "wrap-up"], "ner_tags": [13, 14]}
+{"tokens": ["Mom", "snapping", "photo"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Kitchen", "memories", "made"], "ner_tags": [9, 0, 0]}
+{"tokens": ["Champ", "victory", "bite"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Morning", "ritual", "complete"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Emma", "and", "Dad", "duo"], "ner_tags": [1, 0, 3, 0]}
+{"tokens": ["Family", "bonding", "over", "bacon"], "ner_tags": [0, 0, 0, 13]}
+{"tokens": ["Bunny", "playful", "morning"], "ner_tags": [5, 0, 13]}
+{"tokens": ["First", "potty", "trained", "breakfast"], "ner_tags": [17, 18, 0, 13]}
+{"tokens": ["Dad's", "frittata", "feat"], "ner_tags": [3, 13, 0]}
+{"tokens": ["School", "rush", "captured"], "ner_tags": [13, 14, 0]}
+{"tokens": ["Mom", "multitasking", "queen"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Jack", "learning", "manners"], "ner_tags": [1, 0, 0]}
+{"tokens": ["Dining", "table", "talks"], "ner_tags": [9, 9, 0]}
+{"tokens": ["Max's", "drool", "puddle"], "ner_tags": [7, 0, 0]}
+{"tokens": ["Tradition", "pancake", "tower"], "ner_tags": [15, 13, 0]}
+{"tokens": ["Emma's", "artful", "plate"], "ner_tags": [1, 0, 9]}
+{"tokens": ["Morning", "magic", "moment"], "ner_tags": [13, 0, 0]}
+{"tokens": ["Champ", "all", "done"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Family", "wave", "goodbye"], "ner_tags": [0, 0, 0]}
+{"tokens": ["Kitchen", "cleanup", "crew"], "ner_tags": [9, 0, 0]}
+{"tokens": ["Bunny", "nap", "time", "soon"], "ner_tags": [5, 13, 14, 0]}
+{"tokens": ["Dad", "proud", " papa"], "ner_tags": [3, 0, 3]}
+{"tokens": ["Routine", "success"], "ner_tags": [13, 14]}
+{"tokens": ["Emma", "glowing"], "ner_tags": [1, 0]}
+{"tokens": ["Mom's", "love", "in", "every", "bite"], "ner_tags": [3, 0, 0, 0, 0]}
+{"tokens": ["Jack", "and", "his", "hero", "Dad"], "ner_tags": [1, 0, 0, 0, 3]}
+{"tokens": ["Morning", "joy", "overflows"], "ner_tags": [13, 0, 0]}
+{"tokens": ["Max", "happy", "dog"], "ner_tags": [7, 0, 0]}
+{"tokens": ["Champ's", "adventure", "starts"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Pancakes", "for", "all"], "ner_tags": [13, 0, 0]}
+{"tokens": ["Emma", "school-bound"], "ner_tags": [1, 13]}
+{"tokens": ["Dad's", "masterpiece", "omelet"], "ner_tags": [3, 0, 13]}
+{"tokens": ["Bunny", "blessing", "the", "food"], "ner_tags": [5, 0, 0, 0]}
+{"tokens": ["Jack", "thumbs", "up"], "ner_tags": [1, 0, 0]}
+{"tokens": ["Mom", "smiling", "wide"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Family", "table", "full"], "ner_tags": [0, 9, 0]}
+{"tokens": ["Max's", "treat", "time"], "ner_tags": [7, 13, 14]}
+{"tokens": ["Emma's", "energy"], "ner_tags": [1, 0]}
+{"tokens": ["Champ", "champion", "eater"], "ner_tags": [5, 0, 0]}
+{"tokens": ["Dad", "door", "duty"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Morning", "blessings"], "ner_tags": [13, 14]}
+{"tokens": ["Bunny", "bye-bye"], "ner_tags": [5, 0]}
+{"tokens": ["Jack", "jumping", "joy"], "ner_tags": [1, 0, 0]}
+{"tokens": ["Mom's", "magic", "kitchen"], "ner_tags": [3, 0, 9]}
+{"tokens": ["Kitchen", "capture"], "ner_tags": [9, 0]}
+{"tokens": ["Emma", "eternal", "smile"], "ner_tags": [1, 0, 0]}
+{"tokens": ["Dad", "daily", "hero"], "ner_tags": [3, 0, 0]}
+{"tokens": ["Champ's", "conquest"], "ner_tags": [5, 0]}
+{"tokens": ["Max", "morning", "buddy"], "ner_tags": [7, 13, 14]}
+{"tokens": ["Routine", "rocked"], "ner_tags": [13, 14]}
+{"tokens": ["Mom", "morning", "star"], "ner_tags": [3, 13, 14]}
+{"tokens": ["Jack", "jackpot", "breakfast"], "ner_tags": [1, 0, 13]}
+{"tokens": ["Family", "fiesta"], "ner_tags": [0, 0]}
+{"tokens": ["Bunny", "breakfast", "boss"], "ner_tags": [5, 13, 0]}
+{"tokens": ["Emma", "everything", "perfect"], "ner_tags": [1, 0, 0]}
