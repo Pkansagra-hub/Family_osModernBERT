@@ -1,0 +1,2623 @@
+{"text": "What did we decide for Diwali menu?", "label": "MEMORY"}
+{"text": "Feeling the weight of responsibilities today.", "label": "DIARY"}
+{"text": "Wash the dishes now.", "label": "TASK"}
+{"text": "So thankful for peaceful puja moments.", "label": "GRATITUDE"}
+{"text": "Remind me of the puja timings?", "label": "MEMORY"}
+{"text": "Reflecting on progress despite illnesses.", "label": "DIARY"}
+{"text": "Email the boss about extension.", "label": "TASK"}
+{"text": "Appreciate family's unity in stress.", "label": "GRATITUDE"}
+{"text": "What were Amma's favorite songs we sang?", "label": "MEMORY"}
+{"text": "Deadline done, now time for rest.", "label": "DIARY"}
+{"text": "Thankful for Priya's recovery smile.", "label": "GRATITUDE"}
+{"text": "Recall our savings goal for emergencies?", "label": "MEMORY"}
+{"text": "Emotional day caring for sick ones.", "label": "DIARY"}
+{"text": "Fix the broken shelf.", "label": "TASK"}
+{"text": "Grateful for daily family meals.", "label": "GRATITUDE"}
+{"text": "Overthinking health scares late at night.", "label": "DIARY"}
+{"text": "Buy fruits for the week.", "label": "TASK"}
+{"text": "So thankful for supportive in-laws.", "label": "GRATITUDE"}
+{"text": "Remind me of mom's prescription refill date?", "label": "MEMORY"}
+{"text": "Busy day, grateful for small joys.", "label": "DIARY"}
+{"text": "Sweep the puja room.", "label": "TASK"}
+{"text": "Appreciate the doctor's kindness.", "label": "GRATITUDE"}
+{"text": "What was our plan B for deadlines?", "label": "MEMORY"}
+{"text": "Journal: strength from family love.", "label": "DIARY"}
+{"text": "Refill water bottles.", "label": "TASK"}
+{"text": "Thankful for Arjun's motivation.", "label": "GRATITUDE"}
+{"text": "Recall Diwali shopping list?", "label": "MEMORY"}
+{"text": "Stressful week, but pushing forward.", "label": "DIARY"}
+{"text": "Call grandma to check in.", "label": "TASK"}
+{"text": "Grateful for chai breaks.", "label": "GRATITUDE"}
+{"text": "What did we note about Priya's fever pattern?", "label": "MEMORY"}
+{"text": "Reflecting on resilience built from trials.", "label": "DIARY"}
+{"text": "Organize desk papers.", "label": "TASK"}
+{"text": "So thankful for spouse's patience.", "label": "GRATITUDE"}
+{"text": "Remind me of the family meeting notes?", "label": "MEMORY"}
+{"text": "Today's chaos of illness and work.", "label": "DIARY"}
+{"text": "Appreciate Amma's stories.", "label": "GRATITUDE"}
+{"text": "Feeling hopeful after tough days.", "label": "DIARY"}
+{"text": "Trim the garden hedges.", "label": "TASK"}
+{"text": "Thankful for health improvements.", "label": "GRATITUDE"}
+{"text": "Recall Arjun's tutor contact?", "label": "MEMORY"}
+{"text": "Diary: navigating deadlines with grace.", "label": "DIARY"}
+{"text": "Print the report.", "label": "TASK"}
+{"text": "Grateful for Priya's laughter.", "label": "GRATITUDE"}
+{"text": "What did we budget for medicine?", "label": "MEMORY"}
+{"text": "Exhaustion from nonstop caregiving.", "label": "DIARY"}
+{"text": "Lock the doors before bed.", "label": "TASK"}
+{"text": "So thankful for community prayers.", "label": "GRATITUDE"}
+{"text": "Remind me of Diwali guest list?", "label": "MEMORY"}
+{"text": "Pondering work-life balance issues.", "label": "DIARY"}
+{"text": "Appreciate daily gratitude practice.", "label": "GRATITUDE"}
+{"text": "What was mom's last check-up result?", "label": "MEMORY"}
+{"text": "Quiet reflection on family strength.", "label": "DIARY"}
+{"text": "Set alarm for early meeting.", "label": "TASK"}
+{"text": "Thankful for Arjun's hugs.", "label": "GRATITUDE"}
+{"text": "Recall our emergency contacts list?", "label": "MEMORY"}
+{"text": "Deadline crunch with flu season.", "label": "DIARY"}
+{"text": "Dust the shelves.", "label": "TASK"}
+{"text": "What did we plan for puja decorations?", "label": "MEMORY"}
+{"text": "Journaling relief after fever breaks.", "label": "DIARY"}
+{"text": "Walk the dog.", "label": "TASK"}
+{"text": "So thankful for family time.", "label": "GRATITUDE"}
+{"text": "Remind me of Priya's school deadline?", "label": "MEMORY"}
+{"text": "Stress melting away slowly.", "label": "DIARY"}
+{"text": "Make sandwich for lunch.", "label": "TASK"}
+{"text": "Appreciate Amma's resilience.", "label": "GRATITUDE"}
+{"text": "What were the symptoms for dad's cough?", "label": "MEMORY"}
+{"text": "Reflecting on lessons from hardship.", "label": "DIARY"}
+{"text": "File taxes extension.", "label": "TASK"}
+{"text": "Thankful for Diwali spirit.", "label": "GRATITUDE"}
+{"text": "Recall our vacation discussion?", "label": "MEMORY"}
+{"text": "Overwhelmed yet optimistic.", "label": "DIARY"}
+{"text": "Polish shoes.", "label": "TASK"}
+{"text": "Grateful for kids' health.", "label": "GRATITUDE"}
+{"text": "What did Arjun say about his project?", "label": "MEMORY"}
+{"text": "Diary of endurance through illness.", "label": "DIARY"}
+{"text": "Reply to work emails.", "label": "TASK"}
+{"text": "So thankful for support network.", "label": "GRATITUDE"}
+{"text": "Remind me of the recipe details?", "label": "MEMORY"}
+{"text": "Busy reflecting on progress.", "label": "DIARY"}
+{"text": "Change bedsheets.", "label": "TASK"}
+{"text": "What was our plan for school fees?", "label": "MEMORY"}
+{"text": "Feeling the strain but holding on.", "label": "DIARY"}
+{"text": "Brew coffee.", "label": "TASK"}
+{"text": "I'm really concerned about Arjun's low energy lately; he barely eats dinner anymore.", "label": "CONCERN"}
+{"text": "Work has been overwhelming with back-to-back deadlines; I need a break.", "label": "WORK"}
+{"text": "Can this diary remember the shopping list I made last week?", "label": "META"}
+{"text": "Planning our Diwali trip to Mumbai—should we book trains or flights?", "label": "PLANNING"}
+{"text": "Amma's cough isn't getting better; maybe it's time for a doctor's visit.", "label": "CONCERN"}
+{"text": "Reflected on my career today—promotion seems out of reach this year.", "label": "WORK"}
+{"text": "How do I delete old entries from this family diary?", "label": "META"}
+{"text": "Need to schedule Priya's parent-teacher meeting next Tuesday.", "label": "PLANNING"}
+{"text": "Worried about the rising bills; we can't keep spending like this.", "label": "CONCERN"}
+{"text": "Boss called an urgent team meeting tomorrow morning.", "label": "WORK"}
+{"text": "Diary, are you able to search for keywords in past notes?", "label": "META"}
+{"text": "Let's plan a quiet puja at home for Ganesh Chaturthi.", "label": "PLANNING"}
+{"text": "Arjun's friends are a bad influence; he's skipping studies.", "label": "CONCERN"}
+{"text": "Finished that big report at work, but exhausted now.", "label": "WORK"}
+{"text": "Can you confirm if this diary syncs across our phones?", "label": "META"}
+{"text": "Coordinating family vacation dates—everyone free in December?", "label": "PLANNING"}
+{"text": "Priya's job stress is affecting her sleep; I don't know how to help.", "label": "CONCERN"}
+{"text": "Interview prep for the new role kept me up late.", "label": "WORK"}
+{"text": "What are the privacy settings on this AI diary?", "label": "META"}
+{"text": "Planning Amma's retirement party—invites by weekend?", "label": "PLANNING"}
+{"text": "The neighborhood noise is driving me anxious at night.", "label": "CONCERN"}
+{"text": "Colleagues are slacking on the project; I'm covering too much.", "label": "WORK"}
+{"text": "Diary, can you generate summaries of my weekly entries?", "label": "META"}
+{"text": "Scheduling Diwali shopping trips with the kids.", "label": "PLANNING"}
+{"text": "Feels like our savings are draining too fast this month.", "label": "CONCERN"}
+{"text": "Long day at the office; client presentation went okay.", "label": "WORK"}
+{"text": "How do I add voice notes to this family diary?", "label": "META"}
+{"text": "Need to plan Priya's birthday surprise dinner.", "label": "PLANNING"}
+{"text": "Arjun's headaches worry me; should we see a specialist?", "label": "CONCERN"}
+{"text": "Team-building workshop at work tomorrow—dread it.", "label": "WORK"}
+{"text": "Is there a way to export all diary data?", "label": "META"}
+{"text": "Planning a weekend getaway to the hills for relaxation.", "label": "PLANNING"}
+{"text": "Amma seems lonely since Dad passed; need to visit more.", "label": "CONCERN"}
+{"text": "Wrapping up quarterly goals at work; behind schedule.", "label": "WORK"}
+{"text": "Can this diary integrate with our calendar app?", "label": "META"}
+{"text": "Coordinating puja timings with relatives for Navratri.", "label": "PLANNING"}
+{"text": "My back pain is worsening; work-from-home isn't helping.", "label": "CONCERN"}
+{"text": "New project lead announced today—hope it's smooth.", "label": "WORK"}
+{"text": "Diary, do you store entries locally or in the cloud?", "label": "META"}
+{"text": "Let's schedule family photos for the holidays.", "label": "PLANNING"}
+{"text": "Worried Priya might be burnt out from her new job.", "label": "CONCERN"}
+{"text": "Overtime again at work; missing family dinners.", "label": "WORK"}
+{"text": "How accurate is the search function in this diary?", "label": "META"}
+{"text": "Planning Arjun's tuition classes starting next month.", "label": "PLANNING"}
+{"text": "The kids' screen time is out of control; it's stressing me.", "label": "CONCERN"}
+{"text": "Performance review feedback was mixed; need to improve.", "label": "WORK"}
+{"text": "Can I customize the diary's reminder notifications?", "label": "META"}
+{"text": "Organizing Diwali card-making session with the family.", "label": "PLANNING"}
+{"text": "Amma's blood pressure readings are high lately.", "label": "CONCERN"}
+{"text": "Deadline crunch at work; barely sleeping.", "label": "WORK"}
+{"text": "Diary, what's the limit on entry length?", "label": "META"}
+{"text": "Scheduling vet visit for our pet dog next week.", "label": "PLANNING"}
+{"text": "Feels like Arjun is drifting away from us.", "label": "CONCERN"}
+{"text": "Remote work meeting ran late again today.", "label": "WORK"}
+{"text": "Does this diary support multiple user accounts?", "label": "META"}
+{"text": "Planning a surprise puja for Priya's promotion.", "label": "PLANNING"}
+{"text": "Bills piling up; can't afford unexpected repairs.", "label": "CONCERN"}
+{"text": "Client feedback on my pitch was harsh.", "label": "WORK"}
+{"text": "How do I back up my diary entries?", "label": "META"}
+{"text": "Coordinating family reunion dates for summer.", "label": "PLANNING"}
+{"text": "Priya's migraines are frequent; worried it's serious.", "label": "CONCERN"}
+{"text": "New software training at work starts Monday.", "label": "WORK"}
+{"text": "Can you remind me about diary features I forgot?", "label": "META"}
+{"text": "Let's plan Holi celebrations with colors and sweets.", "label": "PLANNING"}
+{"text": "Arjun's exam anxiety is heartbreaking to watch.", "label": "CONCERN"}
+{"text": "Team conflict at work escalating; tense atmosphere.", "label": "WORK"}
+{"text": "Diary, are entries encrypted for privacy?", "label": "META"}
+{"text": "Scheduling Amma's yoga classes thrice a week.", "label": "PLANNING"}
+{"text": "My job security feels shaky with layoffs rumored.", "label": "CONCERN"}
+{"text": "Wrapped up a successful sales call today.", "label": "WORK"}
+{"text": "What languages does this diary support?", "label": "META"}
+{"text": "Planning weekend chai and samosa gatherings.", "label": "PLANNING"}
+{"text": "The traffic to work is unbearable; so drained.", "label": "CONCERN"}
+{"text": "Boss praised my latest report—small win.", "label": "WORK"}
+{"text": "Can I share specific diary entries with family?", "label": "META"}
+{"text": "Need to book flights for Diwali family trip.", "label": "PLANNING"}
+{"text": "Amma forgot her meds again; aging scares me.", "label": "CONCERN"}
+{"text": "Project milestone achieved at work finally.", "label": "WORK"}
+{"text": "Coordinating kids' school events calendar.", "label": "PLANNING"}
+{"text": "Worried about Priya's long commute safety.", "label": "CONCERN"}
+{"text": "Late-night emails from work won't stop.", "label": "WORK"}
+{"text": "Diary, can you analyze mood trends in entries?", "label": "META"}
+{"text": "Planning Rakhi gift exchanges with siblings.", "label": "PLANNING"}
+{"text": "Arjun's bullying issue at school persists.", "label": "CONCERN"}
+{"text": "Career stagnation hitting hard this year.", "label": "WORK"}
+{"text": "Is offline mode available for this diary?", "label": "META"}
+{"text": "Scheduling family movie night every Friday.", "label": "PLANNING"}
+{"text": "Bills are higher than expected; budget tight.", "label": "CONCERN"}
+{"text": "Work travel next week—packing anxiety.", "label": "WORK"}
+{"text": "Can this diary auto-save drafts?", "label": "META"}
+{"text": "Let's plan a puja for good health.", "label": "PLANNING"}
+{"text": "My sleep issues are worsening with stress.", "label": "CONCERN"}
+{"text": "Colleague got promoted over me—demotivated.", "label": "WORK"}
+{"text": "Diary, how many entries can it hold?", "label": "META"}
+{"text": "Organizing Diwali decoration shopping list.", "label": "PLANNING"}
+{"text": "Priya seems distant lately; marriage strain?", "label": "CONCERN"}
+{"text": "Quarterly targets missed at work.", "label": "WORK"}
+{"text": "Does the diary have a dark mode option?", "label": "META"}
+{"text": "Planning Amma's doctor follow-up appointment.", "label": "PLANNING"}
+{"text": "Arjun's phone addiction is concerning.", "label": "CONCERN"}
+{"text": "Freelance gig opportunity arose today.", "label": "WORK"}
+{"text": "Can I tag entries for better organization?", "label": "META"}
+{"text": "Coordinating family picnic in the park.", "label": "PLANNING"}
+{"text": "Work pressure mounting; feeling overwhelmed.", "label": "CONCERN"}
+{"text": "Successful pitch meeting at the office.", "label": "WORK"}
+{"text": "Diary, what's your response time limit?", "label": "META"}
+{"text": "Need to schedule chai breaks with neighbors.", "label": "PLANNING"}
+{"text": "Amma's joint pain flared up again.", "label": "CONCERN"}
+{"text": "Remote team sync call dragged on.", "label": "WORK"}
+{"text": "How do I invite others to family diary?", "label": "META"}
+{"text": "Planning Onam feast menu ahead.", "label": "PLANNING"}
+{"text": "Financial worries keeping me awake.", "label": "CONCERN"}
+{"text": "New role responsibilities starting soon.", "label": "WORK"}
+{"text": "Can diary entries be password-protected?", "label": "META"}
+{"text": "Scheduling kids' extracurricular activities.", "label": "PLANNING"}
+{"text": "Priya's workload is too much; burnout risk.", "label": "CONCERN"}
+{"text": "Work-from-home setup needs upgrade.", "label": "WORK"}
+{"text": "Diary, do you learn from my writing style?", "label": "META"}
+{"text": "Let's plan a quiet family reflection evening.", "label": "PLANNING"}
+{"text": "Arjun's grades dropped; need intervention.", "label": "CONCERN"}
+{"text": "Client deadline extended—relief.", "label": "WORK"}
+{"text": "Is there a tutorial for diary features?", "label": "META"}
+{"text": "Coordinating Diwali sweets distribution.", "label": "PLANNING"}
+{"text": "My anxiety about job changes is high.", "label": "CONCERN"}
+{"text": "Team outing planned for work morale.", "label": "WORK"}
+{"text": "Can I undo deleted diary entries?", "label": "META"}
+{"text": "Planning puja supplies purchase.", "label": "PLANNING"}
+{"text": "Amma's memory lapses are increasing.", "label": "CONCERN"}
+{"text": "Annual appraisal discussion tomorrow.", "label": "WORK"}
+{"text": "Diary, how secure is data sharing?", "label": "META"}
+{"text": "Scheduling family game nights weekly.", "label": "PLANNING"}
+{"text": "Work stress affecting home life badly.", "label": "CONCERN"}
+{"text": "Finished training module at work.", "label": "WORK"}
+{"text": "What themes can I apply to the diary?", "label": "META"}
+{"text": "Need to book tables for Diwali dinner.", "label": "PLANNING"}
+{"text": "Emma aced her math test today! We're throwing a small pizza party tonight.", "label": "CELEBRATION"}
+{"text": "Arjun finally learned to ride his bike without training wheels. What a milestone!", "label": "CELEBRATION"}
+{"text": "Paid the car insurance premium, now checking if we can cut cable to save more.", "label": "FINANCE"}
+{"text": "Priya's cough is worsening, need to schedule a pediatrician visit ASAP.", "label": "HEALTH"}
+{"text": "Jack and Sarah argued over dinner chores again, time for a family meeting.", "label": "RELATIONSHIP"}
+{"text": "Big win! Lily got accepted into her dream dance academy.", "label": "CELEBRATION"}
+{"text": "Grocery bill hit $250 this week—way over budget, need to meal plan better.", "label": "FINANCE"}
+{"text": "Starting yoga every morning for better stress relief and flexibility.", "label": "HEALTH"}
+{"text": "Amma and I had a heart-to-heart about her worries, feeling connected.", "label": "RELATIONSHIP"}
+{"text": "John's promotion at work calls for cake—celebrating as a family!", "label": "CELEBRATION"}
+{"text": "Electricity bill spiked, time to switch to energy-saving bulbs.", "label": "FINANCE"}
+{"text": "Arjun's braces appointment went well, no issues with adjustment.", "label": "HEALTH"}
+{"text": "Emma and her best friend reconciled after school drama—kids grow fast.", "label": "RELATIONSHIP"}
+{"text": "Priya turned 7 today, her Diwali dress arrived just in time for the party!", "label": "CELEBRATION"}
+{"text": "Transferred $500 to savings, vacation fund is growing steadily.", "label": "FINANCE"}
+{"text": "Feeling run down, booking a full checkup including blood work.", "label": "HEALTH"}
+{"text": "Family game night brought us all closer, laughing till late.", "label": "RELATIONSHIP"}
+{"text": "Jack scored the winning goal in soccer—proud dad moment!", "label": "CELEBRATION"}
+{"text": "Overspent on kids' school supplies, tightening the belt next month.", "label": "FINANCE"}
+{"text": "Amma's knee pain flared up, applying ice and scheduling physio.", "label": "HEALTH"}
+{"text": "Talked through Lily's teenage mood swings, strengthening our bond.", "label": "RELATIONSHIP"}
+{"text": "Our little Arjun said his first full sentence today—pure joy!", "label": "CELEBRATION"}
+{"text": "Credit card statement is here, paying off balance to avoid interest.", "label": "FINANCE"}
+{"text": "New running shoes for fitness goals, aiming for 5K next month.", "label": "HEALTH"}
+{"text": "Priya and cousin bonded over chai and stories—family ties rock.", "label": "RELATIONSHIP"}
+{"text": "Emma's piano recital was flawless, standing ovation!", "label": "CELEBRATION"}
+{"text": "House repair quote too high, shopping for better deals.", "label": "FINANCE"}
+{"text": "Monitoring Sarah's allergies, new meds seem to help.", "label": "HEALTH"}
+{"text": "John and I resolved our work-life balance chat peacefully.", "label": "RELATIONSHIP"}
+{"text": "Diwali prep done—Arjun's rangoli won neighborhood contest!", "label": "CELEBRATION"}
+{"text": "Budget review: cut dining out to boost emergency fund.", "label": "FINANCE"}
+{"text": "Priya's vaccination due, reminding everyone tomorrow.", "label": "HEALTH"}
+{"text": "Family puja brought peace amid busy schedules.", "label": "RELATIONSHIP"}
+{"text": "Lily graduated preschool with honors—tears of joy!", "label": "CELEBRATION"}
+{"text": "Phone bill over limit, negotiating family data plan.", "label": "FINANCE"}
+{"text": "Joining a wellness challenge, tracking steps daily.", "label": "HEALTH"}
+{"text": "Amma's stories healed old sibling rift—grateful.", "label": "RELATIONSHIP"}
+{"text": "Jack built his first Lego castle perfectly!", "label": "CELEBRATION"}
+{"text": "Streaming service canceled to save $15/month.", "label": "FINANCE"}
+{"text": "Headache persists, resting and hydrating more.", "label": "HEALTH"}
+{"text": "Date night with hubby after kids' bedtime—reconnected.", "label": "RELATIONSHIP"}
+{"text": "Priya's art project won first prize at school!", "label": "CELEBRATION"}
+{"text": "Mortgage payment increased, adjusting monthly budget.", "label": "FINANCE"}
+{"text": "Arjun's asthma inhaler refilled, watching triggers.", "label": "HEALTH"}
+{"text": "Emma forgave brother after toy spat—growing up.", "label": "RELATIONSHIP"}
+{"text": "Team Diwali mithai-making was a sweet success!", "label": "CELEBRATION"}
+{"text": "Kids' allowance spent wisely, teaching savings.", "label": "FINANCE"}
+{"text": "Annual dental checkup cleared for all—healthy smiles.", "label": "HEALTH"}
+{"text": "Family walk eased tensions from busy day.", "label": "RELATIONSHIP"}
+{"text": "Sarah nailed her spelling bee championship!", "label": "CELEBRATION"}
+{"text": "Unexpected vet bill for pet, dipping into savings.", "label": "FINANCE"}
+{"text": "Mindfulness app helping with parenting stress.", "label": "HEALTH"}
+{"text": "Priya and Amma's shopping trip bonded them.", "label": "RELATIONSHIP"}
+{"text": "Arjun's birthday bash was epic—18 candles!", "label": "CELEBRATION"}
+{"text": "Tracking expenses app shows we can afford tutor.", "label": "FINANCE"}
+{"text": "Flu shot clinic tomorrow for whole family.", "label": "HEALTH"}
+{"text": "Resolved argument with in-laws over visit plans.", "label": "RELATIONSHIP"}
+{"text": "Emma's first solo bike ride—milestone achieved!", "label": "CELEBRATION"}
+{"text": "Gas prices up, carpooling to school more.", "label": "FINANCE"}
+{"text": "Detox week for better energy levels.", "label": "HEALTH"}
+{"text": "Jack opened up about school friends—listening helped.", "label": "RELATIONSHIP"}
+{"text": "Puja ceremony marked our anniversary beautifully.", "label": "CELEBRATION"}
+{"text": "Investment app alert: stocks up 5%, nice return.", "label": "FINANCE"}
+{"text": "Priya's eczema clearing with new cream.", "label": "HEALTH"}
+{"text": "Family photo session captured our chaos perfectly.", "label": "RELATIONSHIP"}
+{"text": "Lily's debate team won regionals—proud!", "label": "CELEBRATION"}
+{"text": "Rent due, confirming auto-pay to avoid late fees.", "label": "FINANCE"}
+{"text": "Amma mediated kids' fight wisely.", "label": "RELATIONSHIP"}
+{"text": "John's work award dinner was fantastic!", "label": "CELEBRATION"}
+{"text": "Birthday gifts budgeted at $50 each—stuck to it.", "label": "FINANCE"}
+{"text": "Blood sugar stable after diet changes.", "label": "HEALTH"}
+{"text": "Heartfelt talk with daughter about dreams.", "label": "RELATIONSHIP"}
+{"text": "Arjun cleared his exams with flying colors!", "label": "CELEBRATION"}
+{"text": "Online shopping cart reviewed—cut impulse buys.", "label": "FINANCE"}
+{"text": "Sleep tracker shows improvement with routine.", "label": "HEALTH"}
+{"text": "Family dinner resolved weekend plans amicably.", "label": "RELATIONSHIP"}
+{"text": "Priya's dance performance stole the show!", "label": "CELEBRATION"}
+{"text": "Utility bills down after LED switch.", "label": "FINANCE"}
+{"text": "Eye exam: new glasses for better vision.", "label": "HEALTH"}
+{"text": "Bonding over cricket match with boys.", "label": "RELATIONSHIP"}
+{"text": "Diwali lights contest win for neighborhood!", "label": "CELEBRATION"}
+{"text": "College fund hit $10K milestone—saving pays off.", "label": "FINANCE"}
+{"text": "Post-workout smoothie for recovery.", "label": "HEALTH"}
+{"text": "Sarah's apology mended friendship rift.", "label": "RELATIONSHIP"}
+{"text": "Emma published her school poem—author in making!", "label": "CELEBRATION"}
+{"text": "Tax refund deposited, allocating to debt.", "label": "FINANCE"}
+{"text": "Therapy session helped process family stress.", "label": "HEALTH"}
+{"text": "Amma's wisdom sorted sibling jealousy.", "label": "RELATIONSHIP"}
+{"text": "Jack's swim badge earned—progress!", "label": "CELEBRATION"}
+{"text": "Subscription boxes paused to trim costs.", "label": "FINANCE"}
+{"text": "Hydration goal met, feeling energized.", "label": "HEALTH"}
+{"text": "Priya shared secrets, trust building.", "label": "RELATIONSHIP"}
+{"text": "Family hike celebrated spring arrival.", "label": "CELEBRATION"}
+{"text": "Expense tracker: under budget for first time!", "label": "FINANCE"}
+{"text": "Arjun's orthodontist says perfect alignment.", "label": "HEALTH"}
+{"text": "Laughing off old family grudge.", "label": "RELATIONSHIP"}
+{"text": "Lily's art exhibit opening huge success!", "label": "CELEBRATION"}
+{"text": "Car maintenance budgeted ahead this time.", "label": "FINANCE"}
+{"text": "Meditation routine calming busy days.", "label": "HEALTH"}
+{"text": "John and kids reconciled after timeout.", "label": "RELATIONSHIP"}
+{"text": "Puja sweets shared, pure bliss!", "label": "CELEBRATION"}
+{"text": "Roth IRA contribution maxed yearly.", "label": "FINANCE"}
+{"text": "Vitamin D levels back to normal.", "label": "HEALTH"}
+{"text": "Family council fixed chore disputes.", "label": "RELATIONSHIP"}
+{"text": "Emma's scholarship offer arrived!", "label": "CELEBRATION"}
+{"text": "Holiday shopping list under $300 goal.", "label": "FINANCE"}
+{"text": "Pilates class for core strength.", "label": "HEALTH"}
+{"text": "Deep chat with Amma lifted spirits.", "label": "RELATIONSHIP"}
+{"text": "Arjun's team championship victory!", "label": "CELEBRATION"}
+{"text": "Freelance payment cleared, bills paid.", "label": "FINANCE"}
+{"text": "Cholesterol check good—diet working.", "label": "HEALTH"}
+{"text": "Priya's hug fixed my rough day.", "label": "RELATIONSHIP"}
+{"text": "Diwali card from school won prize!", "label": "CELEBRATION"}
+{"text": "No dining out challenge saved $100.", "label": "FINANCE"}
+{"text": "Flu recovery faster with rest.", "label": "HEALTH"}
+{"text": "Bonded with in-laws over tea.", "label": "RELATIONSHIP"}
+{"text": "Sarah's ballet solo was magical!", "label": "CELEBRATION"}
+{"text": "Insurance premium shopped for savings.", "label": "FINANCE"}
+{"text": "Allergy shots starting next week.", "label": "HEALTH"}
+{"text": "Family movie night healed divides.", "label": "RELATIONSHIP"}
+{"text": "Jack promoted to team captain!", "label": "CELEBRATION"}
+{"text": "Budget app synced, insights gold.", "label": "FINANCE"}
+{"text": "Weight goal hit—celebrating veggies!", "label": "HEALTH"}
+{"text": "Talk smoothed hubby-kid tension.", "label": "RELATIONSHIP"}
+{"text": "Priya's poem recited at assembly!", "label": "CELEBRATION"}
+{"text": "Emergency fund now at 6 months.", "label": "FINANCE"}
+{"text": "Amma's advice mended friend fight.", "label": "RELATIONSHIP"}
+{"text": "Lily's science project awarded blue ribbon!", "label": "CELEBRATION"}
+{"text": "Cut coffee runs to save cash.", "label": "FINANCE"}
+{"text": "Dentist praised brushing habits.", "label": "HEALTH"}
+{"text": "Heart-to-heart with son about bullies.", "label": "RELATIONSHIP"}
+{"text": "Arjun's Diwali essay published!", "label": "CELEBRATION"}
+{"text": "Loan payoff ahead of schedule.", "label": "FINANCE"}
+{"text": "Sleep apnea mask adjusted perfectly.", "label": "HEALTH"}
+{"text": "Family picnic rebuilt connections.", "label": "RELATIONSHIP"}
+{"text": "Emma's track record shattered!", "label": "CELEBRATION"}
+{"text": "Groceries bulk buy saved 20%.", "label": "FINANCE"}
+{"text": "BP meds lowered dosage—great news.", "label": "HEALTH"}
+{"text": "Priya forgave sister's secret spill.", "label": "RELATIONSHIP"}
+{"text": "John's marathon finish line crossed!", "label": "CELEBRATION"}
+{"text": "Tax software filed returns early.", "label": "FINANCE"}
+{"text": "Kettlebell swings for arm tone.", "label": "HEALTH"}
+{"text": "Chai chats with Amma gold.", "label": "RELATIONSHIP"}
+{"text": "Team puja dance won cheers!", "label": "CELEBRATION"}
+{"text": "Pet insurance quote accepted.", "label": "FINANCE"}
+{"text": "Immune boost with turmeric milk.", "label": "HEALTH"}
+{"text": "Resolved playdate drama smoothly.", "label": "RELATIONSHIP"}
+{"text": "Sarah's valedictorian speech nailed!", "label": "CELEBRATION"}
+{"text": "Side hustle income up 15%.", "label": "FINANCE"}
+{"text": "Therapist notes family progress.", "label": "HEALTH"}
+{"text": "Boys' club strengthened brotherhood.", "label": "RELATIONSHIP"}
+{"text": "Diwali feast prep perfection!", "label": "CELEBRATION"}
+{"text": "Crypto dip bought low.", "label": "FINANCE"}
+{"text": "Yoga nidra for deep rest.", "label": "HEALTH"}
+{"text": "Family vow renewed love.", "label": "RELATIONSHIP"}
+{"text": "Jack's coding app launched!", "label": "CELEBRATION"}
+{"text": "Bill pay calendar set.", "label": "FINANCE"}
+{"text": "Amma's embrace fixed all.", "label": "RELATIONSHIP"}
+{"text": "Priya's choir solo stunned!", "label": "CELEBRATION"}
+{"text": "Roth conversion planned tax-smart.", "label": "FINANCE"}
+{"text": "Core workout routine locked.", "label": "HEALTH"}
+{"text": "Sibling pact against teasing.", "label": "RELATIONSHIP"}
+{"text": "Arjun's trophy shelf full!", "label": "CELEBRATION"}
+{"text": "Expense audit cut waste.", "label": "FINANCE"}
+{"text": "Derm appointment cleared skin.", "label": "HEALTH"}
+{"text": "Hubby surprise mended mood.", "label": "RELATIONSHIP"}
+{"text": "Emma's book club lead!", "label": "CELEBRATION"}
+{"text": "Savings rate hit 20%.", "label": "FINANCE"}
+{"text": "Breathwork eased anxiety.", "label": "HEALTH"}
+{"text": "Family therapy breakthrough.", "label": "RELATIONSHIP"}
+{"text": "Lily's mural community hit!", "label": "CELEBRATION"}
+{"text": "Dividend stocks reinvested.", "label": "FINANCE"}
+{"text": "Fasting for metabolic reset.", "label": "HEALTH"}
+{"text": "Priya's friend visit joy.", "label": "RELATIONSHIP"}
+{"text": "Puja blessings showered!", "label": "CELEBRATION"}
+{"text": "Debt snowball rolling fast.", "label": "FINANCE"}
+{"text": "Posture correction exercises.", "label": "HEALTH"}
+{"text": "In-law dinner harmony.", "label": "RELATIONSHIP"}
+{"text": "John's sales record broken!", "label": "CELEBRATION"}
+{"text": "Budget categories refined.", "label": "FINANCE"}
+{"text": "Eye drops for dry eyes.", "label": "HEALTH"}
+{"text": "Kids' mediation success.", "label": "RELATIONSHIP"}
+{"text": "Diwali fireworks best yet!", "label": "CELEBRATION"}
+{"text": "IRA maxed for retirement.", "label": "FINANCE"}
+{"text": "HIIT sessions torching fat.", "label": "HEALTH"}
+{"text": "Amma's tales unite us.", "label": "RELATIONSHIP"}
+{"text": "What did we decide for Arjun's graduation party last week?", "label": "MEMORY"}
+{"text": "Remind me the outfit we picked for Priya's first day of school.", "label": "MEMORY"}
+{"text": "I'm so worried Arjun will be nervous on his first day tomorrow.", "label": "CONCERN"}
+{"text": "Reflecting on today's graduation ceremony, it was emotional.", "label": "DIARY"}
+{"text": "How do you save our family milestone memories?", "label": "META"}
+{"text": "What was the plan for Diwali after Priya's exams?", "label": "MEMORY"}
+{"text": "Amma's health is concerning me before the family puja.", "label": "CONCERN"}
+{"text": "Today Arjun started high school, feeling a mix of pride and worry.", "label": "DIARY"}
+{"text": "Can you list past entries about graduations?", "label": "META"}
+{"text": "Recall what we packed for Priya's first college day.", "label": "MEMORY"}
+{"text": "I'm anxious about the costs of Arjun's graduation trip.", "label": "CONCERN"}
+{"text": "Journaling: Priya's first job day was a milestone, so proud.", "label": "DIARY"}
+{"text": "What settings do you have for family diary reflections?", "label": "META"}
+{"text": "What did Amma suggest for the puja during Diwali last year?", "label": "MEMORY"}
+{"text": "Concerned Priya might struggle with her first internship.", "label": "CONCERN"}
+{"text": "Today was the first day of summer break, reflecting on the year.", "label": "DIARY"}
+{"text": "Do you remember conversations about school milestones?", "label": "META"}
+{"text": "Remind me Arjun's graduation speech highlights.", "label": "MEMORY"}
+{"text": "Worried about family dynamics at the upcoming celebration.", "label": "CONCERN"}
+{"text": "Arjun's kindergarten first day: tears and joy all mixed.", "label": "DIARY"}
+{"text": "How accurate is your recall of past family events?", "label": "META"}
+{"text": "What was decided for Priya's birthday post-graduation?", "label": "MEMORY"}
+{"text": "Amma seems stressed about the Diwali preparations.", "label": "CONCERN"}
+{"text": "Reflecting on Priya's college acceptance, a big step.", "label": "DIARY"}
+{"text": "Can you retrieve old notes on first days?", "label": "META"}
+{"text": "Recall the gifts for Arjun's school achievement.", "label": "MEMORY"}
+{"text": "I'm concerned about Priya's nerves before her speech.", "label": "CONCERN"}
+{"text": "Today's puja marked a family milestone, grateful yet reflective.", "label": "DIARY"}
+{"text": "What features help with emotional diary entries?", "label": "META"}
+{"text": "What did we plan for the family after Diwali puja?", "label": "MEMORY"}
+{"text": "Arjun's first sports day has me worried he'll get hurt.", "label": "CONCERN"}
+{"text": "Journal: Graduation photos turned out great, memories forever.", "label": "DIARY"}
+{"text": "Do you have limits on storing milestone stories?", "label": "META"}
+{"text": "Remind me Priya's first day schedule details.", "label": "MEMORY"}
+{"text": "Concern over Amma attending the long graduation event.", "label": "CONCERN"}
+{"text": "First day of preschool for the little one, emotional rollercoaster.", "label": "DIARY"}
+{"text": "How do you categorize family concerns in entries?", "label": "META"}
+{"text": "What was our budget talk for Arjun's ceremony?", "label": "MEMORY"}
+{"text": "Priya's exam results are stressing everyone out.", "label": "CONCERN"}
+{"text": "Reflecting on Diwali lights and family bonds this year.", "label": "DIARY"}
+{"text": "Can you search past worries about school starts?", "label": "META"}
+{"text": "Recall Amma's recipe for the puja sweets.", "label": "MEMORY"}
+{"text": "I'm anxious Arjun won't make friends quickly.", "label": "CONCERN"}
+{"text": "Arjun's graduation: a day of pure accomplishment.", "label": "DIARY"}
+{"text": "What privacy options for our diary?", "label": "META"}
+{"text": "What did Priya wear for her first dance recital?", "label": "MEMORY"}
+{"text": "Worried about the weather ruining the outdoor puja.", "label": "CONCERN"}
+{"text": "Today marked Priya's first paycheck, reflecting on growth.", "label": "DIARY"}
+{"text": "Do you learn from our milestone reflections?", "label": "META"}
+{"text": "Remind me the date of last year's Diwali celebration.", "label": "MEMORY"}
+{"text": "Concerned Amma's tired from planning Arjun's event.", "label": "CONCERN"}
+{"text": "First day back to school after holidays, mixed feelings.", "label": "DIARY"}
+{"text": "How do you handle repeat memory requests?", "label": "META"}
+{"text": "What were the highlights of Priya's graduation?", "label": "MEMORY"}
+{"text": "Priya's first driving lesson has me on edge.", "label": "CONCERN"}
+{"text": "Journaling the joy of Amma's birthday puja.", "label": "DIARY"}
+{"text": "Can you edit past diary entries?", "label": "META"}
+{"text": "Recall our excitement for Arjun's first bike ride.", "label": "MEMORY"}
+{"text": "I'm worried about family travel for the milestone.", "label": "CONCERN"}
+{"text": "Reflecting on Priya's school play performance.", "label": "DIARY"}
+{"text": "What capabilities for Indian festival tracking?", "label": "META"}
+{"text": "What did we gift Arjun for his achievement?", "label": "MEMORY"}
+{"text": "Amma's joint pain before Diwali worries me.", "label": "CONCERN"}
+{"text": "Today's first team practice: Arjun shone bright.", "label": "DIARY"}
+{"text": "Do you support voice notes for memories?", "label": "META"}
+{"text": "Remind me Priya's college orientation details.", "label": "MEMORY"}
+{"text": "Concerned about Priya's workload post-graduation.", "label": "CONCERN"}
+{"text": "Diwali puja done, reflecting on traditions passed down.", "label": "DIARY"}
+{"text": "How do you organize concern logs?", "label": "META"}
+{"text": "What was planned for Amma's milestone birthday?", "label": "MEMORY"}
+{"text": "Arjun's exam anxiety is peaking.", "label": "CONCERN"}
+{"text": "First day of the new year, hopeful reflections.", "label": "DIARY"}
+{"text": "Can you summarize past META questions?", "label": "META"}
+{"text": "Recall the family vote on graduation venue.", "label": "MEMORY"}
+{"text": "Worried Priya will miss home after first semester.", "label": "CONCERN"}
+{"text": "Arjun's award ceremony: tears of joy today.", "label": "DIARY"}
+{"text": "What search functions for diary entries?", "label": "META"}
+{"text": "What did Amma cook for Puja feast last time?", "label": "MEMORY"}
+{"text": "I'm anxious about the family's reaction to news.", "label": "CONCERN"}
+{"text": "Reflecting on Priya's first solo trip.", "label": "DIARY"}
+{"text": "Do you have templates for milestone journals?", "label": "META"}
+{"text": "Remind me Arjun's first goal in the game.", "label": "MEMORY"}
+{"text": "Concern over costs for Diwali celebrations.", "label": "CONCERN"}
+{"text": "Today's graduation rehearsal went smoothly, excited.", "label": "DIARY"}
+{"text": "How secure are our family memory recalls?", "label": "META"}
+{"text": "What were Priya's first day jitters like?", "label": "MEMORY"}
+{"text": "Amma's forgetfulness lately concerns me.", "label": "CONCERN"}
+{"text": "Journal: Puja blessings for Arjun's future.", "label": "DIARY"}
+{"text": "Can you prioritize certain labels in searches?", "label": "META"}
+{"text": "Recall details from last family milestone.", "label": "MEMORY"}
+{"text": "Worried Arjun's too young for this responsibility.", "label": "CONCERN"}
+{"text": "First piano recital: Priya nailed it, proud mom moment.", "label": "DIARY"}
+{"text": "What integrations for calendar milestones?", "label": "META"}
+{"text": "What did we discuss for Diwali outfits?", "label": "MEMORY"}
+{"text": "Priya's peer pressure at school worries me.", "label": "CONCERN"}
+{"text": "Reflecting on Amma's stories during puja.", "label": "DIARY"}
+{"text": "Do you forget old entries over time?", "label": "META"}
+{"text": "Remind me the score of Arjun's first match.", "label": "MEMORY"}
+{"text": "Concerned about traffic on graduation day.", "label": "CONCERN"}
+{"text": "Today's first rain of monsoon, nostalgic thoughts.", "label": "DIARY"}
+{"text": "How do you process emotional tones in diaries?", "label": "META"}
+{"text": "What was Priya's reaction to her diploma?", "label": "MEMORY"}
+{"text": "I'm stressed about Amma's travel for the event.", "label": "CONCERN"}
+{"text": "Arjun's school farewell: bittersweet end to an era.", "label": "DIARY"}
+{"text": "Can you generate reports on concerns?", "label": "META"}
+{"text": "Recall our Puja rituals from childhood.", "label": "MEMORY"}
+{"text": "Worried Priya's grades might slip.", "label": "CONCERN"}
+{"text": "Diwali fireworks lit up memories tonight.", "label": "DIARY"}
+{"text": "What languages for Indian family entries?", "label": "META"}
+{"text": "What did Arjun say in his first speech?", "label": "MEMORY"}
+{"text": "Amma's blood pressure acting up before puja.", "label": "CONCERN"}
+{"text": "First day of fasting for Navratri, reflective start.", "label": "DIARY"}
+{"text": "Do you track patterns in memory requests?", "label": "META"}
+{"text": "Remind me Priya's scholarship details.", "label": "MEMORY"}
+{"text": "Concerned Arjun's bullying at first grade.", "label": "CONCERN"}
+{"text": "Graduation caps tossed, new chapter begins.", "label": "DIARY"}
+{"text": "How customizable are META responses?", "label": "META"}
+{"text": "What plans for post-Diwali family trip?", "label": "MEMORY"}
+{"text": "I'm worried about the family's unity.", "label": "CONCERN"}
+{"text": "Priya's art exhibition opening: magical evening.", "label": "DIARY"}
+{"text": "Can you voice-read past diaries?", "label": "META"}
+{"text": "Recall Amma's advice for first jobs.", "label": "MEMORY"}
+{"text": "Priya's late nights studying concern me.", "label": "CONCERN"}
+{"text": "Reflecting on Arjun's growth this school year.", "label": "DIARY"}
+{"text": "What analytics for concern frequency?", "label": "META"}
+{"text": "What was the theme of last puja?", "label": "MEMORY"}
+{"text": "Arjun's first crush drama is worrying.", "label": "CONCERN"}
+{"text": "Today's milestone walk: feeling accomplished.", "label": "DIARY"}
+{"text": "Do you support photo uploads for memories?", "label": "META"}
+{"text": "Remind me the guest list for graduation.", "label": "MEMORY"}
+{"text": "Concerned about Diwali sweets for diabetics.", "label": "CONCERN"}
+{"text": "First family photo after Priya's win.", "label": "DIARY"}
+{"text": "How do you handle sensitive diary content?", "label": "META"}
+{"text": "What did we save for Arjun's fund?", "label": "MEMORY"}
+{"text": "Amma's loneliness post-kids' milestones.", "label": "CONCERN"}
+{"text": "Puja prayers answered with good news today.", "label": "DIARY"}
+{"text": "Can you export memory archives?", "label": "META"}
+{"text": "Recall Priya's first poem recitation.", "label": "MEMORY"}
+{"text": "Worried about college admission delays.", "label": "CONCERN"}
+{"text": "Arjun's sports trophy: shining moment.", "label": "DIARY"}
+{"text": "What backup options for family data?", "label": "META"}
+{"text": "What outfits for Diwali last year?", "label": "MEMORY"}
+{"text": "Priya's friend issues at first camp.", "label": "CONCERN"}
+{"text": "Reflecting on the warmth of family Diwali.", "label": "DIARY"}
+{"text": "Do you personalize based on past entries?", "label": "META"}
+{"text": "Remind me Amma's health check date.", "label": "MEMORY"}
+{"text": "Concern over Arjun's screen time.", "label": "CONCERN"}
+{"text": "Graduation eve: nerves and excitement.", "label": "DIARY"}
+{"text": "How fast do you retrieve old memories?", "label": "META"}
+{"text": "What was discussed for Priya's ceremony?", "label": "MEMORY"}
+{"text": "I'm anxious about puja timing conflicts.", "label": "CONCERN"}
+{"text": "First day of rain dance, fun memories made.", "label": "DIARY"}
+{"text": "Can you tag entries for milestones?", "label": "META"}
+{"text": "Recall the joy of Arjun's first steps.", "label": "MEMORY"}
+{"text": "Worried Amma won't enjoy the trip.", "label": "CONCERN"}
+{"text": "Priya's debate win: empowering reflection.", "label": "DIARY"}
+{"text": "What AI updates affect diary features?", "label": "META"}
+{"text": "What did we plan for post-graduation?", "label": "MEMORY"}
+{"text": "Concerned Priya's burnout from prep.", "label": "CONCERN"}
+{"text": "Diwali sweets shared, hearts full.", "label": "DIARY"}
+{"text": "Do you remind of upcoming milestones?", "label": "META"}
+{"text": "Remind me the first day backpack contents.", "label": "MEMORY"}
+{"text": "Arjun's stage fright before event.", "label": "CONCERN"}
+{"text": "Journal: Amma's smile at puja.", "label": "DIARY"}
+{"text": "How do you ensure memory accuracy?", "label": "META"}
+{"text": "Don't forget to pack Arjun's lunchbox before school.", "label": "TASK"}
+{"text": "Remind Dad to drop Priya at tuition on his way to work.", "label": "TASK"}
+{"text": "So grateful for Amma's hot chai to start the morning rush.", "label": "GRATITUDE"}
+{"text": "Big presentation at work today, wish me luck kids!", "label": "WORK"}
+{"text": "Let's plan a family puja for this Saturday morning.", "label": "PLANNING"}
+{"text": "Buy milk and bread on your way back from school drop-off.", "label": "TASK"}
+{"text": "Thankful for my family's support during busy work weeks.", "label": "GRATITUDE"}
+{"text": "Office meeting starts at 8:30, leaving early today.", "label": "WORK"}
+{"text": "Schedule the kids' parent-teacher meeting next week.", "label": "PLANNING"}
+{"text": "Pack extra water bottles for everyone's commute.", "label": "TASK"}
+{"text": "Grateful that Priya helped make breakfast so quickly.", "label": "GRATITUDE"}
+{"text": "Deadline for project report is tomorrow at work.", "label": "WORK"}
+{"text": "Plan Diwali shopping this weekend after school.", "label": "PLANNING"}
+{"text": "Water the plants before leaving for work.", "label": "TASK"}
+{"text": "Appreciate Arjun waking up on time without nagging.", "label": "GRATITUDE"}
+{"text": "Boss emailed about a new client pitch this morning.", "label": "WORK"}
+{"text": "Coordinate carpool for school drop-offs next week.", "label": "PLANNING"}
+{"text": "Fix the school bag strap before Arjun leaves.", "label": "TASK"}
+{"text": "So thankful for these peaceful weekday mornings together.", "label": "GRATITUDE"}
+{"text": "Team call from office at 7 AM sharp.", "label": "WORK"}
+{"text": "Let's plan summer vacation dates now.", "label": "PLANNING"}
+{"text": "Iron Priya's uniform for school today.", "label": "TASK"}
+{"text": "Grateful for Dad's help with homework every evening.", "label": "GRATITUDE"}
+{"text": "Promotion discussion at work meeting today.", "label": "WORK"}
+{"text": "Book dentist appointment for the family.", "label": "PLANNING"}
+{"text": "Take out the trash before school bus arrives.", "label": "TASK"}
+{"text": "Thankful for Amma's delicious idlis to kickstart the day.", "label": "GRATITUDE"}
+{"text": "Remote work setup needed for school holidays.", "label": "WORK"}
+{"text": "Plan family outing to the park on Sunday.", "label": "PLANNING"}
+{"text": "Charge everyone's phones for the day ahead.", "label": "TASK"}
+{"text": "Appreciate how organized we all are in the mornings.", "label": "GRATITUDE"}
+{"text": "Client visit at office, dress up nicely.", "label": "WORK"}
+{"text": "Schedule tuition classes for Arjun after school.", "label": "PLANNING"}
+{"text": "Prepare coffee for Dad's commute.", "label": "TASK"}
+{"text": "Grateful for Priya's smile every morning.", "label": "GRATITUDE"}
+{"text": "Annual review feedback coming in at work.", "label": "WORK"}
+{"text": "Plan birthday surprise for Amma next month.", "label": "PLANNING"}
+{"text": "Sweep the front porch before leaving.", "label": "TASK"}
+{"text": "Thankful for our healthy start to the week.", "label": "GRATITUDE"}
+{"text": "Overtime at work might mean late dinner tonight.", "label": "WORK"}
+{"text": "Coordinate weekend puja timings with relatives.", "label": "PLANNING"}
+{"text": "Pack homework folder for school.", "label": "TASK"}
+{"text": "So grateful for family hugs before school.", "label": "GRATITUDE"}
+{"text": "New project assigned at the office today.", "label": "WORK"}
+{"text": "Let's plan a short trip for Diwali break.", "label": "PLANNING"}
+{"text": "Feed the dog before work rush.", "label": "TASK"}
+{"text": "Appreciate Mom packing lunches with love.", "label": "GRATITUDE"}
+{"text": "Stand-up meeting at 9 AM from home office.", "label": "WORK"}
+{"text": "Schedule eye check-up for kids.", "label": "PLANNING"}
+{"text": "Lock the back door after checking.", "label": "TASK"}
+{"text": "Thankful for Arjun's help setting the table.", "label": "GRATITUDE"}
+{"text": "Salary hike discussion in today's work call.", "label": "WORK"}
+{"text": "Plan grocery shopping after school run.", "label": "PLANNING"}
+{"text": "Sign school permission slip now.", "label": "TASK"}
+{"text": "Grateful for these routine mornings with chai.", "label": "GRATITUDE"}
+{"text": "Quarterly targets review at office.", "label": "WORK"}
+{"text": "Book table for family dinner next Friday.", "label": "PLANNING"}
+{"text": "Boil milk for everyone's morning cup.", "label": "TASK"}
+{"text": "So thankful for Dad's timely wake-up calls.", "label": "GRATITUDE"}
+{"text": "Interview prep for new job opportunity.", "label": "WORK"}
+{"text": "Plan school project materials purchase.", "label": "PLANNING"}
+{"text": "Check bus timings for school.", "label": "TASK"}
+{"text": "Appreciate Priya sharing her breakfast story.", "label": "GRATITUDE"}
+{"text": "Training session at work this morning.", "label": "WORK"}
+{"text": "Coordinate with neighbors for carpool.", "label": "PLANNING"}
+{"text": "Thankful for Amma's blessings every day.", "label": "GRATITUDE"}
+{"text": "Email from HR about work policy changes.", "label": "WORK"}
+{"text": "Schedule annual family photo shoot.", "label": "PLANNING"}
+{"text": "Prepare tiffin for Priya's school.", "label": "TASK"}
+{"text": "Grateful for smooth school commutes.", "label": "GRATITUDE"}
+{"text": "Performance metrics due at office end of week.", "label": "WORK"}
+{"text": "Plan Holi celebration menu ahead.", "label": "PLANNING"}
+{"text": "So grateful for family teamwork in mornings.", "label": "GRATITUDE"}
+{"text": "Late shift at work, kids be good.", "label": "WORK"}
+{"text": "Book flu shots for everyone.", "label": "PLANNING"}
+{"text": "Sort laundry before school drop.", "label": "TASK"}
+{"text": "Thankful for Arjun's good grades report.", "label": "GRATITUDE"}
+{"text": "Budget meeting at office tomorrow.", "label": "WORK"}
+{"text": "Plan weekend movie night schedule.", "label": "PLANNING"}
+{"text": "Pack raincoats for school today.", "label": "TASK"}
+{"text": "Appreciate Mom's early rising for us.", "label": "GRATITUDE"}
+{"text": "New software training at work.", "label": "WORK"}
+{"text": "Coordinate Diwali card making time.", "label": "PLANNING"}
+{"text": "Fill water in all bottles.", "label": "TASK"}
+{"text": "Grateful for healthy family breakfasts.", "label": "GRATITUDE"}
+{"text": "Team outing planned at work.", "label": "WORK"}
+{"text": "Tie shoelaces for kids' rush.", "label": "TASK"}
+{"text": "Thankful for Priya's cheerful mood.", "label": "GRATITUDE"}
+{"text": "Raise request submitted at office.", "label": "WORK"}
+{"text": "Plan picnic for school holidays.", "label": "PLANNING"}
+{"text": "Check backpack zips securely.", "label": "TASK"}
+{"text": "So grateful for Dad's encouragement.", "label": "GRATITUDE"}
+{"text": "Book train tickets for family trip.", "label": "PLANNING"}
+{"text": "Make sandwiches for lunchboxes.", "label": "TASK"}
+{"text": "Appreciate Amma's traditional morning rituals.", "label": "GRATITUDE"}
+{"text": "Work from home day, focus mode on.", "label": "WORK"}
+{"text": "Plan puja supplies shopping list.", "label": "PLANNING"}
+{"text": "Set alarm 15 mins earlier tomorrow.", "label": "TASK"}
+{"text": "Thankful for these bonding mornings.", "label": "GRATITUDE"}
+{"text": "Appraisal season kicking off at work.", "label": "WORK"}
+{"text": "Coordinate school concert attendance.", "label": "PLANNING"}
+{"text": "Wipe kitchen counters clean.", "label": "TASK"}
+{"text": "Grateful for Arjun's independence growing.", "label": "GRATITUDE"}
+{"text": "Pitch meeting prep for morning.", "label": "WORK"}
+{"text": "Schedule family yoga sessions weekly.", "label": "PLANNING"}
+{"text": "Pack fruits in school bags.", "label": "TASK"}
+{"text": "Office politics heating up lately.", "label": "WORK"}
+{"text": "Plan Ganesh Chaturthi sweets menu.", "label": "PLANNING"}
+{"text": "Turn off lights after leaving rooms.", "label": "TASK"}
+{"text": "Appreciate everyone's punctuality today.", "label": "GRATITUDE"}
+{"text": "New role offer discussed at work.", "label": "WORK"}
+{"text": "Book hotel for vacation getaway.", "label": "PLANNING"}
+{"text": "Prepare oatmeal for quick breakfast.", "label": "TASK"}
+{"text": "Thankful for Priya's helping hands.", "label": "GRATITUDE"}
+{"text": "Daily scrum at 8:45 AM work.", "label": "WORK"}
+{"text": "Plan kids' summer camp dates.", "label": "PLANNING"}
+{"text": "Double-check homework completion.", "label": "TASK"}
+{"text": "Client deadline crunch at office.", "label": "WORK"}
+{"text": "Coordinate relative visits for festival.", "label": "PLANNING"}
+{"text": "Feed fish before school exit.", "label": "TASK"}
+{"text": "So grateful for morning walks together.", "label": "GRATITUDE"}
+{"text": "Workload balanced after reshuffle.", "label": "WORK"}
+{"text": "Schedule oil change for family car.", "label": "PLANNING"}
+{"text": "Pack notebooks for class.", "label": "TASK"}
+{"text": "Thankful for Dad's safe drives.", "label": "GRATITUDE"}
+{"text": "Innovation workshop at work today.", "label": "WORK"}
+{"text": "Plan Diwali decoration timeline.", "label": "PLANNING"}
+{"text": "Brush teeth after breakfast rush.", "label": "TASK"}
+{"text": "Appreciate the laughter filling our home.", "label": "GRATITUDE"}
+{"text": "Remote meeting setup ready.", "label": "WORK"}
+{"text": "Book flights for holiday reunion.", "label": "PLANNING"}
+{"text": "Sort recycling bin quickly.", "label": "TASK"}
+{"text": "Grateful for healthy routines we maintain.", "label": "GRATITUDE"}
+{"text": "Team building exercise at office.", "label": "WORK"}
+{"text": "Plan weekly meal prep schedule.", "label": "PLANNING"}
+{"text": "Iron shirts for work week.", "label": "TASK"}
+{"text": "Thankful for Arjun's enthusiasm for school.", "label": "GRATITUDE"}
+{"text": "Sales targets met early this quarter.", "label": "WORK"}
+{"text": "Coordinate school sports day help.", "label": "PLANNING"}
+{"text": "Prepare smoothies for on-the-go.", "label": "TASK"}
+{"text": "So grateful for family priorities.", "label": "GRATITUDE"}
+{"text": "Networking event after work hours.", "label": "WORK"}
+{"text": "Schedule pediatrician for check-up.", "label": "PLANNING"}
+{"text": "Check tire pressure before commute.", "label": "TASK"}
+{"text": "Appreciate Mom's tireless efforts mornings.", "label": "GRATITUDE"}
+{"text": "Project milestone achieved at work!", "label": "WORK"}
+{"text": "Plan Navratri dance practice times.", "label": "PLANNING"}
+{"text": "Pack allergy meds in bag.", "label": "TASK"}
+{"text": "Thankful for Priya's kind heart.", "label": "GRATITUDE"}
+{"text": "Mentor session booked for career growth.", "label": "WORK"}
+{"text": "Book museum tickets for family.", "label": "PLANNING"}
+{"text": "Make list of school supplies needed.", "label": "TASK"}
+{"text": "Grateful for these joyful starts.", "label": "GRATITUDE"}
+{"text": "Work visa renewal paperwork started.", "label": "WORK"}
+{"text": "Plan anniversary dinner details.", "label": "PLANNING"}
+{"text": "Wake siblings gently for school.", "label": "TASK"}
+{"text": "So thankful for Amma's recipes passed down.", "label": "GRATITUDE"}
+{"text": "Board meeting prep intense today.", "label": "WORK"}
+{"text": "Coordinate volunteer shifts for event.", "label": "PLANNING"}
+{"text": "Set table for breakfast promptly.", "label": "TASK"}
+{"text": "Appreciate Dad's motivational talks.", "label": "GRATITUDE"}
+{"text": "Freelance gig lined up post-job.", "label": "WORK"}
+{"text": "Plan beach vacation itinerary.", "label": "PLANNING"}
+{"text": "Arjun aced his math test today, we're throwing a small party for him tonight!", "label": "CELEBRATION"}
+{"text": "Priya just got accepted into her dream college, such a proud moment for our family.", "label": "CELEBRATION"}
+{"text": "Finally paid off the home loan after years of saving, feels amazing this evening.", "label": "CELEBRATION"}
+{"text": "Amma turned 60 today, celebrated with a special puja and family dinner.", "label": "CELEBRATION"}
+{"text": "Our little one took her first steps tonight, pure joy in the house!", "label": "CELEBRATION"}
+{"text": "We overspent on groceries this week, need to track expenses better starting tomorrow.", "label": "FINANCE"}
+{"text": "Paid the school fees for Arjun on time, but utilities are creeping up.", "label": "FINANCE"}
+{"text": "Let's review our monthly budget tonight, Diwali shopping is coming up.", "label": "FINANCE"}
+{"text": "Saved 5000 rupees this month towards Priya's tuition, great progress!", "label": "FINANCE"}
+{"text": "Bought a new fridge today, but it was on sale so not too bad financially.", "label": "FINANCE"}
+{"text": "Feeling a bit under the weather this evening, might be a cold coming on.", "label": "HEALTH"}
+{"text": "Priya's fever broke today, she's back to playing after resting all week.", "label": "HEALTH"}
+{"text": "Started evening walks as a family to improve fitness, felt good tonight.", "label": "HEALTH"}
+{"text": "Amma's diabetes checkup went well, doctor happy with her levels.", "label": "HEALTH"}
+{"text": "Arjun complained of stomach ache after dinner, keeping an eye on him.", "label": "HEALTH"}
+{"text": "Had a nice chat with Priya about her friends, strengthening our bond.", "label": "RELATIONSHIP"}
+{"text": "Arjun and his sister reconciled after their little argument today.", "label": "RELATIONSHIP"}
+{"text": "Amma shared stories from her childhood, deepening our family ties.", "label": "RELATIONSHIP"}
+{"text": "Talked through some tensions with the in-laws, feeling better now.", "label": "RELATIONSHIP"}
+{"text": "What a relaxing evening with the family after a busy day.", "label": "DIARY"}
+{"text": "Grateful for this peaceful family time tonight by the dinner table.", "label": "GRATITUDE"}
+{"text": "Worried about Arjun's low energy lately during evenings.", "label": "CONCERN"}
+{"text": "Plan tomorrow's picnic with the kids, evening brainstorming session.", "label": "PLANNING"}
+{"text": "Priya's dance recital was outstanding tonight, full house cheering!", "label": "CELEBRATION"}
+{"text": "Hit our family savings target for the year, celebrating with ice cream.", "label": "CELEBRATION"}
+{"text": "Electricity bill was lower than expected this month, good news!", "label": "FINANCE"}
+{"text": "Need to cut back on eating out to save for vacations.", "label": "FINANCE"}
+{"text": "Dad's knee pain eased up after physiotherapy, walking better evenings.", "label": "HEALTH"}
+{"text": "Started a family yoga routine post-dinner, all feeling energized.", "label": "HEALTH"}
+{"text": "Bonded with Arjun over his school stories this evening.", "label": "RELATIONSHIP"}
+{"text": "Amma and I resolved our disagreement about household chores.", "label": "RELATIONSHIP"}
+{"text": "Today's office deadline met, unwinding with family now.", "label": "WORK"}
+{"text": "Remind everyone to prepare for Diwali cleaning tomorrow evening.", "label": "TASK"}
+{"text": "So thankful for Amma's homemade chai during family evenings.", "label": "GRATITUDE"}
+{"text": "Arjun got the lead role in the school play, thrilled for him!", "label": "CELEBRATION"}
+{"text": "Priya's art project won first prize at the fair today.", "label": "CELEBRATION"}
+{"text": "Cleared all credit card debt tonight, major financial relief.", "label": "FINANCE"}
+{"text": "Tracking daily spends in our family ledger this evening.", "label": "FINANCE"}
+{"text": "Flu shot done for the whole family, ready for winter.", "label": "HEALTH"}
+{"text": "Priya's allergy symptoms improved with new meds.", "label": "HEALTH"}
+{"text": "Evening heart-to-heart with spouse about parenting.", "label": "RELATIONSHIP"}
+{"text": "Kids helped each other with homework, sweet sibling moment.", "label": "RELATIONSHIP"}
+{"text": "Family Diwali puja prep made us all excited tonight.", "label": "PLANNING"}
+{"text": "Big promotion at work, sharing the news this evening!", "label": "CELEBRATION"}
+{"text": "Wedding anniversary today, celebrated quietly with cake.", "label": "CELEBRATION"}
+{"text": "Unexpected bonus from job covers our Diwali expenses perfectly.", "label": "FINANCE"}
+{"text": "Bought gold earrings for Amma as a surprise gift affordably.", "label": "FINANCE"}
+{"text": "Monitoring dad's blood sugar closely after dinner meals.", "label": "HEALTH"}
+{"text": "Family meditation session helped reduce stress tonight.", "label": "HEALTH"}
+{"text": "Laughed off a silly fight with Priya, stronger now.", "label": "RELATIONSHIP"}
+{"text": "Arjun made new friends at cricket practice, happy for him.", "label": "RELATIONSHIP"}
+{"text": "Evening reflections: life's simple joys with loved ones.", "label": "DIARY"}
+{"text": "Concerned about rising medical bills for grandma.", "label": "CONCERN"}
+{"text": "Arjun's science fair project won gold, family party time!", "label": "CELEBRATION"}
+{"text": "Priya graduated from her coding class top of the batch.", "label": "CELEBRATION"}
+{"text": "Finished paying for Arjun's cricket gear, budget balanced.", "label": "FINANCE"}
+{"text": "Family fund for emergencies reached 20k rupees tonight.", "label": "FINANCE"}
+{"text": "Amma's annual health check clear, dancing with joy.", "label": "HEALTH"}
+{"text": "Started intermittent fasting as a family wellness goal.", "label": "HEALTH"}
+{"text": "Deep conversation with in-laws eased old family rifts.", "label": "RELATIONSHIP"}
+{"text": "Priya and cousin bonded during video call evening.", "label": "RELATIONSHIP"}
+{"text": "Grateful for our close-knit family during tough times.", "label": "GRATITUDE"}
+{"text": "Plan evening puja for Ganesh Chaturthi next week.", "label": "PLANNING"}
+{"text": "New baby nephew arrived, whole family celebrating!", "label": "CELEBRATION"}
+{"text": "Team won the local tournament, Arjun MVP!", "label": "CELEBRATION"}
+{"text": "Negotiated lower rent, saving hundreds monthly.", "label": "FINANCE"}
+{"text": "Cut cable subscription to save on entertainment costs.", "label": "FINANCE"}
+{"text": "Priya overcame her asthma bout successfully.", "label": "HEALTH"}
+{"text": "Evening herbal tea routine boosting immunity.", "label": "HEALTH"}
+{"text": "Resolved argument with brother over shared responsibilities.", "label": "RELATIONSHIP"}
+{"text": "Family outing strengthened our social circle.", "label": "RELATIONSHIP"}
+{"text": "Quiet evening journaling my family thoughts.", "label": "DIARY"}
+{"text": "Worried about Priya's friendship drama at school.", "label": "CONCERN"}
+{"text": "Diwali rangoli contest win for our house!", "label": "CELEBRATION"}
+{"text": "Amma's cooking class certificate, chef in making!", "label": "CELEBRATION"}
+{"text": "Invested in mutual funds for kids' future tonight.", "label": "FINANCE"}
+{"text": "Refund from insurance covered unexpected repairs.", "label": "FINANCE"}
+{"text": "Arjun's dental checkup perfect, no cavities.", "label": "HEALTH"}
+{"text": "Family gym membership activated for evenings.", "label": "HEALTH"}
+{"text": "Heartwarming reconciliation with estranged aunt.", "label": "RELATIONSHIP"}
+{"text": "Shared laughs with neighbors over chai evening.", "label": "RELATIONSHIP"}
+{"text": "Task: buy ingredients for tomorrow's family feast.", "label": "TASK"}
+{"text": "Thankful for Priya's helping hand around the house.", "label": "GRATITUDE"}
+{"text": "Amma's recipe book milestone: 50 dishes compiled!", "label": "CELEBRATION"}
+{"text": "Arjun's poem published in school magazine!", "label": "CELEBRATION"}
+{"text": "Tightened belt on non-essentials to boost savings.", "label": "FINANCE"}
+{"text": "Family expense app shows we're under budget.", "label": "FINANCE"}
+{"text": "Recovered from sprained ankle, back on feet.", "label": "HEALTH"}
+{"text": "Priya's vision test good, no glasses needed yet.", "label": "HEALTH"}
+{"text": "Evening therapy session helped family communication.", "label": "RELATIONSHIP"}
+{"text": "Bonded with dad over old photo albums.", "label": "RELATIONSHIP"}
+{"text": "Work project success shared at dinner table.", "label": "WORK"}
+{"text": "Plan weekend trip to grandparents' village.", "label": "PLANNING"}
+{"text": "Priya's piano recital was flawless tonight!", "label": "CELEBRATION"}
+{"text": "Reached 10k steps daily family challenge goal.", "label": "CELEBRATION"}
+{"text": "Sold old gadgets online, extra cash in pocket.", "label": "FINANCE"}
+{"text": "Diwali bonus covers all festival shopping.", "label": "FINANCE"}
+{"text": "Amma's cholesterol levels dropped significantly.", "label": "HEALTH"}
+{"text": "Mindful eating discussions during family dinners.", "label": "HEALTH"}
+{"text": "Patched up with Priya after scolding her.", "label": "RELATIONSHIP"}
+{"text": "Arjun's playdate fostered new friendships.", "label": "RELATIONSHIP"}
+{"text": "Evening diary: cherishing these family moments.", "label": "DIARY"}
+{"text": "Concern over Arjun's screen time increasing.", "label": "CONCERN"}
+{"text": "Family talent show was a hit this evening!", "label": "CELEBRATION"}
+{"text": "Priya learned to ride a bike today!", "label": "CELEBRATION"}
+{"text": "Balanced checkbook, no surprises this month.", "label": "FINANCE"}
+{"text": "Started SIP for retirement fund tonight.", "label": "FINANCE"}
+{"text": "Vaccinations up to date for school reopening.", "label": "HEALTH"}
+{"text": "Family sleep routine improved everyone's mood.", "label": "HEALTH"}
+{"text": "Discussed boundaries with extended family.", "label": "RELATIONSHIP"}
+{"text": "Cousins' visit brought laughter and stories.", "label": "RELATIONSHIP"}
+{"text": "Grateful for health and happiness tonight.", "label": "GRATITUDE"}
+{"text": "Remind to lock the gate after evening puja.", "label": "TASK"}
+{"text": "Arjun's debate team won regionals!", "label": "CELEBRATION"}
+{"text": "Amma's gardening contest blue ribbon!", "label": "CELEBRATION"}
+{"text": "Car insurance renewed cheaper online.", "label": "FINANCE"}
+{"text": "Household budget meeting post-dinner.", "label": "FINANCE"}
+{"text": "Dad's physiotherapy appointment rescheduled.", "label": "HEALTH"}
+{"text": "Hydration challenge going strong evenings.", "label": "HEALTH"}
+{"text": "Forgave sibling's oversight, moving forward.", "label": "RELATIONSHIP"}
+{"text": "Family photo session captured sweet memories.", "label": "RELATIONSHIP"}
+{"text": "Work-from-home setup optimized today.", "label": "WORK"}
+{"text": "Priya's essay won a national award!", "label": "CELEBRATION"}
+{"text": "Family puzzle completed in record time.", "label": "CELEBRATION"}
+{"text": "Tax refund arrived, planning smart spends.", "label": "FINANCE"}
+{"text": "Avoided impulse buys during market visit.", "label": "FINANCE"}
+{"text": "Priya's ear infection cleared up fast.", "label": "HEALTH"}
+{"text": "Evening stretches preventing back pain.", "label": "HEALTH"}
+{"text": "Talked openly about teen pressures with Arjun.", "label": "RELATIONSHIP"}
+{"text": "Reconnected with old school friend tonight.", "label": "RELATIONSHIP"}
+{"text": "Today's joys: family hugs and stories.", "label": "DIARY"}
+{"text": "Anxious about upcoming family relocation costs.", "label": "CONCERN"}
+{"text": "Diwali lights display won neighborhood vote!", "label": "CELEBRATION"}
+{"text": "Arjun's batting century in cricket match.", "label": "CELEBRATION"}
+{"text": "Loan EMI reduced after salary hike.", "label": "FINANCE"}
+{"text": "Shared family banking app insights.", "label": "FINANCE"}
+{"text": "Annual eye exam for all, vision sharp.", "label": "HEALTH"}
+{"text": "Ayurvedic remedies aiding digestion evenings.", "label": "HEALTH"}
+{"text": "Healed rift with uncle over property.", "label": "RELATIONSHIP"}
+{"text": "Priya's girl scout badge ceremony proud.", "label": "RELATIONSHIP"}
+{"text": "Plan Holi colors shopping evening.", "label": "PLANNING"}
+{"text": "Amma's 50th wedding milestone bash!", "label": "CELEBRATION"}
+{"text": "Kids' report cards all A's!", "label": "CELEBRATION"}
+{"text": "Credit score improved, loan options open.", "label": "FINANCE"}
+{"text": "Family thrift shop finds saved money.", "label": "FINANCE"}
+{"text": "Post-workout glow for everyone tonight.", "label": "HEALTH"}
+{"text": "Mental health check-in during dinner.", "label": "HEALTH"}
+{"text": "Supported spouse through work stress talk.", "label": "RELATIONSHIP"}
+{"text": "Family board games built teamwork.", "label": "RELATIONSHIP"}
+{"text": "Thankful for roof over our heads.", "label": "GRATITUDE"}
+{"text": "Evening work call wrapped successfully.", "label": "WORK"}
+{"text": "Priya's scholarship offer letter arrived!", "label": "CELEBRATION"}
+{"text": "Arjun built a robot that works perfectly.", "label": "CELEBRATION"}
+{"text": "Emergency fund topped up to 50k.", "label": "FINANCE"}
+{"text": "Negotiated better phone plan rates.", "label": "FINANCE"}
+{"text": "Amma's joint pain managed with exercises.", "label": "HEALTH"}
+{"text": "Family detox week starts tonight.", "label": "HEALTH"}
+{"text": "Celebrated making amends with sister.", "label": "RELATIONSHIP"}
+{"text": "Community event bonded neighborhood families.", "label": "RELATIONSHIP"}
+{"text": "Reflective evening on growth together.", "label": "DIARY"}
+{"text": "Task list for Diwali sweets prep.", "label": "TASK"}
+{"text": "Grandkids' visit pure celebration joy.", "label": "CELEBRATION"}
+{"text": "Team project deadline crushed early!", "label": "CELEBRATION"}
+{"text": "Insurance claim settled in our favor.", "label": "FINANCE"}
+{"text": "Monthly investments on autopilot now.", "label": "FINANCE"}
+{"text": "Kids' growth spurts healthy check.", "label": "HEALTH"}
+{"text": "Breathing exercises calmed evening anxiety.", "label": "HEALTH"}
+{"text": "Deepened bond sharing vulnerabilities.", "label": "RELATIONSHIP"}
+{"text": "Priya mediated cousin dispute wisely.", "label": "RELATIONSHIP"}
+{"text": "Gratitude circle during family dinner.", "label": "GRATITUDE"}
+{"text": "Worried about job stability rumors.", "label": "CONCERN"}
+{"text": "Arjun's art exhibit opening success!", "label": "CELEBRATION"}
+{"text": "Family recipe book published online.", "label": "CELEBRATION"}
+{"text": "Debt snowball method paying off fast.", "label": "FINANCE"}
+{"text": "Grocery budget hack: bulk buying.", "label": "FINANCE"}
+{"text": "Dental braces off for Priya, smile shines!", "label": "HEALTH"}
+{"text": "Sunset walks boosting vitamin D.", "label": "HEALTH"}
+{"text": "Forgiveness mended family holiday plans.", "label": "RELATIONSHIP"}
+{"text": "Evening calls to far-away relatives.", "label": "RELATIONSHIP"}
+{"text": "Work promotion party at home soon.", "label": "WORK"}
+{"text": "Memory lane with old Diwali pics.", "label": "MEMORY"}
+{"text": "Amma's handmade Diwali cards won hearts!", "label": "CELEBRATION"}
+{"text": "Priya's volleyball team champions!", "label": "CELEBRATION"}
+{"text": "Fixed leaky roof without breaking bank.", "label": "FINANCE"}
+{"text": "Pension planning discussion fruitful.", "label": "FINANCE"}
+{"text": "Flu season prep: masks and vitamins.", "label": "HEALTH"}
+{"text": "Family Zumba class evenings fun.", "label": "HEALTH"}
+{"text": "Resolved co-parenting issues amicably.", "label": "RELATIONSHIP"}
+{"text": "Friends joined for family barbecue.", "label": "RELATIONSHIP"}
+{"text": "What a peaceful weekend, just reading books and sipping chai with Amma.", "label": "DIARY"}
+{"text": "This weekend felt so rushed, kids playing outside while I cleaned the house.", "label": "DIARY"}
+{"text": "Can you list all the weekend activities we've planned so far this month?", "label": "MEMORY"}
+{"text": "I'm really worried Arjun might get hurt playing cricket this weekend.", "label": "CONCERN"}
+{"text": "Hey assistant, can you show me your capabilities for managing family weekends?", "label": "META"}
+{"text": "Last weekend was amazing, family picnic by the lake. Grateful for these moments.", "label": "DIARY"}
+{"text": "What were Priya's weekend homework reminders from last time?", "label": "MEMORY"}
+{"text": "The budget is tight, how can we afford a weekend outing?", "label": "CONCERN"}
+{"text": "Do you have settings to track our weekly weekend routines?", "label": "META"}
+{"text": "This weekend I reflected on how fast the kids are growing, bittersweet.", "label": "DIARY"}
+{"text": "What did we decide for the family game night this weekend?", "label": "MEMORY"}
+{"text": "Concerned about mom's knee pain flaring up during weekend walks.", "label": "CONCERN"}
+{"text": "Priya wants to do a small puja this weekend, any ideas?", "label": "PLANNING"}
+{"text": "Can the assistant remember past weekend photos we uploaded?", "label": "META"}
+{"text": "Weekend journaling: felt energized after yoga session with family.", "label": "DIARY"}
+{"text": "Recall what time the kids' soccer game was last weekend.", "label": "MEMORY"}
+{"text": "I'm anxious about the rain ruining our weekend park plans.", "label": "CONCERN"}
+{"text": "Great job on that school project, Arjun! Weekend celebration earned.", "label": "CELEBRATION"}
+{"text": "How do I reset your memory for new weekend schedules?", "label": "META"}
+{"text": "Quiet weekend at home, baking cookies and chatting with siblings.", "label": "DIARY"}
+{"text": "What was the menu for Diwali prep last weekend?", "label": "MEMORY"}
+{"text": "Worried the family is spending too much on weekend dining out.", "label": "CONCERN"}
+{"text": "Pick up dry cleaning before the weekend family photos.", "label": "TASK"}
+{"text": "Assistant, do you support voice commands for weekend reminders?", "label": "META"}
+{"text": "This weekend's hike made me appreciate nature more than ever.", "label": "DIARY"}
+{"text": "Remind me of Amma's favorite weekend recipe we tried before.", "label": "MEMORY"}
+{"text": "Tension between siblings over weekend TV time, need advice.", "label": "CONCERN"}
+{"text": "So thankful for lazy weekends cuddling with the family.", "label": "GRATITUDE"}
+{"text": "What features do you have for family weekend calendars?", "label": "META"}
+{"text": "Reflected on the weekend: too much screen time for kids.", "label": "DIARY"}
+{"text": "What did Priya score in her weekend quiz last time?", "label": "MEMORY"}
+{"text": "Health scare with dad this weekend, really shook me.", "label": "CONCERN"}
+{"text": "Water the plants this weekend, they're looking dry.", "label": "TASK"}
+{"text": "Can you explain how your privacy settings work for our chats?", "label": "META"}
+{"text": "Weekend was perfect: beach outing and ice cream treats.", "label": "DIARY"}
+{"text": "Retrieve the list of weekend chores from two weeks ago.", "label": "MEMORY"}
+{"text": "Anxious about job stress spilling into family weekend time.", "label": "CONCERN"}
+{"text": "Arjun aced his dance recital this weekend! So proud.", "label": "CELEBRATION"}
+{"text": "Journal: felt disconnected this weekend despite being home.", "label": "DIARY"}
+{"text": "What was our weekend movie night pick last month?", "label": "MEMORY"}
+{"text": "Worried Priya's allergies will act up at the weekend fair.", "label": "CONCERN"}
+{"text": "Plan a family puja for this weekend morning.", "label": "PLANNING"}
+{"text": "Assistant, can you delete old weekend entries?", "label": "META"}
+{"text": "This weekend's gardening was therapeutic for my soul.", "label": "DIARY"}
+{"text": "Recall the weekend budget we set last time.", "label": "MEMORY"}
+{"text": "Family dynamics strained over weekend chore division.", "label": "CONCERN"}
+{"text": "Thanks for the wonderful family support this weekend.", "label": "GRATITUDE"}
+{"text": "How accurate is your memory recall for past weekends?", "label": "META"}
+{"text": "Lazy Sunday vibes, napping after a big brunch.", "label": "DIARY"}
+{"text": "What time did we start the weekend hike previously?", "label": "MEMORY"}
+{"text": "I'm concerned the kids are too isolated this weekend.", "label": "CONCERN"}
+{"text": "Schedule dentist for whole family this weekend.", "label": "HEALTH"}
+{"text": "Can you customize notifications for weekend events?", "label": "META"}
+{"text": "Weekend reflection: need more quality time with partner.", "label": "DIARY"}
+{"text": "Remind me of Arjun's weekend playdate details.", "label": "MEMORY"}
+{"text": "Weekend work emails stressing me out at home.", "label": "CONCERN"}
+{"text": "Vacuum the living room before guests arrive weekend.", "label": "TASK"}
+{"text": "What languages do you support for our Indian family chats?", "label": "META"}
+{"text": "Puja this weekend brought such calm to the house.", "label": "DIARY"}
+{"text": "What was Amma's weekend health check reminder?", "label": "MEMORY"}
+{"text": "Financial worries mounting before weekend shopping.", "label": "CONCERN"}
+{"text": "Arjun and Priya played so well together this weekend.", "label": "RELATIONSHIP"}
+{"text": "Show me logs of all our weekend planning sessions.", "label": "META"}
+{"text": "Today’s weekend felt incomplete without dad’s stories.", "label": "DIARY"}
+{"text": "Retrieve Priya’s weekend art project ideas from before.", "label": "MEMORY"}
+{"text": "Scared of thunderstorms disrupting weekend camping.", "label": "CONCERN"}
+{"text": "So grateful for healthy family weekends like this.", "label": "GRATITUDE"}
+{"text": "Assistant, how do I train you on our weekend habits?", "label": "META"}
+{"text": "Biked with family this weekend, legs are sore but happy.", "label": "DIARY"}
+{"text": "What did we pack for the last weekend picnic?", "label": "MEMORY"}
+{"text": "Relationship tension rising over weekend plans.", "label": "CONCERN"}
+{"text": "Buy milk and eggs for weekend breakfasts.", "label": "TASK"}
+{"text": "Do you have a tutorial for new users on weekends?", "label": "META"}
+{"text": "Quiet reflection during weekend meditation session.", "label": "DIARY"}
+{"text": "Recall the Diwali decoration list from last weekend.", "label": "MEMORY"}
+{"text": "Worried about overeating at family weekend feasts.", "label": "CONCERN"}
+{"text": "Priya's first bike ride this weekend was thrilling!", "label": "CELEBRATION"}
+{"text": "Can you sync with our phone for weekend alarms?", "label": "META"}
+{"text": "Weekend journaling: embracing the chaos of family life.", "label": "DIARY"}
+{"text": "What fitness goals did we set for weekends?", "label": "MEMORY"}
+{"text": "Anxiety about kids' safety at crowded weekend market.", "label": "CONCERN"}
+{"text": "Plan board games for rainy weekend indoors.", "label": "PLANNING"}
+{"text": "How secure is your data storage for family weekends?", "label": "META"}
+{"text": "This weekend's chai and chats healed my heart.", "label": "DIARY"}
+{"text": "Remind me of the weekend chore rotation chart.", "label": "MEMORY"}
+{"text": "Concerned dad’s work is eating into our weekends.", "label": "CONCERN"}
+{"text": "Laundry pile up before weekend trip.", "label": "TASK"}
+{"text": "Assistant, list your updates for better weekend support.", "label": "META"}
+{"text": "Reflections: weekend volunteering felt rewarding.", "label": "DIARY"}
+{"text": "What was the outcome of Arjun’s weekend match?", "label": "MEMORY"}
+{"text": "Family budget blown on weekend impulse buys.", "label": "CONCERN"}
+{"text": "Amma’s cooking class this weekend was fun!", "label": "CELEBRATION"}
+{"text": "Do you remember user preferences for weekend tones?", "label": "META"}
+{"text": "Sunday stroll brought clarity to my thoughts.", "label": "DIARY"}
+{"text": "Retrieve last weekend’s gratitude entries.", "label": "MEMORY"}
+{"text": "Worried about Priya’s low energy this weekend.", "label": "CONCERN"}
+{"text": "Stretch before weekend yoga with family.", "label": "HEALTH"}
+{"text": "Can I export our weekend diary data?", "label": "META"}
+{"text": "Weekend was a blur of laughter and love.", "label": "DIARY"}
+{"text": "What time is the puja we planned weekends ago?", "label": "MEMORY"}
+{"text": "Siblings arguing over weekend toy sharing.", "label": "CONCERN"}
+{"text": "Grateful for spontaneous weekend hugs.", "label": "GRATITUDE"}
+{"text": "How do I add custom labels for weekend events?", "label": "META"}
+{"text": "Journal: missed the old weekend traditions.", "label": "DIARY"}
+{"text": "Recall Priya’s weekend reading list.", "label": "MEMORY"}
+{"text": "Health concerns with Amma’s blood pressure weekends.", "label": "CONCERN"}
+{"text": "Mow lawn and trim hedges this weekend.", "label": "TASK"}
+{"text": "Assistant, confirm if you save weekend voice notes.", "label": "META"}
+{"text": "Picnic under stars this weekend, magical.", "label": "DIARY"}
+{"text": "What expenses did we track last weekend?", "label": "MEMORY"}
+{"text": "Anxious about fitting work into weekend rest.", "label": "CONCERN"}
+{"text": "Family bonds stronger after weekend talks.", "label": "RELATIONSHIP"}
+{"text": "Do you have API for weekend integrations?", "label": "META"}
+{"text": "This weekend’s rain forced cozy indoor games.", "label": "DIARY"}
+{"text": "Remind me of the weekend playlist we made.", "label": "MEMORY"}
+{"text": "Worried kids won’t sleep well before school post-weekend.", "label": "CONCERN"}
+{"text": "Book weekend movie tickets online.", "label": "TASK"}
+{"text": "Can you prioritize certain weekend labels?", "label": "META"}
+{"text": "Reflected on gratitude during weekend puja.", "label": "DIARY"}
+{"text": "What was Arjun’s weekend goal progress?", "label": "MEMORY"}
+{"text": "Financial strain from weekend home repairs.", "label": "CONCERN"}
+{"text": "So thankful for Amma’s weekend wisdom.", "label": "GRATITUDE"}
+{"text": "Assistant, how do you handle multiple family users?", "label": "META"}
+{"text": "Weekend craft session sparked creativity.", "label": "DIARY"}
+{"text": "Retrieve the family weekend rules we set.", "label": "MEMORY"}
+{"text": "Concern over rising allergies in weekend outdoors.", "label": "CONCERN"}
+{"text": "Clean garage for weekend car wash.", "label": "TASK"}
+{"text": "What’s new in your weekend planning tools?", "label": "META"}
+{"text": "Quiet weekend allowed deep family reflections.", "label": "DIARY"}
+{"text": "What did we celebrate last weekend?", "label": "MEMORY"}
+{"text": "Tension in marriage over weekend choices.", "label": "CONCERN"}
+{"text": "Priya’s report card glow-up this weekend!", "label": "CELEBRATION"}
+{"text": "Can you search past weekend entries by keyword?", "label": "META"}
+{"text": "Journaling my weekend joys and small pains.", "label": "DIARY"}
+{"text": "Recall Diwali sweets recipe from weekends past.", "label": "MEMORY"}
+{"text": "I’m worried about dad’s weekend drinking.", "label": "CONCERN"}
+{"text": "Water plants and feed fish weekend routine.", "label": "TASK"}
+{"text": "Assistant, verify your uptime for live weekends.", "label": "META"}
+{"text": "This weekend’s hike cleared my mind perfectly.", "label": "DIARY"}
+{"text": "What health tips did you give last weekend?", "label": "MEMORY"}
+{"text": "Family outing budget exceeded again.", "label": "CONCERN"}
+{"text": "Grateful for kids’ laughter filling weekends.", "label": "GRATITUDE"}
+{"text": "Do you learn from our weekend patterns?", "label": "META"}
+{"text": "Weekend vibes: content with simple pleasures.", "label": "DIARY"}
+{"text": "Remind me of Priya’s weekend tutor time.", "label": "MEMORY"}
+{"text": "Scared of family illness spreading weekends.", "label": "CONCERN"}
+{"text": "Plan a Diwali-themed weekend craft.", "label": "PLANNING"}
+{"text": "How do I backup weekend data?", "label": "META"}
+{"text": "Reflections on a hectic but loving weekend.", "label": "DIARY"}
+{"text": "What was the score of Arjun’s game?", "label": "MEMORY"}
+{"text": "Work calls ruining sacred weekend time.", "label": "CONCERN"}
+{"text": "Buy weekend snacks for movie marathon.", "label": "TASK"}
+{"text": "Assistant, list all available weekend domains.", "label": "META"}
+{"text": "Puja morning set a positive weekend tone.", "label": "DIARY"}
+{"text": "Retrieve Amma’s weekend medication schedule.", "label": "MEMORY"}
+{"text": "Anxiety peaks before busy family weekends.", "label": "CONCERN"}
+{"text": "Family dance party this weekend was epic!", "label": "CELEBRATION"}
+{"text": "Can you generate weekend reports automatically?", "label": "META"}
+{"text": "Today’s entry: weekend brought unexpected peace.", "label": "DIARY"}
+{"text": "What chores were pending from last weekend?", "label": "MEMORY"}
+{"text": "Worried about sibling rivalry escalating weekends.", "label": "CONCERN"}
+{"text": "So grateful for partner’s weekend help.", "label": "GRATITUDE"}
+{"text": "Do you support image uploads for weekends?", "label": "META"}
+{"text": "Journal: embracing weekend imperfections.", "label": "DIARY"}
+{"text": "Recall our weekend gratitude ritual.", "label": "MEMORY"}
+{"text": "Health check needed before active weekends.", "label": "HEALTH"}
+{"text": "Assistant, how fast do you process weekend queries?", "label": "META"}
+{"text": "Weekend with chai and stories, pure bliss.", "label": "DIARY"}
+{"text": "What plans did we scrap last weekend?", "label": "MEMORY"}
+{"text": "Concerned about pet’s behavior on weekends.", "label": "CONCERN"}
+{"text": "Fold laundry while watching weekend cartoons.", "label": "TASK"}
+{"text": "Can I set weekend-specific response styles?", "label": "META"}
+{"text": "Reflected on family growth this weekend.", "label": "DIARY"}
+{"text": "Don't forget to buy Diwali sweets for the puja tomorrow.", "label": "TASK"}
+{"text": "Arjun has a big work presentation next week, wish him luck.", "label": "WORK"}
+{"text": "So grateful for Amma's homemade chai during this festive season.", "label": "GRATITUDE"}
+{"text": "Let's plan the Christmas dinner menu with turkey and pie.", "label": "PLANNING"}
+{"text": "Remind me to wrap Priya's birthday gifts tonight.", "label": "TASK"}
+{"text": "My boss scheduled an urgent meeting on Diwali eve, so frustrating.", "label": "WORK"}
+{"text": "Thankful for our family's health this holiday season.", "label": "GRATITUDE"}
+{"text": "Schedule a family vacation right after Christmas.", "label": "PLANNING"}
+{"text": "Pick up the dry cleaning before the office party.", "label": "TASK"}
+{"text": "Priya's new job starts after her birthday, excited for her.", "label": "WORK"}
+{"text": "Grateful for Arjun helping with Diwali decorations.", "label": "GRATITUDE"}
+{"text": "Plan the puja timings for Diwali with relatives.", "label": "PLANNING"}
+{"text": "Buy new lights for the Christmas tree today.", "label": "TASK"}
+{"text": "Work deadline is pushing into our birthday weekend plans.", "label": "WORK"}
+{"text": "So thankful for the love from my spouse during holidays.", "label": "GRATITUDE"}
+{"text": "Coordinate birthday cake pickup for tomorrow evening.", "label": "PLANNING"}
+{"text": "Clean the house before Diwali guests arrive.", "label": "TASK"}
+{"text": "Team project at work needs overtime before Christmas.", "label": "WORK"}
+{"text": "Appreciative of Amma's cooking for the family gathering.", "label": "GRATITUDE"}
+{"text": "Let's book flights for the holiday vacation now.", "label": "PLANNING"}
+{"text": "Water the plants while we're out for birthday shopping.", "label": "TASK"}
+{"text": "Arjun got promoted at work, proud of him!", "label": "WORK"}
+{"text": "Grateful for Priya's support during busy work times.", "label": "GRATITUDE"}
+{"text": "Plan Diwali fireworks display with neighbors.", "label": "PLANNING"}
+{"text": "Shop for Christmas gifts online before it gets crazy.", "label": "TASK"}
+{"text": "My remote work setup is perfect for holiday flexibility.", "label": "WORK"}
+{"text": "Thankful for the joyful Diwali lights with family.", "label": "GRATITUDE"}
+{"text": "Schedule doctor's appointment after birthday celebrations.", "label": "PLANNING"}
+{"text": "Prepare rangoli supplies for Diwali morning.", "label": "TASK"}
+{"text": "Client called for a last-minute meeting before holidays.", "label": "WORK"}
+{"text": "So grateful for our little one's first Christmas.", "label": "GRATITUDE"}
+{"text": "Plan a surprise birthday party for Dad.", "label": "PLANNING"}
+{"text": "Take out the trash before guests come for Diwali.", "label": "TASK"}
+{"text": "New year work goals include a promotion push.", "label": "WORK"}
+{"text": "Appreciating the warmth of family during Christmas prep.", "label": "GRATITUDE"}
+{"text": "Coordinate carpool for birthday bowling outing.", "label": "PLANNING"}
+{"text": "Buy ingredients for festive Diwali dinner tonight.", "label": "TASK"}
+{"text": "Work conference overlaps with holiday plans, ugh.", "label": "WORK"}
+{"text": "Thankful for Amma sharing her birthday recipe secrets.", "label": "GRATITUDE"}
+{"text": "Let's plan the Christmas light tour around town.", "label": "PLANNING"}
+{"text": "Iron shirts for the office holiday party.", "label": "TASK"}
+{"text": "Priya's internship turns full-time after Diwali.", "label": "WORK"}
+{"text": "Grateful for Arjun's help wrapping birthday presents.", "label": "GRATITUDE"}
+{"text": "Book venue for Diwali family reunion.", "label": "PLANNING"}
+{"text": "Charge the camera for Christmas photos.", "label": "TASK"}
+{"text": "Boss praised my project during holiday crunch.", "label": "WORK"}
+{"text": "So thankful for peaceful moments before Diwali rush.", "label": "GRATITUDE"}
+{"text": "Plan menu for Priya's birthday barbecue.", "label": "PLANNING"}
+{"text": "Sweep the patio for outdoor Christmas decor.", "label": "TASK"}
+{"text": "Remote work lets me join Diwali festivities early.", "label": "WORK"}
+{"text": "Appreciative of family's patience with my work hours.", "label": "GRATITUDE"}
+{"text": "Schedule vet visit after holiday birthdays.", "label": "PLANNING"}
+{"text": "Pack Amma's favorite sweets for Diwali gifting.", "label": "TASK"}
+{"text": "Team meeting rescheduled for post-Christmas.", "label": "WORK"}
+{"text": "Grateful for the laughter at last night's birthday dinner.", "label": "GRATITUDE"}
+{"text": "Plan fireworks safety for Diwali kids.", "label": "PLANNING"}
+{"text": "Print birthday invitations before mailing.", "label": "TASK"}
+{"text": "Work promotion interview set for holiday week.", "label": "WORK"}
+{"text": "Thankful for Priya's handmade Christmas ornaments.", "label": "GRATITUDE"}
+{"text": "Coordinate Diwali outfit shopping trip.", "label": "PLANNING"}
+{"text": "Bake cookies for neighbor Christmas gifts.", "label": "TASK"}
+{"text": "Arjun's new job starts right after birthday.", "label": "WORK"}
+{"text": "So grateful for Amma's festive storytelling.", "label": "GRATITUDE"}
+{"text": "Let's plan a Christmas eve movie night.", "label": "PLANNING"}
+{"text": "Buy pooja thali for Diwali tomorrow.", "label": "TASK"}
+{"text": "Office holiday party outfit needs dry cleaning.", "label": "WORK"}
+{"text": "Appreciating Arjun's enthusiasm for family holidays.", "label": "GRATITUDE"}
+{"text": "Schedule family photos before birthdays.", "label": "PLANNING"}
+{"text": "Restock Diwali lamps and candles.", "label": "TASK"}
+{"text": "My work project wrapped up just in time for Christmas.", "label": "WORK"}
+{"text": "Thankful for the cozy holiday vibes with loved ones.", "label": "GRATITUDE"}
+{"text": "Plan surprise trip for Priya's birthday.", "label": "PLANNING"}
+{"text": "Vacuum under furniture for Diwali cleaning.", "label": "TASK"}
+{"text": "Client deadline before holiday break is intense.", "label": "WORK"}
+{"text": "Grateful for Amma's guidance during busy seasons.", "label": "GRATITUDE"}
+{"text": "Book caterer for Christmas party.", "label": "PLANNING"}
+{"text": "Prepare gift tags for birthday presents.", "label": "TASK"}
+{"text": "New role at work announced post-Diwali.", "label": "WORK"}
+{"text": "So thankful for family support during work travel.", "label": "GRATITUDE"}
+{"text": "Plan Diwali card-making session with kids.", "label": "PLANNING"}
+{"text": "Shop for Christmas wrapping paper.", "label": "TASK"}
+{"text": "Team-building work event during holidays.", "label": "WORK"}
+{"text": "Appreciative of Priya's holiday baking help.", "label": "GRATITUDE"}
+{"text": "Coordinate birthday gift exchange rules.", "label": "PLANNING"}
+{"text": "Light diyas for evening puja.", "label": "TASK"}
+{"text": "Work emails piling up before Christmas vacation.", "label": "WORK"}
+{"text": "Grateful for Arjun's festive playlist.", "label": "GRATITUDE"}
+{"text": "Schedule Diwali dinner seating.", "label": "PLANNING"}
+{"text": "Buy birthday balloons online.", "label": "TASK"}
+{"text": "Priya aced her work interview for holiday job.", "label": "WORK"}
+{"text": "Thankful for the magic of Christmas mornings.", "label": "GRATITUDE"}
+{"text": "Plan post-Diwali cleanup crew.", "label": "PLANNING"}
+{"text": "Polish silverware for holiday table.", "label": "TASK"}
+{"text": "Boss approved time off after big project.", "label": "WORK"}
+{"text": "So grateful for family traditions during birthdays.", "label": "GRATITUDE"}
+{"text": "Book resort for Christmas getaway.", "label": "PLANNING"}
+{"text": "Make rangoli designs for Diwali front door.", "label": "TASK"}
+{"text": "Work promotion feels great before holidays.", "label": "WORK"}
+{"text": "Appreciating Amma's endless holiday energy.", "label": "GRATITUDE"}
+{"text": "Plan birthday scavenger hunt for kids.", "label": "PLANNING"}
+{"text": "Assemble Christmas gift baskets.", "label": "TASK"}
+{"text": "Remote team meeting clashing with Diwali prep.", "label": "WORK"}
+{"text": "Thankful for Priya's thoughtful gifts.", "label": "GRATITUDE"}
+{"text": "Schedule puja priest for Diwali.", "label": "PLANNING"}
+{"text": "Buy fresh flowers for birthday cake.", "label": "TASK"}
+{"text": "Arjun's work bonus covers holiday expenses.", "label": "WORK"}
+{"text": "Grateful for cozy family Christmas jammies.", "label": "GRATITUDE"}
+{"text": "Coordinate Diwali sweet distribution.", "label": "PLANNING"}
+{"text": "Charge festive lights for display.", "label": "TASK"}
+{"text": "Holiday work party was a success.", "label": "WORK"}
+{"text": "So thankful for our holiday helpers.", "label": "GRATITUDE"}
+{"text": "Plan birthday photo booth setup.", "label": "PLANNING"}
+{"text": "Clean garage for Christmas storage.", "label": "TASK"}
+{"text": "New work contract signed before Diwali.", "label": "WORK"}
+{"text": "Appreciative of Arjun's work ethic inspiration.", "label": "GRATITUDE"}
+{"text": "Book flights for family birthday reunion.", "label": "PLANNING"}
+{"text": "Prepare mithai boxes for Diwali.", "label": "TASK"}
+{"text": "Team project deadline met just in time.", "label": "WORK"}
+{"text": "Thankful for Amma's loving holiday meals.", "label": "GRATITUDE"}
+{"text": "Plan Christmas cookie exchange party.", "label": "PLANNING"}
+{"text": "Wrap gifts after kids sleep tonight.", "label": "TASK"}
+{"text": "Priya's boss gave early holiday release.", "label": "WORK"}
+{"text": "Grateful for the spirit of Diwali unity.", "label": "GRATITUDE"}
+{"text": "Schedule birthday dinner reservations.", "label": "PLANNING"}
+{"text": "Buy new diyas from the market.", "label": "TASK"}
+{"text": "Work from home during holiday chaos works well.", "label": "WORK"}
+{"text": "So appreciative of family birthday cheers.", "label": "GRATITUDE"}
+{"text": "Coordinate Christmas caroling route.", "label": "PLANNING"}
+{"text": "Set table for Diwali feast.", "label": "TASK"}
+{"text": "Arjun nailed his holiday presentation.", "label": "WORK"}
+{"text": "Thankful for Priya's creative Diwali decor.", "label": "GRATITUDE"}
+{"text": "Plan post-birthday cleanup schedule.", "label": "PLANNING"}
+{"text": "Bake pie for Christmas dessert.", "label": "TASK"}
+{"text": "Client happy with my work before vacations.", "label": "WORK"}
+{"text": "Grateful for Amma's wisdom in tough times.", "label": "GRATITUDE"}
+{"text": "Book Diwali fireworks vendor.", "label": "PLANNING"}
+{"text": "Print family Christmas cards.", "label": "TASK"}
+{"text": "Promotion at work announced on birthday.", "label": "WORK"}
+{"text": "Appreciating the joy of holiday planning together.", "label": "GRATITUDE"}
+{"text": "Schedule vet for pet before Christmas.", "label": "PLANNING"}
+{"text": "Shop for birthday party supplies.", "label": "TASK"}
+{"text": "Team holiday bonus made everyone happy.", "label": "WORK"}
+{"text": "So thankful for Arjun's festive spirit.", "label": "GRATITUDE"}
+{"text": "Plan Diwali rangoli competition.", "label": "PLANNING"}
+{"text": "Decorate tree with kids today.", "label": "TASK"}
+{"text": "My work schedule cleared for full holidays.", "label": "WORK"}
+{"text": "Grateful for Priya's support through deadlines.", "label": "GRATITUDE"}
+{"text": "Coordinate birthday video calls with relatives.", "label": "PLANNING"}
+{"text": "Prepare chai for Diwali guests.", "label": "TASK"}
+{"text": "Boss flexible with Christmas work hours.", "label": "WORK"}
+{"text": "Thankful for family moments amid chaos.", "label": "GRATITUDE"}
+{"text": "Plan surprise Christmas gift reveal.", "label": "PLANNING"}
+{"text": "Buy candles for birthday cake.", "label": "TASK"}
+{"text": "Arjun's new project starts post-holidays.", "label": "WORK"}
+{"text": "Appreciative of Amma's tireless efforts.", "label": "GRATITUDE"}
+{"text": "Schedule Diwali family game night.", "label": "PLANNING"}
+{"text": "Hang stockings by the fireplace.", "label": "TASK"}
+{"text": "Work conference call during lunch break.", "label": "WORK"}
+{"text": "So grateful for birthday hugs from all.", "label": "GRATITUDE"}
+{"text": "Book hotel for Christmas market trip.", "label": "PLANNING"}
+{"text": "Make fresh garlands for Diwali.", "label": "TASK"}
+{"text": "Priya's freelance work booming with holidays.", "label": "WORK"}
+{"text": "Thankful for the lights of Diwali hope.", "label": "GRATITUDE"}
+{"text": "Plan birthday theme decorations.", "label": "PLANNING"}
+{"text": "Restock pantry for Christmas baking.", "label": "TASK"}
+{"text": "Team met quarterly goals early this season.", "label": "WORK"}
+{"text": "Grateful for our holiday traditions enduring.", "label": "GRATITUDE"}
+{"text": "Coordinate Diwali sweet-sharing with neighbors.", "label": "PLANNING"}
+{"text": "Iron napkins for birthday table.", "label": "TASK"}
+{"text": "New job offer came right before Christmas.", "label": "WORK"}
+{"text": "Appreciating Arjun's holiday cheerleading.", "label": "GRATITUDE"}
+{"text": "Plan post-Diwali relaxation day.", "label": "PLANNING"}
+{"text": "Assemble gingerbread houses.", "label": "TASK"}
+{"text": "Work perks include holiday gift cards.", "label": "WORK"}
+{"text": "So thankful for Priya's loving notes.", "label": "GRATITUDE"}
+{"text": "Schedule birthday cake tasting.", "label": "PLANNING"}
+{"text": "Clean puja area thoroughly.", "label": "TASK"}
+{"text": "My project lead role confirmed for new year.", "label": "WORK"}
+{"text": "Grateful for Amma's festive recipes passed down.", "label": "GRATITUDE"}
+{"text": "Book tickets for Christmas show.", "label": "PLANNING"}
+{"text": "Buy wrapping ribbon for gifts.", "label": "TASK"}
+{"text": "Remote work saved our Diwali plans.", "label": "WORK"}
+{"text": "Thankful for family pulling together.", "label": "GRATITUDE"}
+{"text": "Plan Diwali photo session outfits.", "label": "PLANNING"}
+{"text": "Prepare eggnog for holiday toast.", "label": "TASK"}
+{"text": "Boss's holiday message was motivating.", "label": "WORK"}
+{"text": "Appreciative of every shared laugh.", "label": "GRATITUDE"}
+{"text": "Coordinate birthday playlist requests.", "label": "PLANNING"}
+{"text": "With Amma's hospital bills piling up, we need to cut back on non-essentials this month.", "label": "FINANCE"}
+{"text": "Arjun's tuition fees are due tomorrow amid this flu season chaos.", "label": "FINANCE"}
+{"text": "Paid for Priya's new laptop for her deadlines, but it strained our savings.", "label": "FINANCE"}
+{"text": "Budget check: groceries and meds are eating into our emergency fund during illness.", "label": "FINANCE"}
+{"text": "We overspent on Diwali sweets last year; let's plan better this stressful time.", "label": "FINANCE"}
+{"text": "Priya aced her project deadline despite being sick—family celebration tonight!", "label": "CELEBRATION"}
+{"text": "Arjun's birthday during exam week, but he passed with flying colors. So proud!", "label": "CELEBRATION"}
+{"text": "Amma recovered from fever just in time for puja—milestone moment!", "label": "CELEBRATION"}
+{"text": "Priya got the job offer after weeks of deadlines and stress. Cheers!", "label": "CELEBRATION"}
+{"text": "Arjun scored top in class amid family illness—time for a treat!", "label": "CELEBRATION"}
+{"text": "Tension between me and Arjun over his procrastination during deadlines.", "label": "RELATIONSHIP"}
+{"text": "Priya and Amma arguing about wedding plans while everyone's stressed.", "label": "RELATIONSHIP"}
+{"text": "Family dynamics strained with work deadlines and Amma's health issues.", "label": "RELATIONSHIP"}
+{"text": "Arjun feels ignored during my busy illness recovery phase.", "label": "RELATIONSHIP"}
+{"text": "Bonding with Priya over chai despite Diwali prep stress.", "label": "RELATIONSHIP"}
+{"text": "Hey, can you list all our recent expense entries?", "label": "META"}
+{"text": "What features do you have for tracking family budgets?", "label": "META"}
+{"text": "Can the assistant remind me of deadlines during illness?", "label": "META"}
+{"text": "How do I set up categories for finance logs here?", "label": "META"}
+{"text": "Does this diary save our celebration notes automatically?", "label": "META"}
+{"text": "Amma's cough is worsening; doctor visit tomorrow.", "label": "HEALTH"}
+{"text": "Deadline crunch making me skip meals—need wellness tips.", "label": "HEALTH"}
+{"text": "Priya's fever during exam prep; rest advised.", "label": "HEALTH"}
+{"text": "Gym session canceled due to family illness stress.", "label": "HEALTH"}
+{"text": "Arjun's vaccination due amid school deadlines.", "label": "HEALTH"}
+{"text": "Big report due Friday—feeling the pressure.", "label": "WORK"}
+{"text": "Boss extended deadline because of my flu.", "label": "WORK"}
+{"text": "Priya's internship interview clashing with puja.", "label": "WORK"}
+{"text": "Team meeting tomorrow despite home stress.", "label": "WORK"}
+{"text": "Promotion talks delayed by illness.", "label": "WORK"}
+{"text": "What was our budget last month during Diwali?", "label": "MEMORY"}
+{"text": "Recall Arjun's last achievement date.", "label": "MEMORY"}
+{"text": "What did we say about family puja plans?", "label": "MEMORY"}
+{"text": "Remind me of Priya's deadline last week.", "label": "MEMORY"}
+{"text": "Past notes on Amma's health routine?", "label": "MEMORY"}
+{"text": "Schedule checkup around work deadlines.", "label": "PLANNING"}
+{"text": "Plan budget review post-illness bills.", "label": "PLANNING"}
+{"text": "Diwali shopping list despite stress.", "label": "PLANNING"}
+{"text": "Family meeting for Arjun's studies.", "label": "PLANNING"}
+{"text": "Vacation after deadline rush?", "label": "PLANNING"}
+{"text": "Worried about bills with Amma sick.", "label": "CONCERN"}
+{"text": "Arjun's grades slipping under pressure.", "label": "CONCERN"}
+{"text": "Deadline overload causing family fights.", "label": "CONCERN"}
+{"text": "Priya's stress levels high lately.", "label": "CONCERN"}
+{"text": "Flu spreading in house—scary.", "label": "CONCERN"}
+{"text": "Thankful for Priya's support during my illness.", "label": "GRATITUDE"}
+{"text": "Grateful Arjun helped with chores amid deadlines.", "label": "GRATITUDE"}
+{"text": "Appreciate Amma's cooking despite her cough.", "label": "GRATITUDE"}
+{"text": "Thanks to family for Diwali lights-up.", "label": "GRATITUDE"}
+{"text": "Blessed by puja during tough times.", "label": "GRATITUDE"}
+{"text": "Today's reflections: surviving deadline week.", "label": "DIARY"}
+{"text": "Journal: illness taught us patience.", "label": "DIARY"}
+{"text": "Busy day with family worries.", "label": "DIARY"}
+{"text": "Pick up meds and groceries.", "label": "TASK"}
+{"text": "Remind to pay Arjun's fees.", "label": "TASK"}
+{"text": "Chai time—make list for puja.", "label": "TASK"}
+{"text": "We dipped into savings for emergency meds.", "label": "FINANCE"}
+{"text": "Arjun's new shoes were pricey during budget crunch.", "label": "FINANCE"}
+{"text": "Tracking expenses: too much on takeout amid stress.", "label": "FINANCE"}
+{"text": "Priya's achievement award—let's celebrate modestly.", "label": "CELEBRATION"}
+{"text": "Amma's recovery milestone after long illness.", "label": "CELEBRATION"}
+{"text": "Family reunion success despite deadlines!", "label": "CELEBRATION"}
+{"text": "Sibling rivalry over Amma's attention during sickness.", "label": "RELATIONSHIP"}
+{"text": "Priya opening up about work stress.", "label": "RELATIONSHIP"}
+{"text": "Can you categorize our finance entries better?", "label": "META"}
+{"text": "Show me past celebration logs.", "label": "META"}
+{"text": "Priya needs yoga for deadline anxiety.", "label": "HEALTH"}
+{"text": "Work promotion amid family health scare.", "label": "WORK"}
+{"text": "What was decision on Diwali budget?", "label": "MEMORY"}
+{"text": "Plan Amma's birthday around illness.", "label": "PLANNING"}
+{"text": "Concerned over rising medical costs.", "label": "CONCERN"}
+{"text": "Grateful for Arjun's straight A's.", "label": "GRATITUDE"}
+{"text": "Diary: reflecting on tough week.", "label": "DIARY"}
+{"text": "Todo: call doctor.", "label": "TASK"}
+{"text": "Loan for home repairs stressing finances.", "label": "FINANCE"}
+{"text": "Celebrating Priya's marathon finish despite flu.", "label": "CELEBRATION"}
+{"text": "Arguments with spouse over money during illness.", "label": "RELATIONSHIP"}
+{"text": "How does the AI handle family data privacy?", "label": "META"}
+{"text": "Gym reminder for stress relief.", "label": "HEALTH"}
+{"text": "Client deadline pushed back thankfully.", "label": "WORK"}
+{"text": "Recall last puja date.", "label": "MEMORY"}
+{"text": "Schedule family therapy.", "label": "PLANNING"}
+{"text": "Worried about Arjun's friends.", "label": "CONCERN"}
+{"text": "Long day at office and home.", "label": "DIARY"}
+{"text": "Buy milk and rice.", "label": "TASK"}
+{"text": "Unexpected car repair bill during tight budget.", "label": "FINANCE"}
+{"text": "Arjun's science fair win—huge celebration!", "label": "CELEBRATION"}
+{"text": "Healing family bonds after fight.", "label": "RELATIONSHIP"}
+{"text": "Can you export our diary entries?", "label": "META"}
+{"text": "Blood pressure check needed.", "label": "HEALTH"}
+{"text": "Interview prep amid Diwali.", "label": "WORK"}
+{"text": "What did Amma say about health?", "label": "MEMORY"}
+{"text": "Plan vacation savings.", "label": "PLANNING"}
+{"text": "Anxiety over exams.", "label": "CONCERN"}
+{"text": "Grateful for home-cooked meals.", "label": "GRATITUDE"}
+{"text": "Thoughts on balance.", "label": "DIARY"}
+{"text": "Water the plants.", "label": "TASK"}
+{"text": "Insurance claim for illness dragging finances.", "label": "FINANCE"}
+{"text": "Priya's wedding anniversary joy.", "label": "CELEBRATION"}
+{"text": "Conflicts with in-laws over visits.", "label": "RELATIONSHIP"}
+{"text": "Update your settings for Indian festivals?", "label": "META"}
+{"text": "Diet plan for recovery.", "label": "HEALTH"}
+{"text": "Raise denied due to deadlines.", "label": "WORK"}
+{"text": "Past finance goals?", "label": "MEMORY"}
+{"text": "Book doctor for puja eve.", "label": "PLANNING"}
+{"text": "Fear of job loss.", "label": "CONCERN"}
+{"text": "Appreciate daily hugs.", "label": "GRATITUDE"}
+{"text": "Quiet evening reflection.", "label": "DIARY"}
+{"text": "Laundry day.", "label": "TASK"}
+{"text": "Savings goal hit despite meds cost.", "label": "FINANCE"}
+{"text": "Amma's puja completion—blessings!", "label": "CELEBRATION"}
+{"text": "Deep talk with Arjun on feelings.", "label": "RELATIONSHIP"}
+{"text": "Do you support voice notes for diary?", "label": "META"}
+{"text": "What was celebration budget?", "label": "MEMORY"}
+{"text": "Timeline for Diwali prep.", "label": "PLANNING"}
+{"text": "Stress headaches returning.", "label": "CONCERN"}
+{"text": "Thankful for rain relief.", "label": "GRATITUDE"}
+{"text": "Journaling gratitude.", "label": "DIARY"}
+{"text": "Pick up Priya.", "label": "TASK"}
+{"text": "Credit card bill shock post-illness.", "label": "FINANCE"}
+{"text": "Family game night win for Arjun.", "label": "CELEBRATION"}
+{"text": "Mending ties with sister.", "label": "RELATIONSHIP"}
+{"text": "Integrate with calendar app?", "label": "META"}
+{"text": "Walk for fitness.", "label": "HEALTH"}
+{"text": "Team outing planned.", "label": "WORK"}
+{"text": "Relationship advice from past?", "label": "MEMORY"}
+{"text": "Budget meeting next week.", "label": "PLANNING"}
+{"text": "Bills overwhelming.", "label": "CONCERN"}
+{"text": "Grateful for chai moments.", "label": "GRATITUDE"}
+{"text": "Day's end thoughts.", "label": "DIARY"}
+{"text": "Feed the dog.", "label": "TASK"}
+{"text": "Investment advice for family fund.", "label": "FINANCE"}
+{"text": "Priya's degree completion party!", "label": "CELEBRATION"}
+{"text": "Harmony after argument.", "label": "RELATIONSHIP"}
+{"text": "Can you generate reports on finances?", "label": "META"}
+{"text": "Meditation app suggestion.", "label": "HEALTH"}
+{"text": "Deadline met early.", "label": "WORK"}
+{"text": "Health logs from last month?", "label": "MEMORY"}
+{"text": "Arjun isolating himself.", "label": "CONCERN"}
+{"text": "Blessed with health.", "label": "GRATITUDE"}
+{"text": "Personal musings.", "label": "DIARY"}
+{"text": "Grocery overspend during stress.", "label": "FINANCE"}
+{"text": "Arjun's first place in race.", "label": "CELEBRATION"}
+{"text": "Family council meeting.", "label": "RELATIONSHIP"}
+{"text": "Privacy settings query.", "label": "META"}
+{"text": "Sleep tracking on?", "label": "HEALTH"}
+{"text": "Diwali plans recall.", "label": "MEMORY"}
+{"text": "Savings challenge start.", "label": "PLANNING"}
+{"text": "Illness fatigue.", "label": "CONCERN"}
+{"text": "Thankful for progress.", "label": "GRATITUDE"}
+{"text": "Evening unwind.", "label": "DIARY"}
+{"text": "Trash out.", "label": "TASK"}
+{"text": "Tax filing extension needed.", "label": "FINANCE"}
+{"text": "Amma's 60th birthday bash!", "label": "CELEBRATION"}
+{"text": "Forgiving past grudges.", "label": "RELATIONSHIP"}
+{"text": "AI capabilities for family sharing?", "label": "META"}
+{"text": "Vitamin intake log.", "label": "HEALTH"}
+{"text": "Performance review soon.", "label": "WORK"}
+{"text": "Past worries noted?", "label": "MEMORY"}
+{"text": "Exam timetable plan.", "label": "PLANNING"}
+{"text": "Financial instability fears.", "label": "CONCERN"}
+{"text": "Grateful for unity.", "label": "GRATITUDE"}
+{"text": "Reflective night.", "label": "DIARY"}
+{"text": "Email bills.", "label": "TASK"}
+{"text": "Utility bills up due to AC in illness.", "label": "FINANCE"}
+{"text": "Priya's art exhibit success.", "label": "CELEBRATION"}
+{"text": "Rekindling old friendships.", "label": "RELATIONSHIP"}
+{"text": "How to delete old entries?", "label": "META"}
+{"text": "Hydration reminder.", "label": "HEALTH"}
+{"text": "New client signed.", "label": "WORK"}
+{"text": "Celebration photos stored?", "label": "MEMORY"}
+{"text": "Health checkup schedule.", "label": "PLANNING"}
+{"text": "Work-life imbalance.", "label": "CONCERN"}
+{"text": "Appreciate small wins.", "label": "GRATITUDE"}
+{"text": "Today's insights.", "label": "DIARY"}
+{"text": "Shop for rice.", "label": "TASK"}
+{"text": "Arjun graduates preschool!", "label": "CELEBRATION"}
+{"text": "Cousin visit strengthened bonds.", "label": "RELATIONSHIP"}
+{"text": "Search function working?", "label": "META"}
+{"text": "Vacation request approved.", "label": "WORK"}
+{"text": "Task lists from before?", "label": "MEMORY"}
+{"text": "Diwali menu plan.", "label": "PLANNING"}
+{"text": "Priya's mood swings.", "label": "CONCERN"}
+{"text": "Thankful for laughter.", "label": "GRATITUDE"}
+{"text": "Quiet contemplation.", "label": "DIARY"}
+{"text": "Vacuum floors.", "label": "TASK"}
+{"text": "Mortgage payment adjustment.", "label": "FINANCE"}
+{"text": "Family talent show highlight.", "label": "CELEBRATION"}
+{"text": "Resolving teen conflicts.", "label": "RELATIONSHIP"}
+{"text": "Multi-user access info.", "label": "META"}
+{"text": "Running streak broken by cold.", "label": "HEALTH"}
+{"text": "Deadline extension granted.", "label": "WORK"}
+{"text": "Finance trends query.", "label": "MEMORY"}
+{"text": "Budget allocation meeting.", "label": "PLANNING"}
+{"text": "Aging parents worry.", "label": "CONCERN"}
+{"text": "Grateful for resilience.", "label": "GRATITUDE"}
+{"text": "Morning pages.", "label": "DIARY"}
+{"text": "Dentist appt.", "label": "TASK"}
+{"text": "Crypto dip affecting portfolio.", "label": "FINANCE"}
+{"text": "Heart-to-heart with Amma.", "label": "RELATIONSHIP"}
+{"text": "Backup data option?", "label": "META"}
+{"text": "Allergy season hitting hard.", "label": "HEALTH"}
+{"text": "Corner office dream nearer.", "label": "WORK"}
+{"text": "What tasks pending?", "label": "MEMORY"}
+{"text": "Puja ritual sequence.", "label": "PLANNING"}
+{"text": "Debt cycle concern.", "label": "CONCERN"}
+{"text": "Blessings counted.", "label": "GRATITUDE"}
+{"text": "End-of-day wrap.", "label": "DIARY"}
+{"text": "Pay utilities.", "label": "TASK"}
+{"text": "Scholarship covers fees luckily.", "label": "FINANCE"}
+{"text": "Arjun's debate victory.", "label": "CELEBRATION"}
+{"text": "Neighborly support warms heart.", "label": "RELATIONSHIP"}
+{"text": "Tutorial for new features?", "label": "META"}
+{"text": "Pilates for back pain.", "label": "HEALTH"}
+{"text": "Freelance gig landed.", "label": "WORK"}
+{"text": "Gratitude entries past?", "label": "MEMORY"}
+{"text": "Family trip itinerary.", "label": "PLANNING"}
+{"text": "School bullying issue.", "label": "CONCERN"}
+{"text": "Thankful for tech.", "label": "GRATITUDE"}
+{"text": "Soul searching.", "label": "DIARY"}
+{"text": "Bake cookies.", "label": "TASK"}
+{"text": "Inflation hitting grocery budget.", "label": "FINANCE"}
+{"text": "Golden anniversary for grandparents.", "label": "CELEBRATION"}
+{"text": "Teen independence talks.", "label": "RELATIONSHIP"}
+{"text": "Voice command support?", "label": "META"}
+{"text": "Checked our savings account today; we're short for the school fees this month.", "label": "FINANCE"}
+{"text": "Arjun's report card came in - straight A's! Time to celebrate our little genius.", "label": "CELEBRATION"}
+{"text": "What did we decide about Priya's dance classes last time we talked?", "label": "MEMORY"}
+{"text": "Feeling a bit under the weather with this cough; need to rest more.", "label": "HEALTH"}
+{"text": "Paid the electricity bill online, but it's higher than last month due to AC usage.", "label": "FINANCE"}
+{"text": "Priya won the school art contest today. Her painting of Diwali lamps is beautiful!", "label": "CELEBRATION"}
+{"text": "Remind me, what was Amma's favorite recipe for the puja prasad?", "label": "MEMORY"}
+{"text": "Started a new yoga routine this week; my back pain is easing up.", "label": "HEALTH"}
+{"text": "Budget for groceries is tight; sticking to dal and rice this week.", "label": "FINANCE"}
+{"text": "Big milestone: Ravi got promoted at work. Family dinner tonight!", "label": "CELEBRATION"}
+{"text": "What did the doctor say about Arjun's allergies during the last visit?", "label": "MEMORY"}
+{"text": "Priya's dental checkup went well; no cavities, phew.", "label": "HEALTH"}
+{"text": "Overspent on clothes shopping; need to track expenses better.", "label": "FINANCE"}
+{"text": "Amma turned 60 today. Such a joyful family puja and cake cutting.", "label": "CELEBRATION"}
+{"text": "Where did we store the old medical records for the kids?", "label": "MEMORY"}
+{"text": "Tracking my steps daily now; aiming for 10k to stay fit.", "label": "HEALTH"}
+{"text": "House loan EMI is due; making sure we don't miss it again.", "label": "FINANCE"}
+{"text": "Arjun's first cricket trophy! He's over the moon.", "label": "CELEBRATION"}
+{"text": "What was our plan for Diwali savings from last year?", "label": "MEMORY"}
+{"text": "Amma's arthritis is flaring up; booked a physiotherapist.", "label": "HEALTH"}
+{"text": "Reviewed the monthly budget; cut cable TV to save some cash.", "label": "FINANCE"}
+{"text": "Priya aced her math exam. Proud parents moment.", "label": "CELEBRATION"}
+{"text": "Recall what we bought for Priya's last birthday party?", "label": "MEMORY"}
+{"text": "Drinking more chai with ginger for my sore throat.", "label": "HEALTH"}
+{"text": "Car insurance renewal cost more than expected this year.", "label": "FINANCE"}
+{"text": "Family celebrated Ravi's new job with homemade sweets.", "label": "CELEBRATION"}
+{"text": "What did Amma say about her blood sugar levels last checkup?", "label": "MEMORY"}
+{"text": "Walking in the park every evening; feeling healthier already.", "label": "HEALTH"}
+{"text": "Set aside money for kids' tuition fees; finally on track.", "label": "FINANCE"}
+{"text": "Arjun graduated from preschool! Tears of joy today.", "label": "CELEBRATION"}
+{"text": "What was the dosage for Priya's fever medicine we used before?", "label": "MEMORY"}
+{"text": "Annual health checkup tomorrow; hoping all reports are good.", "label": "HEALTH"}
+{"text": "Market prices are up; bargaining harder for veggies now.", "label": "FINANCE"}
+{"text": "Priya's dance recital was a hit. Standing ovation!", "label": "CELEBRATION"}
+{"text": "Remind me of the vacation budget we discussed last summer.", "label": "MEMORY"}
+{"text": "My meditation practice is helping with stress and sleep.", "label": "HEALTH"}
+{"text": "Paid off a chunk of credit card debt; relief at last.", "label": "FINANCE"}
+{"text": "Amma's birthday bash was perfect with family and puja.", "label": "CELEBRATION"}
+{"text": "What fruits did the doctor recommend for Arjun's diet?", "label": "MEMORY"}
+{"text": "Stomach upset after street food; sticking to home-cooked.", "label": "HEALTH"}
+{"text": "Invested in a fixed deposit for the kids' future.", "label": "FINANCE"}
+{"text": "Ravi scored a big client deal. Champagne (juice) for all!", "label": "CELEBRATION"}
+{"text": "Where is that list of family allergies we made?", "label": "MEMORY"}
+{"text": "Gym membership renewed; committed to fitness this year.", "label": "HEALTH"}
+{"text": "Unexpected medical bill hit the budget hard this month.", "label": "FINANCE"}
+{"text": "Priya's poem got published in the school magazine!", "label": "CELEBRATION"}
+{"text": "What was Amma's cholesterol reading from last test?", "label": "MEMORY"}
+{"text": "Herbal tea routine improving my digestion.", "label": "HEALTH"}
+{"text": "College fees drained the savings; need a side hustle.", "label": "FINANCE"}
+{"text": "Arjun's science fair win - first place ribbon!", "label": "CELEBRATION"}
+{"text": "Recall the pediatrician's advice on Priya's vaccinations.", "label": "MEMORY"}
+{"text": "Blood pressure stable after diet changes.", "label": "HEALTH"}
+{"text": "Tightened the belt on dining out to save for Diwali.", "label": "FINANCE"}
+{"text": "Family puja for Amma's recovery - she's feeling better.", "label": "CELEBRATION"}
+{"text": "What did we spend on last year's Holi decorations?", "label": "MEMORY"}
+{"text": "New running shoes for my daily jogs.", "label": "HEALTH"}
+{"text": "Groceries cost 20% more; switching to bulk buying.", "label": "FINANCE"}
+{"text": "Priya made the debate team captain. Thrilled!", "label": "CELEBRATION"}
+{"text": "Where's the receipt for Arjun's braces payment?", "label": "MEMORY"}
+{"text": "Ayurvedic oil massage eased my joint pains.", "label": "HEALTH"}
+{"text": "Emergency fund is growing slowly but surely.", "label": "FINANCE"}
+{"text": "Ravi's marathon finish - crossed the line strong.", "label": "CELEBRATION"}
+{"text": "What vaccine schedule did we follow for Priya?", "label": "MEMORY"}
+{"text": "Mindful eating helping with weight management.", "label": "HEALTH"}
+{"text": "Phone bill skyrocketed; time for a cheaper plan.", "label": "FINANCE"}
+{"text": "Amma's quilt finished for the fair - blue ribbon win!", "label": "CELEBRATION"}
+{"text": "Remind me of the family health insurance policy details.", "label": "MEMORY"}
+{"text": "Steam inhalation cleared my sinuses overnight.", "label": "HEALTH"}
+{"text": "Sold old gold to cover wedding expenses.", "label": "FINANCE"}
+{"text": "Arjun's piano recital was flawless tonight.", "label": "CELEBRATION"}
+{"text": "What was the outcome of Priya's eye checkup?", "label": "MEMORY"}
+{"text": "Daily pranayama breathing for better lung health.", "label": "HEALTH"}
+{"text": "Priya's scholarship award letter arrived!", "label": "CELEBRATION"}
+{"text": "Where did we note down Amma's medicine timings?", "label": "MEMORY"}
+{"text": "Fasting for wellness; feeling lighter.", "label": "HEALTH"}
+{"text": "Vacation fund at 50%; halfway there.", "label": "FINANCE"}
+{"text": "Family celebrated Diwali with fireworks and sweets.", "label": "CELEBRATION"}
+{"text": "What did the dentist say about Arjun's teeth?", "label": "MEMORY"}
+{"text": "Turmeric milk soothing my cold symptoms.", "label": "HEALTH"}
+{"text": "Cut subscriptions to free up monthly cash.", "label": "FINANCE"}
+{"text": "Ravi cleared his certification exam on first try.", "label": "CELEBRATION"}
+{"text": "Recall our discussion on Priya's fitness tracker.", "label": "MEMORY"}
+{"text": "Neighborhood walks building stamina slowly.", "label": "HEALTH"}
+{"text": "Rent hike notice; adjusting the household budget.", "label": "FINANCE"}
+{"text": "Amma's gardening contest entry won first prize.", "label": "CELEBRATION"}
+{"text": "What was the specialist's name for mom's knee?", "label": "MEMORY"}
+{"text": "Hydration challenge: 3 liters water daily now.", "label": "HEALTH"}
+{"text": "Petty cash jar full; good for small emergencies.", "label": "FINANCE"}
+{"text": "Priya's birthday - 10 candles, perfect party.", "label": "CELEBRATION"}
+{"text": "Where's the log of our blood pressure readings?", "label": "MEMORY"}
+{"text": "Sun salutations every morning energizing me.", "label": "HEALTH"}
+{"text": "Investing in mutual funds for long-term growth.", "label": "FINANCE"}
+{"text": "Arjun joined the school band - first concert soon!", "label": "CELEBRATION"}
+{"text": "What remedies did we try for Amma's cough?", "label": "MEMORY"}
+{"text": "Vegan week trial improved my energy levels.", "label": "HEALTH"}
+{"text": "Tax refund came in; boosting emergency savings.", "label": "FINANCE"}
+{"text": "Family puja marked Ravi's new business venture.", "label": "CELEBRATION"}
+{"text": "Remind me of Priya's last growth chart stats.", "label": "MEMORY"}
+{"text": "Acupressure points relieving my headaches.", "label": "HEALTH"}
+{"text": "Monthly audit: expenses down by 10%.", "label": "FINANCE"}
+{"text": "Priya's essay won the regional competition.", "label": "CELEBRATION"}
+{"text": "What did we decide on Arjun's supplement doses?", "label": "MEMORY"}
+{"text": "Tai chi sessions calming my anxiety.", "label": "HEALTH"}
+{"text": "Bought life insurance; peace of mind secured.", "label": "FINANCE"}
+{"text": "Amma's 5K walkathon completion medal!", "label": "CELEBRATION"}
+{"text": "Where is that note on family vaccination dates?", "label": "MEMORY"}
+{"text": "Intermittent fasting aiding my metabolism.", "label": "HEALTH"}
+{"text": "Debt consolidation loan approved; lower rates.", "label": "FINANCE"}
+{"text": "Arjun's spelling bee championship victory.", "label": "CELEBRATION"}
+{"text": "Recall the dietician's meal plan for Priya.", "label": "MEMORY"}
+{"text": "Aromatherapy oils helping with sleep.", "label": "HEALTH"}
+{"text": "Crowd-funded family wedding expenses covered.", "label": "FINANCE"}
+{"text": "Ravi's book launch event was a success.", "label": "CELEBRATION"}
+{"text": "What was Amma's HbA1c from diabetes test?", "label": "MEMORY"}
+{"text": "Pilates for core strength; feeling stronger.", "label": "HEALTH"}
+{"text": "Switched to cheaper internet provider.", "label": "FINANCE"}
+{"text": "Priya mastered her first Bharatanatyam piece!", "label": "CELEBRATION"}
+{"text": "Where did we save the allergy test results?", "label": "MEMORY"}
+{"text": "Home remedies for Priya's minor sprain worked.", "label": "HEALTH"}
+{"text": "Pension contributions up to date; retirement on track.", "label": "FINANCE"}
+{"text": "Family cheered Arjun's goal in the match.", "label": "CELEBRATION"}
+{"text": "What exercises did physio recommend for back?", "label": "MEMORY"}
+{"text": "Green smoothies boosting my immunity.", "label": "HEALTH"}
+{"text": "Today was chaotic with the kids' school run and my work calls, but I'm grateful for these moments.", "label": "DIARY"}
+{"text": "Priya and Arjun keep arguing over the TV remote; how do we teach them better sibling harmony?", "label": "RELATIONSHIP"}
+{"text": "I'm really worried about Amma's knee pain flaring up again during Diwali prep.", "label": "CONCERN"}
+{"text": "Can this diary remember our family goals for the month?", "label": "META"}
+{"text": "Rushed through breakfast while checking emails; feeling overwhelmed already.", "label": "DIARY"}
+{"text": "Arjun seems distant from his best friend lately; should I talk to the parents?", "label": "RELATIONSHIP"}
+{"text": "What if we can't afford the school trip fees this year? Stressing me out.", "label": "CONCERN"}
+{"text": "How do I change the reminder time for kids' activities?", "label": "META"}
+{"text": "Juggling laundry and conference calls left me exhausted by noon.", "label": "DIARY"}
+{"text": "Priya shared her feelings about missing her cousins; family bonds are tricky.", "label": "RELATIONSHIP"}
+{"text": "Arjun's cough isn't getting better; maybe it's time for a doctor visit.", "label": "CONCERN"}
+{"text": "Does this app sync across all my devices for family updates?", "label": "META"}
+{"text": "Reflected on the day while folding clothes: kids are growing too fast.", "label": "DIARY"}
+{"text": "Tension between me and my spouse over chore division again.", "label": "RELATIONSHIP"}
+{"text": "Worried Priya is being bullied at school; her mood has changed.", "label": "CONCERN"}
+{"text": "Can you list all the entries from last week?", "label": "META"}
+{"text": "Busy morning with school drop-offs and grocery list; survived it.", "label": "DIARY"}
+{"text": "Amma and I had a heart-to-heart about old family stories.", "label": "RELATIONSHIP"}
+{"text": "Finances are tight with unexpected car repairs; how to cut back?", "label": "CONCERN"}
+{"text": "Is there a way to add voice notes to the diary?", "label": "META"}
+{"text": "Ended the day with a quiet chai, thinking about tomorrow's chaos.", "label": "DIARY"}
+{"text": "Arjun and his sister reconciled after their fight; relief.", "label": "RELATIONSHIP"}
+{"text": "Deeply concerned about work-life balance slipping away.", "label": "CONCERN"}
+{"text": "How accurate is the memory recall feature here?", "label": "META"}
+{"text": "Multitasking dinner prep and homework help was intense today.", "label": "DIARY"}
+{"text": "Feeling the strain in our marriage from constant busyness.", "label": "RELATIONSHIP"}
+{"text": "Priya's anxiety before exams is worrying me a lot.", "label": "CONCERN"}
+{"text": "Can I delete old diary entries if needed?", "label": "META"}
+{"text": "Journaling this hectic day to unwind: kids' laughter made it worthwhile.", "label": "DIARY"}
+{"text": "Discussed future plans with in-laws; some disagreements arose.", "label": "RELATIONSHIP"}
+{"text": "Amma's forgetfulness is increasing; concerned for her health.", "label": "CONCERN"}
+{"text": "What are your capabilities for family scheduling?", "label": "META"}
+{"text": "Packed day of errands and calls; need a moment to breathe.", "label": "DIARY"}
+{"text": "Priya opened up about friendship troubles at school.", "label": "RELATIONSHIP"}
+{"text": "Struggling with guilt over not spending enough time with kids.", "label": "CONCERN"}
+{"text": "How do I backup my diary data?", "label": "META"}
+{"text": "Reflections after puja: family unity feels stronger.", "label": "DIARY"}
+{"text": "Arjun clashing with his dad over screen time rules.", "label": "RELATIONSHIP"}
+{"text": "Worried about rising utility bills eating into savings.", "label": "CONCERN"}
+{"text": "Can you explain the privacy settings?", "label": "META"}
+{"text": "Busy with work deadlines while kids play; bittersweet.", "label": "DIARY"}
+{"text": "Strengthening bonds with weekly family game nights.", "label": "RELATIONSHIP"}
+{"text": "Priya's fever persists; doctor's appointment tomorrow.", "label": "CONCERN"}
+{"text": "Does this support multiple family members logging in?", "label": "META"}
+{"text": "Day in review: chaos but love prevails.", "label": "DIARY"}
+{"text": "Amma sharing wisdom on handling family conflicts.", "label": "RELATIONSHIP"}
+{"text": "Anxiety over Arjun's social isolation at school.", "label": "CONCERN"}
+{"text": "How to customize notification preferences?", "label": "META"}
+{"text": "Winding down after a marathon of multitasking.", "label": "DIARY"}
+{"text": "Spouse and I need date night to reconnect.", "label": "RELATIONSHIP"}
+{"text": "Concerned about my own burnout from parenting.", "label": "CONCERN"}
+{"text": "Can I export diary entries to PDF?", "label": "META"}
+{"text": "Today's rush: school, work, Diwali shopping. Exhausted but excited.", "label": "DIARY"}
+{"text": "Priya and Arjun's bond over chai stories warms my heart.", "label": "RELATIONSHIP"}
+{"text": "Worried the kids are picking up my stress.", "label": "CONCERN"}
+{"text": "Journaled emotions while ironing uniforms.", "label": "DIARY"}
+{"text": "Family dinner sparked deep relationship talks.", "label": "RELATIONSHIP"}
+{"text": "Amma's loneliness since grandpa passed is heartbreaking.", "label": "CONCERN"}
+{"text": "How does the AI learn from my entries?", "label": "META"}
+{"text": "Survived another day of parent juggle; proud.", "label": "DIARY"}
+{"text": "Navigating in-law expectations is challenging.", "label": "RELATIONSHIP"}
+{"text": "Deep worries about job security affecting family.", "label": "CONCERN"}
+{"text": "Can you search entries by keyword?", "label": "META"}
+{"text": "Quiet reflection: grateful despite the hustle.", "label": "DIARY"}
+{"text": "Arjun mending fences with cousin after argument.", "label": "RELATIONSHIP"}
+{"text": "Concern over Priya's eating habits lately.", "label": "CONCERN"}
+{"text": "Multitasking mayhem: calls and kid baths.", "label": "DIARY"}
+{"text": "Strengthened ties with old friends via call.", "label": "RELATIONSHIP"}
+{"text": "Anxieties about upcoming family vacation costs.", "label": "CONCERN"}
+{"text": "How to share entries with spouse securely?", "label": "META"}
+{"text": "Day's end thoughts: growth amid chaos.", "label": "DIARY"}
+{"text": "Priya's friendship drama unfolding again.", "label": "RELATIONSHIP"}
+{"text": "Worried Amma won't join Diwali without health check.", "label": "CONCERN"}
+{"text": "Does it track mood patterns over time?", "label": "META"}
+{"text": "Busy puja prep reflections: traditions matter.", "label": "DIARY"}
+{"text": "Family dynamics shifting with teens.", "label": "RELATIONSHIP"}
+{"text": "Stress over kids' screen addiction rising.", "label": "CONCERN"}
+{"text": "Can I set up family group chats here?", "label": "META"}
+{"text": "Exhausted from double shifts at home and work.", "label": "DIARY"}
+{"text": "Reconnected with sibling after long silence.", "label": "RELATIONSHIP"}
+{"text": "Concerned about environmental toxins affecting kids.", "label": "CONCERN"}
+{"text": "How reliable is the data storage?", "label": "META"}
+{"text": "Journaling gratitude in the midst of rush.", "label": "DIARY"}
+{"text": "Arjun learning empathy through family conflicts.", "label": "RELATIONSHIP"}
+{"text": "Deep concern for Priya's self-esteem issues.", "label": "CONCERN"}
+{"text": "Is voice-to-text available for busy parents?", "label": "META"}
+{"text": "Today's whirlwind: survived with coffee.", "label": "DIARY"}
+{"text": "Spousal disagreements on parenting styles.", "label": "RELATIONSHIP"}
+{"text": "Worries about aging parents' independence.", "label": "CONCERN"}
+{"text": "Can you generate weekly summaries?", "label": "META"}
+{"text": "Reflected on joys amid daily grind.", "label": "DIARY"}
+{"text": "Amma mediating kids' squabbles wisely.", "label": "RELATIONSHIP"}
+{"text": "Anxiety peaks before school parent-teacher meets.", "label": "CONCERN"}
+{"text": "How to integrate with calendar apps?", "label": "META"}
+{"text": "Diwali planning thoughts while cooking.", "label": "DIARY"}
+{"text": "Building stronger grandparent-grandkid bonds.", "label": "RELATIONSHIP"}
+{"text": "Concerned about family history of diabetes.", "label": "CONCERN"}
+{"text": "Does it have offline mode?", "label": "META"}
+{"text": "End-of-day unwind: family hugs help.", "label": "DIARY"}
+{"text": "Priya navigating teen friendships toughly.", "label": "RELATIONSHIP"}
+{"text": "Worried over rising allergy issues in kids.", "label": "CONCERN"}
+{"text": "Can I customize label categories?", "label": "META"}
+{"text": "Busy life snapshot: love it all.", "label": "DIARY"}
+{"text": "Healing family rift through open talks.", "label": "RELATIONSHIP"}
+{"text": "Stress from unpredictable work hours.", "label": "CONCERN"}
+{"text": "How does sharing work for family members?", "label": "META"}
+{"text": "Journal from the laundry pile chaos.", "label": "DIARY"}
+{"text": "Arjun's loyalty to friends impresses me.", "label": "RELATIONSHIP"}
+{"text": "Deep fears about kids' future safety.", "label": "CONCERN"}
+{"text": "Is there a premium version for more features?", "label": "META"}
+{"text": "Reflections post-puja: peace found.", "label": "DIARY"}
+{"text": "In-law relations improving slowly.", "label": "RELATIONSHIP"}
+{"text": "Concern for mental health in fast-paced life.", "label": "CONCERN"}
+{"text": "Can you remind me of forgotten entries?", "label": "META"}
+{"text": "Today's parent marathon: check.", "label": "DIARY"}
+{"text": "Family game night bridged gaps.", "label": "RELATIONSHIP"}
+{"text": "Worried about Amma's social isolation.", "label": "CONCERN"}
+{"text": "How to reset my password quickly?", "label": "META"}
+{"text": "Grateful unwind after hectic day.", "label": "DIARY"}
+{"text": "Priya and cousin's playful rivalry.", "label": "RELATIONSHIP"}
+{"text": "Anxieties over school bullying reports.", "label": "CONCERN"}
+{"text": "Does it support photo attachments?", "label": "META"}
+{"text": "Multitask survival mode activated.", "label": "DIARY"}
+{"text": "Spouse support shines in tough times.", "label": "RELATIONSHIP"}
+{"text": "Concerned with kids' sleep patterns.", "label": "CONCERN"}
+{"text": "Can I archive old reflections?", "label": "META"}
+{"text": "Diwali eve thoughts: family first.", "label": "DIARY"}
+{"text": "Navigating co-parenting challenges.", "label": "RELATIONSHIP"}
+{"text": "Worries about financial future stability.", "label": "CONCERN"}
+{"text": "How accurate are the domain classifications?", "label": "META"}
+{"text": "Day's emotional rollercoaster noted.", "label": "DIARY"}
+{"text": "Arjun's friendship circle expanding.", "label": "RELATIONSHIP"}
+{"text": "Deep concern for Priya's confidence.", "label": "CONCERN"}
+{"text": "Is multi-device sync seamless?", "label": "META"}
+{"text": "Busy but blessed parenting life.", "label": "DIARY"}
+{"text": "Amma's stories mend family ties.", "label": "RELATIONSHIP"}
+{"text": "Stress over exam pressures on kids.", "label": "CONCERN"}
+{"text": "Can you help categorize past entries?", "label": "META"}
+{"text": "Reflections amid dinner chaos.", "label": "DIARY"}
+{"text": "Healing after family misunderstanding.", "label": "RELATIONSHIP"}
+{"text": "Worried about work promotion impacting home.", "label": "CONCERN"}
+{"text": "What updates are coming soon?", "label": "META"}
+{"text": "Journaling the juggle of it all.", "label": "DIARY"}
+{"text": "Priya learning forgiveness from sibling fights.", "label": "RELATIONSHIP"}
+{"text": "Concern for extended family's hardships.", "label": "CONCERN"}
+{"text": "How to invite family to shared diary?", "label": "META"}
+{"text": "Today's high: kids' smiles.", "label": "DIARY"}
+{"text": "Stronger bonds post-Diwali gathering.", "label": "RELATIONSHIP"}
+{"text": "Anxiety about health checkup results.", "label": "CONCERN"}
+{"text": "Does it analyze sentiment trends?", "label": "META"}
+{"text": "End-day peace after storm.", "label": "DIARY"}
+{"text": "Family council resolved tensions.", "label": "RELATIONSHIP"}
+{"text": "Worried over neighborhood safety.", "label": "CONCERN"}
+{"text": "Can I use it on smartwatch?", "label": "META"}
+{"text": "Puja morning calm amid rush.", "label": "DIARY"}
+{"text": "Arjun supporting sister's dreams.", "label": "RELATIONSHIP"}
+{"text": "Deep concerns on education costs.", "label": "CONCERN"}
+{"text": "How to manage storage space?", "label": "META"}
+{"text": "Multitasking parent's daily log.", "label": "DIARY"}
+{"text": "Rebuilding trust after argument.", "label": "RELATIONSHIP"}
+{"text": "Stress from kids' peer pressure.", "label": "CONCERN"}
+{"text": "Is the AI trained on family data?", "label": "META"}
+{"text": "Grateful for small victories today.", "label": "DIARY"}
+{"text": "Worried about my patience limits.", "label": "CONCERN"}
+{"text": "Can you voice search entries?", "label": "META"}
+{"text": "Chaotic but cherished day.", "label": "DIARY"}
+{"text": "Family vacations strengthen us.", "label": "RELATIONSHIP"}
+{"text": "Concern over rising food prices.", "label": "CONCERN"}
+{"text": "How to turn off auto-classify?", "label": "META"}
+{"text": "Reflected on growth spurts.", "label": "DIARY"}
+{"text": "Priya's empathy shines through.", "label": "RELATIONSHIP"}
+{"text": "Anxieties about climate change impacts.", "label": "CONCERN"}
+{"text": "Supports Hindi input?", "label": "META"}
+{"text": "Survived school run frenzy.", "label": "DIARY"}
+{"text": "Spouse and I syncing better.", "label": "RELATIONSHIP"}
+{"text": "Worried Amma skips meds.", "label": "CONCERN"}
+{"text": "Can I rate entry usefulness?", "label": "META"}
+{"text": "Diwali prep joys and jitters.", "label": "DIARY"}
+{"text": "Kids learning teamwork finally.", "label": "RELATIONSHIP"}
+{"text": "Deep fear of family illness.", "label": "CONCERN"}
+{"text": "Privacy policy details?", "label": "META"}
+{"text": "Parenting highs in hindsight.", "label": "DIARY"}
+{"text": "In-law puja visit harmonious.", "label": "RELATIONSHIP"}
+{"text": "Concern for Arjun's focus.", "label": "CONCERN"}
+{"text": "Integrate with reminders app?", "label": "META"}
+{"text": "Quiet moment in busy life.", "label": "DIARY"}
+{"text": "Family hugs heal all.", "label": "RELATIONSHIP"}
+{"text": "Worries about tech addiction.", "label": "CONCERN"}
+{"text": "Daily active user stats?", "label": "META"}
+{"text": "Journal from carpool chaos.", "label": "DIARY"}
+{"text": "Priya mending friend rift.", "label": "RELATIONSHIP"}
+{"text": "Stress peaks at bedtime.", "label": "CONCERN"}
+{"text": "Beta features access?", "label": "META"}
+{"text": "Today's diary: resilient family.", "label": "DIARY"}
+{"text": "Stronger after tough talks.", "label": "RELATIONSHIP"}
+{"text": "Concerned on career-family balance.", "label": "CONCERN"}
+{"text": "How to contact support?", "label": "META"}
+{"text": "Endless tasks, endless love.", "label": "DIARY"}
+{"text": "Arjun's loyalty tested.", "label": "RELATIONSHIP"}
+{"text": "Worried about puja expenses.", "label": "CONCERN"}
+{"text": "App update changelog?", "label": "META"}
+{"text": "Big team meeting at work tomorrow, need to prepare the slides.", "label": "WORK"}
+{"text": "Priya got promoted at her job! Celebrating with chai tonight.", "label": "CELEBRATION"}
+{"text": "Paid the car insurance today, that's one expense down for the month.", "label": "FINANCE"}
+{"text": "Planning Arjun's graduation party next weekend, inviting all relatives.", "label": "PLANNING"}
+{"text": "Deadline for the quarterly report is Friday, staying late tonight.", "label": "WORK"}
+{"text": "Amma's birthday is coming up, budgeting for a special cake and gifts.", "label": "FINANCE"}
+{"text": "Arjun aced his final exams! Family dinner to celebrate.", "label": "CELEBRATION"}
+{"text": "Let's schedule a family puja before Diwali, who can join?", "label": "PLANNING"}
+{"text": "New project kicked off at the office, exciting but intense.", "label": "WORK"}
+{"text": "Saved 5000 rupees this month towards kids' education fund.", "label": "FINANCE"}
+{"text": "Priya's first day back at work after maternity leave went great!", "label": "CELEBRATION"}
+{"text": "Coordinating vacation dates for summer trip to Goa.", "label": "PLANNING"}
+{"text": "Client presentation nailed it, boss was impressed.", "label": "WORK"}
+{"text": "Bills are piling up, need to cut down on eating out.", "label": "FINANCE"}
+{"text": "Arjun's school sports day victory, so proud of our champ!", "label": "CELEBRATION"}
+{"text": "Planning Diwali shopping list, setting a budget first.", "label": "PLANNING"}
+{"text": "Overworked this week, but salary bump makes it worth it.", "label": "WORK"}
+{"text": "Transferred money for Priya's new laptop purchase.", "label": "FINANCE"}
+{"text": "Graduation ceremony for Amma's cousin's son, attending tomorrow.", "label": "CELEBRATION"}
+{"text": "Scheduling doctor's appointments around work hours.", "label": "PLANNING"}
+{"text": "Team building event at work, mandatory fun ahead.", "label": "WORK"}
+{"text": "Monthly grocery budget exceeded, time to meal plan better.", "label": "FINANCE"}
+{"text": "Arjun's first piano recital was amazing, standing ovation!", "label": "CELEBRATION"}
+{"text": "Let's plan the family reunion for next month, venue ideas?", "label": "PLANNING"}
+{"text": "Interview for new job position went well, fingers crossed.", "label": "WORK"}
+{"text": "Invested in mutual funds today, hoping for good returns.", "label": "FINANCE"}
+{"text": "Priya finished her certification course top of class!", "label": "CELEBRATION"}
+{"text": "Booking tickets for Diwali trip to hometown.", "label": "PLANNING"}
+{"text": "Late nights coding for the app launch at work.", "label": "WORK"}
+{"text": "Paid off the credit card balance, feeling lighter.", "label": "FINANCE"}
+{"text": "Amma's 60th birthday bash was a hit, danced all night!", "label": "CELEBRATION"}
+{"text": "Coordinating kids' tuition schedules with after-school activities.", "label": "PLANNING"}
+{"text": "Performance review at office next week, prepping achievements.", "label": "WORK"}
+{"text": "Cut cable subscription to save on monthly expenses.", "label": "FINANCE"}
+{"text": "Arjun made the school debate team, first milestone!", "label": "CELEBRATION"}
+{"text": "Planning summer camp for Priya and siblings.", "label": "PLANNING"}
+{"text": "New manager at work, changes coming soon.", "label": "WORK"}
+{"text": "Bought gold for Diwali, great investment deal.", "label": "FINANCE"}
+{"text": "Priya's dance competition win, trophy home!", "label": "CELEBRATION"}
+{"text": "Setting dates for family wedding attendance.", "label": "PLANNING"}
+{"text": "Wrapping up fiscal year reports, exhausting but done.", "label": "WORK"}
+{"text": "Emergency fund topped up after last month's repairs.", "label": "FINANCE"}
+{"text": "Arjun's kindergarten graduation was tear-jerking and joyful.", "label": "CELEBRATION"}
+{"text": "Planning puja timings for Navratri festival.", "label": "PLANNING"}
+{"text": "Training new intern at the office today.", "label": "WORK"}
+{"text": "Negotiated lower rent, saved a few thousand.", "label": "FINANCE"}
+{"text": "Amma recovered from flu, back to her healthy self!", "label": "CELEBRATION"}
+{"text": "Scheduling annual family photo shoot.", "label": "PLANNING"}
+{"text": "Promotion denied, but feedback for next time.", "label": "WORK"}
+{"text": "Track expenses app helping with budget control.", "label": "FINANCE"}
+{"text": "Priya's art exhibition opening was a success!", "label": "CELEBRATION"}
+{"text": "Let's plan the Holi party menu and guests.", "label": "PLANNING"}
+{"text": "Work trip to Mumbai next week, packing light.", "label": "WORK"}
+{"text": "Kids' school fees paid, one big check off.", "label": "FINANCE"}
+{"text": "Arjun scored his first soccer goal today!", "label": "CELEBRATION"}
+{"text": "Coordinating Diwali leave from work and school.", "label": "PLANNING"}
+{"text": "Overtime pay boosted our savings this month.", "label": "WORK"}
+{"text": "Bought new phone on EMI, within budget.", "label": "FINANCE"}
+{"text": "Family finished marathon training, race day ahead!", "label": "CELEBRATION"}
+{"text": "Planning weekend getaway to hill station.", "label": "PLANNING"}
+{"text": "Quarterly targets met at the firm, bonus time.", "label": "WORK"}
+{"text": "Debt consolidation loan approved, lower interest.", "label": "FINANCE"}
+{"text": "Priya's poem published in school magazine!", "label": "CELEBRATION"}
+{"text": "Booked pandit for home Ganesh puja.", "label": "PLANNING"}
+{"text": "Remote work policy extended, more family time.", "label": "WORK"}
+{"text": "Switched to cheaper internet plan, saved bucks.", "label": "FINANCE"}
+{"text": "Arjun's science fair project won first place!", "label": "CELEBRATION"}
+{"text": "Scheduling parent-teacher meetings next week.", "label": "PLANNING"}
+{"text": "Launched new product line at work, sales up.", "label": "WORK"}
+{"text": "Tax refund came in, nice surprise addition.", "label": "FINANCE"}
+{"text": "Amma's gardening club award for best blooms.", "label": "CELEBRATION"}
+{"text": "Planning birthday surprise for Arjun.", "label": "PLANNING"}
+{"text": "Job fair tomorrow, updating resume tonight.", "label": "WORK"}
+{"text": "Home loan interest rate reduced, payments easier.", "label": "FINANCE"}
+{"text": "Priya started ballet classes, first recital soon!", "label": "CELEBRATION"}
+{"text": "Coordinating family yoga retreat dates.", "label": "PLANNING"}
+{"text": "Annual conference prep keeping me busy at work.", "label": "WORK"}
+{"text": "Grocery bulk buy saved 20% this month.", "label": "FINANCE"}
+{"text": "Arjun's cub scout badge ceremony was proud moment.", "label": "CELEBRATION"}
+{"text": "Let's plan the monsoon picnic outing.", "label": "PLANNING"}
+{"text": "Negotiating salary for new role, hopeful.", "label": "WORK"}
+{"text": "Sold old jewelry, good cash for emergencies.", "label": "FINANCE"}
+{"text": "Family Diwali card-making workshop success!", "label": "CELEBRATION"}
+{"text": "Scheduling vet visit for pet dog.", "label": "PLANNING"}
+{"text": "Work-from-home setup optimized, productivity up.", "label": "WORK"}
+{"text": "Budget app shows we're on track for vacation.", "label": "FINANCE"}
+{"text": "Priya's spelling bee championship win!", "label": "CELEBRATION"}
+{"text": "Planning Amma's retirement party details.", "label": "PLANNING"}
+{"text": "Client deal closed, commission incoming.", "label": "WORK"}
+{"text": "Utility bills down after energy-saving bulbs.", "label": "FINANCE"}
+{"text": "Arjun graduated preschool, big boy now!", "label": "CELEBRATION"}
+{"text": "Booked flights for cousin's wedding.", "label": "PLANNING"}
+{"text": "Team outing at work, morale booster.", "label": "WORK"}
+{"text": "Started SIP for kids' future college.", "label": "FINANCE"}
+{"text": "Amma's cooking contest entry won gold!", "label": "CELEBRATION"}
+{"text": "Coordinating school field trip permissions.", "label": "PLANNING"}
+{"text": "Project milestone achieved ahead of schedule.", "label": "WORK"}
+{"text": "Priya's first guitar performance nailed it.", "label": "CELEBRATION"}
+{"text": "Planning family tree-planting drive.", "label": "PLANNING"}
+{"text": "Resigned from toxic job, new beginnings.", "label": "WORK"}
+{"text": "Wedding gift budget set for relatives.", "label": "FINANCE"}
+{"text": "Arjun's art show selected for gallery.", "label": "CELEBRATION"}
+{"text": "Scheduling Diwali decoration shopping.", "label": "PLANNING"}
+{"text": "Mentoring junior at office, rewarding.", "label": "WORK"}
+{"text": "Fixed leaky faucet, saved on water bill.", "label": "FINANCE"}
+{"text": "Family game night turned into laughter fest!", "label": "CELEBRATION"}
+{"text": "Let's plan the Republic Day family parade.", "label": "PLANNING"}
+{"text": "Work visa approved for overseas project.", "label": "WORK"}
+{"text": "Crowd-sourced family fund for new appliance.", "label": "FINANCE"}
+{"text": "Priya completed her first 5K run!", "label": "CELEBRATION"}
+{"text": "Coordinating puja supplies order.", "label": "PLANNING"}
+{"text": "Excelled in sales targets this quarter.", "label": "WORK"}
+{"text": "Petty cash reconciled, all accounts good.", "label": "FINANCE"}
+{"text": "Arjun's cricket team won the league!", "label": "CELEBRATION"}
+{"text": "Planning summer reading challenge for kids.", "label": "PLANNING"}
+{"text": "Board meeting prep done, confident.", "label": "WORK"}
+{"text": "Insurance claim settled quickly.", "label": "FINANCE"}
+{"text": "Amma's saree collection featured in magazine.", "label": "CELEBRATION"}
+{"text": "Booked resort for anniversary getaway.", "label": "PLANNING"}
+{"text": "Down payment saved for dream house.", "label": "FINANCE"}
+{"text": "Priya's valedictorian speech was inspiring.", "label": "CELEBRATION"}
+{"text": "Scheduling family dentist checkups.", "label": "PLANNING"}
+{"text": "Innovation award at annual work gala.", "label": "WORK"}
+{"text": "Switched banks for better savings rate.", "label": "FINANCE"}
+{"text": "Arjun's robotics club invention showcased.", "label": "CELEBRATION"}
+{"text": "Planning Lohri bonfire family gathering.", "label": "PLANNING"}
+{"text": "Career counseling session booked for kids.", "label": "WORK"}
+{"text": "Monthly allowance adjusted for inflation.", "label": "FINANCE"}
+{"text": "Family quilt project completed, heirloom!", "label": "CELEBRATION"}
+{"text": "Coordinating volunteer day at temple.", "label": "PLANNING"}
+{"text": "Laid off but severance package solid.", "label": "WORK"}
+{"text": "Crypto investment paid off nicely.", "label": "FINANCE"}
+{"text": "Priya's scholarship award announced!", "label": "CELEBRATION"}
+{"text": "Let's plan the Onam feast menu.", "label": "PLANNING"}
+{"text": "Networking event at work led to leads.", "label": "WORK"}
+{"text": "Home renovation costs under budget.", "label": "FINANCE"}
+{"text": "Arjun cleared his JEE mains first attempt!", "label": "CELEBRATION"}
+{"text": "Scheduling eye exams for whole family.", "label": "PLANNING"}
+{"text": "New software rollout smooth at office.", "label": "WORK"}
+{"text": "Dividend from stocks added to pot.", "label": "FINANCE"}
+{"text": "Amma's dance troupe performance viral!", "label": "CELEBRATION"}
+{"text": "Planning Eid family iftar dinners.", "label": "PLANNING"}
+{"text": " Sabbatical approved for recharge.", "label": "WORK"}
+{"text": "Refund from overpaid taxes received.", "label": "FINANCE"}
+{"text": "Priya's coding hackathon victory lap.", "label": "CELEBRATION"}
+{"text": "Booked hall for Arjun's thread ceremony.", "label": "PLANNING"}
+{"text": "Remind me to pack lunches for the kids before school.", "label": "TASK"}
+{"text": "Don't forget to check if everyone has their homework.", "label": "TASK"}
+{"text": "Wake up Arjun for school, he's oversleeping again.", "label": "TASK"}
+{"text": "Make sure Priya takes her water bottle to school today.", "label": "TASK"}
+{"text": "Iron my work shirt before leaving for the office.", "label": "TASK"}
+{"text": "What time did we set the alarm for tomorrow morning?", "label": "MEMORY"}
+{"text": "Remember what we decided for breakfast this week?", "label": "MEMORY"}
+{"text": "Did Arjun finish his science project last night?", "label": "MEMORY"}
+{"text": "What was the school bus schedule we looked up?", "label": "MEMORY"}
+{"text": "Recall if Priya has PE class first period.", "label": "MEMORY"}
+{"text": "Thanks for making breakfast every morning, Amma.", "label": "GRATITUDE"}
+{"text": "So grateful for your help getting the kids ready.", "label": "GRATITUDE"}
+{"text": "Appreciate you driving us to school on time.", "label": "GRATITUDE"}
+{"text": "Thankful for this family time before work.", "label": "GRATITUDE"}
+{"text": "Grateful Arjun shared his toys this morning.", "label": "GRATITUDE"}
+{"text": "Arjun feels warm, maybe keep him home from school.", "label": "HEALTH"}
+{"text": "Reminder: take vitamins before breakfast.", "label": "HEALTH"}
+{"text": "Priya has a check-up after school today.", "label": "HEALTH"}
+{"text": "I have a headache, need some tea.", "label": "HEALTH"}
+{"text": "Amma, did you take your blood pressure medicine?", "label": "HEALTH"}
+{"text": "Pack the kids' lunches and check for allergies.", "label": "TASK"}
+{"text": "Sign the permission slip for the field trip.", "label": "TASK"}
+{"text": "Prepare chai for everyone before work rush.", "label": "TASK"}
+{"text": "Tidy up the kitchen after breakfast.", "label": "TASK"}
+{"text": "Help Priya with her hair before school bus.", "label": "TASK"}
+{"text": "What did the doctor say about Arjun's cough last week?", "label": "MEMORY"}
+{"text": "Remember the yoga routine we started Monday?", "label": "MEMORY"}
+{"text": "Did we buy new shoes for school as planned?", "label": "MEMORY"}
+{"text": "What time is Amma's morning walk?", "label": "MEMORY"}
+{"text": "Recall our family fitness goal for this month.", "label": "MEMORY"}
+{"text": "Thank you for the packed tiffin, tastes amazing.", "label": "GRATITUDE"}
+{"text": "Grateful for waking up to your smiles every day.", "label": "GRATITUDE"}
+{"text": "Appreciate the extra effort on busy mornings.", "label": "GRATITUDE"}
+{"text": "So thankful for healthy kids ready for school.", "label": "GRATITUDE"}
+{"text": "Thanks, dad, for dropping us off safely.", "label": "GRATITUDE"}
+{"text": "Priya twisted her ankle, ice it before school.", "label": "HEALTH"}
+{"text": "Start the day with stretching for back pain.", "label": "HEALTH"}
+{"text": "Arjun needs his inhaler packed for school.", "label": "HEALTH"}
+{"text": "Monitor Amma's sugar levels this morning.", "label": "HEALTH"}
+{"text": "Feeling under the weather, call in sick?", "label": "HEALTH"}
+{"text": "Drop off dry cleaning on the way to work.", "label": "TASK"}
+{"text": "Confirm school timings with the office.", "label": "TASK"}
+{"text": "Fix Arjun's backpack strap before he leaves.", "label": "TASK"}
+{"text": "Water the plants before rushing out.", "label": "TASK"}
+{"text": "What was our plan for carpool this week?", "label": "MEMORY"}
+{"text": "Remember Priya's favorite breakfast combo?", "label": "MEMORY"}
+{"text": "Did we schedule the dentist for next Monday?", "label": "MEMORY"}
+{"text": "Recall if the gym opens at 6 AM.", "label": "MEMORY"}
+{"text": "What did we eat for breakfast yesterday?", "label": "MEMORY"}
+{"text": "Grateful for Amma's homemade upma.", "label": "GRATITUDE"}
+{"text": "Thankful for your patience during rush hour.", "label": "GRATITUDE"}
+{"text": "Appreciate the motivational talks before school.", "label": "GRATITUDE"}
+{"text": "So grateful for family support every morning.", "label": "GRATITUDE"}
+{"text": "Thanks for reminding me about the meds.", "label": "GRATITUDE"}
+{"text": "Hydrate well, it's allergy season.", "label": "HEALTH"}
+{"text": "Priya's vaccination due, book appointment.", "label": "HEALTH"}
+{"text": "Arjun complains of stomach ache.", "label": "HEALTH"}
+{"text": "Morning jog to stay fit for work.", "label": "HEALTH"}
+{"text": "Check eyes before driving to office.", "label": "HEALTH"}
+{"text": "Set out uniforms tonight for morning.", "label": "TASK"}
+{"text": "Practice spellings with Arjun before bed.", "label": "TASK"}
+{"text": "Amma needs her puja items ready.", "label": "TASK"}
+{"text": "Charge all phones overnight.", "label": "TASK"}
+{"text": "What time did school start last semester?", "label": "MEMORY"}
+{"text": "Remember the recipe for quick oats?", "label": "MEMORY"}
+{"text": "Did Priya get her flu shot?", "label": "MEMORY"}
+{"text": "Recall our morning meditation time.", "label": "MEMORY"}
+{"text": "What was Arjun's homework subject?", "label": "MEMORY"}
+{"text": "Thank you for the warm hugs before school.", "label": "GRATITUDE"}
+{"text": "Grateful for fresh dosas on weekday.", "label": "GRATITUDE"}
+{"text": "Appreciate you handling the commute.", "label": "GRATITUDE"}
+{"text": "So thankful for good health in family.", "label": "GRATITUDE"}
+{"text": "Thanks for packing fruits in lunch.", "label": "GRATITUDE"}
+{"text": "Sore throat, gargle with salt water.", "label": "HEALTH"}
+{"text": "Fitness tracker says walk more steps.", "label": "HEALTH"}
+{"text": "Amma's knee hurts, apply balm.", "label": "HEALTH"}
+{"text": "Priya wants to join swimming class.", "label": "HEALTH"}
+{"text": "Eye check-up reminder for Arjun.", "label": "HEALTH"}
+{"text": "Vacuum the car before school drop-off.", "label": "TASK"}
+{"text": "Print the work report early morning.", "label": "TASK"}
+{"text": "Boil milk for chai right now.", "label": "TASK"}
+{"text": "Pack extra snacks for long day.", "label": "TASK"}
+{"text": "Review meeting notes before leaving.", "label": "TASK"}
+{"text": "What did we buy for Diwali prep?", "label": "MEMORY"}
+{"text": "Remember Priya's shoe size for new pair?", "label": "MEMORY"}
+{"text": "Did Amma finish her BP check?", "label": "MEMORY"}
+{"text": "Recall the bus route changes.", "label": "MEMORY"}
+{"text": "What time is the family puja?", "label": "MEMORY"}
+{"text": "Grateful for your cooking skills, Amma.", "label": "GRATITUDE"}
+{"text": "Thankful for safe journeys to work/school.", "label": "GRATITUDE"}
+{"text": "Appreciate the laughter-filled mornings.", "label": "GRATITUDE"}
+{"text": "So grateful for supportive spouse.", "label": "GRATITUDE"}
+{"text": "Thanks for the herbal tea remedy.", "label": "GRATITUDE"}
+{"text": "Migraine coming, need quiet time.", "label": "HEALTH"}
+{"text": "Set fitness goal: 10k steps daily.", "label": "HEALTH"}
+{"text": "Arjun's teeth brushing routine check.", "label": "HEALTH"}
+{"text": "Priya sleeps too little, adjust bedtime.", "label": "HEALTH"}
+{"text": "Morning supplements for energy.", "label": "HEALTH"}
+{"text": "Schedule car service after school run.", "label": "TASK"}
+{"text": "Fold laundry before kids wake up.", "label": "TASK"}
+{"text": "Prepare speech for work presentation.", "label": "TASK"}
+{"text": "Light diya for quick puja.", "label": "TASK"}
+{"text": "Email teacher about absence.", "label": "TASK"}
+{"text": "What was the weather forecast yesterday?", "label": "MEMORY"}
+{"text": "Remember Arjun's allergy to nuts?", "label": "MEMORY"}
+{"text": "Did we plan morning exercise?", "label": "MEMORY"}
+{"text": "Recall Priya's class schedule.", "label": "MEMORY"}
+{"text": "What did doctor prescribe for cold?", "label": "MEMORY"}
+{"text": "Thank you for ironing my clothes.", "label": "GRATITUDE"}
+{"text": "Grateful for Diwali sweets shared.", "label": "GRATITUDE"}
+{"text": "Appreciate early wake-up calls.", "label": "GRATITUDE"}
+{"text": "So thankful for healthy meals.", "label": "GRATITUDE"}
+{"text": "Thanks for family prayers together.", "label": "GRATITUDE"}
+{"text": "Cold symptoms worsening, see doc.", "label": "HEALTH"}
+{"text": "Track water intake app reminder.", "label": "HEALTH"}
+{"text": "Amma's arthritis flare-up.", "label": "HEALTH"}
+{"text": "Arjun aims for better posture.", "label": "HEALTH"}
+{"text": "Priya's vision test results?", "label": "HEALTH"}
+{"text": "Pay school fees online before 9 AM.", "label": "TASK"}
+{"text": "Chop veggies for lunch prep.", "label": "TASK"}
+{"text": "Debug code for morning meeting.", "label": "TASK"}
+{"text": "Arrange books for Arjun's bag.", "label": "TASK"}
+{"text": "What time does Puja start daily?", "label": "MEMORY"}
+{"text": "Remember the tiffin menu rotation?", "label": "MEMORY"}
+{"text": "Did we get Priya's uniform altered?", "label": "MEMORY"}
+{"text": "Recall gym membership details.", "label": "MEMORY"}
+{"text": "What was breakfast on Monday?", "label": "MEMORY"}
+{"text": "Grateful for Amma's endless love.", "label": "GRATITUDE"}
+{"text": "Thankful for punctual school van.", "label": "GRATITUDE"}
+{"text": "Appreciate your fitness motivation.", "label": "GRATITUDE"}
+{"text": "So grateful for morning chai chats.", "label": "GRATITUDE"}
+{"text": "Thanks for checking my temp.", "label": "GRATITUDE"}
+{"text": "Nausea in morning, ginger tea?", "label": "HEALTH"}
+{"text": "Join online yoga at 6 AM.", "label": "HEALTH"}
+{"text": "Arjun's growth check at pediatrician.", "label": "HEALTH"}
+{"text": "Diet plan for weight loss starts today.", "label": "HEALTH"}
+{"text": "Priya has braces adjustment soon.", "label": "HEALTH"}
+{"text": "Update calendar with work shifts.", "label": "TASK"}
+{"text": "Polish shoes for school assembly.", "label": "TASK"}
+{"text": "Grind fresh masala for breakfast.", "label": "TASK"}
+{"text": "Backup phone data now.", "label": "TASK"}
+{"text": "Call grandma for morning update.", "label": "TASK"}
+{"text": "What did we decide for vacation health checks?", "label": "MEMORY"}
+{"text": "Remember Arjun's last fever date?", "label": "MEMORY"}
+{"text": "Did Priya start her dance fitness?", "label": "MEMORY"}
+{"text": "Recall the dietician's advice.", "label": "MEMORY"}
+{"text": "What shoes did Amma recommend?", "label": "MEMORY"}
+{"text": "Thank you for the nourishing breakfast.", "label": "GRATITUDE"}
+{"text": "Grateful for your caring reminders.", "label": "GRATITUDE"}
+{"text": "Appreciate Diwali prep togetherness.", "label": "GRATITUDE"}
+{"text": "So thankful for strong family bonds.", "label": "GRATITUDE"}
+{"text": "Thanks for wellness tips shared.", "label": "GRATITUDE"}
+{"text": "Earache bothering me this morning.", "label": "HEALTH"}
+{"text": "Morning run in park for cardio.", "label": "HEALTH"}
+{"text": "Amma's routine check-up booked.", "label": "HEALTH"}
+{"text": "Arjun avoids sugary cereals.", "label": "HEALTH"}
+{"text": "Priya practices deep breathing.", "label": "HEALTH"}
+{"text": "Order groceries for week ahead.", "label": "TASK"}
+{"text": "Sharpen pencils for schoolwork.", "label": "TASK"}
+{"text": "Steam rice for quick pongal.", "label": "TASK"}
+{"text": "File taxes receipt in folder.", "label": "TASK"}
+{"text": "Motivate kids for school day.", "label": "TASK"}
+{"text": "What was the puja mantra we used?", "label": "MEMORY"}
+{"text": "Remember Priya's favorite yoga pose?", "label": "MEMORY"}
+{"text": "Did we track steps last week?", "label": "MEMORY"}
+{"text": "Recall Arjun's vaccination card location.", "label": "MEMORY"}
+{"text": "What time for family health walk?", "label": "MEMORY"}
+{"text": "Grateful for perfect morning routine.", "label": "GRATITUDE"}
+{"text": "Thankful for Amma's healing touch.", "label": "GRATITUDE"}
+{"text": "Appreciate shared gratitude moments.", "label": "GRATITUDE"}
+{"text": "So grateful for energetic start.", "label": "GRATITUDE"}
+{"text": "Thanks for healthy habits encouraged.", "label": "GRATITUDE"}
+{"text": "Sinus pressure high, steam inhale.", "label": "HEALTH"}
+{"text": "Plank challenge for core strength.", "label": "HEALTH"}
+{"text": "Priya's asthma inhaler refilled?", "label": "HEALTH"}
+{"text": "Arjun drinks turmeric milk daily.", "label": "HEALTH"}
+{"text": "Amma joins aqua therapy.", "label": "HEALTH"}
+{"text": "Reset router before work calls.", "label": "TASK"}
+{"text": "Pack wet wipes for kids.", "label": "TASK"}
+{"text": "Brew filter coffee strong.", "label": "TASK"}
+{"text": "Review flashcards with Priya.", "label": "TASK"}
+{"text": "Sweep porch for fresh start.", "label": "TASK"}
+{"text": "What did nutritionist say about oats?", "label": "MEMORY"}
+{"text": "Remember last Diwali health fair?", "label": "MEMORY"}
+{"text": "Did Arjun complete fitness log?", "label": "MEMORY"}
+{"text": "Recall morning skincare routine.", "label": "MEMORY"}
+{"text": "What herbs for Amma's tea?", "label": "MEMORY"}
+{"text": "Today was a peaceful evening after dinner, just reflecting on how grateful I am for our little family moments.", "label": "DIARY"}
+{"text": "Arjun and Priya wouldn't stop arguing over the TV remote tonight; I had to step in again.", "label": "RELATIONSHIP"}
+{"text": "Hey, can you show me how to edit previous entries in the family diary?", "label": "META"}
+{"text": "I'm so worried about Amma's knee pain; it's getting worse in the evenings.", "label": "CONCERN"}
+{"text": "Another busy day done, feeling content with chai and family chat.", "label": "DIARY"}
+{"text": "Priya seems distant from her brother lately; need to talk about sibling bonds.", "label": "RELATIONSHIP"}
+{"text": "Does this app save our diary entries automatically every evening?", "label": "META"}
+{"text": "The kids are eating too much junk after school; concerned about their health.", "label": "CONCERN"}
+{"text": "Evening puja felt special today, lighting diyas with everyone.", "label": "DIARY"}
+{"text": "Tension between me and my spouse over small things tonight.", "label": "RELATIONSHIP"}
+{"text": "Can the AI suggest ways to categorize our family worries better?", "label": "META"}
+{"text": "Arjun's grades are slipping; I'm anxious about his future.", "label": "CONCERN"}
+{"text": "Wound down the day with stories from Amma; pure bliss.", "label": "DIARY"}
+{"text": "Family game night brought us closer after a rough week.", "label": "RELATIONSHIP"}
+{"text": "How do I delete a mistaken entry from last night's log?", "label": "META"}
+{"text": "Feeling uneasy about the rising bills this month.", "label": "CONCERN"}
+{"text": "Quiet evening, journaling my thoughts on parenting joys.", "label": "DIARY"}
+{"text": "Priya and her friend had a fallout; she's upset all evening.", "label": "RELATIONSHIP"}
+{"text": "Is there a way to search old diary entries by date?", "label": "META"}
+{"text": "Amma's forgetfulness is worrying me more each day.", "label": "CONCERN"}
+{"text": "Reflected on the day's chaos during bedtime routine.", "label": "DIARY"}
+{"text": "Bonding over Diwali sweets planning with the kids.", "label": "RELATIONSHIP"}
+{"text": "What features does this family diary app have for sharing?", "label": "META"}
+{"text": "Work stress is affecting my time with family evenings.", "label": "CONCERN"}
+{"text": "Evening walk cleared my mind; grateful for simple pleasures.", "label": "DIARY"}
+{"text": "Arjun opened up about school bullies tonight.", "label": "RELATIONSHIP"}
+{"text": "Can you remind me what we logged about vacation plans?", "label": "META"}
+{"text": "Priya's headaches are frequent; need to see a doctor soon.", "label": "CONCERN"}
+{"text": "Today's family dinner was filled with laughter and stories.", "label": "DIARY"}
+{"text": "Strained talk with in-laws over holiday visits.", "label": "RELATIONSHIP"}
+{"text": "Evening reminder: pick up milk tomorrow morning.", "label": "TASK"}
+{"text": "How accurate is the AI at understanding our family lingo?", "label": "META"}
+{"text": "I'm anxious about the upcoming parent-teacher meeting.", "label": "CONCERN"}
+{"text": "Journaling the warmth of our post-dinner chai sessions.", "label": "DIARY"}
+{"text": "Deep conversation with spouse about our dreams tonight.", "label": "RELATIONSHIP"}
+{"text": "Logged Priya's doctor's appt for Friday evening.", "label": "HEALTH"}
+{"text": "Does the diary notify family members of new entries?", "label": "META"}
+{"text": "Worried the kids aren't getting enough playtime.", "label": "CONCERN"}
+{"text": "Reflections on a hectic but loving family day.", "label": "DIARY"}
+{"text": "Arjun and cousin played well together after dinner.", "label": "RELATIONSHIP"}
+{"text": "Can I set custom labels for evening reflections?", "label": "META"}
+{"text": "Tension rising with neighbor over parking again.", "label": "RELATIONSHIP"}
+{"text": "Evening meditation helped ease my daily stresses.", "label": "DIARY"}
+{"text": "Big presentation at work went smoothly today.", "label": "WORK"}
+{"text": "What was our plan for Amma's birthday puja?", "label": "MEMORY"}
+{"text": "So concerned about rising pollution affecting kids' asthma.", "label": "CONCERN"}
+{"text": "Family movie night was a hit this evening.", "label": "RELATIONSHIP"}
+{"text": "Plan weekend trip to the hills next month.", "label": "PLANNING"}
+{"text": "How do I backup our family diary data?", "label": "META"}
+{"text": "Grateful for healthy family dinner together.", "label": "GRATITUDE"}
+{"text": "Quiet evening processing emotions from the day.", "label": "DIARY"}
+{"text": "Priya shared her first crush story tonight; sweet.", "label": "RELATIONSHIP"}
+{"text": "Remind to buy Diwali decorations tomorrow.", "label": "TASK"}
+{"text": "I'm really worried about job security lately.", "label": "CONCERN"}
+{"text": "Amma's stories during evening chai are priceless.", "label": "DIARY"}
+{"text": "Fought with sibling over old family matters.", "label": "RELATIONSHIP"}
+{"text": "Meeting with boss rescheduled to evening.", "label": "WORK"}
+{"text": "Can you list all concerns we've logged this week?", "label": "META"}
+{"text": "Fitness goal: evening walks daily now.", "label": "HEALTH"}
+{"text": "Deepened bond watching sunset with partner.", "label": "RELATIONSHIP"}
+{"text": "Today's expenses: groceries and kids' books.", "label": "FINANCE"}
+{"text": "Reflecting on personal growth this year.", "label": "DIARY"}
+{"text": "Arjun excelled in cricket match today!", "label": "CELEBRATION"}
+{"text": "Anxiety about Priya's teen friendships.", "label": "CONCERN"}
+{"text": "Evening puja with family brought peace.", "label": "DIARY"}
+{"text": "Talked openly about marriage challenges.", "label": "RELATIONSHIP"}
+{"text": "What settings control entry privacy?", "label": "META"}
+{"text": "Thankful for supportive spouse tonight.", "label": "GRATITUDE"}
+{"text": "Kids' bedtime stories ended the day perfectly.", "label": "DIARY"}
+{"text": "Neighborly chat improved our relations.", "label": "RELATIONSHIP"}
+{"text": "Don't forget trash out evening routine.", "label": "TASK"}
+{"text": "Concerned over Amma's low energy levels.", "label": "CONCERN"}
+{"text": "Journaled dreams during quiet evening.", "label": "DIARY"}
+{"text": "Family reconciled after small spat.", "label": "RELATIONSHIP"}
+{"text": "Grocery budget exceeded this week.", "label": "FINANCE"}
+{"text": "AI, can you generate family report summaries?", "label": "META"}
+{"text": "Work deadline stressing evening time.", "label": "CONCERN"}
+{"text": "Post-dinner reflections on joy.", "label": "DIARY"}
+{"text": "Priya helped Arjun with homework; teamwork!", "label": "RELATIONSHIP"}
+{"text": "Evening yoga session for wellness.", "label": "HEALTH"}
+{"text": "Recall Diwali menu from last year.", "label": "MEMORY"}
+{"text": "Worried about rising school fees.", "label": "CONCERN"}
+{"text": "Evening with loved ones recharges me.", "label": "DIARY"}
+{"text": "Deepened friendship with old classmate call.", "label": "RELATIONSHIP"}
+{"text": "Promotion at work celebrated quietly.", "label": "CELEBRATION"}
+{"text": "How to integrate calendar with diary?", "label": "META"}
+{"text": "Family game caused hilarious arguments.", "label": "RELATIONSHIP"}
+{"text": "Plan Amma's health checkup.", "label": "PLANNING"}
+{"text": "Processed day's frustrations in journal.", "label": "DIARY"}
+{"text": "Spouse and I resolved money talks.", "label": "RELATIONSHIP"}
+{"text": "Vitamins taken by all tonight.", "label": "HEALTH"}
+{"text": "Budget meeting after dinner needed.", "label": "FINANCE"}
+{"text": "Can diary track mood trends?", "label": "META"}
+{"text": "Anxious about kids' screen time.", "label": "CONCERN"}
+{"text": "Evening Diwali prep with kids fun.", "label": "DIARY"}
+{"text": "Bonded over shared childhood memories.", "label": "RELATIONSHIP"}
+{"text": "Work from home evening wrap-up.", "label": "WORK"}
+{"text": "What did we note about puja items?", "label": "MEMORY"}
+{"text": "Concern for Priya's sleep issues.", "label": "CONCERN"}
+{"text": "Reflected on life's simple beauties.", "label": "DIARY"}
+{"text": "Family picnic planning sparked joy.", "label": "RELATIONSHIP"}
+{"text": "Arjun's award made evening special.", "label": "CELEBRATION"}
+{"text": "Evening chores list: dishes and laundry.", "label": "TASK"}
+{"text": "AI capabilities for voice entries?", "label": "META"}
+{"text": "Worried about climate change impacts.", "label": "CONCERN"}
+{"text": "Amma's wisdom shared post-dinner.", "label": "DIARY"}
+{"text": "Sibling rivalry eased with talk.", "label": "RELATIONSHIP"}
+{"text": "Saved money on bulk shopping.", "label": "FINANCE"}
+{"text": "How to share diary with relatives?", "label": "META"}
+{"text": "Evening routine disrupted by rain.", "label": "DIARY"}
+{"text": "Close friend visited for chai.", "label": "RELATIONSHIP"}
+{"text": "Doctor prescribed rest for back pain.", "label": "HEALTH"}
+{"text": "Plan Ganesh Chaturthi festivities.", "label": "PLANNING"}
+{"text": "Thankful for family's health.", "label": "GRATITUDE"}
+{"text": "Vented evening worries here.", "label": "DIARY"}
+{"text": "Arjun defended Priya from tease.", "label": "RELATIONSHIP"}
+{"text": "Team project success at office.", "label": "WORK"}
+{"text": "Recall last concern resolution.", "label": "MEMORY"}
+{"text": "Deep concern over traffic safety.", "label": "CONCERN"}
+{"text": "Journaling evening serenity.", "label": "DIARY"}
+{"text": "Partner's support shone tonight.", "label": "RELATIONSHIP"}
+{"text": "Gym session after dinner.", "label": "HEALTH"}
+{"text": "Expenses log updated.", "label": "FINANCE"}
+{"text": "Does AI learn our preferences?", "label": "META"}
+{"text": "Priya's dance recital coming up.", "label": "PLANNING"}
+{"text": "Celebrated small wins today.", "label": "CELEBRATION"}
+{"text": "Reflecting on Amma's health journey.", "label": "DIARY"}
+{"text": "Talk with teen about peer pressure.", "label": "RELATIONSHIP"}
+{"text": "Evening bill payments done.", "label": "TASK"}
+{"text": "Can you analyze our entry patterns?", "label": "META"}
+{"text": "Anxiety peaks during evenings now.", "label": "CONCERN"}
+{"text": "Diwali lights up our home spirit.", "label": "DIARY"}
+{"text": "Resolved argument with calm words.", "label": "RELATIONSHIP"}
+{"text": "New job offer discussed.", "label": "WORK"}
+{"text": "What was vacation budget set at?", "label": "MEMORY"}
+{"text": "Worried about elderly care options.", "label": "CONCERN"}
+{"text": "Evening gratitude list made.", "label": "DIARY"}
+{"text": "Kids' friendship circle expanded.", "label": "RELATIONSHIP"}
+{"text": "Fitness challenge update: on track.", "label": "HEALTH"}
+{"text": "Overspent on gifts; note to self.", "label": "FINANCE"}
+{"text": "Privacy settings for META queries?", "label": "META"}
+{"text": "Family united in evening prayer.", "label": "RELATIONSHIP"}
+{"text": "Arjun's birthday bash planned.", "label": "PLANNING"}
+{"text": "Grateful for Diwali togetherness.", "label": "GRATITUDE"}
+{"text": "Processed work-family balance thoughts.", "label": "DIARY"}
+{"text": "Neighbor feud simmering down.", "label": "RELATIONSHIP"}
+{"text": "Appointment with nutritionist set.", "label": "HEALTH"}
+{"text": "Recall puja schedule details.", "label": "MEMORY"}
+{"text": "Concerned with kids' diet habits.", "label": "CONCERN"}
+{"text": "Evening unwind with music.", "label": "DIARY"}
+{"text": "Spouse surprise date night.", "label": "RELATIONSHIP"}
+{"text": "Salary raise effective now.", "label": "CELEBRATION"}
+{"text": "How to export diary data?", "label": "META"}
+{"text": "Chai time chats deepen bonds.", "label": "RELATIONSHIP"}
+{"text": "Trash and recycling tonight.", "label": "TASK"}
+{"text": "Deep worries about finances.", "label": "CONCERN"}
+{"text": "Journal of evening joys.", "label": "DIARY"}
+{"text": "Priya's empathy towards Arjun.", "label": "RELATIONSHIP"}
+{"text": "Evening market run needed.", "label": "PLANNING"}
+{"text": "Thankful for Amma's cooking.", "label": "GRATITUDE"}
+{"text": "Reflections on family growth.", "label": "DIARY"}
+{"text": "Friendship renewed over call.", "label": "RELATIONSHIP"}
+{"text": "Work stress vented here.", "label": "WORK"}
+{"text": "Logged past health notes.", "label": "MEMORY"}
+{"text": "Anxious about exam results.", "label": "CONCERN"}
+{"text": "Peaceful puja evening.", "label": "DIARY"}
+{"text": "Handled teen mood swings.", "label": "RELATIONSHIP"}
+{"text": "Budget app sync suggestion.", "label": "META"}
+{"text": "Family health walk daily.", "label": "HEALTH"}
+{"text": "Diwali savings goal met.", "label": "FINANCE"}
+{"text": "Evening routine optimized.", "label": "DIARY"}
+{"text": "Bond with extended family.", "label": "RELATIONSHIP"}
+{"text": "Promotion party ideas.", "label": "CELEBRATION"}
+{"text": "AI, confirm entry save.", "label": "META"}
+{"text": "Worries about school bullying.", "label": "CONCERN"}
+{"text": "Need to finish that work report this weekend before Monday.", "label": "WORK"}
+{"text": "Arjun's school project is due, but I have a deadline at the office too this weekend.", "label": "WORK"}
+{"text": "Big team meeting scheduled for Saturday morning, ugh weekend work.", "label": "WORK"}
+{"text": "Priya got promoted at her job! Celebrating this weekend.", "label": "CELEBRATION"}
+{"text": "Let's plan a family picnic for this weekend.", "label": "PLANNING"}
+{"text": "Checking our budget for weekend groceries and outings.", "label": "FINANCE"}
+{"text": "Amma's birthday is this weekend, time to celebrate!", "label": "CELEBRATION"}
+{"text": "What are we doing this weekend? Need to coordinate schedules.", "label": "PLANNING"}
+{"text": "Overtime pay from last week will help with weekend expenses.", "label": "FINANCE"}
+{"text": "Wrapped up my project early, free for family time this weekend.", "label": "WORK"}
+{"text": "Arjun aced his math test! Weekend treat for him.", "label": "CELEBRATION"}
+{"text": "Planning a movie night this weekend, who's in?", "label": "PLANNING"}
+{"text": "Saved enough for that weekend getaway we've been wanting.", "label": "FINANCE"}
+{"text": "Boss called in a favor, have to check emails this weekend.", "label": "WORK"}
+{"text": "Priya's team won the office contest, proud of her this weekend!", "label": "CELEBRATION"}
+{"text": "Let's schedule a puja at home this weekend.", "label": "PLANNING"}
+{"text": "Weekend shopping list might blow the budget, need to cut back.", "label": "FINANCE"}
+{"text": "Finally got that raise, weekend dinner to celebrate.", "label": "WORK"}
+{"text": "Amma finished her knitting project beautifully this weekend.", "label": "CELEBRATION"}
+{"text": "Coordinating weekend chores and fun activities for everyone.", "label": "PLANNING"}
+{"text": "Tracking weekend fuel costs, trying to save more.", "label": "FINANCE"}
+{"text": "Client presentation prep eating into my weekend relaxation.", "label": "WORK"}
+{"text": "Arjun's first place in the race! Weekend party time.", "label": "CELEBRATION"}
+{"text": "Planning Diwali lights shopping this weekend.", "label": "PLANNING"}
+{"text": "Bills piling up, weekend side hustle needed.", "label": "FINANCE"}
+{"text": "New job offer came through, celebrating this weekend.", "label": "WORK"}
+{"text": "Priya baked the perfect cake for our weekend gathering.", "label": "CELEBRATION"}
+{"text": "What time should we leave for the weekend market?", "label": "PLANNING"}
+{"text": "Weekend restaurant bill was too high, time to budget better.", "label": "FINANCE"}
+{"text": "Pushing to meet quarterly goals this weekend.", "label": "WORK"}
+{"text": "Family hit our savings target! Cheers this weekend.", "label": "CELEBRATION"}
+{"text": "Let's plan a hike for this sunny weekend.", "label": "PLANNING"}
+{"text": "Investing some savings into stocks this weekend.", "label": "FINANCE"}
+{"text": "Remote work calls ruining my weekend vibe.", "label": "WORK"}
+{"text": "Amma's garden bloomed amazingly this weekend.", "label": "CELEBRATION"}
+{"text": "Scheduling kids' sports for the weekend.", "label": "PLANNING"}
+{"text": "Cut weekend subscriptions to save money.", "label": "FINANCE"}
+{"text": "Closed the big deal at work, weekend off earned.", "label": "WORK"}
+{"text": "Arjun learned to ride a bike today! Weekend win.", "label": "CELEBRATION"}
+{"text": "Planning a family game night this weekend.", "label": "PLANNING"}
+{"text": "Weekend impulse buys regret, back to budgeting.", "label": "FINANCE"}
+{"text": "Team project launched successfully, weekend relief.", "label": "WORK"}
+{"text": "Priya's art show acceptance, celebrating this weekend.", "label": "CELEBRATION"}
+{"text": "When's the best time for weekend brunch?", "label": "PLANNING"}
+{"text": "Paid off the car loan early, free money this weekend.", "label": "FINANCE"}
+{"text": "Weekend coding session for my side project at work.", "label": "WORK"}
+{"text": "Amma won the community cooking contest!", "label": "CELEBRATION"}
+{"text": "Let's map out weekend travel itinerary.", "label": "PLANNING"}
+{"text": "Reviewing bank statements for weekend spending.", "label": "FINANCE"}
+{"text": "Urgent work email came in, handling it this weekend.", "label": "WORK"}
+{"text": "Family finished the puzzle in record time this weekend.", "label": "CELEBRATION"}
+{"text": "Planning a beach day this weekend if weather holds.", "label": "PLANNING"}
+{"text": "Weekend grocery costs up, need cheaper options.", "label": "FINANCE"}
+{"text": "My promotion interview went great, waiting on news this weekend.", "label": "WORK"}
+{"text": "Arjun's poem published in school mag, so proud!", "label": "CELEBRATION"}
+{"text": "Coordinating with relatives for weekend visit.", "label": "PLANNING"}
+{"text": "Set up automatic savings for weekend peace of mind.", "label": "FINANCE"}
+{"text": "Finishing up paperwork for new role this weekend.", "label": "WORK"}
+{"text": "Priya ran her first 5K this weekend, amazing!", "label": "CELEBRATION"}
+{"text": "What's on the agenda for this weekend?", "label": "PLANNING"}
+{"text": "Tracking every expense this weekend to stay under budget.", "label": "FINANCE"}
+{"text": "Boss praised my report, good start to weekend.", "label": "WORK"}
+{"text": "Amma's chai recipe went viral in family group.", "label": "CELEBRATION"}
+{"text": "Planning weekend puja supplies shopping.", "label": "PLANNING"}
+{"text": "Mortgage payment adjusted, more for weekend fun.", "label": "FINANCE"}
+{"text": "Weekend strategy meeting with colleagues online.", "label": "WORK"}
+{"text": "Family savings goal smashed this month!", "label": "CELEBRATION"}
+{"text": "Let's decide on weekend dinner menu now.", "label": "PLANNING"}
+{"text": "Refund from shopping helps weekend budget.", "label": "FINANCE"}
+{"text": "Pivoting project direction, weekend research needed.", "label": "WORK"}
+{"text": "Arjun got selected for debate team, celebrate!", "label": "CELEBRATION"}
+{"text": "Scheduling a family photo shoot this weekend.", "label": "PLANNING"}
+{"text": "Weekend ATM run to manage cash flow.", "label": "FINANCE"}
+{"text": "Launched my freelance gig website this weekend.", "label": "WORK"}
+{"text": "Priya's dance performance was flawless!", "label": "CELEBRATION"}
+{"text": "Planning weekend volunteering at temple.", "label": "PLANNING"}
+{"text": "Bargain hunting this weekend to save big.", "label": "FINANCE"}
+{"text": "Client feedback positive, weekend wrap-up easy.", "label": "WORK"}
+{"text": "Amma celebrated her 50th wedding anniversary memory this weekend.", "label": "CELEBRATION"}
+{"text": "What outfits for the weekend party?", "label": "PLANNING"}
+{"text": "Credit card rewards covering weekend trip.", "label": "FINANCE"}
+{"text": "Analyzing sales data over the weekend for work.", "label": "WORK"}
+{"text": "Family book club hit bestseller status in our reads.", "label": "CELEBRATION"}
+{"text": "Let's plan route for weekend road trip.", "label": "PLANNING"}
+{"text": "Emergency fund topped up this weekend.", "label": "FINANCE"}
+{"text": "New hire training starting my weekend early.", "label": "WORK"}
+{"text": "Arjun's science fair win, trophies home!", "label": "CELEBRATION"}
+{"text": "Coordinating weekend carpools for kids.", "label": "PLANNING"}
+{"text": "Switched to cheaper phone plan for savings.", "label": "FINANCE"}
+{"text": "Weekend brainstorming for next work quarter.", "label": "WORK"}
+{"text": "Priya mastered yoga pose, weekend flex!", "label": "CELEBRATION"}
+{"text": "Finalizing guest list for weekend BBQ.", "label": "PLANNING"}
+{"text": "Utility bills down, extra for weekend treats.", "label": "FINANCE"}
+{"text": "Pitch deck ready for Monday, weekend win at work.", "label": "WORK"}
+{"text": "Amma's embroidery piece sold at fair!", "label": "CELEBRATION"}
+{"text": "Planning Diwali weekend rehearsals.", "label": "PLANNING"}
+{"text": "Investment portfolio up 5% this weekend check.", "label": "FINANCE"}
+{"text": "Handling layoffs news from work this weekend.", "label": "WORK"}
+{"text": "Family fitness challenge completed together!", "label": "CELEBRATION"}
+{"text": "When to start weekend baking session?", "label": "PLANNING"}
+{"text": "Cashback app saved $20 on weekend buys.", "label": "FINANCE"}
+{"text": "My article published, weekend reads boost.", "label": "WORK"}
+{"text": "Arjun's guitar solo wowed the family picnic.", "label": "CELEBRATION"}
+{"text": "Let's sync calendars for busy weekend.", "label": "PLANNING"}
+{"text": "Debt snowball method paying off this weekend.", "label": "FINANCE"}
+{"text": "Weekend code review for team project.", "label": "WORK"}
+{"text": "Priya's promotion party this weekend rocks!", "label": "CELEBRATION"}
+{"text": "Planning puja timings with pandit ji.", "label": "PLANNING"}
+{"text": "Grocery budget stretched thin this weekend.", "label": "FINANCE"}
+{"text": "Performance review prep dominating weekend.", "label": "WORK"}
+{"text": "Amma's story shared on radio, fame weekend!", "label": "CELEBRATION"}
+{"text": "Weekend adventure: hiking trail selection.", "label": "PLANNING"}
+{"text": "Roth IRA contribution maxed for year.", "label": "FINANCE"}
+{"text": "Remote team sync call this Saturday morning.", "label": "WORK"}
+{"text": "Family game tournament crown goes to Arjun!", "label": "CELEBRATION"}
+{"text": "Confirming weekend reservation now.", "label": "PLANNING"}
+{"text": "Side income from gigs covering weekend extras.", "label": "FINANCE"}
+{"text": "Finishing certification course over weekend.", "label": "WORK"}
+{"text": "Priya's recipe book printed for family!", "label": "CELEBRATION"}
+{"text": "What's the weather for weekend plans?", "label": "PLANNING"}
+{"text": "Negotiated lower rent, savings boost.", "label": "FINANCE"}
+{"text": "Work crisis averted, weekend safe.", "label": "WORK"}
+{"text": "Planning family reunion this weekend.", "label": "PLANNING"}
+{"text": "Weekend sales tax adding up fast.", "label": "FINANCE"}
+{"text": "Job fair research for career shift weekend.", "label": "WORK"}
+{"text": "Amma's painting exhibited locally!", "label": "CELEBRATION"}
+{"text": "Let's list weekend to-dos together.", "label": "PLANNING"}
+{"text": "Budget app alerts for overspending weekend.", "label": "FINANCE"}
+{"text": "Excel sheets for work forecast this weekend.", "label": "WORK"}
+{"text": "Priya's marathon finish line crossed!", "label": "CELEBRATION"}
+{"text": "Scheduling vet visit for pet this weekend.", "label": "PLANNING"}
+{"text": "Insurance premium lowered, win for wallet.", "label": "FINANCE"}
+{"text": "Weekend webinar on leadership skills.", "label": "WORK"}
+{"text": "Family Diwali card design contest winner announced.", "label": "CELEBRATION"}
+{"text": "Packing list for weekend camping trip.", "label": "PLANNING"}
+{"text": "Transferring funds to high-yield account.", "label": "FINANCE"}
+{"text": "Quarterly report tweaks needed this weekend.", "label": "WORK"}
+{"text": "Arjun's spelling bee championship!", "label": "CELEBRATION"}
+{"text": "Weekend menu: veg or non-veg?", "label": "PLANNING"}
+{"text": "Crypto portfolio green this weekend check-in.", "label": "FINANCE"}
+{"text": "Remind me to buy Diwali lamps tomorrow.", "label": "TASK"}
+{"text": "How do I set up recurring reminders for birthdays?", "label": "META"}
+{"text": "I'm worried we won't finish the Christmas decorations in time.", "label": "CONCERN"}
+{"text": "So grateful for the family Diwali puja last night.", "label": "GRATITUDE"}
+{"text": "Pick up cake for Priya's birthday after work.", "label": "TASK"}
+{"text": "Can you show me my past Christmas shopping lists?", "label": "META"}
+{"text": "Arjun seems stressed about his birthday party plans.", "label": "CONCERN"}
+{"text": "Thankful for Amma's delicious Christmas cookies.", "label": "GRATITUDE"}
+{"text": "Clean the house for Diwali guests this weekend.", "label": "TASK"}
+{"text": "What are your capabilities for holiday event planning?", "label": "META"}
+{"text": "Concerned about the budget for Christmas gifts.", "label": "CONCERN"}
+{"text": "Appreciate the joyful birthday wishes from everyone.", "label": "GRATITUDE"}
+{"text": "Buy gifts for the kids' Christmas stockings.", "label": "TASK"}
+{"text": "How can I delete old birthday reminders?", "label": "META"}
+{"text": "Priya's flu might ruin our Diwali celebrations.", "label": "CONCERN"}
+{"text": "Grateful for our family's togetherness during holidays.", "label": "GRATITUDE"}
+{"text": "Schedule puja time for Diwali evening.", "label": "TASK"}
+{"text": "Do you remember what I noted for Christmas menu?", "label": "META"}
+{"text": "Worried Amma is overworking for the birthday prep.", "label": "CONCERN"}
+{"text": "Thankful for Arjun's help with Diwali lights.", "label": "GRATITUDE"}
+{"text": "Wrap all birthday presents before noon.", "label": "TASK"}
+{"text": "Can you categorize my holiday tasks?", "label": "META"}
+{"text": "Christmas travel might be delayed due to weather.", "label": "CONCERN"}
+{"text": "So thankful for the surprise Diwali party.", "label": "GRATITUDE"}
+{"text": "Order Christmas ham from the butcher.", "label": "TASK"}
+{"text": "Tell me how to export my birthday calendar.", "label": "META"}
+{"text": "I'm anxious about hosting the big Diwali dinner.", "label": "CONCERN"}
+{"text": "Grateful for Priya's beautiful birthday cake.", "label": "GRATITUDE"}
+{"text": "Prepare chai and sweets for Diwali visitors.", "label": "TASK"}
+{"text": "What settings do I need for holiday notifications?", "label": "META"}
+{"text": "Concerned the kids will fight over Christmas toys.", "label": "CONCERN"}
+{"text": "Thankful for family bonding over birthdays.", "label": "GRATITUDE"}
+{"text": "Hang Christmas lights on the roof today.", "label": "TASK"}
+{"text": "Can you search my notes for Diwali recipes?", "label": "META"}
+{"text": "Arjun's grades dropped; worried for his birthday mood.", "label": "CONCERN"}
+{"text": "Appreciate Amma's wisdom during holiday rushes.", "label": "GRATITUDE"}
+{"text": "Book birthday venue for next Saturday.", "label": "TASK"}
+{"text": "How do I train you on our family holidays?", "label": "META"}
+{"text": "Power outage might spoil Diwali fireworks.", "label": "CONCERN"}
+{"text": "Grateful for the festive Christmas lights everywhere.", "label": "GRATITUDE"}
+{"text": "Shop for Diwali rangoli colors.", "label": "TASK"}
+{"text": "List all my saved Christmas ideas.", "label": "META"}
+{"text": "Priya is homesick during birthday season.", "label": "CONCERN"}
+{"text": "Thankful for Arjun's enthusiasm for Diwali.", "label": "GRATITUDE"}
+{"text": "Set reminder for Christmas card mailing.", "label": "TASK"}
+{"text": "Do you have a privacy mode for family notes?", "label": "META"}
+{"text": "Worried about traffic for Diwali shopping.", "label": "CONCERN"}
+{"text": "So grateful for holiday memories with loved ones.", "label": "GRATITUDE"}
+{"text": "Bake cookies for birthday party tomorrow.", "label": "TASK"}
+{"text": "Can you integrate with my Christmas calendar app?", "label": "META"}
+{"text": "Amma's knee pain is worsening before Diwali.", "label": "CONCERN"}
+{"text": "Thankful for Priya's help with party planning.", "label": "GRATITUDE"}
+{"text": "Buy wrapping paper for Christmas gifts.", "label": "TASK"}
+{"text": "How accurate are your birthday date predictions?", "label": "META"}
+{"text": "Concerned we overspent on Diwali sweets already.", "label": "CONCERN"}
+{"text": "Grateful for the warmth of family Christmases.", "label": "GRATITUDE"}
+{"text": "Plan puja items list for Diwali.", "label": "TASK"}
+{"text": "Retrieve my notes on last year's birthdays.", "label": "META"}
+{"text": "Arjun forgot his lines for the birthday song.", "label": "CONCERN"}
+{"text": "Appreciate the little joys of holiday prep.", "label": "GRATITUDE"}
+{"text": "Decorate tree for Christmas evening.", "label": "TASK"}
+{"text": "What languages do you support for Diwali notes?", "label": "META"}
+{"text": "I'm stressed about the birthday cake delivery.", "label": "CONCERN"}
+{"text": "Thankful for Amma's traditional Diwali recipes.", "label": "GRATITUDE"}
+{"text": "Invite neighbors for Christmas open house.", "label": "TASK"}
+{"text": "Can you generate holiday shopping lists automatically?", "label": "META"}
+{"text": "Worried Priya won't recover in time for Diwali.", "label": "CONCERN"}
+{"text": "Grateful for Arjun's creativity in decorations.", "label": "GRATITUDE"}
+{"text": "Prepare guest list for birthday bash.", "label": "TASK"}
+{"text": "How do I backup my family holiday entries?", "label": "META"}
+{"text": "Christmas budget is tight this year.", "label": "CONCERN"}
+{"text": "So thankful for festive family gatherings.", "label": "GRATITUDE"}
+{"text": "Make rangoli for Diwali front door.", "label": "TASK"}
+{"text": "Show me examples of your task features.", "label": "META"}
+{"text": "Concerned about rain ruining outdoor birthday party.", "label": "CONCERN"}
+{"text": "Thankful for the magic of Diwali lights.", "label": "GRATITUDE"}
+{"text": "Order flowers for Christmas table.", "label": "TASK"}
+{"text": "Do you learn from my holiday patterns?", "label": "META"}
+{"text": "Amma seems tired from Diwali shopping.", "label": "CONCERN"}
+{"text": "Grateful for Priya's joyful birthday spirit.", "label": "GRATITUDE"}
+{"text": "Set alarm for birthday wake-up surprise.", "label": "TASK"}
+{"text": "Can you remind me across devices for Christmas?", "label": "META"}
+{"text": "Worried the gifts won't arrive by Diwali.", "label": "CONCERN"}
+{"text": "Appreciate our family's holiday traditions.", "label": "GRATITUDE"}
+{"text": "Clean altar for Diwali puja.", "label": "TASK"}
+{"text": "What is your limit on stored birthday data?", "label": "META"}
+{"text": "Arjun is nervous about his Christmas recital.", "label": "CONCERN"}
+{"text": "Thankful for the peace of birthday mornings.", "label": "GRATITUDE"}
+{"text": "Buy stockings for Christmas eve.", "label": "TASK"}
+{"text": "How do I customize notifications for holidays?", "label": "META"}
+{"text": "Concerned about food allergies at birthday party.", "label": "CONCERN"}
+{"text": "Grateful for Amma's endless love during Diwali.", "label": "GRATITUDE"}
+{"text": "Plan menu for Christmas dinner.", "label": "TASK"}
+{"text": "Retrieve past Diwali task lists.", "label": "META"}
+{"text": "I'm anxious the puja won't go smoothly.", "label": "CONCERN"}
+{"text": "So thankful for family health this holiday.", "label": "GRATITUDE"}
+{"text": "Wrap Arjun's birthday bike carefully.", "label": "TASK"}
+{"text": "Can you prioritize urgent holiday tasks?", "label": "META"}
+{"text": "Priya's friends might not come for Christmas.", "label": "CONCERN"}
+{"text": "Thankful for vibrant Diwali celebrations.", "label": "GRATITUDE"}
+{"text": "Shop for birthday balloons online.", "label": "TASK"}
+{"text": "Do you support voice commands for Diwali notes?", "label": "META"}
+{"text": "Worried about overeating during holidays.", "label": "CONCERN"}
+{"text": "Grateful for the gift of time with kids.", "label": "GRATITUDE"}
+{"text": "Prepare speech for Christmas toast.", "label": "TASK"}
+{"text": "How do I share entries with family?", "label": "META"}
+{"text": "Amma's gift ideas are running low.", "label": "CONCERN"}
+{"text": "Appreciate Arjun's help with birthday setup.", "label": "GRATITUDE"}
+{"text": "List your features for family diaries.", "label": "META"}
+{"text": "Concerned the birthday venue is too far.", "label": "CONCERN"}
+{"text": "Thankful for holiday lights brightening our home.", "label": "GRATITUDE"}
+{"text": "Bake Priya's favorite Christmas treats.", "label": "TASK"}
+{"text": "Can you predict busy holiday days?", "label": "META"}
+{"text": "I'm stressed about Diwali outfit choices.", "label": "CONCERN"}
+{"text": "Grateful for Priya's laughter filling the house.", "label": "GRATITUDE"}
+{"text": "Confirm birthday RSVP list.", "label": "TASK"}
+{"text": "What data do you keep on birthdays?", "label": "META"}
+{"text": "Arjun might miss the Christmas flight.", "label": "CONCERN"}
+{"text": "So thankful for Amma's comforting chai.", "label": "GRATITUDE"}
+{"text": "Decorate cake for Diwali sweets table.", "label": "TASK"}
+{"text": "How reliable are your holiday reminders?", "label": "META"}
+{"text": "Worried guests will be late for puja.", "label": "CONCERN"}
+{"text": "Thankful for the spirit of Christmas giving.", "label": "GRATITUDE"}
+{"text": "Pick up turkey for holiday meal.", "label": "TASK"}
+{"text": "Do you have templates for birthday wishes?", "label": "META"}
+{"text": "Concerned about the cold weather for Diwali.", "label": "CONCERN"}
+{"text": "Grateful for family overcoming holiday challenges.", "label": "GRATITUDE"}
+{"text": "Assemble birthday goodie bags.", "label": "TASK"}
+{"text": "Can I edit past Christmas entries?", "label": "META"}
+{"text": "Priya is upset about her birthday gift.", "label": "CONCERN"}
+{"text": "Appreciate the beauty of Diwali rangoli.", "label": "GRATITUDE"}
+{"text": "Send Christmas e-cards to relatives.", "label": "TASK"}
+{"text": "Show me your update history for holidays.", "label": "META"}
+{"text": "I'm worried the fireworks are unsafe.", "label": "CONCERN"}
+{"text": "Thankful for joyful birthday hugs.", "label": "GRATITUDE"}
+{"text": "Plan games for kids' Christmas party.", "label": "TASK"}
+{"text": "How do I reset my family profile?", "label": "META"}
+{"text": "Amma forgot the Diwali shopping list.", "label": "CONCERN"}
+{"text": "Grateful for Arjun's festive drawings.", "label": "GRATITUDE"}
+{"text": "Buy candles for birthday candles.", "label": "TASK"}
+{"text": "Can you handle multiple holiday calendars?", "label": "META"}
+{"text": "Concerned traffic will delay birthday arrival.", "label": "CONCERN"}
+{"text": "So thankful for holiday peace at home.", "label": "GRATITUDE"}

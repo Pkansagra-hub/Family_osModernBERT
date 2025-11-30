@@ -36,7 +36,9 @@ Usage:
 from __future__ import annotations
 
 import json
+import logging
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
@@ -48,6 +50,8 @@ if TYPE_CHECKING:
     from transformers import PretrainedConfig
 
 from modeling_studio.data.labels import CAPABILITY_TO_LABELS, Capability, get_num_labels
+
+logger = logging.getLogger(__name__)
 from modeling_studio.models.heads import (
     EmbeddingHead,
     IntentHead,
@@ -224,6 +228,14 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     hidden_size=hidden_size,
                     normalize=True,
                 )
+            elif capability == Capability.SAFETY_FAMILYOS:
+                # SafetyHead uses num_bands instead of num_labels
+                head = head_cls(
+                    hidden_size=hidden_size,
+                    num_bands=4,  # GREEN, AMBER, RED, CRISIS
+                    dropout=self.head_dropout,
+                    problem_type=problem_type,
+                )
             else:
                 head = head_cls(
                     hidden_size=hidden_size,
@@ -359,6 +371,91 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             attentions=encoder_outputs.attentions if output_attentions else None,
             capability=capability,
         )
+
+    @classmethod
+    def load_checkpoint(
+        cls,
+        checkpoint_path: str,
+        device: str = "cpu",
+    ) -> ModernBertMultiTaskModel:
+        """
+        Load model from a training checkpoint (saved with Trainer).
+
+        This handles the 'encoder.' prefix in saved state dicts and loads
+        capabilities from capabilities.json.
+
+        Args:
+            checkpoint_path: Path to checkpoint directory
+            device: Device to load model on
+
+        Returns:
+            Loaded ModernBertMultiTaskModel
+        """
+        from safetensors.torch import load_file
+        from transformers import AutoConfig, AutoModel
+
+        checkpoint_path = (
+            Path(checkpoint_path) if not isinstance(checkpoint_path, Path) else checkpoint_path
+        )
+
+        # Load capabilities
+        caps_file = checkpoint_path / "capabilities.json"
+        if caps_file.exists():
+            with open(caps_file) as f:
+                caps_data = json.load(f)
+                # Handle both old format (list) and new format (dict with 'capabilities' key)
+                if isinstance(caps_data, list):
+                    capabilities = [Capability(c) for c in caps_data]
+                elif isinstance(caps_data, dict) and "capabilities" in caps_data:
+                    capabilities = [Capability(c) for c in caps_data["capabilities"]]
+                else:
+                    capabilities = None
+        else:
+            capabilities = None
+
+        # Load config
+        config = AutoConfig.from_pretrained(str(checkpoint_path))
+
+        # Create model instance
+        model = cls(
+            config=config,
+            capabilities=capabilities,
+            freeze_encoder=False,
+            head_dropout=0.1,
+        )
+
+        # Initialize encoder first
+        model.encoder = AutoModel.from_config(config)
+
+        # Load state dict from safetensors
+        state_dict = load_file(str(checkpoint_path / "model.safetensors"))
+
+        # Load encoder weights (strip 'encoder.' prefix for encoder)
+        encoder_state = {}
+        head_state = {}
+        for key, value in state_dict.items():
+            if key.startswith("encoder."):
+                encoder_state[key[8:]] = value  # Remove 'encoder.' prefix
+            elif key.startswith("heads."):
+                head_state[key] = value
+
+        # Load encoder
+        missing, unexpected = model.encoder.load_state_dict(encoder_state, strict=False)
+        if missing:
+            logger.warning(f"Encoder missing keys: {len(missing)}")
+        if unexpected:
+            logger.warning(f"Encoder unexpected keys: {len(unexpected)}")
+
+        # Load heads
+        if head_state:
+            missing_h, unexpected_h = model.load_state_dict(head_state, strict=False)
+            logger.info(f"Loaded {len(head_state)} head parameters")
+
+        model.to(device)
+        model.eval()
+
+        logger.info(f"Loaded checkpoint from {checkpoint_path}")
+        return model
 
     @classmethod
     def from_pretrained(

@@ -1,6 +1,12 @@
-# Stage A: A100 Optimized Configuration
+# Stage A: A100 Optimized Configuration (V2 - Fixed Sampling)
 # For A100-40GB/80GB GPUs (Colab Pro, GCP, etc.)
-# ~4x faster than default config
+# Target GPU Memory: 30-35GB (was 15GB)
+#
+# FIXES from v1:
+# - Temperature sampling to prevent small dataset starvation
+# - Proper task weights for NER (~107K) and Temporal (~7K)
+# - 3 epochs instead of 1
+# - Higher batch size to use more GPU memory
 #
 # Usage:
 #   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_a100.yaml
@@ -19,7 +25,7 @@ heads:
   ner_general:
     enabled: true
     type: token_classification
-    num_labels: 17
+    num_labels: 9  # CoNLL + WikiNeural: O, B/I-PER, B/I-ORG, B/I-LOC, B/I-MISC
     dropout: 0.1
 
   sentiment:
@@ -61,62 +67,66 @@ heads:
     num_labels: 13
     dropout: 0.1
 
-# Task sampling weights
+# Task sampling weights (with TEMPERATURE sampling)
+# Dataset sizes: NLI ~942K, Embedding ~942K, Safety ~200K, NER ~107K, Sentiment ~67K, Emotions ~43K, Temporal ~10K
+# Higher weight = sample more often relative to dataset size
 task_weights:
-  ner_general: 1.0
-  sentiment: 1.0
-  emotions: 1.0
-  safety_generic: 1.5
-  nli: 1.0
-  embedding: 0.5
-  temporal: 0.8
+  ner_general: 3.0      # 107K samples (CoNLL 14K + WikiNeural 93K)
+  sentiment: 2.0        # 67K samples
+  emotions: 2.0         # 43K samples
+  safety_generic: 1.0   # 200K samples (increased from 50K)
+  nli: 0.3              # 942K samples - downweight large dataset
+  embedding: 0.2        # 942K samples - downweight large dataset
+  temporal: 15.0        # ~10K samples - heavy upweight
 
-# Data mixing strategy
+# Data mixing strategy - FIXED: Use temperature sampling
 mixing:
-  strategy: proportional
-  temperature: 2.0
+  strategy: temperature  # CHANGED from proportional - prevents starvation
+  temperature: 2.0       # Higher = more uniform sampling across tasks
   shuffle_seed: 42
 
-# A100 OPTIMIZED Training hyperparameters
+# A100 OPTIMIZED Training hyperparameters (Target: 30-35GB VRAM)
 training:
-  # === A100 OPTIMIZED BATCH SIZE ===
-  per_device_train_batch_size: 256    # A100-40GB - using full GPU memory
-  per_device_eval_batch_size: 128     # Higher eval batch
-  gradient_accumulation_steps: 1      # Effective batch = 256
-  
-  # Learning rate scaled for larger batch (sqrt scaling)
-  learning_rate: 0.00005  # 5e-5 (was 2e-5, scaled ~2.5x for 8x batch)
-  
-  # Training duration
-  num_train_epochs: 1
+  # === A100 HIGH MEMORY CONFIG ===
+  # batch_size 256 used only 15GB, doubling to use ~30GB
+  per_device_train_batch_size: 48     # Higher batch size for more GPU utilization
+  per_device_eval_batch_size: 64      # Higher eval batch
+  gradient_accumulation_steps: 8      # Effective batch = 48 * 8 = 384
+
+  # Learning rate scaled for larger effective batch (sqrt scaling)
+  learning_rate: 0.00003  # 3e-5 (balanced for 384 effective batch)
+
+  # Training duration - 3 EPOCHS for proper training
+  num_train_epochs: 3
   max_steps: -1
-  
+
   # Gradient checkpointing ON to save memory
-  gradient_checkpointing: true  # Optimizer
+  gradient_checkpointing: true
+  # Optimizer
   optim: adamw_torch_fused
   weight_decay: 0.01
   max_grad_norm: 1.0
 
   # Schedule
   lr_scheduler_type: cosine
-  warmup_ratio: 0.06  # Shorter warmup for larger batch
+  warmup_ratio: 0.05  # Shorter warmup for larger batch
 
   # A100 native BF16
   bf16: true
   fp16: false
 
-  # Evaluation (less frequent = faster)
+  # Evaluation and checkpointing
   eval_strategy: steps
-  eval_steps: 500       # More frequent checkpoints
+  eval_steps: 1000      # Eval every 1000 steps
   save_strategy: steps
-  save_steps: 500
-  save_total_limit: 3
+  save_steps: 1000      # Save every 1000 steps
+  save_total_limit: 5   # Keep more checkpoints
   load_best_model_at_end: true
   metric_for_best_model: eval_avg_score
   greater_is_better: true
 
   # Logging
-  logging_steps: 50     # More frequent logging
+  logging_steps: 100
   report_to:
     - tensorboard
 
@@ -125,15 +135,15 @@ training:
   data_seed: 42
 
   # === A100 OPTIMIZED DATA LOADING ===
-  dataloader_num_workers: 8    # More workers (was 4)
+  dataloader_num_workers: 4     # Colab has limited CPU
   dataloader_pin_memory: true
-  dataloader_prefetch_factor: 4  # Prefetch batches
+  dataloader_prefetch_factor: 2
 
-# Output
+# Output - V2 checkpoint
 output:
-  output_dir: outputs/modernbert-multitask-v0
-  checkpoint_dir: checkpoints/modernbert-multitask-v0
-  logging_dir: outputs/modernbert-multitask-v0/logs
+  output_dir: outputs/modernbert-multitask-v0-retrain
+  checkpoint_dir: checkpoints/modernbert-multitask-v0-retrain
+  logging_dir: outputs/modernbert-multitask-v0-retrain/logs
 
 # Data config
 data_config: configs/data/multitask/stage_a_datasets.yaml

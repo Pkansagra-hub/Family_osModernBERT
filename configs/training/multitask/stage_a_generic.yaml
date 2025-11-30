@@ -69,19 +69,22 @@ heads:
     dropout: 0.1
 
 # Task sampling weights (proportional sampling)
+# NOTE: With WikiNeural added, NER is now 107K (was 14K)
+# Dataset sizes: NLI ~942K, Embedding ~942K, NER 107K, Sentiment 67K, Safety 50K, Emotions 43K, Temporal ~4K
+# With temperature sampling, weights adjust relative importance
 task_weights:
-  ner_general: 1.0
+  ner_general: 5.0     # Now 107K samples with WikiNeural (reduced from 50)
   sentiment: 1.0
   emotions: 1.0
   safety_generic: 1.5  # Slightly upweight safety
-  nli: 1.0
-  embedding: 0.5  # Contrastive learning is expensive
-  temporal: 0.8  # Temporal is smaller dataset
+  nli: 0.5             # Large dataset, downweight to balance
+  embedding: 0.3       # Very large dataset, downweight
+  temporal: 100.0      # CRITICAL: Only ~4K samples, needs heavy upweight
 
 # Data mixing strategy
 mixing:
-  strategy: proportional  # proportional, temperature, uniform
-  temperature: 2.0  # If strategy=temperature
+  strategy: temperature  # Use temperature sampling for better balance
+  temperature: 2.0       # Higher = more uniform across tasks
   shuffle_seed: 42
 
 # Training hyperparameters

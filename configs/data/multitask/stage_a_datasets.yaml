@@ -27,11 +27,48 @@ datasets:
       B-MISC: 7
       I-MISC: 8
 
+  # WikiNeural English - 92K samples! Uses tner/wikineural which works properly
+  ner_wikineural:
+    task: ner_general
+    source: huggingface
+    name: tner/wikineural
+    config: en  # English config - required!
+    enabled: true
+    splits:
+      train: train
+      validation: validation
+      test: test
+    column_mapping:
+      tokens: tokens
+      labels: tags  # tner uses 'tags' not 'ner_tags'
+    # WikiNeural uses same 0-8 indices as CoNLL - no remapping needed
+    label_map:
+      O: 0
+      B-PER: 1
+      I-PER: 2
+      B-ORG: 3
+      I-ORG: 4
+      B-LOC: 5
+      I-LOC: 6
+      B-MISC: 7
+      I-MISC: 8
+
+  # Few-NERD - 132K samples with EVENT labels!
+  # NOTE: DISABLED - Few-NERD uses flat labels (not BIO format)
+  # Would need conversion: consecutive 'person' tags need B-PER/I-PER
+  # Coarse labels: O, art, building, event, location, organization, other, person, product
+  ner_fewnerd:
+    task: ner_general
+    source: huggingface
+    name: DFKI-SLT/few-nerd
+    config: supervised
+    enabled: false  # DISABLED: Not BIO format, needs conversion
+
   ner_ontonotes:
     task: ner_general
     source: huggingface
     name: tner/ontonotes5
-    enabled: false  # Optional, larger dataset
+    enabled: false  # Requires script loading
     splits:
       train: train
       validation: validation
@@ -117,7 +154,7 @@ datasets:
     source: huggingface
     name: civil_comments
     enabled: true
-    max_samples: 50000
+    max_samples: 200000  # Increased from 50K - plenty of data available (1.8M total)
     column_mapping:
       text: text
       label: toxicity
@@ -187,6 +224,36 @@ datasets:
       positive: positive
       # Negatives sampled in-batch
 
+  # ============================================
+  # Temporal Expression Recognition
+  # ============================================
+  temporal_familyos:
+    task: temporal
+    source: local
+    data_dir: data/familyos/temporal/silver
+    format: jsonl
+    enabled: true
+    splits:
+      train: "*.jsonl"  # Load all shards
+    column_mapping:
+      tokens: tokens
+      labels: temporal_tags
+    # 13 BIO tags for 6 temporal entity types
+    label_map:
+      O: 0
+      B-DATE_ABS: 1
+      I-DATE_ABS: 2
+      B-DATE_REL: 3
+      I-DATE_REL: 4
+      B-TIME: 5
+      I-TIME: 6
+      B-DURATION: 7
+      I-DURATION: 8
+      B-FREQUENCY: 9
+      I-FREQUENCY: 10
+      B-AGE: 11
+      I-AGE: 12
+
 # Global preprocessing
 preprocessing:
   max_length: 512
@@ -195,6 +262,6 @@ preprocessing:
 
 # Data mixing strategy
 mixing:
-  strategy: proportional  # proportional, temperature, uniform
-  temperature: 2.0  # If strategy=temperature
+  strategy: temperature  # CHANGED: temperature sampling for balanced training
+  temperature: 2.0  # Higher = more uniform sampling across tasks
   shuffle_seed: 42

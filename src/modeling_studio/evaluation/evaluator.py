@@ -566,11 +566,11 @@ class Evaluator:
             all_labels = [seq for batch in all_labels for seq in batch]
         else:
             all_predictions = np.concatenate(all_predictions, axis=0)
-            if all_labels:
+            if len(all_labels) > 0:
                 all_labels = np.concatenate(all_labels, axis=0)
 
         # Compute metrics
-        if all_labels:
+        if len(all_labels) > 0:
             metrics = self._compute_task_metrics(all_predictions, all_labels, task)
         else:
             logger.warning(f"No labels found for task {task}, skipping metric computation")
