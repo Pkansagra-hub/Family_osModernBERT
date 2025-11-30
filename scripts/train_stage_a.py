@@ -63,13 +63,18 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from modeling_studio.data.labels import Capability, get_num_labels  # noqa: E402
+from modeling_studio.data.labels import (Capability,  # noqa: E402
+                                         get_num_labels)
 from modeling_studio.data.loaders import load_stage_a_datasets  # noqa: E402
-from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel  # noqa: E402
+from modeling_studio.models.modernbert_multitask import \
+    ModernBertMultiTaskModel  # noqa: E402
 from modeling_studio.trainers.collators import MultiTaskCollator  # noqa: E402
-from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer  # noqa: E402
 from modeling_studio.trainers.ema import EMAModel  # noqa: E402
-from modeling_studio.trainers.optimizer import create_optimizer_with_head_lr  # noqa: E402
+from modeling_studio.trainers.multitask_trainer import \
+    MultiTaskTrainer  # noqa: E402
+from modeling_studio.trainers.optimizer import \
+    create_optimizer_with_head_lr  # noqa: E402
+
 # Note: UncertaintyWeighting is handled internally by MultiTaskTrainer via args.use_uncertainty_weighting
 
 # Configure logging
@@ -381,8 +386,9 @@ def create_training_args(
     resume_from_checkpoint: str | None = None,
 ) -> TrainingArguments:
     """Create MultiTaskTrainingArguments from config."""
-    from modeling_studio.trainers.multitask_trainer import MultiTaskTrainingArguments
-    
+    from modeling_studio.trainers.multitask_trainer import \
+        MultiTaskTrainingArguments
+
     training_config = config.get("training", {})
     output_config = config.get("output", {})
     mixing_config = config.get("mixing", {})
@@ -451,7 +457,8 @@ def create_training_args(
 
 def compute_metrics_factory(task_names: list[str]):
     """Create a compute_metrics function for multi-task evaluation."""
-    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+    from sklearn.metrics import (accuracy_score, f1_score, precision_score,
+                                 recall_score)
 
     def compute_metrics(eval_pred):
         """Compute metrics for evaluation."""
@@ -594,7 +601,7 @@ def train(
         head_lr = optimizer_config.get("head_lr", 1e-4)
         token_head_lr = optimizer_config.get("token_head_lr", 5e-5)
         layer_decay = optimizer_config.get("layer_decay", 0.95)
-        
+
         logger.info("=" * 60)
         logger.info("V2 FEATURE: Head-wise Learning Rates")
         logger.info(f"  encoder_lr: {encoder_lr}")
@@ -602,7 +609,7 @@ def train(
         logger.info(f"  token_head_lr: {token_head_lr}")
         logger.info(f"  layer_decay: {layer_decay} (not yet implemented in head-wise optimizer)")
         logger.info("=" * 60)
-        
+
         # Create custom optimizer with head-wise LRs
         # Note: layer_decay requires a separate create_layer_wise_lr_groups function
         # which is more complex - for now we use the simpler head-wise approach
@@ -771,7 +778,6 @@ def main():
     except Exception as e:
         logger.error(f"Training failed with error: {e}")
         raise
-
 
 if __name__ == "__main__":
     sys.exit(main())

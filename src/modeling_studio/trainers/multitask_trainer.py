@@ -332,7 +332,7 @@ class MultiTaskTrainer(Trainer):
         # Initialize learned task weights if enabled in args
         self.uncertainty_weighting: UncertaintyWeighting | None = None
         self.task_to_idx: dict[str, int] = {}
-        
+
         # Check if using MultiTaskTrainingArguments with uncertainty weighting
         use_uncertainty = getattr(args, "use_uncertainty_weighting", False)
         if use_uncertainty and self.train_datasets:
@@ -570,49 +570,52 @@ class MultiTaskTrainer(Trainer):
         """
         # First, create the base optimizer
         optimizer = super().create_optimizer()
-        
+
         # === V2 FEATURE: Add uncertainty weighting parameters to optimizer ===
         if self.uncertainty_weighting is not None:
             # Add the log_vars parameter to the optimizer
             # Use a higher learning rate for task weights (they need to adapt quickly)
             param_groups = list(optimizer.param_groups)
-            param_groups.append({
-                "params": list(self.uncertainty_weighting.parameters()),
-                "lr": self.args.learning_rate * 10,  # 10x base LR for task weights
-                "weight_decay": 0.0,  # No regularization on task weights
-            })
-            
+            param_groups.append(
+                {
+                    "params": list(self.uncertainty_weighting.parameters()),
+                    "lr": self.args.learning_rate * 10,  # 10x base LR for task weights
+                    "weight_decay": 0.0,  # No regularization on task weights
+                }
+            )
+
             # Recreate optimizer with new param groups
             from torch.optim import AdamW
+
             optimizer = AdamW(
                 param_groups,
                 lr=self.args.learning_rate,
                 betas=(0.9, 0.999),
                 eps=1e-8,
             )
-        
+
         return optimizer
 
     def training_step(
-        self, 
-        model: "PreTrainedModel", 
+        self,
+        model: PreTrainedModel,
         inputs: dict[str, Any],
         num_items_in_batch: int | None = None,
     ) -> torch.Tensor:
         """
         Override training step to update EMA after each step.
-        
+
         The EMA model maintains an exponential moving average of the model weights
         for better final model quality.
         """
         # Call parent training step
         loss = super().training_step(model, inputs, num_items_in_batch)
-        
+
         # === V2 FEATURE: Update EMA after each step ===
         # EMA is attached to trainer in train_stage_a.py
         if hasattr(self, "ema_model") and self.ema_model is not None:
             self.ema_model.update(model)
-        
+
         return loss
 
     def log(self, logs: dict[str, float], start_time: float | None = None) -> None:
@@ -620,7 +623,7 @@ class MultiTaskTrainer(Trainer):
         # Add current task to logs if available
         if self.current_task is not None and "loss" in logs:
             logs[f"{self.current_task}_loss"] = logs["loss"]
-        
+
         # === V2 FEATURE: Log uncertainty weights ===
         if self.uncertainty_weighting is not None:
             # Log current learned task weights
