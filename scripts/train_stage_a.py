@@ -65,7 +65,8 @@ if str(project_root) not in sys.path:
 
 from modeling_studio.data.labels import Capability, get_num_labels
 from modeling_studio.data.loaders import load_stage_a_datasets
-from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+from modeling_studio.models.modernbert_multitask import \
+    ModernBertMultiTaskModel
 from modeling_studio.trainers.collators import MultiTaskCollator
 from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer
 
@@ -409,7 +410,7 @@ def create_training_args(
         save_steps=training_config.get("save_steps", 1000),
         save_total_limit=training_config.get("save_total_limit", 3),
         load_best_model_at_end=training_config.get("load_best_model_at_end", True),
-        metric_for_best_model=training_config.get("metric_for_best_model", "eval_avg_f1"),
+        metric_for_best_model=training_config.get("metric_for_best_model", "eval_avg_score"),
         greater_is_better=training_config.get("greater_is_better", True),
         # Logging
         logging_steps=training_config.get("logging_steps", 100),
@@ -440,7 +441,8 @@ def create_training_args(
 
 def compute_metrics_factory(task_names: list[str]):
     """Create a compute_metrics function for multi-task evaluation."""
-    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+    from sklearn.metrics import (accuracy_score, f1_score, precision_score,
+                                 recall_score)
 
     def compute_metrics(eval_pred):
         """Compute metrics for evaluation."""
@@ -677,6 +679,18 @@ def main():
         raise
 
 
+if __name__ == "__main__":
+    sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
 if __name__ == "__main__":
     sys.exit(main())
 if __name__ == "__main__":

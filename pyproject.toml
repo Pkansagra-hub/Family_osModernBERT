@@ -5,15 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "modeling-studio"
 version = "0.1.0"
-description = "Unified model training and fine-tuning framework"
+description = "FamilyOS ModernBERT - Multi-task encoder for family assistant applications"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Prince Kansagra", email = "pkansagra99@gmail.com"}
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
@@ -21,31 +21,55 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-keywords = ["machine-learning", "deep-learning", "transformers", "fine-tuning", "llm"]
+keywords = [
+    "machine-learning",
+    "deep-learning",
+    "transformers",
+    "multi-task-learning",
+    "modernbert",
+    "ner",
+    "sentiment-analysis",
+    "embeddings",
+]
 
 dependencies = [
-    "torch>=2.0.0",
-    "transformers>=4.36.0",
+    # Core ML - PyTorch and Transformers
+    "torch>=2.1.0",
+    "transformers>=4.40.0",
     "datasets>=2.14.0",
     "accelerate>=0.25.0",
-    "peft>=0.7.0",
-    "bitsandbytes>=0.41.0",
+    "safetensors>=0.4.0",
+
+    # Tokenization
     "sentencepiece>=0.1.99",
     "tokenizers>=0.15.0",
-    "safetensors>=0.4.0",
+
+    # Multi-task training
+    "peft>=0.7.0",
     "einops>=0.7.0",
-    "wandb>=0.16.0",
-    "tensorboard>=2.15.0",
+
+    # Evaluation metrics - CRITICAL for training
+    "scikit-learn>=1.3.0",
+    "seqeval>=1.2.2",
+    "scipy>=1.11.0",
+
+    # Config & CLI
     "pyyaml>=6.0",
     "omegaconf>=2.3.0",
-    "rich>=13.0.0",
     "typer>=0.9.0",
+
+    # Logging
+    "wandb>=0.16.0",
+    "tensorboard>=2.15.0",
+    "rich>=13.0.0",
     "tqdm>=4.66.0",
+
+    # Data processing
     "numpy>=1.24.0",
     "pandas>=2.0.0",
-    "scikit-learn>=1.3.0",
 ]
 
 [project.optional-dependencies]
@@ -57,47 +81,76 @@ dev = [
     "mypy>=1.7.0",
     "pre-commit>=3.6.0",
 ]
+
+# GCP/Cloud training optimizations
+gcp = [
+    "google-cloud-storage>=2.10.0",
+    "google-cloud-logging>=3.8.0",
+]
+
+# Flash Attention for A100/H100 (CUDA 11.8+)
+flash = [
+    "flash-attn>=2.4.0",
+]
+
+# DeepSpeed for multi-GPU
 deepspeed = [
     "deepspeed>=0.12.0",
 ]
-unsloth = [
-    "unsloth>=2024.1",
-]
-flash-attn = [
-    "flash-attn>=2.4.0",
-]
+
+# Full installation
 all = [
-    "modeling-studio[dev,deepspeed,unsloth,flash-attn]",
+    "modeling-studio[dev,gcp,flash,deepspeed]",
 ]
 
 [project.scripts]
 ms-train = "modeling_studio.cli:train"
 ms-eval = "modeling_studio.cli:evaluate"
+ms-validate = "modeling_studio.cli:validate"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/modeling-studio"
-Repository = "https://github.com/yourusername/modeling-studio"
-Documentation = "https://github.com/yourusername/modeling-studio#readme"
+Homepage = "https://github.com/Pkansagra-hub/Family_osModernBERT"
+Repository = "https://github.com/Pkansagra-hub/Family_osModernBERT"
+Documentation = "https://github.com/Pkansagra-hub/Family_osModernBERT#readme"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"modeling_studio" = ["py.typed"]
+
 [tool.black]
 line-length = 100
 target-version = ["py310", "py311", "py312"]
+exclude = '''
+/(
+    \.git
+    | \.mypy_cache
+    | \.pytest_cache
+    | __pycache__
+    | build
+    | dist
+)/
+'''
 
 [tool.ruff]
 line-length = 100
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
-ignore = ["E501"]
+ignore = ["E501", "B008"]
+exclude = [".git", "__pycache__", "build", "dist"]
 
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+exclude = ["build", "dist", "__pycache__"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --cov=src/modeling_studio"
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+]

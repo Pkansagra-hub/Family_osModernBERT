@@ -1,85 +1,108 @@
-# Modeling Studio
+# FamilyOS ModernBERT
 
-A unified repository for training and fine-tuning models from BERT to Small Language Models (SLMs) using multiple frameworks.
+Multi-task encoder model based on ModernBERT for family assistant applications.
 
-## Repository Structure
+## Features
 
-```
-modeling_studio/
-├── configs/                    # Training configurations
-│   ├── model/                  # Model-specific configs
-│   ├── training/               # Training hyperparameters
-│   └── data/                   # Data processing configs
-├── data/                       # Dataset storage
-│   ├── raw/                    # Raw unprocessed data
-│   ├── processed/              # Preprocessed data
-│   └── cache/                  # Cached tokenized data
-├── src/
-│   └── modeling_studio/
-│       ├── models/             # Model definitions & architectures
-│       ├── trainers/           # Training loops & strategies
-│       ├── data/               # Data loading & processing
-│       ├── utils/              # Utility functions
-│       └── evaluation/         # Evaluation metrics & scripts
-├── scripts/                    # Training & utility scripts
-├── notebooks/                  # Experimentation notebooks
-├── checkpoints/                # Model checkpoints (gitignored)
-├── outputs/                    # Training outputs (gitignored)
-└── tests/                      # Unit tests
-```
-
-## Supported Frameworks
-
-- **PyTorch** - Core deep learning
-- **Hugging Face Transformers** - Pre-trained models & tokenizers
-- **PEFT** - Parameter-efficient fine-tuning (LoRA, QLoRA, etc.)
-- **DeepSpeed** - Distributed training & optimization
-- **Accelerate** - Multi-GPU/TPU training
-- **bitsandbytes** - Quantization
-- **Unsloth** - Fast fine-tuning for LLMs
-
-## Supported Model Types
-
-- **Encoder Models**: BERT, RoBERTa, DeBERTa, ELECTRA
-- **Decoder Models**: GPT-2, LLaMA, Mistral, Phi, Qwen
-- **Encoder-Decoder**: T5, BART, FLAN-T5
-- **Custom Architectures**: Define your own
+- **Multi-task Learning**: NER, Sentiment, Emotions, Safety, NLI, Embeddings
+- **ModernBERT Base**: 151M parameters, optimized for modern GPUs
+- **BFloat16 Training**: Native support for A100/H100/RTX 40xx/50xx
+- **Production Ready**: Validated training pipeline with comprehensive tests
 
 ## Quick Start
 
+### Installation
+
 ```bash
+# Clone repository
+git clone https://github.com/Pkansagra-hub/Family_osModernBERT.git
+cd Family_osModernBERT
+
 # Install dependencies
+pip install -r requirements.txt
 pip install -e .
 
-# Train a model (example)
-python scripts/train.py --config configs/training/default.yaml
-
-# Fine-tune with LoRA
-python scripts/finetune.py --config configs/training/lora.yaml
+# Optional: Flash Attention for A100/H100
+pip install flash-attn --no-build-isolation
 ```
 
-## Configuration System
+### Validate Before Training
 
-All configurations are managed via YAML files in `configs/`. Override any parameter via CLI:
+**ALWAYS run validation first to catch errors early:**
 
 ```bash
-python scripts/train.py --config configs/training/default.yaml \
-    --model.name_or_path bert-base-uncased \
-    --training.learning_rate 2e-5
+python scripts/validate_full_pipeline.py \
+    --config configs/training/multitask/stage_a_generic.yaml \
+    --samples 200 --steps 20
 ```
 
-## Adding New Models
+### Training
 
-1. Add model config to `configs/model/`
-2. If custom architecture, add to `src/modeling_studio/models/`
-3. Create training config in `configs/training/`
+```bash
+# Stage A: Generic multi-task training (public datasets)
+python scripts/train_stage_a.py \
+    --config configs/training/multitask/stage_a_generic.yaml
+```
 
-## Adding New Datasets
+## GCP Training
 
-1. Place raw data in `data/raw/`
-2. Create data config in `configs/data/`
-3. Processed data will be cached in `data/processed/`
+For training on Google Cloud Platform with A100/H100:
+
+```bash
+# 1. Create VM with Deep Learning image
+# 2. Clone repo and run setup
+./setup_gcp.sh
+
+# 3. Validate
+python scripts/validate_full_pipeline.py \
+    --config configs/training/multitask/stage_a_generic.yaml \
+    --samples 200 --steps 20
+
+# 4. Train
+python scripts/train_stage_a.py \
+    --config configs/training/multitask/stage_a_generic.yaml
+```
+
+Estimated training time on A100 40GB: **2-3 hours** (~$12 cost)
+
+## Tasks
+
+| Task | Type | Dataset | Metrics |
+|------|------|---------|---------|
+| NER General | Token Classification | CoNLL-2003 | F1, Precision, Recall |
+| Sentiment | Classification | SST-2 | Accuracy, F1 |
+| Emotions | Multi-label | GoEmotions | Micro/Macro F1 |
+| Safety | Multi-label | Civil Comments | Micro/Macro F1 |
+| NLI | Classification | MNLI, SNLI | Accuracy |
+| Embedding | Contrastive | STS-B, NLI pairs | Spearman correlation |
+
+## Project Structure
+
+```
+Family_osModernBERT/
+├── configs/
+│   ├── data/multitask/          # Dataset configurations
+│   └── training/multitask/      # Training configurations
+├── scripts/
+│   ├── train_stage_a.py         # Stage A training script
+│   ├── validate_full_pipeline.py # Full pipeline validation
+│   └── setup_gcp.sh             # GCP setup script
+├── src/modeling_studio/
+│   ├── data/                    # Data loading & processing
+│   ├── models/                  # Model architectures
+│   ├── trainers/                # Training logic
+│   └── evaluation/              # Metrics & evaluation
+├── requirements.txt             # Python dependencies
+└── pyproject.toml              # Package configuration
+```
+
+## Requirements
+
+- Python 3.10+
+- PyTorch 2.1+
+- CUDA 11.8+ (for GPU training)
+- 8GB+ VRAM (16GB+ recommended)
 
 ## License
 
-MIT
+MIT License
