@@ -568,18 +568,28 @@ class MultiTaskTrainer(Trainer):
         - Token classification heads
         - Uncertainty weighting parameters (learned task weights)
         """
-        # First, create the base optimizer
-        optimizer = super().create_optimizer()
+        # Check if optimizer was already passed to __init__
+        if self.optimizer is not None:
+            optimizer = self.optimizer
+        else:
+            # Create the base optimizer
+            optimizer = super().create_optimizer()
 
         # === V2 FEATURE: Add uncertainty weighting parameters to optimizer ===
         if self.uncertainty_weighting is not None:
             # Add the log_vars parameter to the optimizer
             # Use a higher learning rate for task weights (they need to adapt quickly)
             param_groups = list(optimizer.param_groups)
+
+            # Get the base learning rate (as float)
+            base_lr = self.args.learning_rate
+            if isinstance(base_lr, str):
+                base_lr = float(base_lr)
+
             param_groups.append(
                 {
                     "params": list(self.uncertainty_weighting.parameters()),
-                    "lr": self.args.learning_rate * 10,  # 10x base LR for task weights
+                    "lr": base_lr * 10,  # 10x base LR for task weights
                     "weight_decay": 0.0,  # No regularization on task weights
                 }
             )
@@ -589,7 +599,7 @@ class MultiTaskTrainer(Trainer):
 
             optimizer = AdamW(
                 param_groups,
-                lr=self.args.learning_rate,
+                lr=base_lr,
                 betas=(0.9, 0.999),
                 eps=1e-8,
             )
@@ -630,7 +640,9 @@ class MultiTaskTrainer(Trainer):
             for task, idx in self.task_to_idx.items():
                 log_var = self.uncertainty_weighting.log_vars[idx].item()
                 # σ² = exp(log_var), weight ~ 1/σ²
-                weight = torch.exp(-log_var).item()
+                import math
+
+                weight = math.exp(-log_var)
                 logs[f"uw_{task}"] = weight
 
         super().log(logs, start_time)

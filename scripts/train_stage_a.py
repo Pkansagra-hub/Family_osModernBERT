@@ -63,17 +63,13 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from modeling_studio.data.labels import (Capability,  # noqa: E402
-                                         get_num_labels)
+from modeling_studio.data.labels import Capability, get_num_labels  # noqa: E402
 from modeling_studio.data.loaders import load_stage_a_datasets  # noqa: E402
-from modeling_studio.models.modernbert_multitask import \
-    ModernBertMultiTaskModel  # noqa: E402
+from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel  # noqa: E402
 from modeling_studio.trainers.collators import MultiTaskCollator  # noqa: E402
 from modeling_studio.trainers.ema import EMAModel  # noqa: E402
-from modeling_studio.trainers.multitask_trainer import \
-    MultiTaskTrainer  # noqa: E402
-from modeling_studio.trainers.optimizer import \
-    create_optimizer_with_head_lr  # noqa: E402
+from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer  # noqa: E402
+from modeling_studio.trainers.optimizer import create_optimizer_with_head_lr  # noqa: E402
 
 # Note: UncertaintyWeighting is handled internally by MultiTaskTrainer via args.use_uncertainty_weighting
 
@@ -384,10 +380,17 @@ def create_training_args(
     config: dict[str, Any],
     output_dir: str | None = None,
     resume_from_checkpoint: str | None = None,
+    debug: bool = False,
 ) -> TrainingArguments:
-    """Create MultiTaskTrainingArguments from config."""
-    from modeling_studio.trainers.multitask_trainer import \
-        MultiTaskTrainingArguments
+    """Create MultiTaskTrainingArguments from config.
+
+    Args:
+        config: Configuration dictionary
+        output_dir: Output directory for checkpoints
+        resume_from_checkpoint: Path to checkpoint to resume from
+        debug: If True, use smaller batch sizes for local debugging
+    """
+    from modeling_studio.trainers.multitask_trainer import MultiTaskTrainingArguments
 
     training_config = config.get("training", {})
     output_config = config.get("output", {})
@@ -396,6 +399,33 @@ def create_training_args(
     # Determine output directory
     if output_dir is None:
         output_dir = output_config.get("output_dir", "outputs/modernbert-multitask-v0")
+
+    # Check if bf16 is supported (CUDA device with compute capability >= 8.0)
+    import torch
+
+    bf16_supported = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+    bf16_config = training_config.get("bf16", True)
+    fp16_config = training_config.get("fp16", False)
+
+    # Fall back to fp32 if bf16 not supported and fp16 not explicitly enabled
+    if bf16_config and not bf16_supported:
+        logger.warning("bf16 not supported on this device, falling back to fp32")
+        bf16_config = False
+        fp16_config = False
+
+    # Get batch sizes - override for debug mode to fit in smaller GPUs
+    train_batch_size = training_config.get("per_device_train_batch_size", 16)
+    eval_batch_size = training_config.get("per_device_eval_batch_size", 32)
+    gradient_checkpointing = training_config.get("gradient_checkpointing", True)
+
+    if debug:
+        # Use smaller batch sizes for debug mode to fit in consumer GPUs
+        train_batch_size = min(train_batch_size, 8)
+        eval_batch_size = min(eval_batch_size, 16)
+        gradient_checkpointing = True  # Enable to save memory
+        logger.info(
+            f"Debug mode: using batch_size={train_batch_size}, eval_batch_size={eval_batch_size}, gradient_checkpointing=True"
+        )
 
     # Create MultiTaskTrainingArguments (extends TrainingArguments with V2 features)
     args = MultiTaskTrainingArguments(
@@ -411,9 +441,9 @@ def create_training_args(
         # Duration
         num_train_epochs=training_config.get("num_train_epochs", 5),
         max_steps=training_config.get("max_steps", -1),
-        # Batch size
-        per_device_train_batch_size=training_config.get("per_device_train_batch_size", 16),
-        per_device_eval_batch_size=training_config.get("per_device_eval_batch_size", 32),
+        # Batch size - use debug-adjusted values
+        per_device_train_batch_size=train_batch_size,
+        per_device_eval_batch_size=eval_batch_size,
         gradient_accumulation_steps=training_config.get("gradient_accumulation_steps", 2),
         # Evaluation & saving
         eval_strategy=training_config.get("eval_strategy", "steps"),
@@ -428,11 +458,11 @@ def create_training_args(
         logging_steps=training_config.get("logging_steps", 100),
         logging_first_step=True,
         report_to=training_config.get("report_to", ["tensorboard"]),
-        # Mixed precision
-        bf16=training_config.get("bf16", True),
-        fp16=training_config.get("fp16", False),
+        # Mixed precision - use auto-detected values
+        bf16=bf16_config,
+        fp16=fp16_config,
         # Memory optimization
-        gradient_checkpointing=training_config.get("gradient_checkpointing", True),
+        gradient_checkpointing=gradient_checkpointing,
         # Misc
         seed=training_config.get("seed", 42),
         data_seed=training_config.get("data_seed", 42),
@@ -457,8 +487,7 @@ def create_training_args(
 
 def compute_metrics_factory(task_names: list[str]):
     """Create a compute_metrics function for multi-task evaluation."""
-    from sklearn.metrics import (accuracy_score, f1_score, precision_score,
-                                 recall_score)
+    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
     def compute_metrics(eval_pred):
         """Compute metrics for evaluation."""
@@ -585,6 +614,7 @@ def train(
         config=config,
         output_dir=checkpoint_dir,  # Checkpoints go to checkpoint_dir
         resume_from_checkpoint=args.resume_from_checkpoint,
+        debug=args.debug,
     )
 
     # Get task weights from config
@@ -597,10 +627,12 @@ def train(
     # === V2 FEATURE: Head-wise Learning Rates ===
     custom_optimizer = None
     if optimizer_config:
-        encoder_lr = optimizer_config.get("encoder_lr", 2e-5)
-        head_lr = optimizer_config.get("head_lr", 1e-4)
-        token_head_lr = optimizer_config.get("token_head_lr", 5e-5)
-        layer_decay = optimizer_config.get("layer_decay", 0.95)
+        # Note: YAML safe_load parses scientific notation (e.g., 2e-5) as strings
+        # So we need to convert them to float explicitly
+        encoder_lr = float(optimizer_config.get("encoder_lr", 2e-5))
+        head_lr = float(optimizer_config.get("head_lr", 1e-4))
+        token_head_lr = float(optimizer_config.get("token_head_lr", 5e-5))
+        layer_decay = float(optimizer_config.get("layer_decay", 0.95))
 
         logger.info("=" * 60)
         logger.info("V2 FEATURE: Head-wise Learning Rates")
@@ -613,19 +645,18 @@ def train(
         # Create custom optimizer with head-wise LRs
         # Note: layer_decay requires a separate create_layer_wise_lr_groups function
         # which is more complex - for now we use the simpler head-wise approach
-        def make_optimizer(m):
-            return create_optimizer_with_head_lr(
-                m,
-                encoder_lr=encoder_lr,
-                head_lr=head_lr,
-                token_head_lr=token_head_lr,
-                weight_decay=training_config.get("weight_decay", 0.01),
-            )
-        custom_optimizer = make_optimizer
+        # We create the optimizer directly here instead of passing a callable
+        custom_optimizer = create_optimizer_with_head_lr(
+            model,
+            encoder_lr=encoder_lr,
+            head_lr=head_lr,
+            token_head_lr=token_head_lr,
+            weight_decay=float(training_config.get("weight_decay", 0.01)),
+        )
 
     # === V2 FEATURE: EMA Model ===
     use_ema = training_config.get("use_ema", False)
-    ema_decay = training_config.get("ema_decay", 0.999)
+    ema_decay = float(training_config.get("ema_decay", 0.999))
     ema_model = None
     if use_ema:
         logger.info("=" * 60)
@@ -778,6 +809,7 @@ def main():
     except Exception as e:
         logger.error(f"Training failed with error: {e}")
         raise
+
 
 if __name__ == "__main__":
     sys.exit(main())
