@@ -90,8 +90,8 @@ training:
   # === A100 HIGH MEMORY CONFIG ===
   # ModernBERT-base + 7 heads with bf16 can fit large batches
   # Testing shows 48 only uses ~5GB, trying 256 to target ~25GB
-  per_device_train_batch_size: 256    # A100 can handle this with bf16
-  per_device_eval_batch_size: 256     # Match train batch for efficiency
+  per_device_train_batch_size: 512    # A100 can handle this with bf16
+  per_device_eval_batch_size: 512     # Match train batch for efficiency
   gradient_accumulation_steps: 2      # Effective batch = 256 * 2 = 512
 
   # Learning rate scaled for larger effective batch (sqrt scaling)
