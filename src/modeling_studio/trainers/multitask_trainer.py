@@ -45,7 +45,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import torch
-from torch.utils.data import DataLoader, Dataset, IterableDataset
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, IterableDataset
 from transformers import Trainer, TrainingArguments
 
 logger = logging.getLogger(__name__)
@@ -93,6 +93,12 @@ class MultiTaskDataLoader:
         self.dataloaders = dataloaders
         self.sampler = sampler
         self.total_steps = total_steps
+
+        # Required by HuggingFace Trainer for checkpoint resume (skip_first_batches)
+        # Create a combined dataset reference from all dataloaders
+        self.dataset = ConcatDataset(
+            [loader.dataset for loader in dataloaders.values() if hasattr(loader, "dataset")]
+        )
 
         # Create iterators for each dataloader
         self._iterators: dict[str, Iterator] = {}
