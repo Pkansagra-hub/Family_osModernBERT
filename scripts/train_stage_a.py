@@ -63,17 +63,13 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from modeling_studio.data.labels import (Capability,  # noqa: E402
-                                         get_num_labels)
+from modeling_studio.data.labels import Capability, get_num_labels  # noqa: E402
 from modeling_studio.data.loaders import load_stage_a_datasets  # noqa: E402
-from modeling_studio.models.modernbert_multitask import \
-    ModernBertMultiTaskModel  # noqa: E402
+from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel  # noqa: E402
 from modeling_studio.trainers.collators import MultiTaskCollator  # noqa: E402
 from modeling_studio.trainers.ema import EMAModel  # noqa: E402
-from modeling_studio.trainers.multitask_trainer import \
-    MultiTaskTrainer  # noqa: E402
-from modeling_studio.trainers.optimizer import \
-    create_optimizer_with_head_lr  # noqa: E402
+from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer  # noqa: E402
+from modeling_studio.trainers.optimizer import create_optimizer_with_head_lr  # noqa: E402
 
 # Note: UncertaintyWeighting is handled internally by MultiTaskTrainer via args.use_uncertainty_weighting
 
@@ -355,7 +351,9 @@ def configure_head_loss(
             class_weights = class_weights.to(device=device, dtype=dtype)
             head.register_buffer("class_weights", class_weights)
             head.class_weights = class_weights
-            logger.info(f"  {head_name}: computed class weights (min={class_weights.min():.3f}, max={class_weights.max():.3f})")
+            logger.info(
+                f"  {head_name}: computed class weights (min={class_weights.min():.3f}, max={class_weights.max():.3f})"
+            )
 
 
 def _compute_class_weights_from_dataset(dataset, num_labels: int) -> torch.Tensor | None:
@@ -381,7 +379,9 @@ def _compute_class_weights_from_dataset(dataset, num_labels: int) -> torch.Tenso
             # Handle different label formats
             if isinstance(labels, (list, np.ndarray)):
                 labels_array = np.array(labels)
-                if labels_array.dtype == bool or (labels_array.max() <= 1 and len(labels_array) == num_labels):
+                if labels_array.dtype == bool or (
+                    labels_array.max() <= 1 and len(labels_array) == num_labels
+                ):
                     # Multi-hot format
                     label_counts += labels_array.astype(np.float32)
                 else:
@@ -410,7 +410,9 @@ def _compute_class_weights_from_dataset(dataset, num_labels: int) -> torch.Tenso
         # Clip extreme weights to avoid instability
         weights = np.clip(weights, 0.1, 10.0)
 
-        logger.info(f"    Class weight distribution: mean={weights.mean():.3f}, std={weights.std():.3f}")
+        logger.info(
+            f"    Class weight distribution: mean={weights.mean():.3f}, std={weights.std():.3f}"
+        )
 
         return torch.from_numpy(weights)
 
@@ -514,8 +516,7 @@ def create_training_args(
         resume_from_checkpoint: Path to checkpoint to resume from
         debug: If True, use smaller batch sizes for local debugging
     """
-    from modeling_studio.trainers.multitask_trainer import \
-        MultiTaskTrainingArguments
+    from modeling_studio.trainers.multitask_trainer import MultiTaskTrainingArguments
 
     training_config = config.get("training", {})
     output_config = config.get("output", {})
@@ -612,8 +613,7 @@ def create_training_args(
 
 def compute_metrics_factory(task_names: list[str]):
     """Create a compute_metrics function for multi-task evaluation."""
-    from sklearn.metrics import (accuracy_score, f1_score, precision_score,
-                                 recall_score)
+    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
     def compute_metrics(eval_pred):
         """Compute metrics for evaluation."""
@@ -942,12 +942,6 @@ def main():
         logger.warning("Training interrupted by user")
         return 1
     except Exception as e:
-        logger.error(f"Training failed with error: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    sys.exit(main())
         logger.error(f"Training failed with error: {e}")
         raise
 
