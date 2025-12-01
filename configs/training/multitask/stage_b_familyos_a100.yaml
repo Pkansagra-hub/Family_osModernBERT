@@ -1,0 +1,305 @@
+# =============================================================================
+# Stage B: FamilyOS Domain Adaptation - A100 GPU Optimized Configuration
+# =============================================================================
+# Target: NVIDIA A100 (40GB/80GB)
+# Fine-tunes modernbert-multitask-v0 with FamilyOS-specific data
+# Uses LoRA for efficient domain adaptation while preserving Stage A capabilities
+# Output: familyos-modernbert-unified-v1
+#
+# Key A100 Optimizations:
+# - Large batch sizes (A100 has 40-80GB VRAM)
+# - Flash Attention 2 enabled
+# - BF16 mixed precision (A100 has great BF16 support)
+# - Gradient checkpointing for memory efficiency
+# - Optimized for multi-task training throughput
+# =============================================================================
+
+defaults:
+  - /training/lora
+
+# =============================================================================
+# MODEL CONFIGURATION
+# =============================================================================
+model:
+  # Stage A EMA checkpoint (trained on Colab A100 with use_ema: true)
+  # The EMA-merged weights provide better generalization for Stage B
+  name_or_path: outputs/modernbert-multitask-v0-ema
+  torch_dtype: bfloat16
+  use_flash_attention_2: true
+  # A100 can handle full model in memory
+  low_cpu_mem_usage: false
+
+# =============================================================================
+# STAGE A INHERITED HEADS (kept frozen or lightly tuned)
+# =============================================================================
+heads:
+  ner_general:
+    enabled: true
+    freeze: true  # Keep generic NER frozen - replay handles forgetting
+
+  sentiment:
+    enabled: true
+    freeze: false
+    num_labels: 5
+
+  emotions:
+    enabled: true
+    freeze: false
+    num_labels: 32
+
+  safety_generic:
+    enabled: true
+    freeze: true  # Keep as baseline safety
+
+  nli:
+    enabled: true
+    freeze: true
+    num_labels: 3
+
+  embedding:
+    enabled: true
+    freeze: false  # Fine-tune for FamilyOS similarity
+
+  temporal:
+    enabled: true
+    freeze: false
+    num_labels: 13  # 13 BIO tags for temporal expressions
+
+# =============================================================================
+# FAMILYOS-SPECIFIC HEADS (NEW)
+# =============================================================================
+familyos_heads:
+  ner_family:
+    enabled: true
+    type: token_classification
+    num_labels: 21  # 21 BIO tags (NER_FAMILY_LABELS)
+    dropout: 0.1
+
+  ingress:
+    enabled: true
+    type: sequence_classification
+    num_labels: 12  # 12 domains (INGRESS_LABELS)
+    dropout: 0.1
+
+  safety_familyos:
+    enabled: true
+    type: sequence_classification
+    num_labels: 4  # GREEN, AMBER, RED, CRISIS
+    dropout: 0.1
+    # CRITICAL: This head has highest weight for CRISIS recall ≥98%
+
+  intent:
+    enabled: true
+    type: sequence_classification
+    num_labels: 8  # 8 intents (INTENT_LABELS)
+    dropout: 0.1
+
+  relation:
+    enabled: true
+    type: relation_classification
+    num_labels: 15  # 15 relation types (RELATION_LABELS)
+    dropout: 0.1
+
+# =============================================================================
+# TASK WEIGHTS (per unified_encoder_solution.md specifications)
+# =============================================================================
+task_weights:
+  # Replay tasks (prevent catastrophic forgetting)
+  ner_general: 0.5
+  sentiment: 0.3
+  emotions: 0.3
+  safety_generic: 0.2
+  nli: 0.3
+
+  # FamilyOS primary tasks
+  ner_family: 2.0
+  ingress: 1.5
+  safety_familyos: 15.0  # CRITICAL: High weight for safety (plan says 10-20x)
+  intent: 1.5
+  relation: 2.0
+  embedding: 0.8
+  temporal: 1.0
+
+# =============================================================================
+# PEFT/LoRA CONFIGURATION
+# =============================================================================
+peft:
+  method: lora
+  lora:
+    r: 32              # Increased from 16 for family domain capacity
+    lora_alpha: 64     # 2x r for proper scaling
+    lora_dropout: 0.05 # Low dropout for stability
+    bias: none
+    # ModernBERT target modules
+    target_modules:
+      - Wqkv           # Combined Q,K,V projection
+      - Wo             # Output projection (attention + MLP)
+      - Wi             # Intermediate projection (MLP)
+    task_type: FEATURE_EXTRACTION
+    # A100 can handle more modules if needed
+    modules_to_save:
+      - classifier     # Save classification heads fully
+
+# =============================================================================
+# TRAINING HYPERPARAMETERS - A100 OPTIMIZED
+# =============================================================================
+training:
+  # A100 can handle larger batches - maximize throughput
+  per_device_train_batch_size: 32   # A100 40GB can handle 32, 80GB can do 64
+  per_device_eval_batch_size: 64    # Larger eval batches for speed
+  gradient_accumulation_steps: 2    # Effective batch = 64
+
+  # Training duration (per plan: 5-8 epochs)
+  num_train_epochs: 5
+  max_steps: -1  # Use epochs, not steps
+
+  # Learning rates (per enhanced_design_v2.md)
+  learning_rate: 1e-4              # Higher for LoRA
+  encoder_lr: 2e-5                 # Lower for pretrained backbone
+  head_lr: 1e-4                    # Standard for heads
+  token_head_lr: 5e-5              # Token heads need finer updates
+
+  # Learning rate schedule
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.1
+  warmup_steps: 0  # Use ratio instead
+
+  # Regularization (per plan: 0.01 to avoid over-regularization)
+  weight_decay: 0.01
+  max_grad_norm: 0.5
+
+  # Mixed precision - A100 excels at BF16
+  bf16: true
+  fp16: false
+  tf32: true  # Enable TF32 for matrix ops (A100 feature)
+
+  # Memory optimization
+  gradient_checkpointing: true
+  optim: adamw_torch_fused  # Fused AdamW for A100
+
+  # Dataloader settings for A100
+  dataloader_num_workers: 8
+  dataloader_pin_memory: true
+  dataloader_prefetch_factor: 4
+
+  # Evaluation strategy (use HF field name)
+  evaluation_strategy: steps
+  eval_steps: 500
+
+  # Checkpointing
+  save_strategy: steps
+  save_steps: 500
+  save_total_limit: 5
+  load_best_model_at_end: true
+  metric_for_best_model: eval_safety_familyos_f1
+  greater_is_better: true
+
+  # Logging
+  logging_strategy: steps
+  logging_steps: 50
+  logging_first_step: true
+  report_to:
+    - tensorboard
+    - wandb
+
+  # Reproducibility
+  seed: 42
+  data_seed: 42
+
+# =============================================================================
+# SAFETY OVERSAMPLING (CRITICAL for CRISIS recall ≥98%)
+# =============================================================================
+safety_oversampling:
+  enabled: true
+  CRISIS: 20  # 20x oversampling for CRISIS class
+  RED: 5      # 5x oversampling for RED class
+  AMBER: 1    # No oversampling
+  GREEN: 1    # No oversampling
+
+# =============================================================================
+# EMA MODEL (per enhanced_design_v2.md: +0.8-1.5 pt improvement)
+# =============================================================================
+ema:
+  enabled: true
+  decay: 0.999
+  use_for_eval: true
+  use_for_checkpoint: true
+
+# =============================================================================
+# REPLAY CONFIGURATION (prevent catastrophic forgetting)
+# =============================================================================
+# Per plan: ~10% of training batches should be Stage A replay data
+# This is IN ADDITION to the explicit replay datasets in stage_b_datasets.yaml
+replay:
+  enabled: true
+  ratio: 0.1  # 10% of batches are Stage A tasks
+  tasks:
+    - ner_general
+    - nli
+    - emotions
+    - sentiment
+
+# =============================================================================
+# UNCERTAINTY WEIGHTING (auto-learn task weights)
+# =============================================================================
+uncertainty_weighting:
+  enabled: true
+  regularization: 0.01  # Log-var regularization
+
+# =============================================================================
+# OUTPUT DIRECTORIES
+# =============================================================================
+output:
+  output_dir: outputs/familyos-modernbert-unified-v1
+  checkpoint_dir: checkpoints/familyos-modernbert-unified-v1
+  logging_dir: logs/stage_b_a100
+
+# =============================================================================
+# SAFETY CALIBRATION (applied post-training via scripts/calibrate_safety.py)
+# =============================================================================
+# NOTE: These thresholds are STARTING POINTS only.
+# The calibration script will search for optimal thresholds on held-out data
+# and override these values to achieve CRISIS recall ≥98%.
+calibration:
+  enabled: true
+  safety_familyos:
+    # Initial thresholds (will be replaced by calibration script)
+    GREEN: 0.3
+    AMBER: 0.5
+    RED: 0.7
+    CRISIS: 0.3  # Low threshold - better to false-positive than miss
+  temperature_scaling: true
+  temperature_init: 1.15
+
+# =============================================================================
+# CATASTROPHIC FORGETTING GATES (per enhanced_design_v2.md)
+# =============================================================================
+forgetting_gates:
+  enabled: true
+  benchmarks:
+    - name: conll2003
+      task: ner_general
+      metric: f1
+      max_drop: 0.02  # ≤2% drop allowed
+    - name: sst2
+      task: sentiment
+      metric: accuracy
+      max_drop: 0.02
+    - name: mnli
+      task: nli
+      metric: accuracy
+      max_drop: 0.02
+    - name: go_emotions
+      task: emotions
+      metric: f1
+      max_drop: 0.03  # ≤3% drop allowed
+  action_if_exceeded: reduce_lora_r
+
+# =============================================================================
+# DEBUGGING (disable for production)
+# =============================================================================
+debug:
+  enabled: false
+  max_train_samples: null
+  max_eval_samples: null
+  fast_dev_run: false

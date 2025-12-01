@@ -3567,6 +3567,13 @@ def load_from_config(
         splits = dataset_config.get("splits", {})
         split_name = splits.get(split)
         if split_name is None:
+            # If the requested split is not in splits config and splits is non-empty,
+            # skip this dataset (e.g., silver datasets only have train, skip for validation)
+            if splits and split not in splits:
+                logger.debug(
+                    f"Skipping {dataset_name}: split '{split}' not available (has: {list(splits.keys())})"
+                )
+                continue
             # Try direct split name
             split_name = split
 
@@ -3741,9 +3748,15 @@ def _load_dataset_by_task(
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
     elif task == "embedding":
+        # For local embedding datasets, use data_dir; for HuggingFace, use name
+        embedding_path = data_dir if data_dir else name
+        format_type = dataset_config.get("loss_type", "pairs")
+        if format_type == "triplet":
+            format_type = "triplets"  # Normalize to expected format
         ds = load_embedding_dataset(
-            name=name,
+            name=embedding_path,
             split=split,
+            format=format_type,
             config_name=config_name,
         )
         return ds if not isinstance(ds, DatasetDict) else ds[split]
@@ -3774,6 +3787,7 @@ def _apply_tokenization(
         tokenize_for_classification,
         tokenize_for_embedding,
         tokenize_for_nli,
+        tokenize_for_relation,
         tokenize_for_token_classification,
     )
 
@@ -3891,6 +3905,27 @@ def _apply_tokenization(
             elif "score" in example:
                 result["labels"] = example["score"]
 
+            result["task"] = task
+            return result
+
+    elif mapped_task == "relation":
+
+        def tokenize_wrapper(example):
+            text = example.get("text")
+            entity1 = example.get("entity1")
+            entity2 = example.get("entity2")
+            result = tokenize_for_relation(
+                tokenizer=tokenizer,
+                text=text,
+                entity1=entity1,
+                entity2=entity2,
+                max_length=max_length,
+                mark_entities=True,
+            )
+            if "relation" in example:
+                result["labels"] = example["relation"]
+            elif "label" in example:
+                result["labels"] = example["label"]
             result["task"] = task
             return result
 

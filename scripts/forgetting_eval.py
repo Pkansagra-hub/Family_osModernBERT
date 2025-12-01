@@ -255,9 +255,9 @@ def load_evaluation_datasets(
                         # Map GoEmotions index to our schema
                         if go_label < len(GO_EMOTIONS_LABELS):
                             go_emotion_name = GO_EMOTIONS_LABELS[go_label]
-                            # Find in our schema
-                            if go_emotion_name in EMOTIONS_LABELS.label_to_id:
-                                return {"label": EMOTIONS_LABELS.label_to_id[go_emotion_name]}
+                            # Find in our schema (use label2id, not label_to_id)
+                            if go_emotion_name in EMOTIONS_LABELS.label2id:
+                                return {"label": EMOTIONS_LABELS.label2id[go_emotion_name]}
                     return {"label": 0}  # neutral
 
                 ds = ds.map(process_emotions)
@@ -338,12 +338,24 @@ def evaluate_model_on_task(
 
     # Create dataloader
     def collate_fn(batch):
-        input_ids = torch.tensor([x["input_ids"] for x in batch])
-        attention_mask = torch.tensor([x["attention_mask"] for x in batch])
+        # Find max length in batch
+        max_len = max(len(x["input_ids"]) for x in batch)
+
+        # Pad input_ids and attention_mask
+        padded_input_ids = []
+        padded_attention_mask = []
+        for x in batch:
+            ids = x["input_ids"]
+            mask = x["attention_mask"]
+            pad_len = max_len - len(ids)
+            padded_input_ids.append(ids + [0] * pad_len)
+            padded_attention_mask.append(mask + [0] * pad_len)
+
+        input_ids = torch.tensor(padded_input_ids)
+        attention_mask = torch.tensor(padded_attention_mask)
 
         if task == "ner_general":
             # Pad labels for NER
-            max_len = input_ids.shape[1]
             labels = []
             for x in batch:
                 label = x["labels"]
@@ -717,4 +729,5 @@ Examples:
 
 
 if __name__ == "__main__":
+    main()
     main()

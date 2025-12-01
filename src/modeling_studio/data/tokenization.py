@@ -425,13 +425,68 @@ def tokenize_for_relation(
             marked_text = marked_text.replace(entity2, f"[E2] {entity2} [/E2]", 1)
         text = marked_text
 
-    return tokenizer(
+    encoding = tokenizer(
         text,
         max_length=max_length,
         truncation=truncation,
         padding=padding,
         return_tensors=return_tensors,
     )
+
+    # Create entity masks based on marker tokens
+    input_ids = encoding["input_ids"]
+    if isinstance(input_ids, list):
+        # Non-batched case - find entity markers and create masks
+        tokens = tokenizer.convert_ids_to_tokens(input_ids)
+
+        entity1_mask = [0] * len(input_ids)
+        entity2_mask = [0] * len(input_ids)
+
+        # Find [E1]...[/E1] and [E2]...[/E2] spans
+        in_e1 = False
+        in_e2 = False
+        for i, tok in enumerate(tokens):
+            if tok and "[E1]" in tok.upper():
+                in_e1 = True
+            elif tok and "[/E1]" in tok.upper():
+                in_e1 = False
+            elif in_e1:
+                entity1_mask[i] = 1
+
+            if tok and "[E2]" in tok.upper():
+                in_e2 = True
+            elif tok and "[/E2]" in tok.upper():
+                in_e2 = False
+            elif in_e2:
+                entity2_mask[i] = 1
+
+        # If no entities found with markers, try to mark the entity name tokens
+        if sum(entity1_mask) == 0:
+            entity1_tokens = tokenizer.encode(entity1, add_special_tokens=False)
+            for i in range(len(input_ids) - len(entity1_tokens) + 1):
+                if input_ids[i : i + len(entity1_tokens)] == entity1_tokens:
+                    for j in range(len(entity1_tokens)):
+                        entity1_mask[i + j] = 1
+                    break
+
+        if sum(entity2_mask) == 0:
+            entity2_tokens = tokenizer.encode(entity2, add_special_tokens=False)
+            for i in range(len(input_ids) - len(entity2_tokens) + 1):
+                if input_ids[i : i + len(entity2_tokens)] == entity2_tokens:
+                    for j in range(len(entity2_tokens)):
+                        entity2_mask[i + j] = 1
+                    break
+
+        # If still no entities marked, mark first and second content tokens
+        if sum(entity1_mask) == 0 and len(input_ids) > 2:
+            entity1_mask[1] = 1  # First content token after CLS
+        if sum(entity2_mask) == 0 and len(input_ids) > 3:
+            entity2_mask[2] = 1  # Second content token
+
+        encoding["entity1_mask"] = entity1_mask
+        encoding["entity2_mask"] = entity2_mask
+
+    return encoding
 
 
 def align_labels_with_tokens(

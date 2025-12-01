@@ -2268,6 +2268,197 @@ python scripts/infer.py \
 
 ---
 
+### Epic 6.3: Hyper Low Latency Production Optimization
+
+> **Goal:** Achieve sub-10ms inference latency for production deployment
+
+#### Issue 6.3.1: Implement ONNX Export with Quantization
+
+**File:** `scripts/export_onnx.py`
+
+**Tasks:**
+
+- [ ] Export model to ONNX format
+- [ ] Implement INT8 dynamic quantization
+- [ ] Implement INT8 static quantization with calibration dataset
+- [ ] Validate accuracy after quantization (≤1% degradation)
+- [ ] Generate quantized model size report
+
+**Acceptance Criteria:**
+
+```bash
+python scripts/export_onnx.py \
+    --model outputs/familyos-modernbert-unified-v1 \
+    --output outputs/familyos-onnx \
+    --quantize int8 \
+    --calibration-data data/familyos/calibration_samples.jsonl
+
+# Verify outputs
+ls outputs/familyos-onnx/
+# model.onnx, model_quantized.onnx, quantization_report.json
+
+# Size reduction target: ~75% (500MB → 125MB)
+```
+
+---
+
+#### Issue 6.3.2: Implement TensorRT Optimization
+
+**File:** `scripts/export_tensorrt.py`
+
+**Tasks:**
+
+- [ ] Convert ONNX to TensorRT engine
+- [ ] Implement FP16 optimization for GPU inference
+- [ ] Implement INT8 calibration for maximum speed
+- [ ] Support dynamic batching
+- [ ] Generate latency benchmark report
+
+**Acceptance Criteria:**
+
+```bash
+python scripts/export_tensorrt.py \
+    --onnx outputs/familyos-onnx/model.onnx \
+    --output outputs/familyos-tensorrt \
+    --precision fp16 \
+    --max-batch-size 32
+
+# Latency targets (A100 GPU):
+# - Single sample: < 5ms
+# - Batch of 32: < 20ms
+```
+
+---
+
+#### Issue 6.3.3: Implement Batch Inference Optimization
+
+**File:** `src/modeling_studio/inference/batch_optimizer.py`
+
+**Tasks:**
+
+- [ ] Implement dynamic batching with timeout
+- [ ] Implement request queuing for high throughput
+- [ ] Implement async inference pipeline
+- [ ] Support mixed capability batching
+- [ ] Memory-efficient batch processing
+
+**Acceptance Criteria:**
+
+```python
+from modeling_studio.inference.batch_optimizer import BatchInferenceOptimizer
+
+optimizer = BatchInferenceOptimizer(
+    model=model,
+    max_batch_size=32,
+    max_wait_ms=10,  # Max wait before processing partial batch
+)
+
+# High throughput inference
+results = await optimizer.infer_async(
+    texts=["text1", "text2", ...],
+    capabilities=["sentiment", "safety_familyos"],
+)
+
+# Target: 1000+ samples/second on A100
+```
+
+---
+
+#### Issue 6.3.4: Implement Model Pruning
+
+**File:** `scripts/prune_model.py`
+
+**Tasks:**
+
+- [ ] Implement magnitude-based weight pruning
+- [ ] Implement structured pruning (attention heads, layers)
+- [ ] Implement iterative pruning with fine-tuning
+- [ ] Validate accuracy after pruning (≤2% degradation)
+- [ ] Generate sparsity report
+
+**Acceptance Criteria:**
+
+```bash
+python scripts/prune_model.py \
+    --model outputs/familyos-modernbert-unified-v1 \
+    --output outputs/familyos-pruned \
+    --sparsity 0.5 \
+    --method magnitude
+
+# Target: 50% sparsity with ≤2% accuracy drop
+# Combined with quantization: 500MB → 60MB
+```
+
+---
+
+#### Issue 6.3.5: Implement Shared Pooler for Reduced Computation
+
+**File:** `src/modeling_studio/models/optimized_inference.py`
+
+**Tasks:**
+
+- [ ] Implement single forward pass for all capabilities
+- [ ] Cache encoder output, run heads in parallel
+- [ ] Implement lazy head execution (only requested capabilities)
+- [ ] Implement attention caching for similar inputs
+- [ ] Profile and optimize memory allocation
+
+**Acceptance Criteria:**
+
+```python
+from modeling_studio.models.optimized_inference import OptimizedMultiTaskModel
+
+model = OptimizedMultiTaskModel.from_pretrained(
+    "outputs/familyos-modernbert-unified-v1",
+    enable_caching=True,
+    parallel_heads=True,
+)
+
+# Single encoder pass, parallel head execution
+outputs = model.infer(
+    text="Mom picked up Panda from school",
+    capabilities=["ner_family", "sentiment", "safety_familyos", "intent"],
+)
+
+# Target: 12 capabilities in < 15ms (vs 12 × 10ms = 120ms sequential)
+```
+
+---
+
+#### Issue 6.3.6: Implement Production Latency Benchmarks
+
+**File:** `scripts/benchmark_latency.py`
+
+**Tasks:**
+
+- [ ] Benchmark PyTorch vs ONNX vs TensorRT
+- [ ] Benchmark different batch sizes
+- [ ] Benchmark different sequence lengths
+- [ ] Benchmark CPU vs GPU inference
+- [ ] Generate comprehensive latency report
+
+**Acceptance Criteria:**
+
+```bash
+python scripts/benchmark_latency.py \
+    --models pytorch,onnx,tensorrt \
+    --batch-sizes 1,8,32 \
+    --seq-lengths 64,128,256,512 \
+    --device cuda \
+    --output outputs/latency_benchmark.json
+
+# Target latencies (A100 GPU, batch=1, seq=128):
+# | Format    | Precision | Latency | Throughput |
+# |-----------|-----------|---------|------------|
+# | PyTorch   | FP32      | 15ms    | 67 qps     |
+# | ONNX      | FP32      | 10ms    | 100 qps    |
+# | ONNX      | INT8      | 5ms     | 200 qps    |
+# | TensorRT  | FP16      | 3ms     | 333 qps    |
+# | TensorRT  | INT8      | 2ms     | 500 qps    |
+```
+
+---
+
 ## 🏁 Milestone 7: Testing & Quality Assurance
 
 **Goal:** Comprehensive tests ensuring reliability

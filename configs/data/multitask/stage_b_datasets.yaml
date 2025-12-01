@@ -1,5 +1,6 @@
 # Stage B: FamilyOS Domain Datasets Configuration
-# Mix of FamilyOS-specific data + public data replay
+# Mix of FamilyOS-specific data (gold + silver) + public data replay
+# Gold = manually curated, Silver = LLM-generated
 
 datasets:
   # ============================================
@@ -31,82 +32,78 @@ datasets:
       train: train
 
   # ============================================
-  # FAMILYOS: Family NER
+  # FAMILYOS: Family NER (Gold + Silver)
+  # Gold: 200 train, 50 val | Silver: 12,703 samples
   # ============================================
-  familyos_ner_family:
+  familyos_ner_family_gold:
     task: ner_family
     source: local
-    data_dir: data/familyos/ner_family
+    data_dir: data/familyos/ner_family/gold
     format: jsonl
     splits:
-      train: train.jsonl
-      validation: val.jsonl
-      test: test.jsonl
+      train: train
+      validation: validation
     column_mapping:
       tokens: tokens
       labels: ner_tags
-    # FamilyOS NER label schema
-    label_map:
-      O: 0
-      B-PERSON: 1
-      I-PERSON: 2
-      B-KINSHIP: 3       # mum, dad, sister, uncle
-      I-KINSHIP: 4
-      B-NICKNAME: 5      # Panda, Bunny, etc.
-      I-NICKNAME: 6
-      B-PET: 7
-      I-PET: 8
-      B-HOME_LOCATION: 9 # kitchen, bedroom, garden
-      I-HOME_LOCATION: 10
-      B-FAMILY_EVENT: 11 # birthday, anniversary
-      I-FAMILY_EVENT: 12
-      B-ROUTINE: 13      # school run, dinner time
-      I-ROUTINE: 14
+    # FamilyOS NER has 21 BIO tags (see labels.py NER_FAMILY_LABELS)
+
+  familyos_ner_family_silver:
+    task: ner_family
+    source: local
+    data_dir: data/familyos/ner_family/silver
+    format: jsonl  # Multiple shard files
+    splits:
+      train: train
+    column_mapping:
+      tokens: tokens
+      labels: ner_tags
 
   # ============================================
-  # FAMILYOS: Ingress Classification
+  # FAMILYOS: Ingress Classification (Gold + Silver)
+  # Gold: 288 train, 72 val | Silver: 22,747 samples
+  # 12 domains: DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META,
+  #             MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE
   # ============================================
-  familyos_ingress:
+  familyos_ingress_gold:
     task: ingress
     source: local
-    data_dir: data/familyos/ingress
+    data_dir: data/familyos/ingress/gold
     format: jsonl
     splits:
-      train: train.jsonl
-      validation: val.jsonl
-      test: test.jsonl
+      train: train
+      validation: validation
     column_mapping:
       text: text
-      label: domain
-    label_map:
-      DIARY: 0        # Personal reflections, journaling
-      TASK: 1         # To-dos, reminders, action items
-      HEALTH: 2       # Medical, wellness, fitness
-      FINANCE: 3      # Money, bills, budgets
-      RELATIONSHIP: 4 # Family dynamics, social
-      WORK: 5         # Job, career, professional
-      META: 6         # System commands, queries about FamilyOS
+      label: label
+
+  familyos_ingress_silver:
+    task: ingress
+    source: local
+    data_dir: data/familyos/ingress/silver
+    format: jsonl
+    splits:
+      train: train
+    column_mapping:
+      text: text
+      label: label
 
   # ============================================
-  # FAMILYOS: Safety Classification (Policy Bands)
+  # FAMILYOS: Safety Classification - Policy Bands (Gold + Silver)
+  # Gold: 160 train, 40 val | Silver: 14,333 samples
+  # 4 bands: GREEN (0), AMBER (1), RED (2), CRISIS (3)
   # ============================================
-  familyos_safety:
+  familyos_safety_gold:
     task: safety_familyos
     source: local
-    data_dir: data/familyos/safety
+    data_dir: data/familyos/safety/gold
     format: jsonl
     splits:
-      train: train.jsonl
-      validation: val.jsonl
-      test: test.jsonl
+      train: train
+      validation: validation
     column_mapping:
       text: text
-      label: band
-    label_map:
-      GREEN: 0   # Safe, routine content
-      AMBER: 1   # Needs attention, mild concern
-      RED: 2     # Serious concern, escalate to K1
-      CRISIS: 3  # Immediate intervention needed
+      label: label
     # Class weights for imbalanced data
     class_weights:
       GREEN: 0.5
@@ -114,55 +111,186 @@ datasets:
       RED: 2.0
       CRISIS: 5.0
 
+  familyos_safety_silver:
+    task: safety_familyos
+    source: local
+    data_dir: data/familyos/safety/silver
+    format: jsonl
+    splits:
+      train: train
+    column_mapping:
+      text: text
+      label: label
+
   # ============================================
-  # FAMILYOS: Embeddings Sanity Set
+  # FAMILYOS: Intent Classification (Gold + Silver) [NEW]
+  # Gold: 160 train, 40 val | Silver: 15,972 samples
+  # 8 intents: log_memory, query_memory, set_reminder, express_feeling,
+  #            seek_advice, share_news, reflect, other
   # ============================================
-  familyos_embedding_clusters:
+  familyos_intent_gold:
+    task: intent
+    source: local
+    data_dir: data/familyos/intents/gold
+    format: jsonl
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      text: text
+      label: label
+
+  familyos_intent_silver:
+    task: intent
+    source: local
+    data_dir: data/familyos/intents/silver
+    format: jsonl
+    splits:
+      train: train
+    column_mapping:
+      text: text
+      label: label
+
+  # ============================================
+  # FAMILYOS: Relation Extraction (Gold + Silver) [NEW]
+  # Gold: 32 train, 8 val | Silver: 21,340 samples
+  # 15 relations: no_relation, parent_of, child_of, spouse_of, sibling_of,
+  #               grandparent_of, grandchild_of, aunt_uncle_of, niece_nephew_of,
+  #               cousin_of, pet_of, friend_of, colleague_of, lives_at, owns
+  # ============================================
+  familyos_relation_gold:
+    task: relation
+    source: local
+    data_dir: data/familyos/relations/gold
+    format: jsonl
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      text: text
+      entity1: entity1
+      entity2: entity2
+      label: relation
+
+  familyos_relation_silver:
+    task: relation
+    source: local
+    data_dir: data/familyos/relations/silver
+    format: jsonl
+    splits:
+      train: train
+    column_mapping:
+      text: text
+      entity1: entity1
+      entity2: entity2
+      label: relation
+
+  # ============================================
+  # FAMILYOS: Embeddings (Gold + Silver)
+  # Gold: 800 train, 200 val | Silver: 17,216 samples
+  # Triplet format: anchor, positive, negative with cluster info
+  # ============================================
+  familyos_embedding_gold:
     task: embedding
     source: local
-    data_dir: data/familyos/embeddings
+    data_dir: data/familyos/embeddings/gold
     format: jsonl
-    loss_type: cluster_contrastive
+    loss_type: triplet  # anchor, positive, negative
     splits:
-      train: clusters.jsonl
-    # Expected clusters for sanity check
-    clusters:
-      - name: immigration_docs
-        description: H-1B, visa, USCIS related
-      - name: child_activities
-        description: Panda's school, activities
-      - name: health_records
-        description: Medical appointments, symptoms
-      - name: financial_planning
-        description: Budgets, investments
+      train: train
+      validation: validation
+    column_mapping:
+      anchor: anchor
+      positive: positive
+      negative: negative
 
-# FamilyOS data generation notes
-data_generation:
-  ner_family:
-    strategy: manual_annotation + synthetic
-    synthetic_model: gpt-4  # Bootstrap then human review
-    min_samples: 2000
+  familyos_embedding_silver:
+    task: embedding
+    source: local
+    data_dir: data/familyos/embeddings/silver
+    format: jsonl
+    loss_type: triplet
+    splits:
+      train: train
+    column_mapping:
+      anchor: anchor
+      positive: positive
+      negative: negative
 
-  ingress:
-    strategy: retrospective_labeling
-    source: user_conversation_logs
-    synthetic_augmentation: true
-    min_samples: 5000
+  # ============================================
+  # FAMILYOS: Temporal Extraction (Gold + Silver) [NEW v2]
+  # Gold: 200 train, 50 val | Silver: 13,980 samples
+  # 13 BIO tags: DATE_ABS, DATE_REL, TIME, DURATION, FREQUENCY, AGE
+  # ============================================
+  familyos_temporal_gold:
+    task: temporal
+    source: local
+    data_dir: data/familyos/temporal/gold
+    format: jsonl
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      tokens: tokens
+      labels: temporal_tags
 
-  safety:
-    strategy: manual_annotation
-    guidelines: docs/annotation/safety_guidelines.md
-    min_samples: 3000
-    crisis_samples: 500  # Ensure enough crisis examples
+  familyos_temporal_silver:
+    task: temporal
+    source: local
+    data_dir: data/familyos/temporal/silver
+    format: jsonl
+    splits:
+      train: train
+    column_mapping:
+      tokens: tokens
+      labels: temporal_tags
 
+# ============================================
+# Task weights for mixing (per unified_encoder_solution.md)
+# ============================================
+task_weights:
+  # Replay tasks (prevent forgetting) - lower weights
+  ner_general: 0.5       # Was 0.2, plan says 0.5
+  nli: 0.3               # Was 0.1, plan says 0.3
+  emotions: 0.3          # Same as plan
+  sentiment: 0.3         # Added per plan
+
+  # FamilyOS primary tasks - per plan specifications
+  ner_family: 2.0        # Was 1.0, plan says 2.0
+  ingress: 1.5           # Was 1.0, plan says 1.5
+  safety_familyos: 15.0  # Was 1.5, plan says 15.0 (CRITICAL for CRISIS recall ≥98%)
+  intent: 1.5            # Was 1.0, plan says 1.5
+  relation: 2.0          # Was 1.0, plan says 2.0
+  embedding: 0.8         # Same
+  temporal: 1.0          # NEW - added per plan
+
+# ============================================
+# Data quality tiers
+# ============================================
+quality_tiers:
+  gold:
+    description: Manually curated, human-reviewed samples
+    weight_multiplier: 2.0  # Gold samples count double
+    validation_source: true  # Use gold for validation
+  silver:
+    description: LLM-generated, spot-checked
+    weight_multiplier: 1.0
+    validation_source: false
+
+# ============================================
 # Preprocessing
+# ============================================
 preprocessing:
   max_length: 512
   truncation: true
   padding: false
 
-# Data mixing
+# ============================================
+# Data mixing strategy
+# ============================================
 mixing:
   strategy: proportional
-  familyos_weight: 3.0  # Upweight FamilyOS data
-  replay_weight: 1.0
+  gold_weight: 2.0    # Gold samples weighted 2x
+  silver_weight: 1.0
+  replay_weight: 0.5  # Light replay to prevent forgetting
+  oversample_rare_classes: true  # For safety CRISIS class

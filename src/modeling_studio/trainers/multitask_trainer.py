@@ -451,11 +451,30 @@ class MultiTaskTrainer(Trainer):
         outputs = model(
             capability=task,
             labels=labels,
+            return_dict=True,  # Ensure we get structured output
             **inputs,
         )
 
-        # Get loss
-        loss = outputs.loss if hasattr(outputs, "loss") else outputs["loss"]
+        # Get loss - handle both MultiTaskOutput and tuple returns (PEFT wrapping)
+        if hasattr(outputs, "loss"):
+            loss = outputs.loss
+        elif isinstance(outputs, tuple):
+            # PEFT may return tuple: (loss, logits, ...) or (logits,) if loss is None
+            # Check if first element looks like a loss (scalar tensor)
+            if len(outputs) > 0 and isinstance(outputs[0], torch.Tensor) and outputs[0].dim() == 0:
+                loss = outputs[0]
+            elif (
+                len(outputs) > 1 and isinstance(outputs[1], torch.Tensor) and outputs[1].dim() == 0
+            ):
+                loss = outputs[1]
+            else:
+                raise ValueError(
+                    f"Cannot extract loss from tuple outputs: {[type(o) for o in outputs]}"
+                )
+        elif isinstance(outputs, dict):
+            loss = outputs["loss"]
+        else:
+            raise ValueError(f"Unexpected outputs type: {type(outputs)}")
 
         # === V2 FEATURE: Uncertainty Weighting ===
         # Apply learned uncertainty weighting if enabled
@@ -502,15 +521,23 @@ class MultiTaskTrainer(Trainer):
                 capability="embedding",
                 input_ids=inputs["anchor_input_ids"],
                 attention_mask=inputs["anchor_attention_mask"],
+                return_dict=True,
             )
-            anchor_embeds = anchor_outputs.logits  # embeddings
+            anchor_embeds = (
+                anchor_outputs.logits if hasattr(anchor_outputs, "logits") else anchor_outputs[0]
+            )
 
             positive_outputs = model(
                 capability="embedding",
                 input_ids=inputs["positive_input_ids"],
                 attention_mask=inputs["positive_attention_mask"],
+                return_dict=True,
             )
-            positive_embeds = positive_outputs.logits
+            positive_embeds = (
+                positive_outputs.logits
+                if hasattr(positive_outputs, "logits")
+                else positive_outputs[0]
+            )
 
             # Compute cosine similarity loss (if labels/scores are provided)
             if labels is not None:
@@ -544,9 +571,11 @@ class MultiTaskTrainer(Trainer):
                 capability="embedding",
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
+                return_dict=True,
             )
             # No loss for simple embedding (used for inference)
-            loss = torch.tensor(0.0, device=outputs.logits.device)
+            logits = outputs.logits if hasattr(outputs, "logits") else outputs[0]
+            loss = torch.tensor(0.0, device=logits.device)
 
             if return_outputs:
                 return loss, outputs
@@ -986,11 +1015,26 @@ class MultiTaskTrainer(Trainer):
             outputs = model(
                 capability=task,
                 labels=labels,
+                return_dict=True,
                 **inputs,
             )
 
-        loss = outputs.loss if hasattr(outputs, "loss") else outputs.get("loss")
-        logits = outputs.logits if hasattr(outputs, "logits") else outputs.get("logits")
+        # Handle PEFT-wrapped models that return tuple instead of MultiTaskOutput
+        if isinstance(outputs, tuple):
+            # For PEFT models: tuple is (loss, logits, hidden_states, ...)
+            loss = outputs[0] if len(outputs) > 0 else None
+            logits = outputs[1] if len(outputs) > 1 else None
+        else:
+            loss = (
+                outputs.loss
+                if hasattr(outputs, "loss")
+                else outputs.get("loss") if isinstance(outputs, dict) else None
+            )
+            logits = (
+                outputs.logits
+                if hasattr(outputs, "logits")
+                else outputs.get("logits") if isinstance(outputs, dict) else None
+            )
 
         if prediction_loss_only:
             return (loss, None, None)
@@ -1012,15 +1056,23 @@ class MultiTaskTrainer(Trainer):
             capability="embedding",
             input_ids=inputs["anchor_input_ids"],
             attention_mask=inputs["anchor_attention_mask"],
+            return_dict=True,
         )
-        anchor_embeds = anchor_outputs.logits
+        # Handle PEFT-wrapped models that return tuple
+        anchor_embeds = (
+            anchor_outputs.logits if hasattr(anchor_outputs, "logits") else anchor_outputs[0]
+        )
 
         positive_outputs = model(
             capability="embedding",
             input_ids=inputs["positive_input_ids"],
             attention_mask=inputs["positive_attention_mask"],
+            return_dict=True,
         )
-        positive_embeds = positive_outputs.logits
+        # Handle PEFT-wrapped models that return tuple
+        positive_embeds = (
+            positive_outputs.logits if hasattr(positive_outputs, "logits") else positive_outputs[0]
+        )
 
         # Compute cosine similarity as "predictions"
         cos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)

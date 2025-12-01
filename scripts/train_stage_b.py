@@ -193,11 +193,8 @@ def add_stage_b_heads(
     Returns:
         Model with Stage B heads added
     """
-    from modeling_studio.data.labels import (
-        CAPABILITY_TO_HEAD_TYPE,
-        get_num_labels,
-        get_problem_type,
-    )
+    from modeling_studio.data.labels import get_num_labels
+    from modeling_studio.models import CAPABILITY_TO_HEAD_TYPE, get_problem_type
     from modeling_studio.models.heads import SafetyHead
 
     familyos_heads = config.get("familyos_heads", {})
@@ -293,6 +290,10 @@ def apply_lora(
     # Apply LoRA to model
     # Note: PEFT applies to the full model, so heads remain trainable
     peft_model = get_peft_model(model, lora_cfg)
+
+    # Enable input gradients for gradient checkpointing compatibility
+    # This is required when using gradient checkpointing with PEFT
+    peft_model.enable_input_require_grads()
 
     # Print trainable parameters
     trainable_params = sum(p.numel() for p in peft_model.parameters() if p.requires_grad)
@@ -954,6 +955,9 @@ def main() -> None:
         seed=args.seed,
     )
 
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
