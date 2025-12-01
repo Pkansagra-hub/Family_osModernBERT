@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # =============================================================================
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL = "x-ai/grok-4.1-fast:free"
 
@@ -189,6 +189,23 @@ def get_user_prompt(num_samples: int, focus_labels: list[str], batch_id: int) ->
         "quiet reflective moments",
         "busy multitasking parents",
         "milestone events (graduations, first days)",
+        "family meals and cooking together",
+        "parent-teacher meetings or school events",
+        "family travel or road trips",
+        "unexpected emergencies (lost items, urgent calls)",
+        "celebrating achievements (awards, promotions)",
+        "dealing with household chores and repairs",
+        "family health routines (medication, exercise)",
+        "budgeting and financial planning sessions",
+        "conflicts and resolutions among siblings",
+        "welcoming guests or relatives",
+        "planning for future (vacations, studies)",
+        "expressing gratitude or appreciation",
+        "navigating technology issues at home",
+        "supporting children with homework",
+        "discussing family traditions or rituals",
+        "managing remote work and home balance",
+        "reflecting on family memories and milestones",
     ]
     scenario = scenarios[batch_id % len(scenarios)]
 

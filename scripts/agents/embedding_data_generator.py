@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # =============================================================================
 
-OPENROUTER_API_KEY = "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"  # Replace with your key
+OPENROUTER_API_KEY = "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"  # Replace with your key
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL = "x-ai/grok-4.1-fast:free"
 

@@ -1,0 +1,1340 @@
+{"text": "Emma kicks ball with her bhai.", "entity1": "Emma", "entity2": "bhai", "relation": 11}
+{"text": "Panda colors with Raj.", "entity1": "Panda", "entity2": "Raj", "relation": 11}
+{"text": "Sarah runs races with John.", "entity1": "Sarah", "entity2": "John", "relation": 11}
+{"text": "Mom proudly owns the gold bangle from her mother.", "entity1": "Mom", "entity2": "gold bangle", "relation": 14}
+{"text": "Dad treasures the old pocket watch passed down.", "entity1": "Dad", "entity2": "pocket watch", "relation": 14}
+{"text": "Didi wears the family necklace daily.", "entity1": "Didi", "entity2": "family necklace", "relation": 14}
+{"text": "Bhai keeps the antique cricket bat in his room.", "entity1": "Bhai", "entity2": "cricket bat", "relation": 14}
+{"text": "Grandma holds the silver locket close.", "entity1": "Grandma", "entity2": "silver locket", "relation": 14}
+{"text": "Chacha displays the brass lamp heirloom.", "entity1": "Chacha", "entity2": "brass lamp", "relation": 14}
+{"text": "Masi cherishes the pearl earrings.", "entity1": "Masi", "entity2": "pearl earrings", "relation": 14}
+{"text": "Mom polishes the wooden trunk regularly.", "entity1": "Mom", "entity2": "wooden trunk", "relation": 14}
+{"text": "Dad wears the gold ring from Grandpa.", "entity1": "Dad", "entity2": "gold ring", "relation": 14}
+{"text": "Didi safekeeps the lace handkerchief.", "entity1": "Didi", "entity2": "lace handkerchief", "relation": 14}
+{"text": "Bhai admires the vintage camera.", "entity1": "Bhai", "entity2": "vintage camera", "relation": 14}
+{"text": "Nana owns the carved walking stick.", "entity1": "Nana", "entity2": "walking stick", "relation": 14}
+{"text": "Grandpa treasures the family Bible.", "entity1": "Grandpa", "entity2": "family Bible", "relation": 14}
+{"text": "Chachi keeps the jade bracelet.", "entity1": "Chachi", "entity2": "jade bracelet", "relation": 14}
+{"text": "Mausi holds the crystal vase.", "entity1": "Mausi", "entity2": "crystal vase", "relation": 14}
+{"text": "Mom shows the kids her ruby brooch.", "entity1": "Mom", "entity2": "ruby brooch", "relation": 14}
+{"text": "Dad fixes the heirloom clock.", "entity1": "Dad", "entity2": "heirloom clock", "relation": 14}
+{"text": "Didi passes down the silk saree.", "entity1": "Didi", "entity2": "silk saree", "relation": 14}
+{"text": "Bhai polishes his medal collection.", "entity1": "Bhai", "entity2": "medal collection", "relation": 14}
+{"text": "Nani drapes the old dupatta.", "entity1": "Nani", "entity2": "old dupatta", "relation": 14}
+{"text": "Grandma owns the porcelain doll.", "entity1": "Grandma", "entity2": "porcelain doll", "relation": 14}
+{"text": "Chacha wears the traditional kurta.", "entity1": "Chacha", "entity2": "traditional kurta", "relation": 14}
+{"text": "Masi treasures the ivory comb.", "entity1": "Masi", "entity2": "ivory comb", "relation": 14}
+{"text": "Masi baked cookies for Priya and siblings.", "entity1": "Masi", "entity2": "Priya", "relation": 7}
+{"text": "Uncle reads bedtime stories to Emma.", "entity1": "Uncle", "entity2": "Emma", "relation": 7}
+{"text": "Chachi sings lullabies for Panda.", "entity1": "Chachi", "entity2": "Panda", "relation": 7}
+{"text": "Aunt Sarah knits sweaters for John.", "entity1": "Aunt Sarah", "entity2": "John", "relation": 7}
+{"text": "Chacha teaches cricket to Bunny.", "entity1": "Chacha", "entity2": "Bunny", "relation": 7}
+{"text": "Masi brings toys for Sarah's kids.", "entity1": "Masi", "entity2": "Sarah", "relation": 7}
+{"text": "Uncle John helps with homework for Raj.", "entity1": "Uncle John", "entity2": "Raj", "relation": 7}
+{"text": "Chachi cooks special meals for Priya.", "entity1": "Chachi", "entity2": "Priya", "relation": 7}
+{"text": "Aunt Emma plays games with didi's kids.", "entity1": "Aunt Emma", "entity2": "didi", "relation": 7}
+{"text": "Chacha fixes bikes for bhai's children.", "entity1": "Chacha", "entity2": "bhai", "relation": 7}
+{"text": "Masi tells tales to Panda's sister.", "entity1": "Masi", "entity2": "Panda", "relation": 7}
+{"text": "Uncle gifts books to Emma.", "entity1": "Uncle", "entity2": "Emma", "relation": 7}
+{"text": "Chachi organizes picnics for John.", "entity1": "Chachi", "entity2": "John", "relation": 7}
+{"text": "Aunt takes Bunny shopping.", "entity1": "Aunt", "entity2": "Bunny", "relation": 7}
+{"text": "Masi dances with Raj at weddings.", "entity1": "Masi", "entity2": "Raj", "relation": 7}
+{"text": "Uncle swims with Priya.", "entity1": "Uncle", "entity2": "Priya", "relation": 7}
+{"text": "Chachi paints with Panda.", "entity1": "Chachi", "entity2": "Panda", "relation": 7}
+{"text": "Aunt Bunny bakes with nephews.", "entity1": "Aunt Bunny", "entity2": "nephews", "relation": 7}
+{"text": "Chacha flies kites for Emma.", "entity1": "Chacha", "entity2": "Emma", "relation": 7}
+{"text": "Masi plants flowers with John.", "entity1": "Masi", "entity2": "John", "relation": 7}
+{"text": "Uncle shares ice cream with Bunny.", "entity1": "Uncle", "entity2": "Bunny", "relation": 7}
+{"text": "Emma hugged her Mom tightly at the family gathering.", "entity1": "Emma", "entity2": "Mom", "relation": 2}
+{"text": "Raj is the youngest child_of Nani in the family.", "entity1": "Raj", "entity2": "Nani", "relation": 2}
+{"text": "Priya waved to Dad from across the reunion hall.", "entity1": "Priya", "entity2": "Dad", "relation": 2}
+{"text": "Panda ran to her mom during the picnic.", "entity1": "Panda", "entity2": "mom", "relation": 2}
+{"text": "John laughed with his Dad at the cousins' gathering.", "entity1": "John", "entity2": "Dad", "relation": 2}
+{"text": "Sarah held her mom's hand while meeting relatives.", "entity1": "Sarah", "entity2": "mom", "relation": 2}
+{"text": "Bunny is child_of Chacha from his first marriage.", "entity1": "Bunny", "entity2": "Chacha", "relation": 2}
+{"text": "Didi brought her little brother to the family event.", "entity1": "brother", "entity2": "Didi", "relation": 2}
+{"text": "Sweetie played games as the child_of Masi.", "entity1": "Sweetie", "entity2": "Masi", "relation": 2}
+{"text": "Emma chased her brother, who is child_of Mom too.", "entity1": "brother", "entity2": "Mom", "relation": 2}
+{"text": "Raj smiled at his nana, proud of his grandson status, but he is child_of Nana's daughter.", "entity1": "Raj", "entity2": "nana", "relation": 2}
+{"text": "Priya shared stories about being child_of Dad with cousins.", "entity1": "Priya", "entity2": "Dad", "relation": 2}
+{"text": "John is child_of Mom, as everyone knows at gatherings.", "entity1": "John", "entity2": "Mom", "relation": 2}
+{"text": "Sarah danced with her dad at the wedding reunion.", "entity1": "Sarah", "entity2": "dad", "relation": 2}
+{"text": "Panda's mom scolded her playfully during lunch.", "entity1": "Panda", "entity2": "mom", "relation": 2}
+{"text": "Bhai introduced his child_of sister Didi to uncles.", "entity1": "Didi", "entity2": "Bhai", "relation": 2}
+{"text": "Chacha's son is child_of Chacha, running around.", "entity1": "son", "entity2": "Chacha", "relation": 2}
+{"text": "Masi carried her niece, who is child_of her sister.", "entity1": "niece", "entity2": "Masi", "relation": 2}
+{"text": "Nana told tales to his grandchild, but focus on the child_of his own kids.", "entity1": "grandchild", "entity2": "Nana", "relation": 2}
+{"text": "Emma is child_of Dad, confirmed by family photos.", "entity1": "Emma", "entity2": "Dad", "relation": 2}
+{"text": "Priya giggled as child_of Nani's stories unfolded.", "entity1": "Priya", "entity2": "Nani", "relation": 2}
+{"text": "John chased his sister, both child_of Mom.", "entity1": "sister", "entity2": "Mom", "relation": 2}
+{"text": "Raj's mom hugged him at the extended family meet.", "entity1": "Raj", "entity2": "mom", "relation": 2}
+{"text": "Sarah waved bye to dad after the gathering.", "entity1": "Sarah", "entity2": "dad", "relation": 2}
+{"text": "Bunny is the favorite child_of Chachi.", "entity1": "Bunny", "entity2": "Chachi", "relation": 2}
+{"text": "Raj and Priya are cousins playing at the gathering.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "Emma met her cousin John during the reunion.", "entity1": "Emma", "entity2": "John", "relation": 9}
+{"text": "Panda chased her cousin Bunny around the yard.", "entity1": "Panda", "entity2": "Bunny", "relation": 9}
+{"text": "Sarah laughed with cousin Raj at family jokes.", "entity1": "Sarah", "entity2": "Raj", "relation": 9}
+{"text": "Didi and her cousin Bhai shared old photos.", "entity1": "Didi", "entity2": "Bhai", "relation": 9}
+{"text": "Chacha pointed out his niece's cousin Masi.", "entity1": "niece", "entity2": "Masi", "relation": 9}
+{"text": "Nana watched his grandkids and their cousins play.", "entity1": "grandkids", "entity2": "cousins", "relation": 9}
+{"text": "John waved to cousin Emma across the table.", "entity1": "John", "entity2": "Emma", "relation": 9}
+{"text": "Bunny and Panda are first cousins at gatherings.", "entity1": "Bunny", "entity2": "Panda", "relation": 9}
+{"text": "Raj danced with cousin Sarah during festivities.", "entity1": "Raj", "entity2": "Sarah", "relation": 9}
+{"text": "Masi introduced her cousin Chacha to kids.", "entity1": "Masi", "entity2": "Chacha", "relation": 9}
+{"text": "Nani smiled at her grandson's cousin Priya.", "entity1": "grandson", "entity2": "Priya", "relation": 9}
+{"text": "Didi played cards with cousin John.", "entity1": "Didi", "entity2": "John", "relation": 9}
+{"text": "Emma shared sweets with her cousin Raj.", "entity1": "Emma", "entity2": "Raj", "relation": 9}
+{"text": "Sarah and her cousin Bunny sang songs.", "entity1": "Sarah", "entity2": "Bunny", "relation": 9}
+{"text": "Priya raced her cousin Panda to the swings.", "entity1": "Priya", "entity2": "Panda", "relation": 9}
+{"text": "John high-fived cousin Sweetie at the picnic.", "entity1": "John", "entity2": "Sweetie", "relation": 9}
+{"text": "Bhai teased his cousin Didi about old times.", "entity1": "Bhai", "entity2": "Didi", "relation": 9}
+{"text": "Chacha barbecued with cousin Nani.", "entity1": "Chacha", "entity2": "Nani", "relation": 9}
+{"text": "Raj sat with cousin Emma during dinner.", "entity1": "Raj", "entity2": "Emma", "relation": 9}
+{"text": "Masi gifted toys to her cousin's kids.", "entity1": "Masi", "entity2": "cousin", "relation": 9}
+{"text": "Panda whispered secrets to cousin Sarah.", "entity1": "Panda", "entity2": "Sarah", "relation": 9}
+{"text": "Bunny waved to cousin Priya from afar.", "entity1": "Bunny", "entity2": "Priya", "relation": 9}
+{"text": "Emma ate lunch next to John at the reunion.", "entity1": "Emma", "entity2": "John", "relation": 0}
+{"text": "Raj chatted with Sarah about school.", "entity1": "Raj", "entity2": "Sarah", "relation": 0}
+{"text": "Panda sat quietly while Priya sang.", "entity1": "Panda", "entity2": "Priya", "relation": 0}
+{"text": "John watched Bunny play without interacting.", "entity1": "John", "entity2": "Bunny", "relation": 0}
+{"text": "Emma passed the plate to Sweetie casually.", "entity1": "Emma", "entity2": "Sweetie", "relation": 0}
+{"text": "Didi glanced at Chacha across the room.", "entity1": "Didi", "entity2": "Chacha", "relation": 0}
+{"text": "Bhai ignored Masi during the games.", "entity1": "Bhai", "entity2": "Masi", "relation": 0}
+{"text": "Nana nodded at Panda from his chair.", "entity1": "Nana", "entity2": "Panda", "relation": 0}
+{"text": "Priya avoided eye contact with John.", "entity1": "Priya", "entity2": "John", "relation": 0}
+{"text": "Sarah stood near Raj but said nothing.", "entity1": "Sarah", "entity2": "Raj", "relation": 0}
+{"text": "Emma and Bunny shared no words at dinner.", "entity1": "Emma", "entity2": "Bunny", "relation": 0}
+{"text": "John picked up toys left by Panda.", "entity1": "John", "entity2": "Panda", "relation": 0}
+{"text": "Raj waved vaguely toward Sweetie.", "entity1": "Raj", "entity2": "Sweetie", "relation": 0}
+{"text": "Chacha passed by Didi without stopping.", "entity1": "Chacha", "entity2": "Didi", "relation": 0}
+{"text": "Masi sat away from Bhai at the table.", "entity1": "Masi", "entity2": "Bhai", "relation": 0}
+{"text": "Nani observed Priya from distance.", "entity1": "Nani", "entity2": "Priya", "relation": 0}
+{"text": "Sarah clapped after Emma's performance.", "entity1": "Sarah", "entity2": "Emma", "relation": 0}
+{"text": "Panda yawned while John spoke.", "entity1": "Panda", "entity2": "John", "relation": 0}
+{"text": "Bunny listened to Raj's story silently.", "entity1": "Bunny", "entity2": "Raj", "relation": 0}
+{"text": "Didi ate beside Chacha quietly.", "entity1": "Didi", "entity2": "Chacha", "relation": 0}
+{"text": "Bhai glanced over at Masi once.", "entity1": "Bhai", "entity2": "Masi", "relation": 0}
+{"text": "Nana's chair was near Panda's spot.", "entity1": "Nana", "entity2": "Panda", "relation": 0}
+{"text": "John and Sarah arrived separately.", "entity1": "John", "entity2": "Sarah", "relation": 0}
+{"text": "Emma waved at a stranger named Bunny.", "entity1": "Emma", "entity2": "Bunny", "relation": 0}
+{"text": "Raj drank tea while Priya chatted elsewhere.", "entity1": "Raj", "entity2": "Priya", "relation": 0}
+{"text": "Mom and Dad danced together at the gathering.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Raj is spouse_of Priya in the family.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "John held hands with Sarah during the event.", "entity1": "John", "entity2": "Sarah", "relation": 3}
+{"text": "Chacha and Chachi arrived as spouse_of each other.", "entity1": "Chacha", "entity2": "Chachi", "relation": 3}
+{"text": "Didi's husband is spouse_of Didi, smiling nearby.", "entity1": "husband", "entity2": "Didi", "relation": 3}
+{"text": "Bhai danced with his wife at the reunion.", "entity1": "Bhai", "entity2": "wife", "relation": 3}
+{"text": "Masi kissed her spouse Masi's cheek.", "entity1": "Masi", "entity2": "spouse", "relation": 3}
+{"text": "Nana sat with Nani, his lifelong spouse_of.", "entity1": "Nana", "entity2": "Nani", "relation": 3}
+{"text": "Emma's aunt and uncle are spouse_of pair.", "entity1": "aunt", "entity2": "uncle", "relation": 3}
+{"text": "Priya leaned on Raj, her devoted spouse_of.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Sarah whispered to John, her spouse_of.", "entity1": "Sarah", "entity2": "John", "relation": 3}
+{"text": "Panda's parents, mom spouse_of dad, watched.", "entity1": "mom", "entity2": "dad", "relation": 3}
+{"text": "Chachi hugged Chacha, her spouse_of warmly.", "entity1": "Chachi", "entity2": "Chacha", "relation": 3}
+{"text": "Bunny's mom and dad are happily spouse_of.", "entity1": "mom", "entity2": "dad", "relation": 3}
+{"text": "Sweetie waved to her parents, spouse_of couple.", "entity1": "parents", "entity2": "couple", "relation": 3}
+{"text": "Didi shared a joke with her spouse_of Bhai's friend, no wait, her husband.", "entity1": "Didi", "entity2": "husband", "relation": 3}
+{"text": "Mausi and Mausa arrived as spouse_of.", "entity1": "Mausi", "entity2": "Mausa", "relation": 3}
+{"text": "John kissed Sarah, his spouse_of, goodbye.", "entity1": "John", "entity2": "Sarah", "relation": 3}
+{"text": "Raj and Priya cut the cake together.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "Emma saw her aunt embrace uncle spouse_of.", "entity1": "aunt", "entity2": "uncle", "relation": 3}
+{"text": "Nana praised Nani, his spouse_of decades.", "entity1": "Nana", "entity2": "Nani", "relation": 3}
+{"text": "Chacha toasted to Chachi his spouse_of.", "entity1": "Chacha", "entity2": "Chachi", "relation": 3}
+{"text": "Bhai held his wife's hand as spouse_of.", "entity1": "Bhai", "entity2": "wife", "relation": 3}
+{"text": "Masi and her spouse_of planned the next meet.", "entity1": "Masi", "entity2": "spouse", "relation": 3}
+{"text": "Panda cheered for mom and dad's spouse_of dance.", "entity1": "mom", "entity2": "dad", "relation": 3}
+{"text": "Sarah and John renewed vows nearby.", "entity1": "Sarah", "entity2": "John", "relation": 3}
+{"text": "Priya cooked with Raj her spouse_of.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Max loves playing fetch with Dad in the backyard", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers curls up on Mom's lap every evening", "entity1": "Whiskers", "entity2": "Mom", "relation": 10}
+{"text": "Buddy follows bhai around the house all day", "entity1": "Buddy", "entity2": "bhai", "relation": 10}
+{"text": "Panda is didi's favorite pet cat", "entity1": "Panda", "entity2": "didi", "relation": 10}
+{"text": "Max sleeps at the foot of chacha's bed", "entity1": "Max", "entity2": "chacha", "relation": 10}
+{"text": "Whiskers meows for masi's treats every morning", "entity1": "Whiskers", "entity2": "masi", "relation": 10}
+{"text": "Buddy is nana's loyal companion during walks", "entity1": "Buddy", "entity2": "nana", "relation": 10}
+{"text": "Emma feeds her pet Max after school", "entity1": "Max", "entity2": "Emma", "relation": 10}
+{"text": "Sarah grooms Whiskers in the kitchen", "entity1": "Whiskers", "entity2": "Sarah", "relation": 10}
+{"text": "Raj takes Buddy to the park on weekends", "entity1": "Buddy", "entity2": "Raj", "relation": 10}
+{"text": "Priya cuddles with her cat Panda at night", "entity1": "Panda", "entity2": "Priya", "relation": 10}
+{"text": "John's dog Max guards the house", "entity1": "Max", "entity2": "John", "relation": 10}
+{"text": "Mom and her pet Whiskers watch TV together", "entity1": "Whiskers", "entity2": "Mom", "relation": 10}
+{"text": "Dad trained Buddy to fetch the newspaper", "entity1": "Buddy", "entity2": "Dad", "relation": 10}
+{"text": "Didi shares her snacks with Panda", "entity1": "Panda", "entity2": "didi", "relation": 10}
+{"text": "Bhai bathes his dog Max every week", "entity1": "Max", "entity2": "bhai", "relation": 10}
+{"text": "Chacha's cat Whiskers roams the garden", "entity1": "Whiskers", "entity2": "chacha", "relation": 10}
+{"text": "Masi pets Buddy while reading stories", "entity1": "Buddy", "entity2": "masi", "relation": 10}
+{"text": "Nani feeds her bird Panda seeds daily", "entity1": "Panda", "entity2": "nani", "relation": 10}
+{"text": "Emma's rabbit Whiskers hops around the room", "entity1": "Whiskers", "entity2": "Emma", "relation": 10}
+{"text": "Sarah walks Max along the beach", "entity1": "Max", "entity2": "Sarah", "relation": 10}
+{"text": "Raj plays with Buddy in Mumbai streets", "entity1": "Buddy", "entity2": "Raj", "relation": 10}
+{"text": "Priya's pet Panda sleeps on her pillow", "entity1": "Panda", "entity2": "Priya", "relation": 10}
+{"text": "John grooms Whiskers before bedtime", "entity1": "Whiskers", "entity2": "John", "relation": 10}
+{"text": "Bunny loves her dog Max dearly", "entity1": "Max", "entity2": "Bunny", "relation": 10}
+{"text": "Emma and Sarah are close sisters who share everything", "entity1": "Emma", "entity2": "Sarah", "relation": 4}
+{"text": "John plays cricket with his brother Raj", "entity1": "John", "entity2": "Raj", "relation": 4}
+{"text": "Didi and bhai fight over the TV remote", "entity1": "didi", "entity2": "bhai", "relation": 4}
+{"text": "Priya teases her sibling Sarah at family dinners", "entity1": "Priya", "entity2": "Sarah", "relation": 4}
+{"text": "Panda and Bunny are twins who dress alike", "entity1": "Panda", "entity2": "Bunny", "relation": 4}
+{"text": "Raj shares stories with his sister Priya", "entity1": "Raj", "entity2": "Priya", "relation": 4}
+{"text": "Emma and her brother John go to school together", "entity1": "Emma", "entity2": "John", "relation": 4}
+{"text": "Bhai protects his little didi from bullies", "entity1": "bhai", "entity2": "didi", "relation": 4}
+{"text": "Sarah and her sibling Emma bake cookies", "entity1": "Sarah", "entity2": "Emma", "relation": 4}
+{"text": "Chacha tells tales of his siblings to the kids", "entity1": "Chacha", "entity2": "siblings", "relation": 4}
+{"text": "Masi remembers playing with her brother bhai", "entity1": "masi", "entity2": "bhai", "relation": 4}
+{"text": "Nana speaks fondly of his sister nani", "entity1": "nana", "entity2": "nani", "relation": 4}
+{"text": "Priya and Raj are siblings living in Mumbai", "entity1": "Priya", "entity2": "Raj", "relation": 4}
+{"text": "John wrestles with sister Sarah after homework", "entity1": "John", "entity2": "Sarah", "relation": 4}
+{"text": "Didi helps bhai with his homework assignments", "entity1": "didi", "entity2": "bhai", "relation": 4}
+{"text": "Emma shares her toys with sibling Panda", "entity1": "Emma", "entity2": "Panda", "relation": 4}
+{"text": "Bunny and Sweetie are sisters who love pets", "entity1": "Bunny", "entity2": "Sweetie", "relation": 4}
+{"text": "Raj and his brother John attend the same college", "entity1": "Raj", "entity2": "John", "relation": 4}
+{"text": "Sarah confides in her sister Priya about school", "entity1": "Sarah", "entity2": "Priya", "relation": 4}
+{"text": "Panda giggles with brother Bunny during games", "entity1": "Panda", "entity2": "Bunny", "relation": 4}
+{"text": "Bhai and didi celebrate their birthday together", "entity1": "bhai", "entity2": "didi", "relation": 4}
+{"text": "Priya dances with sibling Raj at weddings", "entity1": "Priya", "entity2": "Raj", "relation": 4}
+{"text": "Emma and John are siblings who love Whiskers", "entity1": "Emma", "entity2": "John", "relation": 4}
+{"text": "Sarah bikes with her brother Panda around the park", "entity1": "Sarah", "entity2": "Panda", "relation": 4}
+{"text": "Sweetie and Bunny share secrets as sisters", "entity1": "Sweetie", "entity2": "Bunny", "relation": 4}
+{"text": "Priya is the niece of chacha who visits often", "entity1": "Priya", "entity2": "chacha", "relation": 8}
+{"text": "Emma visits her uncle masi every weekend", "entity1": "Emma", "entity2": "masi", "relation": 8}
+{"text": "Raj is chacha's nephew living nearby", "entity1": "Raj", "entity2": "chacha", "relation": 8}
+{"text": "Sarah plays with nana as his granddaughter but she's niece to masi", "entity1": "Sarah", "entity2": "masi", "relation": 8}
+{"text": "John is the nephew of didi's husband chacha", "entity1": "John", "entity2": "chacha", "relation": 8}
+{"text": "Panda calls masi her favorite aunt", "entity1": "Panda", "entity2": "masi", "relation": 8}
+{"text": "Bunny is niece of bhai's sister masi", "entity1": "Bunny", "entity2": "masi", "relation": 8}
+{"text": "Sweetie visits chacha with her pet Max", "entity1": "Sweetie", "entity2": "chacha", "relation": 8}
+{"text": "Priya sends drawings to her aunt nani but she's niece of chacha", "entity1": "Priya", "entity2": "chacha", "relation": 8}
+{"text": "Emma is masi's niece who loves Mumbai trips", "entity1": "Emma", "entity2": "masi", "relation": 8}
+{"text": "Raj fetches water for uncle chacha during festivals", "entity1": "Raj", "entity2": "chacha", "relation": 8}
+{"text": "Sarah is the niece of nana's brother chacha", "entity1": "Sarah", "entity2": "chacha", "relation": 8}
+{"text": "John hugs his aunt masi at family gatherings", "entity1": "John", "entity2": "masi", "relation": 8}
+{"text": "Panda is chacha's niece with a playful spirit", "entity1": "Panda", "entity2": "chacha", "relation": 8}
+{"text": "Bunny writes letters to her uncle masi", "entity1": "Bunny", "entity2": "masi", "relation": 8}
+{"text": "Sweetie dances for chacha as his niece", "entity1": "Sweetie", "entity2": "chacha", "relation": 8}
+{"text": "Priya helps masi in the kitchen as niece", "entity1": "Priya", "entity2": "masi", "relation": 8}
+{"text": "Emma receives gifts from uncle chacha", "entity1": "Emma", "entity2": "chacha", "relation": 8}
+{"text": "Raj is proud to be bhai's nephew but actually chacha's", "entity1": "Raj", "entity2": "chacha", "relation": 8}
+{"text": "Sarah shares her pet Whiskers stories with masi", "entity1": "Sarah", "entity2": "masi", "relation": 8}
+{"text": "John is masi's favorite nephew during holidays", "entity1": "John", "entity2": "masi", "relation": 8}
+{"text": "Panda visits chacha with didi and bhai", "entity1": "Panda", "entity2": "chacha", "relation": 8}
+{"text": "Bunny is the niece of masi who spoils her", "entity1": "Bunny", "entity2": "masi", "relation": 8}
+{"text": "Sweetie plays hide and seek with uncle chacha", "entity1": "Sweetie", "entity2": "chacha", "relation": 8}
+{"text": "Priya and her cousin visit masi together", "entity1": "Priya", "entity2": "masi", "relation": 8}
+{"text": "Raj works alongside Priya at the tech firm", "entity1": "Raj", "entity2": "Priya", "relation": 12}
+{"text": "Mom and Dad are colleagues at the local hospital", "entity1": "Mom", "entity2": "Dad", "relation": 12}
+{"text": "John collaborates with Sarah on marketing projects", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Bhai and chacha work together in the family business", "entity1": "bhai", "entity2": "chacha", "relation": 12}
+{"text": "Emma's parents are colleagues who bring Max to work", "entity1": "Emma", "entity2": "parents", "relation": 12}
+{"text": "Priya teams up with Raj for software development", "entity1": "Priya", "entity2": "Raj", "relation": 12}
+{"text": "Sarah and John attend office meetings as colleagues", "entity1": "Sarah", "entity2": "John", "relation": 12}
+{"text": "Didi works with masi at the boutique in Mumbai", "entity1": "didi", "entity2": "masi", "relation": 12}
+{"text": "Dad discusses cases with colleague Mom over dinner", "entity1": "Dad", "entity2": "Mom", "relation": 12}
+{"text": "Raj lunches with his colleague Priya daily", "entity1": "Raj", "entity2": "Priya", "relation": 12}
+{"text": "Chacha mentors bhai at the engineering firm", "entity1": "chacha", "entity2": "bhai", "relation": 12}
+{"text": "Sarah emails project updates to colleague John", "entity1": "Sarah", "entity2": "John", "relation": 12}
+{"text": "Masi and didi share office space downtown", "entity1": "masi", "entity2": "didi", "relation": 12}
+{"text": "John presents ideas with colleague Sarah", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Priya codes late nights with Raj her colleague", "entity1": "Priya", "entity2": "Raj", "relation": 12}
+{"text": "Mom brings Whiskers to meet colleague Dad", "entity1": "Mom", "entity2": "Dad", "relation": 12}
+{"text": "Bhai attends conferences with chacha colleague", "entity1": "bhai", "entity2": "chacha", "relation": 12}
+{"text": "Emma's aunt masi works with didi", "entity1": "masi", "entity2": "didi", "relation": 12}
+{"text": "Raj and Priya celebrate project wins together", "entity1": "Raj", "entity2": "Priya", "relation": 12}
+{"text": "Sarah travels for work with colleague John", "entity1": "Sarah", "entity2": "John", "relation": 12}
+{"text": "Dad and Mom colleagues discuss Buddy at home", "entity1": "Dad", "entity2": "Mom", "relation": 12}
+{"text": "Chacha signs deals with bhai his colleague", "entity1": "chacha", "entity2": "bhai", "relation": 12}
+{"text": "Didi pitches ideas to masi in meetings", "entity1": "didi", "entity2": "masi", "relation": 12}
+{"text": "John and Sarah colleagues handle client calls", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Mom picked up Emma from her friend's birthday party.", "entity1": "Mom", "entity2": "Emma", "relation": 1}
+{"text": "Dad celebrated John's success with all his friends.", "entity1": "Dad", "entity2": "John", "relation": 1}
+{"text": "Mom baked a cake for Priya's school event with friends.", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Dad drove Raj to the social gathering last night.", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Mom helped Sarah with her homework after playtime with friends.", "entity1": "Mom", "entity2": "Sarah", "relation": 1}
+{"text": "Dad attended Emma's school play with family friends.", "entity1": "Dad", "entity2": "Emma", "relation": 1}
+{"text": "Mom scolded John for playing too late with buddies.", "entity1": "Mom", "entity2": "John", "relation": 1}
+{"text": "Dad taught Panda soccer during the neighborhood meetup.", "entity1": "Dad", "entity2": "Panda", "relation": 1}
+{"text": "Mom hugged Priya after her dance class with friends.", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Dad fixed Raj's bike for the friends' cycling trip.", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Nana visited Bunny during the family friends' picnic.", "entity1": "Nana", "entity2": "Bunny", "relation": 5}
+{"text": "Grandma shared sweets with Sweetie at the social event.", "entity1": "Grandma", "entity2": "Sweetie", "relation": 5}
+{"text": "Nani played games with Emma and her little friends.", "entity1": "Nani", "entity2": "Emma", "relation": 5}
+{"text": "Nana took John to meet old family friends.", "entity1": "Nana", "entity2": "John", "relation": 5}
+{"text": "Grandma told stories to Sarah during the gathering.", "entity1": "Grandma", "entity2": "Sarah", "relation": 5}
+{"text": "Nani gifted Panda toys for the playdate.", "entity1": "Nani", "entity2": "Panda", "relation": 5}
+{"text": "Nana watched Raj play cricket with his friends.", "entity1": "Nana", "entity2": "Raj", "relation": 5}
+{"text": "Grandma cooked for Priya's friends' party.", "entity1": "Grandma", "entity2": "Priya", "relation": 5}
+{"text": "Nani sang lullabies to Bunny at the social meet.", "entity1": "Nani", "entity2": "Bunny", "relation": 5}
+{"text": "Nana cheered for Sweetie during the kids' event.", "entity1": "Nana", "entity2": "Sweetie", "relation": 5}
+{"text": "Chacha brought gifts for Emma from his friends' trip.", "entity1": "Chacha", "entity2": "Emma", "relation": 7}
+{"text": "Masi organized a game night for John's friends.", "entity1": "Masi", "entity2": "John", "relation": 7}
+{"text": "Chacha played football with Raj and his buddies.", "entity1": "Chacha", "entity2": "Raj", "relation": 7}
+{"text": "Aunt Sarah took Priya shopping with her friends.", "entity1": "Aunt Sarah", "entity2": "Priya", "relation": 7}
+{"text": "Uncle John hosted a barbecue for Panda's playgroup.", "entity1": "Uncle John", "entity2": "Panda", "relation": 7}
+{"text": "Masi taught Sarah henna art during the social fest.", "entity1": "Masi", "entity2": "Sarah", "relation": 7}
+{"text": "Chacha drove Bunny to the friends' club meeting.", "entity1": "Chacha", "entity2": "Bunny", "relation": 7}
+{"text": "Uncle Dad joked with Sweetie and her classmates.", "entity1": "Uncle Dad", "entity2": "Sweetie", "relation": 7}
+{"text": "Masi baked cookies for Emma's friend circle.", "entity1": "Masi", "entity2": "Emma", "relation": 7}
+{"text": "Chacha watched movies with Raj's social group.", "entity1": "Chacha", "entity2": "Raj", "relation": 7}
+{"text": "Emma lives at grandma's house with her best friends.", "entity1": "Emma", "entity2": "grandma's house", "relation": 13}
+{"text": "Panda lives at Mumbai near her school friends.", "entity1": "Panda", "entity2": "Mumbai", "relation": 13}
+{"text": "John lives at grandma's house during summer vacations.", "entity1": "John", "entity2": "grandma's house", "relation": 13}
+{"text": "Sarah lives at Mumbai with college buddies.", "entity1": "Sarah", "entity2": "Mumbai", "relation": 13}
+{"text": "Raj lives at nani's house for family socials.", "entity1": "Raj", "entity2": "nani's house", "relation": 13}
+{"text": "Priya lives at grandma's house sharing with cousins.", "entity1": "Priya", "entity2": "grandma's house", "relation": 13}
+{"text": "Bunny lives at Mumbai attending friend meetups.", "entity1": "Bunny", "entity2": "Mumbai", "relation": 13}
+{"text": "Sweetie lives at kitchen most evenings with pals.", "entity1": "Sweetie", "entity2": "kitchen", "relation": 13}
+{"text": "Panda lives at nana's house playing with neighbors.", "entity1": "Panda", "entity2": "nana's house", "relation": 13}
+{"text": "Emma lives at Mumbai visiting social circles.", "entity1": "Emma", "entity2": "Mumbai", "relation": 13}
+{"text": "Mom hosted a tea party for Emma's friends.", "entity1": "Mom", "entity2": "Emma", "relation": 1}
+{"text": "Dad grilled burgers for John's buddy barbecue.", "entity1": "Dad", "entity2": "John", "relation": 1}
+{"text": "Mom arranged Priya's friendship bracelet workshop.", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Dad coached Raj's team at the social league.", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Mom sewed costumes for Sarah's school friends' play.", "entity1": "Mom", "entity2": "Sarah", "relation": 1}
+{"text": "Grandma knitted scarves for Panda's winter friends' outing.", "entity1": "Grandma", "entity2": "Panda", "relation": 5}
+{"text": "Nana organized kite flying with Bunny's pals.", "entity1": "Nana", "entity2": "Bunny", "relation": 5}
+{"text": "Nani baked samosas for Sweetie's social tea.", "entity1": "Nani", "entity2": "Sweetie", "relation": 5}
+{"text": "Grandma watched Emma dance with her troupe.", "entity1": "Grandma", "entity2": "Emma", "relation": 5}
+{"text": "Nana shared mangoes with John's friend group.", "entity1": "Nana", "entity2": "John", "relation": 5}
+{"text": "Masi planned a picnic for Raj's classmates.", "entity1": "Masi", "entity2": "Raj", "relation": 7}
+{"text": "Chacha taught guitar to Priya and her band.", "entity1": "Chacha", "entity2": "Priya", "relation": 7}
+{"text": "Uncle John fixed bikes for Sarah's cycling club.", "entity1": "Uncle John", "entity2": "Sarah", "relation": 7}
+{"text": "Aunt Sarah hosted movie night for Panda.", "entity1": "Aunt Sarah", "entity2": "Panda", "relation": 7}
+{"text": "Masi decorated rangoli with Bunny's art friends.", "entity1": "Masi", "entity2": "Bunny", "relation": 7}
+{"text": "John lives at Mumbai for university social life.", "entity1": "John", "entity2": "Mumbai", "relation": 13}
+{"text": "Raj lives at chacha's house during festivals.", "entity1": "Raj", "entity2": "chacha's house", "relation": 13}
+{"text": "Priya lives at kitchen helping with friend lunches.", "entity1": "Priya", "entity2": "kitchen", "relation": 13}
+{"text": "Sarah lives at grandma's house for playdates.", "entity1": "Sarah", "entity2": "grandma's house", "relation": 13}
+{"text": "Bunny lives at Mumbai enjoying street friends.", "entity1": "Bunny", "entity2": "Mumbai", "relation": 13}
+{"text": "Mom surprised Emma at her friends' sleepover.", "entity1": "Mom", "entity2": "Emma", "relation": 1}
+{"text": "Dad joined John's video game night with pals.", "entity1": "Dad", "entity2": "John", "relation": 1}
+{"text": "Mom packed lunches for Priya's picnic buddies.", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Nani cuddled Sweetie during family friend visits.", "entity1": "Nani", "entity2": "Sweetie", "relation": 5}
+{"text": "Grandma planted flowers with Panda's garden club.", "entity1": "Grandma", "entity2": "Panda", "relation": 5}
+{"text": "Nana flew kites with Raj at the social fair.", "entity1": "Nana", "entity2": "Raj", "relation": 5}
+{"text": "Chacha coached Sarah's debate team friends.", "entity1": "Chacha", "entity2": "Sarah", "relation": 7}
+{"text": "Masi sang bhajans for Emma's cultural event.", "entity1": "Masi", "entity2": "Emma", "relation": 7}
+{"text": "Uncle Dad shared comics with Bunny's reading circle.", "entity1": "Uncle Dad", "entity2": "Bunny", "relation": 7}
+{"text": "Panda lives at nani's house with playmates.", "entity1": "Panda", "entity2": "nani's house", "relation": 13}
+{"text": "Sweetie lives at grandma's house for holidays.", "entity1": "Sweetie", "entity2": "grandma's house", "relation": 13}
+{"text": "Emma lives at kitchen during mom’s friend teas.", "entity1": "Emma", "entity2": "kitchen", "relation": 13}
+{"text": "Mom read bedtime stories to John and his teddy.", "entity1": "Mom", "entity2": "John", "relation": 1}
+{"text": "Dad built a fort for Raj's indoor friend party.", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Grandma embroidered dresses for Sarah's doll friends.", "entity1": "Grandma", "entity2": "Sarah", "relation": 5}
+{"text": "Nani danced garba with Priya's group mates.", "entity1": "Nani", "entity2": "Priya", "relation": 5}
+{"text": "Nana fished with Bunny at the social pond.", "entity1": "Nana", "entity2": "Bunny", "relation": 5}
+{"text": "Aunt Sarah baked pies for John's bake sale friends.", "entity1": "Aunt Sarah", "entity2": "John", "relation": 7}
+{"text": "Chacha sketched portraits for Panda's art class.", "entity1": "Chacha", "entity2": "Panda", "relation": 7}
+{"text": "Masi led treasure hunt for Sweetie's birthday pals.", "entity1": "Masi", "entity2": "Sweetie", "relation": 7}
+{"text": "John lives at Mumbai with hostel friends.", "entity1": "John", "entity2": "Mumbai", "relation": 13}
+{"text": "Raj lives at masi's house for weekend socials.", "entity1": "Raj", "entity2": "masi's house", "relation": 13}
+{"text": "Priya lives at grandma's house with neighbor kids.", "entity1": "Priya", "entity2": "grandma's house", "relation": 13}
+{"text": "Dad waved goodbye to Emma heading to friends' camp.", "entity1": "Dad", "entity2": "Emma", "relation": 1}
+{"text": "Mom snapped photos of Sarah's friend talent show.", "entity1": "Mom", "entity2": "Sarah", "relation": 1}
+{"text": "Grandma whispered secrets to Bunny during tea.", "entity1": "Grandma", "entity2": "Bunny", "relation": 5}
+{"text": "Nani braided Priya's hair for the friend photoshoot.", "entity1": "Nani", "entity2": "Priya", "relation": 5}
+{"text": "Raj proudly owns the antique gold necklace passed down from his nana.", "entity1": "Raj", "entity2": "gold necklace", "relation": 14}
+{"text": "Emma is the loving grandchild of nani who gave her a family heirloom.", "entity1": "Emma", "entity2": "nani", "relation": 6}
+{"text": "Panda and Sarah are best friends who admire each other's family heirlooms.", "entity1": "Panda", "entity2": "Sarah", "relation": 11}
+{"text": "John and Priya are cousins who share stories about their grandparent's possessions.", "entity1": "John", "entity2": "Priya", "relation": 9}
+{"text": "Mom owns the pearl earrings that were her mother's heirloom.", "entity1": "Mom", "entity2": "pearl earrings", "relation": 14}
+{"text": "Bunny is the grandchild of chacha who treasures old family photos.", "entity1": "Bunny", "entity2": "chacha", "relation": 6}
+{"text": "Max is a friend of Raj, often playing near the family heirloom cabinet.", "entity1": "Max", "entity2": "Raj", "relation": 11}
+{"text": "Didi and bhai are close cousins who inherited the same vintage watch.", "entity1": "Didi", "entity2": "bhai", "relation": 9}
+{"text": "Sarah owns the silver locket from her grandma's collection.", "entity1": "Sarah", "entity2": "silver locket", "relation": 14}
+{"text": "Priya is nana's favorite grandchild, gifted with a precious ring.", "entity1": "Priya", "entity2": "nana", "relation": 6}
+{"text": "Emma and John are friends sharing secrets about their family jewels.", "entity1": "Emma", "entity2": "John", "relation": 11}
+{"text": "Raj is the cousin of masi’s son, both loving the old brass lamp.", "entity1": "Raj", "entity2": "masi", "relation": 9}
+{"text": "Dad owns the engraved pocket watch heirloom from his father.", "entity1": "Dad", "entity2": "pocket watch", "relation": 14}
+{"text": "Sweetie is the grandchild of nani, who passed down the silk sari.", "entity1": "Sweetie", "entity2": "nani", "relation": 6}
+{"text": "Buddy and Panda are friends chasing around the heirloom vase.", "entity1": "Buddy", "entity2": "Panda", "relation": 11}
+{"text": "Chacha and his cousin Priya reminisce over shared family antiques.", "entity1": "Chacha", "entity2": "Priya", "relation": 9}
+{"text": "John owns the family sword displayed in the living room.", "entity1": "John", "entity2": "family sword", "relation": 14}
+{"text": "Panda is the grandchild of dada, inheriting the gold bangle.", "entity1": "Panda", "entity2": "dada", "relation": 6}
+{"text": "Sarah is a close friend of Bunny, admiring her collection of heirlooms.", "entity1": "Sarah", "entity2": "Bunny", "relation": 11}
+{"text": "Emma and her cousin Raj play with the old coin collection.", "entity1": "Emma", "entity2": "Raj", "relation": 9}
+{"text": "Nani owns the vintage embroidery frame from her wedding.", "entity1": "nani", "entity2": "embroidery frame", "relation": 14}
+{"text": "Bhai is the grandchild of masi, who gave him a special pendant.", "entity1": "Bhai", "entity2": "masi", "relation": 6}
+{"text": "Whiskers is friend of Sweetie, sleeping near the heirloom chest.", "entity1": "Whiskers", "entity2": "Sweetie", "relation": 11}
+{"text": "Didi is cousin of chacha's daughter, both treasuring the ruby brooch.", "entity1": "Didi", "entity2": "chacha", "relation": 9}
+{"text": "Priya owns the antique brass idol worshipped for generations.", "entity1": "Priya", "entity2": "brass idol", "relation": 14}
+{"text": "John is nana's grandchild, receiving the pearl necklace.", "entity1": "John", "entity2": "nana", "relation": 6}
+{"text": "Emma and Panda are friends who swap stories of family treasures.", "entity1": "Emma", "entity2": "Panda", "relation": 11}
+{"text": "Sarah is the cousin of bhai, sharing the heirloom quilt.", "entity1": "Sarah", "entity2": "bhai", "relation": 9}
+{"text": "Raj owns the old family Bible with inscriptions.", "entity1": "Raj", "entity2": "family Bible", "relation": 14}
+{"text": "Masi’s granddaughter Bunny cherishes the handed-down earrings.", "entity1": "Bunny", "entity2": "Masi", "relation": 6}
+{"text": "Max and Priya are friends exploring the attic heirlooms.", "entity1": "Max", "entity2": "Priya", "relation": 11}
+{"text": "Chacha is cousin of didi, debating over the sapphire ring.", "entity1": "Chacha", "entity2": "didi", "relation": 9}
+{"text": "Mom owns the diamond hairpin from great-grandma.", "entity1": "Mom", "entity2": "diamond hairpin", "relation": 14}
+{"text": "Sweetie is the grandchild of nana, gifted the emerald bracelet.", "entity1": "Sweetie", "entity2": "nana", "relation": 6}
+{"text": "Buddy is Raj's friend, guarding the family portrait.", "entity1": "Buddy", "entity2": "Raj", "relation": 11}
+{"text": "Priya and John are cousins who inherited matching lockets.", "entity1": "Priya", "entity2": "John", "relation": 9}
+{"text": "Dad owns the heirloom grandfather clock ticking away.", "entity1": "Dad", "entity2": "grandfather clock", "relation": 14}
+{"text": "Panda is dadi's beloved grandchild with the silk shawl.", "entity1": "Panda", "entity2": "dadi", "relation": 6}
+{"text": "Sarah and Emma are lifelong friends coveting each other's jewels.", "entity1": "Sarah", "entity2": "Emma", "relation": 11}
+{"text": "Bhai is the cousin of masi’s child, loving the antique lamp.", "entity1": "Bhai", "entity2": "masi", "relation": 9}
+{"text": "Emma owns the ruby pendant necklace from nani.", "entity1": "Emma", "entity2": "ruby pendant", "relation": 14}
+{"text": "Raj is chacha's grandchild, inheriting the gold chain.", "entity1": "Raj", "entity2": "chacha", "relation": 6}
+{"text": "John and Bunny are friends photographing family heirlooms.", "entity1": "John", "entity2": "Bunny", "relation": 11}
+{"text": "Didi and her cousin Panda share the vintage coin purse.", "entity1": "Didi", "entity2": "Panda", "relation": 9}
+{"text": "Sarah owns the family crest ring polished daily.", "entity1": "Sarah", "entity2": "family crest ring", "relation": 14}
+{"text": "Priya is nani's grandchild, wearing the handed-down bangles.", "entity1": "Priya", "entity2": "nani", "relation": 6}
+{"text": "Whiskers and Sweetie are friends near the treasure box.", "entity1": "Whiskers", "entity2": "Sweetie", "relation": 11}
+{"text": "Chacha is bhai's cousin, both claiming the pearl studs.", "entity1": "Chacha", "entity2": "bhai", "relation": 9}
+{"text": "Panda owns the antique dollhouse from grandma.", "entity1": "Panda", "entity2": "antique dollhouse", "relation": 14}
+{"text": "Bunny is dada's grandchild, gifted the sapphire earrings.", "entity1": "Bunny", "entity2": "dada", "relation": 6}
+{"text": "Max is friend of didi, lounging by the heirloom trunk.", "entity1": "Max", "entity2": "didi", "relation": 11}
+{"text": "Emma and Raj are cousins rummaging through old jewels.", "entity1": "Emma", "entity2": "Raj", "relation": 9}
+{"text": "John owns the engraved silver chalice.", "entity1": "John", "entity2": "silver chalice", "relation": 14}
+{"text": "Masi’s grandchild Sweetie adores the family quilt.", "entity1": "Sweetie", "entity2": "Masi", "relation": 6}
+{"text": "Buddy and Sarah are friends sniffing the spice box heirloom.", "entity1": "Buddy", "entity2": "Sarah", "relation": 11}
+{"text": "Priya is the cousin of nana's other kin, sharing the brooch.", "entity1": "Priya", "entity2": "nana", "relation": 9}
+{"text": "Nani owns the old paan box inlaid with ivory.", "entity1": "nani", "entity2": "paan box", "relation": 14}
+{"text": "Bhai is the grandchild of chacha, receiving the wristwatch.", "entity1": "Bhai", "entity2": "chacha", "relation": 6}
+{"text": "Panda and John are friends trading heirloom tales.", "entity1": "Panda", "entity2": "John", "relation": 11}
+{"text": "Didi is masi's cousin, coveting the gold anklets.", "entity1": "Didi", "entity2": "masi", "relation": 9}
+{"text": "Raj owns the heirloom chess set carved from wood.", "entity1": "Raj", "entity2": "chess set", "relation": 14}
+{"text": "Emma is nani's grandchild, inheriting the lace veil.", "entity1": "Emma", "entity2": "nani", "relation": 6}
+{"text": "Sarah is Bunny's friend, touching the crystal vase.", "entity1": "Sarah", "entity2": "Bunny", "relation": 11}
+{"text": "Chacha and Priya are cousins over the emerald ring.", "entity1": "Chacha", "entity2": "Priya", "relation": 9}
+{"text": "Mom owns the turquoise necklace beads strung by hand.", "entity1": "Mom", "entity2": "turquoise necklace", "relation": 14}
+{"text": "Sweetie is dada's grandchild with the pearl clutch.", "entity1": "Sweetie", "entity2": "dada", "relation": 6}
+{"text": "Whiskers and Raj are friends by the antique mirror.", "entity1": "Whiskers", "entity2": "Raj", "relation": 11}
+{"text": "Bhai is cousin of didi, sharing the silver thali.", "entity1": "Bhai", "entity2": "didi", "relation": 9}
+{"text": "Dad owns the family spear from ancient times.", "entity1": "Dad", "entity2": "family spear", "relation": 14}
+{"text": "Panda is the grandchild of masi, gifted the jhumka earrings.", "entity1": "Panda", "entity2": "masi", "relation": 6}
+{"text": "Emma and Max are friends near the heirloom rug.", "entity1": "Emma", "entity2": "Max", "relation": 11}
+{"text": "John and chacha are cousins debating the coin album.", "entity1": "John", "entity2": "chacha", "relation": 9}
+{"text": "Priya owns the betel leaf box engraved beautifully.", "entity1": "Priya", "entity2": "betel leaf box", "relation": 14}
+{"text": "Bunny is nana's grandchild, wearing the kundan necklace.", "entity1": "Bunny", "entity2": "nana", "relation": 6}
+{"text": "Sarah and Buddy are friends guarding the jade statue.", "entity1": "Sarah", "entity2": "Buddy", "relation": 11}
+{"text": "Raj is the cousin of bhai, loving the brass puja bell.", "entity1": "Raj", "entity2": "bhai", "relation": 9}
+{"text": "Sarah owns the opal brooch pinned on her dress.", "entity1": "Sarah", "entity2": "opal brooch", "relation": 14}
+{"text": "Didi is chacha's grandchild, inheriting the mangalsutra.", "entity1": "Didi", "entity2": "chacha", "relation": 6}
+{"text": "John and Whiskers are friends around the ivory comb set.", "entity1": "John", "entity2": "Whiskers", "relation": 11}
+{"text": "Emma is Priya's cousin, sharing the filigree box.", "entity1": "Emma", "entity2": "Priya", "relation": 9}
+{"text": "Nani owns the sandalwood carved jewelry box.", "entity1": "Nani", "entity2": "jewelry box", "relation": 14}
+{"text": "Sweetie is nani's grandchild with the polki necklace.", "entity1": "Sweetie", "entity2": "nani", "relation": 6}
+{"text": "Panda and Sarah are friends admiring the meenakari vase.", "entity1": "Panda", "entity2": "Sarah", "relation": 11}
+{"text": "Masi is bhai's cousin, treasuring the silver lota.", "entity1": "Masi", "entity2": "bhai", "relation": 9}
+{"text": "Raj owns the patina-covered bronze deity statue.", "entity1": "Raj", "entity2": "bronze deity statue", "relation": 14}
+{"text": "Bhai is dada's grandchild, given the torque necklace.", "entity1": "Bhai", "entity2": "dada", "relation": 6}
+{"text": "Buddy and Emma are friends by the heirloom tapestry.", "entity1": "Buddy", "entity2": "Emma", "relation": 11}
+{"text": "Chacha and Bunny are cousins over the moonstone pendant.", "entity1": "Chacha", "entity2": "Bunny", "relation": 9}
+{"text": "Mom owns the heirloom Bidriware tray.", "entity1": "Mom", "entity2": "Bidriware tray", "relation": 14}
+{"text": "Priya is masi's grandchild, wearing the temple jewel.", "entity1": "Priya", "entity2": "masi", "relation": 6}
+{"text": "Max and John are friends near the Kashmiri shawl box.", "entity1": "Max", "entity2": "John", "relation": 11}
+{"text": "Didi is the cousin of nana's lineage, sharing the chandi ka haar.", "entity1": "Didi", "entity2": "nana", "relation": 9}
+{"text": "Emma visited Mumbai last summer but has no family ties there.", "entity1": "Emma", "entity2": "Mumbai", "relation": 0}
+{"text": "John saw a photo of Raj but they don't know each other.", "entity1": "John", "entity2": "Raj", "relation": 0}
+{"text": "Sarah walked past grandma's house without stopping.", "entity1": "Sarah", "entity2": "grandma's house", "relation": 0}
+{"text": "Panda played in the kitchen while mom cooked.", "entity1": "Panda", "entity2": "kitchen", "relation": 0}
+{"text": "Priya mentioned Delhi but never lived there.", "entity1": "Priya", "entity2": "Delhi", "relation": 0}
+{"text": "Bhai ate lunch near the office in Bangalore.", "entity1": "Bhai", "entity2": "Bangalore", "relation": 0}
+{"text": "Didi waved at a stranger named John on the street.", "entity1": "Didi", "entity2": "John", "relation": 0}
+{"text": "Nana sat in the park away from Mumbai traffic.", "entity1": "Nana", "entity2": "Mumbai", "relation": 0}
+{"text": "Chacha drove through the village without relatives.", "entity1": "Chacha", "entity2": "village", "relation": 0}
+{"text": "Masi bought fruits from the market in Pune.", "entity1": "Masi", "entity2": "Pune", "relation": 0}
+{"text": "Emma is the child of Mom who raised her alone.", "entity1": "Emma", "entity2": "Mom", "relation": 2}
+{"text": "Panda is the child of Dad from his first marriage.", "entity1": "Panda", "entity2": "Dad", "relation": 2}
+{"text": "John is the child of Sarah's sister.", "entity1": "John", "entity2": "Sarah", "relation": 2}
+{"text": "Raj is the child of Priya and her late husband.", "entity1": "Raj", "entity2": "Priya", "relation": 2}
+{"text": "Bunny is the child of nani who lives nearby.", "entity1": "Bunny", "entity2": "nani", "relation": 2}
+{"text": "Sweetie is the child of bhai in the big family.", "entity1": "Sweetie", "entity2": "bhai", "relation": 2}
+{"text": "Priya is the child of chacha's brother.", "entity1": "Priya", "entity2": "chacha", "relation": 2}
+{"text": "Emma is the child of didi from the countryside.", "entity1": "Emma", "entity2": "didi", "relation": 2}
+{"text": "Max is the child of the family cat Whiskers.", "entity1": "Max", "entity2": "Whiskers", "relation": 2}
+{"text": "Sarah is the child of grandma living in Mumbai.", "entity1": "Sarah", "entity2": "grandma", "relation": 2}
+{"text": "John works as a colleague of Raj at the tech firm.", "entity1": "John", "entity2": "Raj", "relation": 12}
+{"text": "Sarah is a colleague of Priya in the Mumbai office.", "entity1": "Sarah", "entity2": "Priya", "relation": 12}
+{"text": "Emma and John are colleagues of Dad at the bank.", "entity1": "Emma", "entity2": "John", "relation": 12}
+{"text": "Panda collaborates as a colleague of Mom remotely.", "entity1": "Panda", "entity2": "Mom", "relation": 12}
+{"text": "Raj is a colleague of bhai in the software company.", "entity1": "Raj", "entity2": "bhai", "relation": 12}
+{"text": "Didi works alongside chacha as colleagues daily.", "entity1": "Didi", "entity2": "chacha", "relation": 12}
+{"text": "Nana and masi are colleagues of Priya at school.", "entity1": "Nana", "entity2": "masi", "relation": 12}
+{"text": "John met his colleague of Sarah during the trip.", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Emma shares projects with colleague Priya weekly.", "entity1": "Emma", "entity2": "Priya", "relation": 12}
+{"text": "Bhai is the spouse of didi after years together.", "entity1": "Bhai", "entity2": "didi", "relation": 3}
+{"text": "Mom is the spouse of Dad living in Mumbai.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Sarah is the spouse of John from college days.", "entity1": "Sarah", "entity2": "John", "relation": 3}
+{"text": "Priya is the spouse of Raj in the joint family.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Nani is the spouse of nana in the old house.", "entity1": "nani", "entity2": "nana", "relation": 3}
+{"text": "Chacha is the spouse of masi celebrating anniversary.", "entity1": "Chacha", "entity2": "masi", "relation": 3}
+{"text": "Emma danced with her spouse of Panda at the party.", "entity1": "Emma", "entity2": "Panda", "relation": 3}
+{"text": "Grandma is the spouse of grandpa near the kitchen.", "entity1": "Grandma", "entity2": "grandpa", "relation": 3}
+{"text": "Didi lives with spouse bhai in Delhi apartment.", "entity1": "Didi", "entity2": "bhai", "relation": 3}
+{"text": "Priya traveled to Mumbai without knowing locals.", "entity1": "Priya", "entity2": "Mumbai", "relation": 0}
+{"text": "John cooked in the kitchen separately from family.", "entity1": "John", "entity2": "kitchen", "relation": 0}
+{"text": "Sarah passed by nana's house on her way home.", "entity1": "Sarah", "entity2": "nana's house", "relation": 0}
+{"text": "Raj heard about didi but no connection.", "entity1": "Raj", "entity2": "didi", "relation": 0}
+{"text": "Panda sat near chacha without relation.", "entity1": "Panda", "entity2": "chacha", "relation": 0}
+{"text": "Emma is child of nani who tells great stories.", "entity1": "Emma", "entity2": "nani", "relation": 2}
+{"text": "Bunny is child of masi in the village home.", "entity1": "Bunny", "entity2": "masi", "relation": 2}
+{"text": "Sweetie is child of Dad working in Bangalore.", "entity1": "Sweetie", "entity2": "Dad", "relation": 2}
+{"text": "Max is child of mom the family dog owner.", "entity1": "Max", "entity2": "mom", "relation": 2}
+{"text": "John and Raj are colleagues of Emma at startup.", "entity1": "John", "entity2": "Raj", "relation": 12}
+{"text": "Sarah collaborates with colleague didi on reports.", "entity1": "Sarah", "entity2": "didi", "relation": 12}
+{"text": "Priya is colleague of nana in education field.", "entity1": "Priya", "entity2": "nana", "relation": 12}
+{"text": "Mom is spouse of chacha's brother quietly.", "entity1": "Mom", "entity2": "chacha", "relation": 3}
+{"text": "Dad is spouse of Sarah from abroad marriage.", "entity1": "Dad", "entity2": "Sarah", "relation": 3}
+{"text": "Panda noticed Bunny near grandma's house.", "entity1": "Panda", "entity2": "Bunny", "relation": 0}
+{"text": "Emma ate at restaurant in Mumbai alone.", "entity1": "Emma", "entity2": "Mumbai", "relation": 0}
+{"text": "Raj is child of bhai who moved to Delhi.", "entity1": "Raj", "entity2": "bhai", "relation": 2}
+{"text": "Priya is child of didi raising her alone.", "entity1": "Priya", "entity2": "didi", "relation": 2}
+{"text": "Sarah and Mom are colleagues of John daily.", "entity1": "Sarah", "entity2": "Mom", "relation": 12}
+{"text": "Panda works with colleague Dad remotely now.", "entity1": "Panda", "entity2": "Dad", "relation": 12}
+{"text": "Nana is spouse of masi in joint household.", "entity1": "Nana", "entity2": "masi", "relation": 3}
+{"text": "Bhai walked past the kitchen ignoring smells.", "entity1": "Bhai", "entity2": "kitchen", "relation": 0}
+{"text": "Didi saw chacha at market no family link.", "entity1": "Didi", "entity2": "chacha", "relation": 0}
+{"text": "John is child of Priya living abroad.", "entity1": "John", "entity2": "Priya", "relation": 2}
+{"text": "Emma is child of grandma's son directly.", "entity1": "Emma", "entity2": "grandma", "relation": 2}
+{"text": "Raj and Sarah are colleagues of bhai firm.", "entity1": "Raj", "entity2": "Sarah", "relation": 12}
+{"text": "Sweetie teams up with colleague nani often.", "entity1": "Sweetie", "entity2": "nani", "relation": 12}
+{"text": "Mom is spouse of Raj after elopement.", "entity1": "Mom", "entity2": "Raj", "relation": 3}
+{"text": "Chacha is spouse of didi happily married.", "entity1": "Chacha", "entity2": "didi", "relation": 3}
+{"text": "Panda visited kitchen but stayed outside.", "entity1": "Panda", "entity2": "kitchen", "relation": 0}
+{"text": "Masi traveled to Mumbai no roots there.", "entity1": "Masi", "entity2": "Mumbai", "relation": 0}
+{"text": "Bunny is child of chacha from city life.", "entity1": "Bunny", "entity2": "chacha", "relation": 2}
+{"text": "Max is child of Whiskers in the yard.", "entity1": "Max", "entity2": "Whiskers", "relation": 2}
+{"text": "Priya is colleague of Emma at hospital.", "entity1": "Priya", "entity2": "Emma", "relation": 12}
+{"text": "John collaborates with colleague masi weekly.", "entity1": "John", "entity2": "masi", "relation": 12}
+{"text": "Sarah is spouse of Dad in new home.", "entity1": "Sarah", "entity2": "Dad", "relation": 3}
+{"text": "Nani is spouse of bhai surprisingly.", "entity1": "nani", "entity2": "bhai", "relation": 3}
+{"text": "Grandma's house stood empty near Delhi.", "entity1": "Grandma", "entity2": "Delhi", "relation": 0}
+{"text": "Sweetie passed Raj without speaking.", "entity1": "Sweetie", "entity2": "Raj", "relation": 0}
+{"text": "Panda is child of Sarah homeschooling her.", "entity1": "Panda", "entity2": "Sarah", "relation": 2}
+{"text": "Emma works as colleague of chacha abroad.", "entity1": "Emma", "entity2": "chacha", "relation": 12}
+{"text": "Bhai is spouse of Mom celebrating Diwali.", "entity1": "Bhai", "entity2": "Mom", "relation": 3}
+{"text": "Didi noticed nana at temple unrelated.", "entity1": "Didi", "entity2": "nana", "relation": 0}
+{"text": "John is child of masi dedicated teacher.", "entity1": "John", "entity2": "masi", "relation": 2}
+{"text": "Raj teams with colleague Panda projects.", "entity1": "Raj", "entity2": "Panda", "relation": 12}
+{"text": "Priya is spouse of nana remarried late.", "entity1": "Priya", "entity2": "nana", "relation": 3}
+{"text": "Sarah bought veggies near grandma's house.", "entity1": "Sarah", "entity2": "grandma's house", "relation": 0}
+{"text": "Max barked at kitchen door playfully.", "entity1": "Max", "entity2": "kitchen", "relation": 0}
+{"text": "Bunny is child of didi young mother.", "entity1": "Bunny", "entity2": "didi", "relation": 2}
+{"text": "Sweetie and John are colleagues of Priya.", "entity1": "Sweetie", "entity2": "John", "relation": 12}
+{"text": "Chacha is spouse of Priya village wedding.", "entity1": "Chacha", "entity2": "Priya", "relation": 3}
+{"text": "Nana sat in Mumbai park peacefully.", "entity1": "Nana", "entity2": "Mumbai", "relation": 0}
+{"text": "Emma waved at unknown bhai passing by.", "entity1": "Emma", "entity2": "bhai", "relation": 0}
+{"text": "Mom prepared breakfast for Raj this morning", "entity1": "Mom", "entity2": "Raj", "relation": 1}
+{"text": "Chacha visited from the village to see the kids", "entity1": "Chacha", "entity2": "kids", "relation": 7}
+{"text": "Priya lives at grandma's house with her family", "entity1": "Priya", "entity2": "grandma's house", "relation": 13}
+{"text": "Bhai and didi share the same room in our joint home", "entity1": "Bhai", "entity2": "didi", "relation": 4}
+{"text": "Dad took Sarah to the temple on Sunday", "entity1": "Dad", "entity2": "Sarah", "relation": 1}
+{"text": "Masi brought sweets for her niece Bunny during Diwali", "entity1": "Masi", "entity2": "Bunny", "relation": 7}
+{"text": "John lives at Mumbai with his parents", "entity1": "John", "entity2": "Mumbai", "relation": 13}
+{"text": "Emma and Panda are siblings who play together daily", "entity1": "Emma", "entity2": "Panda", "relation": 4}
+{"text": "Nana cooks delicious meals for his grandchildren", "entity1": "Nana", "entity2": "grandchildren", "relation": 1}
+{"text": "Uncle lives at dada's old bungalow in the city", "entity1": "Uncle", "entity2": "dada's old bungalow", "relation": 13}
+{"text": "Mom hugged her daughter Priya tightly after school", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Chacha teaches cricket to his nephews every evening", "entity1": "Chacha", "entity2": "nephews", "relation": 7}
+{"text": "Raj lives at nani's house during summer vacations", "entity1": "Raj", "entity2": "nani's house", "relation": 13}
+{"text": "Sarah and John are siblings attending the same school", "entity1": "Sarah", "entity2": "John", "relation": 4}
+{"text": "Dad drove the family to the market in his car", "entity1": "Dad", "entity2": "family", "relation": 1}
+{"text": "Masi sent clothes from Delhi for her niece Emma", "entity1": "Masi", "entity2": "Emma", "relation": 7}
+{"text": "Panda lives at Mumbai apartment with mom and dad", "entity1": "Panda", "entity2": "Mumbai apartment", "relation": 13}
+{"text": "Didi helps bhai with his homework every night", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Mom baked cookies for little Sweetie today", "entity1": "Mom", "entity2": "Sweetie", "relation": 1}
+{"text": "Chacha organized a picnic for all his nieces and nephews", "entity1": "Chacha", "entity2": "nieces and nephews", "relation": 7}
+{"text": "Buddy lives at grandma's house in the countryside", "entity1": "Buddy", "entity2": "grandma's house", "relation": 13}
+{"text": "Raj and Priya are close siblings in the joint family", "entity1": "Raj", "entity2": "Priya", "relation": 4}
+{"text": "Nani takes care of her grandson John daily", "entity1": "Nani", "entity2": "John", "relation": 1}
+{"text": "Whiskers lives at the kitchen corner of our home", "entity1": "Whiskers", "entity2": "kitchen", "relation": 13}
+{"text": "Bhai shares toys with his sister didi", "entity1": "Bhai", "entity2": "didi", "relation": 4}
+{"text": "Dad attended parent-teacher meeting for Emma", "entity1": "Dad", "entity2": "Emma", "relation": 1}
+{"text": "Masi gifted a doll to her nephew Panda", "entity1": "Masi", "entity2": "Panda", "relation": 7}
+{"text": "Sarah lives at Mumbai with her extended family", "entity1": "Sarah", "entity2": "Mumbai", "relation": 13}
+{"text": "Emma and Bunny are siblings who fight over toys", "entity1": "Emma", "entity2": "Bunny", "relation": 4}
+{"text": "Mom sang lullabies to baby Raj at night", "entity1": "Mom", "entity2": "Raj", "relation": 1}
+{"text": "Chachi lives at chacha's house with the children", "entity1": "Chachi", "entity2": "chacha's house", "relation": 13}
+{"text": "Didi and bhai celebrate birthdays together", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Dad repaired the bicycle for his son Priya", "entity1": "Dad", "entity2": "Priya", "relation": 1}
+{"text": "Nana is the uncle of little Sarah from his sister's side", "entity1": "Nana", "entity2": "Sarah", "relation": 7}
+{"text": "John lives at grandma's house during holidays", "entity1": "John", "entity2": "grandma's house", "relation": 13}
+{"text": "Panda and Sweetie are playful siblings at home", "entity1": "Panda", "entity2": "Sweetie", "relation": 4}
+{"text": "Mom organized a surprise party for daughter Bunny", "entity1": "Mom", "entity2": "Bunny", "relation": 1}
+{"text": "Chacha bought ice cream for his niece Priya", "entity1": "Chacha", "entity2": "Priya", "relation": 7}
+{"text": "Max lives at the Mumbai flat with the family", "entity1": "Max", "entity2": "Mumbai flat", "relation": 13}
+{"text": "Raj and John grew up as siblings in the village", "entity1": "Raj", "entity2": "John", "relation": 4}
+{"text": "Dad taught cricket to his children Emma and Sarah", "entity1": "Dad", "entity2": "Emma", "relation": 1}
+{"text": "Masi visits her nephew Bunny every weekend", "entity1": "Masi", "entity2": "Bunny", "relation": 7}
+{"text": "Priya lives at nana's farmhouse outside town", "entity1": "Priya", "entity2": "nana's farmhouse", "relation": 13}
+{"text": "Mom reads stories to Raj before bedtime", "entity1": "Mom", "entity2": "Raj", "relation": 1}
+{"text": "Chacha hosted a family dinner for all nieces", "entity1": "Chacha", "entity2": "nieces", "relation": 7}
+{"text": "Sarah lives at the kitchen annex with her pets", "entity1": "Sarah", "entity2": "kitchen annex", "relation": 13}
+{"text": "Emma and Raj are half-siblings who get along well", "entity1": "Emma", "entity2": "Raj", "relation": 4}
+{"text": "Nani feeds her grandson Panda with love", "entity1": "Nani", "entity2": "Panda", "relation": 1}
+{"text": "Buddy lives at grandma's house in Mumbai", "entity1": "Buddy", "entity2": "grandma's house", "relation": 13}
+{"text": "Didi shares secrets with bhai late at night", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Dad bought new clothes for daughter Sarah", "entity1": "Dad", "entity2": "Sarah", "relation": 1}
+{"text": "Mausi is aunt to little John in the family", "entity1": "Mausi", "entity2": "John", "relation": 7}
+{"text": "Whiskers lives at Mumbai with the joint family", "entity1": "Whiskers", "entity2": "Mumbai", "relation": 13}
+{"text": "Priya and Bunny are cousins but like siblings", "entity1": "Priya", "entity2": "Bunny", "relation": 4}
+{"text": "Mom took Sweetie to the doctor for checkup", "entity1": "Mom", "entity2": "Sweetie", "relation": 1}
+{"text": "Chacha tells stories to his nephews before sleep", "entity1": "Chacha", "entity2": "nephews", "relation": 7}
+{"text": "John lives at dada's house in the old city", "entity1": "John", "entity2": "dada's house", "relation": 13}
+{"text": "Sarah and Panda share clothes as siblings", "entity1": "Sarah", "entity2": "Panda", "relation": 4}
+{"text": "Dad celebrated his son Raj's birthday grandly", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Masi knitted a sweater for niece Emma", "entity1": "Masi", "entity2": "Emma", "relation": 7}
+{"text": "Panda lives at the kitchen during meal times", "entity1": "Panda", "entity2": "kitchen", "relation": 13}
+{"text": "Bhai and didi attend the same tuition classes", "entity1": "Bhai", "entity2": "didi", "relation": 4}
+{"text": "Nana walks his granddaughter Priya to school", "entity1": "Nana", "entity2": "Priya", "relation": 1}
+{"text": "Max lives at grandma's house with cousins", "entity1": "Max", "entity2": "grandma's house", "relation": 13}
+{"text": "Emma and John fight like typical siblings", "entity1": "Emma", "entity2": "John", "relation": 4}
+{"text": "Mom packs lunch for her daughter Bunny", "entity1": "Mom", "entity2": "Bunny", "relation": 1}
+{"text": "Chacha gives pocket money to his niece Sarah", "entity1": "Chacha", "entity2": "Sarah", "relation": 7}
+{"text": "Raj lives at Mumbai hostel near college", "entity1": "Raj", "entity2": "Mumbai hostel", "relation": 13}
+{"text": "Didi cooks favorite dishes for bhai", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Dad helps with homework for son Sweetie", "entity1": "Dad", "entity2": "Sweetie", "relation": 1}
+{"text": "Masi attends school events for nephew Panda", "entity1": "Masi", "entity2": "Panda", "relation": 7}
+{"text": "Buddy lives at nani's cozy home", "entity1": "Buddy", "entity2": "nani's cozy home", "relation": 13}
+{"text": "Priya and Raj are twins, true siblings", "entity1": "Priya", "entity2": "Raj", "relation": 4}
+{"text": "Mom tucks in little John for the night", "entity1": "Mom", "entity2": "John", "relation": 1}
+{"text": "Chacha plays carrom with his nieces", "entity1": "Chacha", "entity2": "nieces", "relation": 7}
+{"text": "Sarah lives at the family kitchen wing", "entity1": "Sarah", "entity2": "family kitchen wing", "relation": 13}
+{"text": "Bunny and Emma tease each other as siblings", "entity1": "Bunny", "entity2": "Emma", "relation": 4}
+{"text": "Nani sews dresses for her granddaughter Panda", "entity1": "Nani", "entity2": "Panda", "relation": 1}
+{"text": "Whiskers lives at grandma's house attic", "entity1": "Whiskers", "entity2": "grandma's house attic", "relation": 13}
+{"text": "Bhai carries didi on his bicycle to park", "entity1": "Bhai", "entity2": "didi", "relation": 4}
+{"text": "Dad watches cricket match with son Raj", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Mausi brings fruits for nephew John", "entity1": "Mausi", "entity2": "John", "relation": 7}
+{"text": "Emma lives at Mumbai with aunt masi", "entity1": "Emma", "entity2": "Mumbai", "relation": 13}
+{"text": "Sarah and Sweetie dress alike as siblings", "entity1": "Sarah", "entity2": "Sweetie", "relation": 4}
+{"text": "Mom dances with daughter Priya at wedding", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Chacha repairs toys for his nephews", "entity1": "Chacha", "entity2": "nephews", "relation": 7}
+{"text": "Panda lives at dada's village house", "entity1": "Panda", "entity2": "dada's village house", "relation": 13}
+{"text": "Didi and bhai study together for exams", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Nana visited Mumbai to see her granddaughter Sarah.", "entity1": "Nana", "entity2": "Sarah", "relation": 5}
+{"text": "Dadi gave Priya a warm hug at the family gathering.", "entity1": "Dadi", "entity2": "Priya", "relation": 5}
+{"text": "Grandma's house in the countryside is where Emma plays.", "entity1": "Grandma", "entity2": "Emma", "relation": 5}
+{"text": "Nani sings lullabies to Bunny every night.", "entity1": "Nani", "entity2": "Bunny", "relation": 5}
+{"text": "Grandpa taught Raj how to fish last summer.", "entity1": "Grandpa", "entity2": "Raj", "relation": 5}
+{"text": "Nana knitted a sweater for little Panda.", "entity1": "Nana", "entity2": "Panda", "relation": 5}
+{"text": "Dada shares candies with Sarah during visits.", "entity1": "Dada", "entity2": "Sarah", "relation": 5}
+{"text": "Grandma reads books to John in the living room.", "entity1": "Grandma", "entity2": "John", "relation": 5}
+{"text": "Nani took Priya to the park for swings.", "entity1": "Nani", "entity2": "Priya", "relation": 5}
+{"text": "Grandpa fixed Emma's bicycle yesterday.", "entity1": "Grandpa", "entity2": "Emma", "relation": 5}
+{"text": "Dadi cooked biryani for Raj's birthday.", "entity1": "Dadi", "entity2": "Raj", "relation": 5}
+{"text": "Nana plays carrom with little Bunny.", "entity1": "Nana", "entity2": "Bunny", "relation": 5}
+{"text": "Grandpa watches cricket with John.", "entity1": "Grandpa", "entity2": "John", "relation": 5}
+{"text": "Nani gifted Sarah a new doll.", "entity1": "Nani", "entity2": "Sarah", "relation": 5}
+{"text": "Grandma plants flowers with Emma.", "entity1": "Grandma", "entity2": "Emma", "relation": 5}
+{"text": "Nana tells folktales to Raj.", "entity1": "Nana", "entity2": "Raj", "relation": 5}
+{"text": "Grandpa built a swing for Bunny.", "entity1": "Grandpa", "entity2": "Bunny", "relation": 5}
+{"text": "Dadi bakes cakes for Panda.", "entity1": "Dadi", "entity2": "Panda", "relation": 5}
+{"text": "Nani dances with Sarah at weddings.", "entity1": "Nani", "entity2": "Sarah", "relation": 5}
+{"text": "Grandma knits scarves for John.", "entity1": "Grandma", "entity2": "John", "relation": 5}
+{"text": "Grandpa drives Emma to school sometimes.", "entity1": "Grandpa", "entity2": "Emma", "relation": 5}
+{"text": "John visits his aunt Masi every weekend.", "entity1": "John", "entity2": "Masi", "relation": 8}
+{"text": "Panda plays with her uncle Chacha in the garden.", "entity1": "Panda", "entity2": "Chacha", "relation": 8}
+{"text": "Sarah calls her mausa uncle every Diwali.", "entity1": "Sarah", "entity2": "mausa", "relation": 8}
+{"text": "Raj is the nephew of Nani's sister.", "entity1": "Raj", "entity2": "Nani", "relation": 8}
+{"text": "Priya sends drawings to her aunt Chachi.", "entity1": "Priya", "entity2": "Chachi", "relation": 8}
+{"text": "Bunny loves staying over at Masi's house.", "entity1": "Bunny", "entity2": "Masi", "relation": 8}
+{"text": "John gets gifts from mausa on birthdays.", "entity1": "John", "entity2": "mausa", "relation": 8}
+{"text": "Panda runs to hug her aunt Masi.", "entity1": "Panda", "entity2": "Masi", "relation": 8}
+{"text": "Sarah writes letters to Chachi.", "entity1": "Sarah", "entity2": "Chachi", "relation": 8}
+{"text": "Raj plays cricket with his uncle Chacha.", "entity1": "Raj", "entity2": "Chacha", "relation": 8}
+{"text": "Priya dances for mausa at family events.", "entity1": "Priya", "entity2": "mausa", "relation": 8}
+{"text": "Bunny draws pictures for Nani's brother.", "entity1": "Bunny", "entity2": "Nani", "relation": 8}
+{"text": "Emma bakes cookies for her aunt Masi.", "entity1": "Emma", "entity2": "Masi", "relation": 8}
+{"text": "John listens to stories from Chacha.", "entity1": "John", "entity2": "Chacha", "relation": 8}
+{"text": "Panda rides bikes with mausa.", "entity1": "Panda", "entity2": "mausa", "relation": 8}
+{"text": "Sarah celebrates festivals with Chachi.", "entity1": "Sarah", "entity2": "Chachi", "relation": 8}
+{"text": "Raj helps uncle Chacha in the kitchen.", "entity1": "Raj", "entity2": "Chacha", "relation": 8}
+{"text": "Priya sings songs for Masi.", "entity1": "Priya", "entity2": "Masi", "relation": 8}
+{"text": "Bunny gets toys from mausa.", "entity1": "Bunny", "entity2": "mausa", "relation": 8}
+{"text": "John travels with uncle Nani's kin.", "entity1": "John", "entity2": "Nani", "relation": 8}
+{"text": "Panda attends parties at Masi's place.", "entity1": "Panda", "entity2": "Masi", "relation": 8}
+{"text": "Sarah learns recipes from Chacha.", "entity1": "Sarah", "entity2": "Chacha", "relation": 8}
+{"text": "Max chases squirrels in Mom's backyard.", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Buddy fetches balls for Emma during playtime.", "entity1": "Buddy", "entity2": "Emma", "relation": 10}
+{"text": "Max barks at strangers near John's house.", "entity1": "Max", "entity2": "John", "relation": 10}
+{"text": "Buddy guards the door for Raj.", "entity1": "Buddy", "entity2": "Raj", "relation": 10}
+{"text": "Max eats treats from Priya's hand.", "entity1": "Max", "entity2": "Priya", "relation": 10}
+{"text": "Whiskers curls up in Panda's bed.", "entity1": "Whiskers", "entity2": "Panda", "relation": 10}
+{"text": "Buddy runs after Bunny in the park.", "entity1": "Buddy", "entity2": "Bunny", "relation": 10}
+{"text": "Max swims in Dad's pool sometimes.", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers scratches posts bought by Mom.", "entity1": "Whiskers", "entity2": "Mom", "relation": 10}
+{"text": "Buddy howls when John plays guitar.", "entity1": "Buddy", "entity2": "John", "relation": 10}
+{"text": "Max follows Emma to school bus.", "entity1": "Max", "entity2": "Emma", "relation": 10}
+{"text": "Whiskers hides under Sarah's bed.", "entity1": "Whiskers", "entity2": "Sarah", "relation": 10}
+{"text": "Buddy chews toys from Raj's room.", "entity1": "Buddy", "entity2": "Raj", "relation": 10}
+{"text": "Max greets Priya at the door daily.", "entity1": "Max", "entity2": "Priya", "relation": 10}
+{"text": "Whiskers jumps on Panda's keyboard.", "entity1": "Whiskers", "entity2": "Panda", "relation": 10}
+{"text": "Buddy sleeps beside Bunny's crib.", "entity1": "Buddy", "entity2": "Bunny", "relation": 10}
+{"text": "Max digs holes in Mom's garden.", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Whiskers drinks milk from Dad's bowl.", "entity1": "Whiskers", "entity2": "Dad", "relation": 10}
+{"text": "Max cuddles with Sarah on the couch.", "entity1": "Max", "entity2": "Sarah", "relation": 10}
+{"text": "Whiskers watches birds from John's window.", "entity1": "Whiskers", "entity2": "John", "relation": 10}
+{"text": "Buddy protects Raj from rain.", "entity1": "Buddy", "entity2": "Raj", "relation": 10}
+{"text": "Mom owns the antique locket necklace.", "entity1": "Mom", "entity2": "antique locket necklace", "relation": 14}
+{"text": "Dad owns the gold family watch.", "entity1": "Dad", "entity2": "gold family watch", "relation": 14}
+{"text": "Grandma owns the heirloom pearl earrings.", "entity1": "Grandma", "entity2": "heirloom pearl earrings", "relation": 14}
+{"text": "Grandpa owns the old silver cane.", "entity1": "Grandpa", "entity2": "old silver cane", "relation": 14}
+{"text": "Nana owns the embroidered shawl.", "entity1": "Nana", "entity2": "embroidered shawl", "relation": 14}
+{"text": "Dadi owns the ruby ring pendant.", "entity1": "Dadi", "entity2": "ruby ring pendant", "relation": 14}
+{"text": "Mom owns the vintage photo album.", "entity1": "Mom", "entity2": "vintage photo album", "relation": 14}
+{"text": "Dad owns the brass lamp heirloom.", "entity1": "Dad", "entity2": "brass lamp heirloom", "relation": 14}
+{"text": "Grandma owns the quilt from her mother.", "entity1": "Grandma", "entity2": "quilt from her mother", "relation": 14}
+{"text": "Nani owns the jade bracelet.", "entity1": "Nani", "entity2": "jade bracelet", "relation": 14}
+{"text": "Grandpa owns the pocket watch collection.", "entity1": "Grandpa", "entity2": "pocket watch collection", "relation": 14}
+{"text": "Chacha owns the family sword replica.", "entity1": "Chacha", "entity2": "family sword replica", "relation": 14}
+{"text": "Masi owns the diamond brooch.", "entity1": "Masi", "entity2": "diamond brooch", "relation": 14}
+{"text": "Mom owns the sapphire necklace.", "entity1": "Mom", "entity2": "sapphire necklace", "relation": 14}
+{"text": "Dad owns the engraved cufflinks.", "entity1": "Dad", "entity2": "engraved cufflinks", "relation": 14}
+{"text": "Grandma owns the porcelain doll set.", "entity1": "Grandma", "entity2": "porcelain doll set", "relation": 14}
+{"text": "Nana owns the silk saree heirloom.", "entity1": "Nana", "entity2": "silk saree heirloom", "relation": 14}
+{"text": "Dadi owns the emerald earrings.", "entity1": "Dadi", "entity2": "emerald earrings", "relation": 14}
+{"text": "Grandpa owns the leather-bound bible.", "entity1": "Grandpa", "entity2": "leather-bound bible", "relation": 14}
+{"text": "Nani owns the gold bangles set.", "entity1": "Nani", "entity2": "gold bangles set", "relation": 14}
+{"text": "Mom owns the crystal vase heirloom.", "entity1": "Mom", "entity2": "crystal vase heirloom", "relation": 14}
+{"text": "Dad owns the antique clock.", "entity1": "Dad", "entity2": "antique clock", "relation": 14}
+{"text": "Grandma owns the lace handkerchiefs.", "entity1": "Grandma", "entity2": "lace handkerchiefs", "relation": 14}
+{"text": "Chacha owns the ivory chess set.", "entity1": "Chacha", "entity2": "ivory chess set", "relation": 14}
+{"text": "Masi owns the opal pendant.", "entity1": "Masi", "entity2": "opal pendant", "relation": 14}
+{"text": "Grandpa owns the stamp collection album.", "entity1": "Grandpa", "entity2": "stamp collection album", "relation": 14}
+{"text": "Nana owns the pearl necklace.", "entity1": "Nana", "entity2": "pearl necklace", "relation": 14}
+{"text": "Panda hugged her nani tightly during the family gathering.", "entity1": "Panda", "entity2": "nani", "relation": 6}
+{"text": "Emma loves storytelling sessions with her grandma.", "entity1": "Emma", "entity2": "grandma", "relation": 6}
+{"text": "Raj played carrom with nana after dinner.", "entity1": "Raj", "entity2": "nana", "relation": 6}
+{"text": "Bunny ran to her dada for a candy.", "entity1": "Bunny", "entity2": "dada", "relation": 6}
+{"text": "John shared his toys with nani at the park.", "entity1": "John", "entity2": "nani", "relation": 6}
+{"text": "Sweetie drew a picture for grandma on her birthday.", "entity1": "Sweetie", "entity2": "grandma", "relation": 6}
+{"text": "Priya helped nana water the plants in the garden.", "entity1": "Priya", "entity2": "nana", "relation": 6}
+{"text": "Sarah baked cookies with her nani during holidays.", "entity1": "Sarah", "entity2": "nani", "relation": 6}
+{"text": "Panda listened to stories from dada every evening.", "entity1": "Panda", "entity2": "dada", "relation": 6}
+{"text": "Emma chased butterflies with grandma in the backyard.", "entity1": "Emma", "entity2": "grandma", "relation": 6}
+{"text": "Raj sang songs for nani at the family puja.", "entity1": "Raj", "entity2": "nani", "relation": 6}
+{"text": "Bunny picked flowers for her nana together.", "entity1": "Bunny", "entity2": "nana", "relation": 6}
+{"text": "John built a sandcastle with grandpa by the beach.", "entity1": "John", "entity2": "grandpa", "relation": 6}
+{"text": "Sweetie cuddled with dadi while watching TV.", "entity1": "Sweetie", "entity2": "dadi", "relation": 6}
+{"text": "Priya read books to nana before bedtime.", "entity1": "Priya", "entity2": "nana", "relation": 6}
+{"text": "Sarah danced with grandma at the wedding.", "entity1": "Sarah", "entity2": "grandma", "relation": 6}
+{"text": "Panda fed the birds with nani in the morning.", "entity1": "Panda", "entity2": "nani", "relation": 6}
+{"text": "Emma helped grandma knit a scarf for dad.", "entity1": "Emma", "entity2": "grandma", "relation": 6}
+{"text": "Raj fixed the kite with dada for Makar Sankranti.", "entity1": "Raj", "entity2": "dada", "relation": 6}
+{"text": "Bunny shared her ice cream with nana.", "entity1": "Bunny", "entity2": "nana", "relation": 6}
+{"text": "John painted with grandpa during summer vacation.", "entity1": "John", "entity2": "grandpa", "relation": 6}
+{"text": "Sweetie played hide and seek with dadi.", "entity1": "Sweetie", "entity2": "dadi", "relation": 6}
+{"text": "Priya made rangoli alongside nani for Diwali.", "entity1": "Priya", "entity2": "nani", "relation": 6}
+{"text": "Sarah swung on the porch with grandma.", "entity1": "Sarah", "entity2": "grandma", "relation": 6}
+{"text": "Panda whispered secrets to nana during naps.", "entity1": "Panda", "entity2": "nana", "relation": 6}
+{"text": "Emma is best friends with Sarah from school.", "entity1": "Emma", "entity2": "Sarah", "relation": 11}
+{"text": "Panda plays with Bunny every weekend at the park.", "entity1": "Panda", "entity2": "Bunny", "relation": 11}
+{"text": "Raj and John share comics in their room.", "entity1": "Raj", "entity2": "John", "relation": 11}
+{"text": "Priya chats with Sweetie about dolls daily.", "entity1": "Priya", "entity2": "Sweetie", "relation": 11}
+{"text": "Mom and Dad went to the movies together.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Emma waved to her friend Sarah across the street.", "entity1": "Emma", "entity2": "Sarah", "relation": 11}
+{"text": "Bunny and Panda built a fort in the living room.", "entity1": "Bunny", "entity2": "Panda", "relation": 11}
+{"text": "John invited Raj for a sleepover party.", "entity1": "John", "entity2": "Raj", "relation": 11}
+{"text": "Sweetie and Priya exchanged birthday gifts.", "entity1": "Sweetie", "entity2": "Priya", "relation": 11}
+{"text": "Sarah calls Emma her closest buddy forever.", "entity1": "Sarah", "entity2": "Emma", "relation": 11}
+{"text": "Didi and bhai laugh at old family photos.", "entity1": "Didi", "entity2": "bhai", "relation": 11}
+{"text": "Raj shares snacks with his friend John during recess.", "entity1": "Raj", "entity2": "John", "relation": 11}
+{"text": "Panda races bikes with Bunny after school.", "entity1": "Panda", "entity2": "Bunny", "relation": 11}
+{"text": "Priya and Sweetie practice dance moves together.", "entity1": "Priya", "entity2": "Sweetie", "relation": 11}
+{"text": "Emma helps Sarah with homework in the evenings.", "entity1": "Emma", "entity2": "Sarah", "relation": 11}
+{"text": "John and Raj team up for video games nightly.", "entity1": "John", "entity2": "Raj", "relation": 11}
+{"text": "Bunny whispers jokes to her friend Panda.", "entity1": "Bunny", "entity2": "Panda", "relation": 11}
+{"text": "Sweetie draws pictures for Priya at playtime.", "entity1": "Sweetie", "entity2": "Priya", "relation": 11}
+{"text": "Sarah and Emma bake pies for the family picnic.", "entity1": "Sarah", "entity2": "Emma", "relation": 11}
+{"text": "Raj is cousin_of Priya from Mumbai visits.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "Panda and Bunny are cousins who share toys.", "entity1": "Panda", "entity2": "Bunny", "relation": 9}
+{"text": "Emma visits her cousin Sarah every summer.", "entity1": "Emma", "entity2": "Sarah", "relation": 9}
+{"text": "John plays football with cousin Raj often.", "entity1": "John", "entity2": "Raj", "relation": 9}
+{"text": "Sweetie and Priya are cousins at family weddings.", "entity1": "Sweetie", "entity2": "Priya", "relation": 9}
+{"text": "Raj hugged his cousin Priya during Holi.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "Panda shares sweets with cousin Bunny at Diwali.", "entity1": "Panda", "entity2": "Bunny", "relation": 9}
+{"text": "Emma and Sarah, cousins, chase each other in the yard.", "entity1": "Emma", "entity2": "Sarah", "relation": 9}
+{"text": "John races bikes with his cousin Raj.", "entity1": "John", "entity2": "Raj", "relation": 9}
+{"text": "Sweetie dances with cousin Priya at the mela.", "entity1": "Sweetie", "entity2": "Priya", "relation": 9}
+{"text": "Bhai and didi are cousins from chacha's side.", "entity1": "bhai", "entity2": "didi", "relation": 9}
+{"text": "Priya waves to cousin Raj from the window.", "entity1": "Priya", "entity2": "Raj", "relation": 9}
+{"text": "Bunny giggles with cousin Panda over games.", "entity1": "Bunny", "entity2": "Panda", "relation": 9}
+{"text": "Sarah tells secrets to her cousin Emma.", "entity1": "Sarah", "entity2": "Emma", "relation": 9}
+{"text": "Raj and John, cousins, build Lego towers.", "entity1": "Raj", "entity2": "John", "relation": 9}
+{"text": "Priya shares books with cousin Sweetie.", "entity1": "Priya", "entity2": "Sweetie", "relation": 9}
+{"text": "Emma swings with cousin Sarah at the park.", "entity1": "Emma", "entity2": "Sarah", "relation": 9}
+{"text": "Panda and Bunny, cousins, splash in puddles.", "entity1": "Panda", "entity2": "Bunny", "relation": 9}
+{"text": "John cheers for cousin Raj in cricket match.", "entity1": "John", "entity2": "Raj", "relation": 9}
+{"text": "Sweetie and Priya are cousins baking together.", "entity1": "Sweetie", "entity2": "Priya", "relation": 9}
+{"text": "Masi's daughter is cousin_of didi from village.", "entity1": "didi", "entity2": "Masi's daughter", "relation": 9}
+{"text": "Raj plays gully cricket with cousin Priya.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "Mom and Dad danced at the family sangeet.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Bhabhi and bhai celebrated Karva Chauth.", "entity1": "Bhabhi", "entity2": "bhai", "relation": 3}
+{"text": "Priya and Raj held hands at the temple.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Emma's parents Mom and Dad cooked biryani.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Dadi arranged dinner for chachi and chacha.", "entity1": "chachi", "entity2": "chacha", "relation": 3}
+{"text": "Sarah waved to aunt and uncle who are spouses.", "entity1": "aunt", "entity2": "uncle", "relation": 3}
+{"text": "Mom kissed Dad goodnight after tucking kids.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Priya helps her husband Raj in the kitchen.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Bhai brought flowers for his wife bhabhi.", "entity1": "bhai", "entity2": "bhabhi", "relation": 3}
+{"text": "Emma saw Mom and Dad hugging in the hall.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Chachi and chacha arrived for the pooja.", "entity1": "Chachi", "entity2": "chacha", "relation": 3}
+{"text": "Sarah's mom and dad planned a picnic.", "entity1": "mom", "entity2": "dad", "relation": 3}
+{"text": "Raj carried Priya over the threshold happily.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "Didi teased her brother-in-law and bhabhi.", "entity1": "brother-in-law", "entity2": "bhabhi", "relation": 3}
+{"text": "Mom and Dad read stories to the kids together.", "entity1": "Mom", "entity2": "Dad", "relation": 3}
+{"text": "Panda watched nani and dada chatting.", "entity1": "nani", "entity2": "dada", "relation": 3}
+{"text": "John skipped stones with buddy Sarah.", "entity1": "John", "entity2": "Sarah", "relation": 11}
+{"text": "Bunny and her friend Sweetie finger-painted.", "entity1": "Bunny", "entity2": "Sweetie", "relation": 11}
+{"text": "Priya's cousin Emma joined for Eid feast.", "entity1": "Priya", "entity2": "Emma", "relation": 9}
+{"text": "Raj and his spouse Priya lit the lamp.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "Emma chased her cousin John around grandma's house.", "entity1": "Emma", "entity2": "John", "relation": 9}
+{"text": "Panda is friends with Raj from the neighborhood.", "entity1": "Panda", "entity2": "Raj", "relation": 11}
+{"text": "Sweetie visited nani with mom and dad.", "entity1": "Sweetie", "entity2": "nani", "relation": 6}
+{"text": "Bhai played antakshari with didi and cousins.", "entity1": "bhai", "entity2": "didi", "relation": 11}
+{"text": "Sarah and her spouse John hosted dinner.", "entity1": "Sarah", "entity2": "John", "relation": 3}
+{"text": "Priya swung her grandchild Bunny on the jhula.", "entity1": "Bunny", "entity2": "Priya", "relation": 6}
+{"text": "Priya ran to her mom during the family gathering.", "entity1": "Priya", "entity2": "mom", "relation": 2}
+{"text": "Chacha lifted Bunny up at the reunion.", "entity1": "Chacha", "entity2": "Bunny", "relation": 7}
+{"text": "Raj works with John at the software firm.", "entity1": "Raj", "entity2": "John", "relation": 12}
+{"text": "Emma chatted with Sarah near the kitchen.", "entity1": "Emma", "entity2": "kitchen", "relation": 0}
+{"text": "Panda is the child of dad from the stories.", "entity1": "Panda", "entity2": "dad", "relation": 2}
+{"text": "Masi brought sweets for Sweetie at Diwali.", "entity1": "Masi", "entity2": "Sweetie", "relation": 7}
+{"text": "Sarah told Priya she works with Raj.", "entity1": "Sarah", "entity2": "Raj", "relation": 12}
+{"text": "Emma is child of mom who hosted the party.", "entity1": "Emma", "entity2": "mom", "relation": 2}
+{"text": "Nana praised chacha for helping the nephews.", "entity1": "chacha", "entity2": "nephews", "relation": 7}
+{"text": "Priya and John are colleagues at the bank.", "entity1": "Priya", "entity2": "John", "relation": 12}
+{"text": "Panda played with Max in grandma's house.", "entity1": "Panda", "entity2": "Max", "relation": 0}
+{"text": "Sarah is child of dad at the family picnic.", "entity1": "Sarah", "entity2": "dad", "relation": 2}
+{"text": "Chacha danced with the little ones at Holi.", "entity1": "Chacha", "entity2": "little ones", "relation": 7}
+{"text": "Raj works with Sarah on big projects.", "entity1": "Raj", "entity2": "Sarah", "relation": 12}
+{"text": "Bunny sat near nani during the meal.", "entity1": "Bunny", "entity2": "nani", "relation": 0}
+{"text": "John is child of mom from old photos.", "entity1": "John", "entity2": "mom", "relation": 2}
+{"text": "Masi hugged her niece Priya tightly.", "entity1": "Masi", "entity2": "Priya", "relation": 7}
+{"text": "Emma and Priya work together in marketing.", "entity1": "Emma", "entity2": "Priya", "relation": 12}
+{"text": "Didi sang songs near the Mumbai guests.", "entity1": "Didi", "entity2": "Mumbai", "relation": 0}
+{"text": "Raj is child of nana at the gathering.", "entity1": "Raj", "entity2": "nana", "relation": 2}
+{"text": "Chacha gave toys to Panda during Eid.", "entity1": "Chacha", "entity2": "Panda", "relation": 7}
+{"text": "John works with Raj in the same team.", "entity1": "John", "entity2": "Raj", "relation": 12}
+{"text": "Sarah waved at Whiskers from afar.", "entity1": "Sarah", "entity2": "Whiskers", "relation": 0}
+{"text": "Panda is child of dad who barbecued.", "entity1": "Panda", "entity2": "dad", "relation": 2}
+{"text": "Nani called masi to check on the kids.", "entity1": "masi", "entity2": "kids", "relation": 7}
+{"text": "Priya works with Emma on reports.", "entity1": "Priya", "entity2": "Emma", "relation": 12}
+{"text": "Bunny chased Buddy around grandma's house.", "entity1": "Bunny", "entity2": "grandma's house", "relation": 0}
+{"text": "Sweetie is child of mom at the wedding.", "entity1": "Sweetie", "entity2": "mom", "relation": 2}
+{"text": "Chacha shared stories with his nephews.", "entity1": "Chacha", "entity2": "nephews", "relation": 7}
+{"text": "Sarah and John are colleagues in IT.", "entity1": "Sarah", "entity2": "John", "relation": 12}
+{"text": "Raj sat with Priya near the kitchen.", "entity1": "Raj", "entity2": "kitchen", "relation": 0}
+{"text": "Emma is child of dad during the reunion.", "entity1": "Emma", "entity2": "dad", "relation": 2}
+{"text": "Masi played games with Bunny.", "entity1": "Masi", "entity2": "Bunny", "relation": 7}
+{"text": "Raj works with Priya daily.", "entity1": "Raj", "entity2": "Priya", "relation": 12}
+{"text": "John looked at Mumbai pictures with nana.", "entity1": "John", "entity2": "Mumbai", "relation": 0}
+{"text": "Priya is child of mom who cooked.", "entity1": "Priya", "entity2": "mom", "relation": 2}
+{"text": "Chacha lifted Sarah high up.", "entity1": "Chacha", "entity2": "Sarah", "relation": 7}
+{"text": "Emma works with John remotely.", "entity1": "Emma", "entity2": "John", "relation": 12}
+{"text": "Panda napped near Max the pet.", "entity1": "Panda", "entity2": "Max", "relation": 0}
+{"text": "John is child of nani from tales.", "entity1": "John", "entity2": "nani", "relation": 2}
+{"text": "Masi fed sweets to Sweetie.", "entity1": "Masi", "entity2": "Sweetie", "relation": 7}
+{"text": "Sarah works with Raj on deadlines.", "entity1": "Sarah", "entity2": "Raj", "relation": 12}
+{"text": "Didi danced in grandma's house.", "entity1": "Didi", "entity2": "grandma's house", "relation": 0}
+{"text": "Sarah is child of dad at picnic.", "entity1": "Sarah", "entity2": "dad", "relation": 2}
+{"text": "Chacha joked with the young ones.", "entity1": "Chacha", "entity2": "young ones", "relation": 7}
+{"text": "Priya and Emma are work colleagues.", "entity1": "Priya", "entity2": "Emma", "relation": 12}
+{"text": "Bunny ate near the Mumbai relatives.", "entity1": "Bunny", "entity2": "Mumbai", "relation": 0}
+{"text": "Emma is child of mom hosting.", "entity1": "Emma", "entity2": "mom", "relation": 2}
+{"text": "Nana watched chacha play with nieces.", "entity1": "chacha", "entity2": "nieces", "relation": 7}
+{"text": "John works with Sarah closely.", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Raj waved at Whiskers lazily.", "entity1": "Raj", "entity2": "Whiskers", "relation": 0}
+{"text": "Panda is child of dad grilling.", "entity1": "Panda", "entity2": "dad", "relation": 2}
+{"text": "Masi sang to Panda softly.", "entity1": "Masi", "entity2": "Panda", "relation": 7}
+{"text": "Raj works with John on apps.", "entity1": "Raj", "entity2": "John", "relation": 12}
+{"text": "Sweetie ran through the kitchen.", "entity1": "Sweetie", "entity2": "kitchen", "relation": 0}
+{"text": "Raj is child of nana proudly.", "entity1": "Raj", "entity2": "nana", "relation": 2}
+{"text": "Chacha carried Bunny around.", "entity1": "Chacha", "entity2": "Bunny", "relation": 7}
+{"text": "Emma and Priya work in finance.", "entity1": "Emma", "entity2": "Priya", "relation": 12}
+{"text": "John sat with Buddy nearby.", "entity1": "John", "entity2": "Buddy", "relation": 0}
+{"text": "Priya is child of mom smiling.", "entity1": "Priya", "entity2": "mom", "relation": 2}
+{"text": "Masi tickled her nephew John.", "entity1": "Masi", "entity2": "John", "relation": 7}
+{"text": "Sarah works with Priya often.", "entity1": "Sarah", "entity2": "Priya", "relation": 12}
+{"text": "Panda chased Max in the yard.", "entity1": "Panda", "entity2": "Max", "relation": 0}
+{"text": "Bunny is child of dad laughing.", "entity1": "Bunny", "entity2": "dad", "relation": 2}
+{"text": "Chacha gave gifts to Emma.", "entity1": "Chacha", "entity2": "Emma", "relation": 7}
+{"text": "John and Raj are office colleagues.", "entity1": "John", "entity2": "Raj", "relation": 12}
+{"text": "Sarah gazed at grandma's house.", "entity1": "Sarah", "entity2": "grandma's house", "relation": 0}
+{"text": "Sweetie is child of mom dancing.", "entity1": "Sweetie", "entity2": "mom", "relation": 2}
+{"text": "Nani pointed to chacha with kids.", "entity1": "chacha", "entity2": "kids", "relation": 7}
+{"text": "Priya works with Sarah weekly.", "entity1": "Priya", "entity2": "Sarah", "relation": 12}
+{"text": "Didi ate near Mumbai cousins.", "entity1": "Didi", "entity2": "Mumbai", "relation": 0}
+{"text": "John is child of dad strong.", "entity1": "John", "entity2": "dad", "relation": 2}
+{"text": "Masi held Priya's hand.", "entity1": "Masi", "entity2": "Priya", "relation": 7}
+{"text": "Emma works with Raj in sales.", "entity1": "Emma", "entity2": "Raj", "relation": 12}
+{"text": "Bunny played with Whiskers.", "entity1": "Bunny", "entity2": "Whiskers", "relation": 0}
+{"text": "Emma is child of nani wise.", "entity1": "Emma", "entity2": "nani", "relation": 2}
+{"text": "Chacha chased the little nieces.", "entity1": "Chacha", "entity2": "nieces", "relation": 7}
+{"text": "Sarah and John work together.", "entity1": "Sarah", "entity2": "John", "relation": 12}
+{"text": "Panda lounged in the kitchen.", "entity1": "Panda", "entity2": "kitchen", "relation": 0}
+{"text": "Sarah is child of mom caring.", "entity1": "Sarah", "entity2": "mom", "relation": 2}
+{"text": "Masi waved at Bunny happily.", "entity1": "Masi", "entity2": "Bunny", "relation": 7}
+{"text": "Raj works with Emma now.", "entity1": "Raj", "entity2": "Emma", "relation": 12}
+{"text": "John near grandma's house gate.", "entity1": "John", "entity2": "grandma's house", "relation": 0}
+{"text": "Panda is child of dad fun.", "entity1": "Panda", "entity2": "dad", "relation": 2}
+{"text": "Chacha told jokes to nephews.", "entity1": "Chacha", "entity2": "nephews", "relation": 7}
+{"text": "Priya works with John daily.", "entity1": "Priya", "entity2": "John", "relation": 12}
+{"text": "Sweetie saw Mumbai lights.", "entity1": "Sweetie", "entity2": "Mumbai", "relation": 0}
+{"text": "Raj is child of mom proud.", "entity1": "Raj", "entity2": "mom", "relation": 2}
+{"text": "Nana smiled at masi with kids.", "entity1": "masi", "entity2": "kids", "relation": 7}
+{"text": "Dad plays cricket with Raj every evening", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Nani feeds Panda her favorite treats", "entity1": "Nani", "entity2": "Panda", "relation": 1}
+{"text": "Bhai protects his little sister Priya", "entity1": "Bhai", "entity2": "Priya", "relation": 1}
+{"text": "Masi took John to the doctor yesterday", "entity1": "Masi", "entity2": "John", "relation": 1}
+{"text": "Chacha gifted a new toy to Buddy", "entity1": "Chacha", "entity2": "Buddy", "relation": 1}
+{"text": "Mom walks Max in the park daily", "entity1": "Mom", "entity2": "Max", "relation": 1}
+{"text": "Dada teaches Sarah Hindi songs", "entity1": "Dada", "entity2": "Sarah", "relation": 1}
+{"text": "Didi shares her snacks with Whiskers", "entity1": "Didi", "entity2": "Whiskers", "relation": 1}
+{"text": "Nana reads stories to Bunny", "entity1": "Nana", "entity2": "Bunny", "relation": 1}
+{"text": "Mom helps Emma with her homework", "entity1": "Mom", "entity2": "Emma", "relation": 1}
+{"text": "Dad fixed Raj's bicycle", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Chachi cooks meals for the family pet Max", "entity1": "Chachi", "entity2": "Max", "relation": 1}
+{"text": "Mausi sings lullabies to Priya", "entity1": "Mausi", "entity2": "Priya", "relation": 1}
+{"text": "Bhabhi cares for little John", "entity1": "Bhabhi", "entity2": "John", "relation": 1}
+{"text": "Mom grooms Whiskers every weekend", "entity1": "Mom", "entity2": "Whiskers", "relation": 1}
+{"text": "Dad attends Panda's school events", "entity1": "Dad", "entity2": "Panda", "relation": 1}
+{"text": "Nani knits sweaters for Sarah", "entity1": "Nani", "entity2": "Sarah", "relation": 1}
+{"text": "Didi and Bhai play together", "entity1": "Didi", "entity2": "Bhai", "relation": 4}
+{"text": "Raj and Priya share the same room", "entity1": "Raj", "entity2": "Priya", "relation": 4}
+{"text": "Emma and John fight over toys often", "entity1": "Emma", "entity2": "John", "relation": 4}
+{"text": "Bunny and Max chase each other around", "entity1": "Bunny", "entity2": "Max", "relation": 4}
+{"text": "Sarah and Panda went to the fair", "entity1": "Sarah", "entity2": "Panda", "relation": 4}
+{"text": "Didi teases her bhai Raj daily", "entity1": "Didi", "entity2": "Raj", "relation": 4}
+{"text": "Buddy and Whiskers sleep side by side", "entity1": "Buddy", "entity2": "Whiskers", "relation": 4}
+{"text": "Priya and her bhai John argue about TV", "entity1": "Priya", "entity2": "John", "relation": 4}
+{"text": "Emma shares secrets with her sibling Sarah", "entity1": "Emma", "entity2": "Sarah", "relation": 4}
+{"text": "Panda and Bunny are litter mates", "entity1": "Panda", "entity2": "Bunny", "relation": 4}
+{"text": "Raj fights with his sister Priya", "entity1": "Raj", "entity2": "Priya", "relation": 4}
+{"text": "Max and Buddy wrestle in the yard", "entity1": "Max", "entity2": "Buddy", "relation": 4}
+{"text": "Didi and her bhai share clothes sometimes", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "John and Emma attend the same school", "entity1": "John", "entity2": "Emma", "relation": 4}
+{"text": "Whiskers and Panda groom each other", "entity1": "Whiskers", "entity2": "Panda", "relation": 4}
+{"text": "Sarah has a brother named Raj", "entity1": "Sarah", "entity2": "Raj", "relation": 4}
+{"text": "Bunny plays fetch with her sibling Max", "entity1": "Bunny", "entity2": "Max", "relation": 4}
+{"text": "Priya and her didi bake cookies", "entity1": "Priya", "entity2": "didi", "relation": 4}
+{"text": "Buddy lives at grandma's house with the family", "entity1": "Buddy", "entity2": "grandma's house", "relation": 13}
+{"text": "Max lives at Mumbai in a cozy apartment", "entity1": "Max", "entity2": "Mumbai", "relation": 13}
+{"text": "Whiskers lives at the kitchen windowsill", "entity1": "Whiskers", "entity2": "kitchen", "relation": 13}
+{"text": "Panda lives at nana's house during vacations", "entity1": "Panda", "entity2": "nana's house", "relation": 13}
+{"text": "Emma lives at Mumbai with her parents", "entity1": "Emma", "entity2": "Mumbai", "relation": 13}
+{"text": "Raj lives at grandma's house for summers", "entity1": "Raj", "entity2": "grandma's house", "relation": 13}
+{"text": "Priya lives at the kitchen most evenings", "entity1": "Priya", "entity2": "kitchen", "relation": 13}
+{"text": "John lives at nani's house in the village", "entity1": "John", "entity2": "nani's house", "relation": 13}
+{"text": "Sarah lives at Mumbai apartment block", "entity1": "Sarah", "entity2": "Mumbai", "relation": 13}
+{"text": "Bunny lives at chacha's farm", "entity1": "Bunny", "entity2": "chacha's farm", "relation": 13}
+{"text": "Buddy stays at grandma's house often", "entity1": "Buddy", "entity2": "grandma's house", "relation": 13}
+{"text": "Max lives at the kitchen corner", "entity1": "Max", "entity2": "kitchen", "relation": 13}
+{"text": "Whiskers lives at Mumbai with family", "entity1": "Whiskers", "entity2": "Mumbai", "relation": 13}
+{"text": "Panda lives at masi's bungalow", "entity1": "Panda", "entity2": "masi's bungalow", "relation": 13}
+{"text": "Emma lives at nana's house nearby", "entity1": "Emma", "entity2": "nana's house", "relation": 13}
+{"text": "Raj lives at the kitchen during meals", "entity1": "Raj", "entity2": "kitchen", "relation": 13}
+{"text": "Priya lives at grandma's house happily", "entity1": "Priya", "entity2": "grandma's house", "relation": 13}
+{"text": "Sarah lives at chacha's place", "entity1": "Sarah", "entity2": "chacha's place", "relation": 13}
+{"text": "Bunny lives at the kitchen table under", "entity1": "Bunny", "entity2": "kitchen", "relation": 13}
+{"text": "Buddy lives at nani's house in Delhi", "entity1": "Buddy", "entity2": "nani's house", "relation": 13}
+{"text": "Panda is friend of Emma from school", "entity1": "Panda", "entity2": "Emma", "relation": 11}
+{"text": "Max is friend of Raj at the park", "entity1": "Max", "entity2": "Raj", "relation": 11}
+{"text": "Whiskers is friend of Priya always", "entity1": "Whiskers", "entity2": "Priya", "relation": 11}
+{"text": "Buddy is friend of John during playtime", "entity1": "Buddy", "entity2": "John", "relation": 11}
+{"text": "Bunny is friend of Sarah next door", "entity1": "Bunny", "entity2": "Sarah", "relation": 11}
+{"text": "Panda plays with her friend didi", "entity1": "Panda", "entity2": "didi", "relation": 11}
+{"text": "Max is best friend of bhai Raj", "entity1": "Max", "entity2": "bhai", "relation": 11}
+{"text": "Whiskers cuddles with friend Priya", "entity1": "Whiskers", "entity2": "Priya", "relation": 11}
+{"text": "Buddy is friend of chacha's son", "entity1": "Buddy", "entity2": "chacha", "relation": 11}
+{"text": "Emma is friend of her pet Bunny", "entity1": "Emma", "entity2": "Bunny", "relation": 11}
+{"text": "Raj shares toys with friend Max", "entity1": "Raj", "entity2": "Max", "relation": 11}
+{"text": "Priya walks with friend Whiskers", "entity1": "Priya", "entity2": "Whiskers", "relation": 11}
+{"text": "John plays cricket with friend Panda", "entity1": "John", "entity2": "Panda", "relation": 11}
+{"text": "Sarah is friend of masi's dog Buddy", "entity1": "Sarah", "entity2": "Buddy", "relation": 11}
+{"text": "Bunny naps with her friend bhai", "entity1": "Bunny", "entity2": "bhai", "relation": 11}
+{"text": "Didi is friend of Whiskers the cat", "entity1": "Didi", "entity2": "Whiskers", "relation": 11}
+{"text": "Nani watches Panda with her friend", "entity1": "Panda", "entity2": "Nani", "relation": 11}
+{"text": "Mom drove Priya to bhai's school event", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Dada scolds his grandson John gently", "entity1": "Dada", "entity2": "John", "relation": 1}
+{"text": "Chacha bathes the family pet Bunny", "entity1": "Chacha", "entity2": "Bunny", "relation": 1}
+{"text": "Bhai and didi share a bicycle", "entity1": "Bhai", "entity2": "didi", "relation": 4}
+{"text": "Emma and her brother Panda fight", "entity1": "Emma", "entity2": "Panda", "relation": 4}
+{"text": "Max lives at masi's house temporarily", "entity1": "Max", "entity2": "masi's house", "relation": 13}
+{"text": "Whiskers lives at grandma's house attic", "entity1": "Whiskers", "entity2": "grandma's house", "relation": 13}
+{"text": "Buddy is friend of nana daily", "entity1": "Buddy", "entity2": "nana", "relation": 11}
+{"text": "Nani attends Emma's functions", "entity1": "Nani", "entity2": "Emma", "relation": 1}
+{"text": "Priya lives at chacha's Mumbai flat", "entity1": "Priya", "entity2": "Mumbai", "relation": 13}
+{"text": "John is friend of family pet Panda", "entity1": "John", "entity2": "Panda", "relation": 11}
+{"text": "Dad grooms Max before walks", "entity1": "Dad", "entity2": "Max", "relation": 1}
+{"text": "Didi and bhai study together", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Bunny lives at the kitchen floor", "entity1": "Bunny", "entity2": "kitchen", "relation": 13}
+{"text": "Emma is friend of Whiskers always", "entity1": "Emma", "entity2": "Whiskers", "relation": 11}
+{"text": "Nana proudly watched Priya play at the family gathering with friends", "entity1": "Nana", "entity2": "Priya", "relation": 5}
+{"text": "Emma's grandparent_of Bunny shared stories with her friends during tea", "entity1": "Emma", "entity2": "Bunny", "relation": 5}
+{"text": "Dadi hugged little Raj tightly at the neighborhood picnic", "entity1": "Dadi", "entity2": "Raj", "relation": 5}
+{"text": "Grandpa John introduced his grandkids to his old fishing buddies", "entity1": "Grandpa John", "entity2": "grandkids", "relation": 5}
+{"text": "Nani baked cookies for Sarah and her school friends", "entity1": "Nani", "entity2": "Sarah", "relation": 5}
+{"text": "Panda's nana attended her birthday party with all the neighborhood kids", "entity1": "nana", "entity2": "Panda", "relation": 5}
+{"text": "Mom's dad danced with his granddaughters at the wedding reception", "entity1": "Mom's dad", "entity2": "granddaughters", "relation": 5}
+{"text": "Chacha's friend met his niece Priya at the park", "entity1": "Priya", "entity2": "Chacha", "relation": 8}
+{"text": "Raj waved to his masi during the community festival", "entity1": "Raj", "entity2": "masi", "relation": 8}
+{"text": "Sweetie is the niece of her aunt Sarah who visits with friends", "entity1": "Sweetie", "entity2": "Sarah", "relation": 8}
+{"text": "Bhai's nephew Bunny joined the cricket game with pals", "entity1": "Bunny", "entity2": "Bhai", "relation": 8}
+{"text": "Emma giggled as her uncle's friend teased her at dinner", "entity1": "Emma", "entity2": "uncle", "relation": 8}
+{"text": "Max barked happily when Dad's colleagues came over for dinner", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers curled up on Priya's lap during the ladies' circle meeting", "entity1": "Whiskers", "entity2": "Priya", "relation": 10}
+{"text": "Buddy the dog chased balls with John and his workout buddies", "entity1": "Buddy", "entity2": "John", "relation": 10}
+{"text": "Raj owns the antique pocket watch passed down from his grandfather", "entity1": "Raj", "entity2": "antique pocket watch", "relation": 14}
+{"text": "Sarah treasures the gold bangles that her nani owns as heirloom", "entity1": "Sarah", "entity2": "gold bangles", "relation": 14}
+{"text": "Nana showed her friends the family locket she owns", "entity1": "Nana", "entity2": "family locket", "relation": 14}
+{"text": "Dada gifted his old cricket bat to friends, but still owns it technically", "entity1": "Dada", "entity2": "old cricket bat", "relation": 14}
+{"text": "Panda's nani is grandparent_of her and loves playing with Panda's friends", "entity1": "nani", "entity2": "Panda", "relation": 5}
+{"text": "Chacha introduced his niece Emma to his poker buddies", "entity1": "Emma", "entity2": "Chacha", "relation": 8}
+{"text": "Masi's nephew Raj performed at the school talent show with classmates", "entity1": "Raj", "entity2": "Masi", "relation": 8}
+{"text": "Max is pet_of Mom who walks him with her yoga group", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Whiskers sleeps near Dad during his video calls with colleagues", "entity1": "Whiskers", "entity2": "Dad", "relation": 10}
+{"text": "Priya owns the embroidered shawl from her great-grandma's collection", "entity1": "Priya", "entity2": "embroidered shawl", "relation": 14}
+{"text": "Grandpa owns the vintage radio that fascinates his grandkids' friends", "entity1": "Grandpa", "entity2": "vintage radio", "relation": 14}
+{"text": "Nani is grandparent_of Bunny and bakes for her playdates", "entity1": "Nani", "entity2": "Bunny", "relation": 5}
+{"text": "Sweetie, niece of Chacha, joined the family Diwali party with neighbors", "entity1": "Sweetie", "entity2": "Chacha", "relation": 8}
+{"text": "Buddy follows Sarah everywhere, even to her book club meetings", "entity1": "Buddy", "entity2": "Sarah", "relation": 10}
+{"text": "John owns the silver sword model heirloom displayed at gatherings", "entity1": "John", "entity2": "silver sword model", "relation": 14}
+{"text": "Dadi told stories to her grandchildren and their cousins at the reunion", "entity1": "Dadi", "entity2": "grandchildren", "relation": 5}
+{"text": "Raj is niece_nephew_of his didi who brought her college friends home", "entity1": "Raj", "entity2": "didi", "relation": 8}
+{"text": "Panda's pet Max greeted nana's bridge club ladies warmly", "entity1": "Max", "entity2": "Panda", "relation": 10}
+{"text": "Emma owns the pearl necklace that her grandma cherished", "entity1": "Emma", "entity2": "pearl necklace", "relation": 14}
+{"text": "Nana danced with Priya and her dance class friends at the event", "entity1": "Nana", "entity2": "Priya", "relation": 5}
+{"text": "Bunny is the nephew of Masi who hosted a tea party for ladies", "entity1": "Bunny", "entity2": "Masi", "relation": 8}
+{"text": "Whiskers is pet_of Raj, purring during his gaming sessions with buddies", "entity1": "Whiskers", "entity2": "Raj", "relation": 10}
+{"text": "Sarah owns the brass lamp heirloom from her family's traditions", "entity1": "Sarah", "entity2": "brass lamp", "relation": 14}
+{"text": "Grandma nani spoiled her grandkids with sweets at the temple fair", "entity1": "Grandma nani", "entity2": "grandkids", "relation": 5}
+{"text": "Priya, niece of Bhai, shared laughs with his work friends", "entity1": "Priya", "entity2": "Bhai", "relation": 8}
+{"text": "Max chased squirrels while Mom chatted with her walking group", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Chacha owns the old sitar that he plays for family and friends", "entity1": "Chacha", "entity2": "old sitar", "relation": 14}
+{"text": "Dada is grandparent_of Emma and loves her school performances", "entity1": "Dada", "entity2": "Emma", "relation": 5}
+{"text": "Sweetie waved to her uncle John during the block party", "entity1": "Sweetie", "entity2": "uncle John", "relation": 8}
+{"text": "Buddy is pet_of Dad, joining barbecues with neighbors", "entity1": "Buddy", "entity2": "Dad", "relation": 10}
+{"text": "Panda owns the jade bracelet heirloom from nana", "entity1": "Panda", "entity2": "jade bracelet", "relation": 14}
+{"text": "Nani attended Raj's sports day with other grandparents", "entity1": "Nani", "entity2": "Raj", "relation": 5}
+{"text": "Emma is niece_nephew_of her chacha who coaches her team", "entity1": "Emma", "entity2": "chacha", "relation": 8}
+{"text": "Whiskers rubbed against Priya's legs at her birthday bash", "entity1": "Whiskers", "entity2": "Priya", "relation": 10}
+{"text": "Raj owns the family sword replica shown to visitors", "entity1": "Raj", "entity2": "family sword replica", "relation": 14}
+{"text": "Grandpa shared wisdom with his granddaughters and their pals", "entity1": "Grandpa", "entity2": "granddaughters", "relation": 5}
+{"text": "Bunny, nephew of didi, helped at her kitty party", "entity1": "Bunny", "entity2": "didi", "relation": 8}
+{"text": "Max is pet_of Sarah during her coffee meetups", "entity1": "Max", "entity2": "Sarah", "relation": 10}
+{"text": "Masi owns the antique thali passed through generations", "entity1": "Masi", "entity2": "antique thali", "relation": 14}
+{"text": "Nana took Panda to meet his old army friends", "entity1": "Nana", "entity2": "Panda", "relation": 5}
+{"text": "Sarah's nephew John played with her yoga friends' kids", "entity1": "John", "entity2": "Sarah", "relation": 8}
+{"text": "Buddy lounged near John at the golf outing", "entity1": "Buddy", "entity2": "John", "relation": 10}
+{"text": "Dadi owns the embroidered quilt for family gatherings", "entity1": "Dadi", "entity2": "embroidered quilt", "relation": 14}
+{"text": "Chacha cheered for his grandniece at the function", "entity1": "Chacha", "entity2": "grandniece", "relation": 5}
+{"text": "Priya is niece of nana's friend who visits often", "entity1": "Priya", "entity2": "nana", "relation": 8}
+{"text": "Whiskers is pet_of Bunny, meowing at playdates", "entity1": "Whiskers", "entity2": "Bunny", "relation": 10}
+{"text": "Emma owns the ruby ring heirloom worn at weddings", "entity1": "Emma", "entity2": "ruby ring", "relation": 14}
+{"text": "Grandma dadi knit sweaters for her grandkids' school trip", "entity1": "Grandma dadi", "entity2": "grandkids", "relation": 5}
+{"text": "Raj, nephew of masi, joined her dance class demo", "entity1": "Raj", "entity2": "masi", "relation": 8}
+{"text": "Max followed Mom to her sewing circle", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Sarah owns the ivory chess set from colonial times", "entity1": "Sarah", "entity2": "ivory chess set", "relation": 14}
+{"text": "Nani is grandparent_of Sweetie and attends her recitals", "entity1": "Nani", "entity2": "Sweetie", "relation": 5}
+{"text": "Bhai's niece Panda drew pictures for his colleagues", "entity1": "Panda", "entity2": "Bhai", "relation": 8}
+{"text": "Buddy is pet_of Priya at her study group sessions", "entity1": "Buddy", "entity2": "Priya", "relation": 10}
+{"text": "John owns the gold coin collection displayed proudly", "entity1": "John", "entity2": "gold coin collection", "relation": 14}
+{"text": "Dada played carrom with his grandchildren and neighbors", "entity1": "Dada", "entity2": "grandchildren", "relation": 5}
+{"text": "Emma waved to chacha from her cycle with friends", "entity1": "Emma", "entity2": "chacha", "relation": 8}
+{"text": "Whiskers curled up with Dad's fishing gear for trips", "entity1": "Whiskers", "entity2": "Dad", "relation": 10}
+{"text": "Panda owns the silver anklets heirloom for festivals", "entity1": "Panda", "entity2": "silver anklets", "relation": 14}
+{"text": "Nana gifted books to Raj and his reading club", "entity1": "Nana", "entity2": "Raj", "relation": 5}
+{"text": "Sweetie is niece_nephew_of Masi at family pujas", "entity1": "Sweetie", "entity2": "Masi", "relation": 8}
+{"text": "Max is pet_of Raj during cricket matches with pals", "entity1": "Max", "entity2": "Raj", "relation": 10}
+{"text": "Nani owns the paithani saree worn for occasions", "entity1": "Nani", "entity2": "paithani saree", "relation": 14}
+{"text": "Grandpa cheered Bunny at the athletics meet with buddies", "entity1": "Grandpa", "entity2": "Bunny", "relation": 5}
+{"text": "Priya, niece of didi, baked for her art friends", "entity1": "Priya", "entity2": "didi", "relation": 8}
+{"text": "Buddy tagged along with Sarah to the market fair", "entity1": "Buddy", "entity2": "Sarah", "relation": 10}
+{"text": "Chacha owns the brass idol from temple visits", "entity1": "Chacha", "entity2": "brass idol", "relation": 14}
+{"text": "Dadi sang lullabies to her granddaughters' sleepover", "entity1": "Dadi", "entity2": "granddaughters", "relation": 5}
+{"text": "John is nephew of his aunt Bunny's social circle", "entity1": "John", "entity2": "aunt Bunny", "relation": 8}
+{"text": "Whiskers is pet_of Emma at her piano lessons", "entity1": "Whiskers", "entity2": "Emma", "relation": 10}
+{"text": "Raj owns the family Bible printed in 1900", "entity1": "Raj", "entity2": "family Bible", "relation": 14}
+{"text": "Nana hosted a picnic for Priya and classmates", "entity1": "Nana", "entity2": "Priya", "relation": 5}
+{"text": "Bunny waved at masi from the school bus with friends", "entity1": "Bunny", "entity2": "masi", "relation": 8}
+{"text": "Max lounged with Mom's bridge partners", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Sarah owns the diamond brooch heirloom", "entity1": "Sarah", "entity2": "diamond brooch", "relation": 14}
+{"text": "Grandma nani taught cooking to her grandkids' group", "entity1": "Grandma nani", "entity2": "grandkids", "relation": 5}
+{"text": "Panda is niece of chacha's weekly dinners", "entity1": "Panda", "entity2": "chacha", "relation": 8}
+{"text": "Buddy is pet_of John on hiking trips with mates", "entity1": "Buddy", "entity2": "John", "relation": 10}
+{"text": "Dada owns the walking stick carved by great-grandpa", "entity1": "Dada", "entity2": "walking stick", "relation": 14}
+{"text": "Nani clapped for Sweetie at the cultural fest", "entity1": "Nani", "entity2": "Sweetie", "relation": 5}
+{"text": "Raj, nephew of Bhai, fixed bikes with his garage crew", "entity1": "Raj", "entity2": "Bhai", "relation": 8}
+{"text": "Whiskers greeted Dad's poker night guests", "entity1": "Whiskers", "entity2": "Dad", "relation": 10}
+{"text": "Priya owns the crystal vase from heirloom auctions", "entity1": "Priya", "entity2": "crystal vase", "relation": 14}
+{"text": "Panda showed her nana the old family locket she inherited as a grandchild.", "entity1": "Panda", "entity2": "nana", "relation": 6}
+{"text": "Raj visited nani with the heirloom ring, proud to be her grandchild.", "entity1": "Raj", "entity2": "nani", "relation": 6}
+{"text": "Emma treasures the quilt from grandma, her grandparent whom she is the grandchild of.", "entity1": "Emma", "entity2": "grandma", "relation": 6}
+{"text": "Bunny held the antique doll that came from nana, as her grandchild.", "entity1": "Bunny", "entity2": "nana", "relation": 6}
+{"text": "Priya polished the gold bangle, a gift from dadi to her grandchild.", "entity1": "Priya", "entity2": "dadi", "relation": 6}
+{"text": "John displayed the family sword passed to him by dada, his grandparent.", "entity1": "John", "entity2": "dada", "relation": 6}
+{"text": "Sarah wore the heirloom necklace from nani, being her cherished grandchild.", "entity1": "Sarah", "entity2": "nani", "relation": 6}
+{"text": "Sweetie admired the vintage sari from grandma, as the grandchild.", "entity1": "Sweetie", "entity2": "grandma", "relation": 6}
+{"text": "Panda reminisced about the pocket watch from nana with her siblings.", "entity1": "Panda", "entity2": "nana", "relation": 6}
+{"text": "Raj cleaned the brass lamp heirloom given by nani to her grandchild.", "entity1": "Raj", "entity2": "nani", "relation": 6}
+{"text": "Emma shared stories of the family album from grandma, her grandparent.", "entity1": "Emma", "entity2": "grandma", "relation": 6}
+{"text": "Bunny fixed the old clock inherited as nana's grandchild.", "entity1": "Bunny", "entity2": "nana", "relation": 6}
+{"text": "Priya showed chacha the pearl earrings from dadi.", "entity1": "Priya", "entity2": "dadi", "relation": 6}
+{"text": "John repaired the wooden box from dada, grandparent to him.", "entity1": "John", "entity2": "dada", "relation": 6}
+{"text": "Sarah dusted the silver tray, a heirloom from nani.", "entity1": "Sarah", "entity2": "nani", "relation": 6}
+{"text": "Sweetie framed the old photo from grandma as her grandchild.", "entity1": "Sweetie", "entity2": "grandma", "relation": 6}
+{"text": "Panda and her cousin Raj played with the family toys from nana.", "entity1": "Panda", "entity2": "nana", "relation": 6}
+{"text": "Emma is the grandchild of nani who gave her the embroidered shawl.", "entity1": "Emma", "entity2": "nani", "relation": 6}
+{"text": "Bunny inherited the crystal vase as dadi's grandchild.", "entity1": "Bunny", "entity2": "dadi", "relation": 6}
+{"text": "Priya visited grandma with the heirloom bracelet.", "entity1": "Priya", "entity2": "grandma", "relation": 6}
+{"text": "John and Sarah talked about the painting from dada.", "entity1": "John", "entity2": "dada", "relation": 6}
+{"text": "Raj is nani's grandchild and loves the family quilt.", "entity1": "Raj", "entity2": "nani", "relation": 6}
+{"text": "Sweetie showed mom the locket from nana.", "entity1": "Sweetie", "entity2": "nana", "relation": 6}
+{"text": "Panda as nana's grandchild wore the ruby ring at the wedding.", "entity1": "Panda", "entity2": "nana", "relation": 6}
+{"text": "Raj and Priya are cousins who share stories about their nana's heirlooms.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "Emma and Sarah examined the family brooch together as cousins.", "entity1": "Emma", "entity2": "Sarah", "relation": 9}
+{"text": "Bunny and John argued over the antique lamp, being cousins.", "entity1": "Bunny", "entity2": "John", "relation": 9}
+{"text": "Panda visited her cousin Sweetie to see the heirloom necklace.", "entity1": "Panda", "entity2": "Sweetie", "relation": 9}
+{"text": "Priya and Raj compared their shares of dada's possessions as cousins.", "entity1": "Priya", "entity2": "Raj", "relation": 9}
+{"text": "Sarah showed her cousin Emma the gold chain from nani.", "entity1": "Sarah", "entity2": "Emma", "relation": 9}
+{"text": "John and Bunny reminisced about chacha's gifts as cousins.", "entity1": "John", "entity2": "Bunny", "relation": 9}
+{"text": "Didi and bhai sorted through masi's old jewelry as cousins do.", "entity1": "Didi", "entity2": "bhai", "relation": 9}
+{"text": "Raj met his cousin Priya at nana's house for heirlooms.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "Emma and her cousin Panda shared the family recipe book.", "entity1": "Emma", "entity2": "Panda", "relation": 9}
+{"text": "Sweetie lent the vintage purse to cousin Sarah.", "entity1": "Sweetie", "entity2": "Sarah", "relation": 9}
+{"text": "Bunny and John, cousins, divided the brass idols from dadi.", "entity1": "Bunny", "entity2": "John", "relation": 9}
+{"text": "Priya told her cousin Raj about the sapphire earrings.", "entity1": "Priya", "entity2": "Raj", "relation": 9}
+{"text": "Sarah and Emma as cousins admired the embroidered tapestry.", "entity1": "Sarah", "entity2": "Emma", "relation": 9}
+{"text": "Panda and Sweetie, cousins, fixed the old rocking chair.", "entity1": "Panda", "entity2": "Sweetie", "relation": 9}
+{"text": "John visited cousin Bunny with stories of family possessions.", "entity1": "John", "entity2": "Bunny", "relation": 9}
+{"text": "Didi showed chacha's watch to her cousin bhai.", "entity1": "Didi", "entity2": "bhai", "relation": 9}
+{"text": "Raj and his cousin Priya polished nani's silver plate.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "Emma laughed with cousin Sarah over masi's funny letters.", "entity1": "Emma", "entity2": "Sarah", "relation": 9}
+{"text": "Bunny gave cousin John the pearl necklace for safekeeping.", "entity1": "Bunny", "entity2": "John", "relation": 9}
+{"text": "Sweetie and Panda as cousins shared the heirloom diary.", "entity1": "Sweetie", "entity2": "Panda", "relation": 9}
+{"text": "Priya and Raj, cousins, reminisced about dada's stories.", "entity1": "Priya", "entity2": "Raj", "relation": 9}
+{"text": "Sarah helped cousin Emma clean the crystal chandelier.", "entity1": "Sarah", "entity2": "Emma", "relation": 9}
+{"text": "John and Bunny discussed nana's will as cousins.", "entity1": "John", "entity2": "Bunny", "relation": 9}
+{"text": "Panda met cousin Sweetie to appraise the antique vase.", "entity1": "Panda", "entity2": "Sweetie", "relation": 9}
+{"text": "Raj is married to Priya and they cherish the family heirloom together.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "John and his spouse Sarah displayed the wedding gold set.", "entity1": "John", "entity2": "Sarah", "relation": 3}
+{"text": "Emma's husband Bunny takes care of the antique chest.", "entity1": "Bunny", "entity2": "Emma", "relation": 3}
+{"text": "Priya and her spouse Raj inherited nani's jewelry box.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Sarah is spouse of John who polishes the silverware daily.", "entity1": "Sarah", "entity2": "John", "relation": 3}
+{"text": "Panda married Sweetie and they share the family locket.", "entity1": "Panda", "entity2": "Sweetie", "relation": 3}
+{"text": "Raj and Priya, spouses, framed dada's portrait.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "Bhai and didi as spouses sorted masi's sarees.", "entity1": "Bhai", "entity2": "didi", "relation": 3}
+{"text": "John showed his spouse Sarah the heirloom watch.", "entity1": "John", "entity2": "Sarah", "relation": 3}
+{"text": "Emma and Bunny, married, restored the old trunk.", "entity1": "Emma", "entity2": "Bunny", "relation": 3}
+{"text": "Priya's spouse Raj fixed the brass lamp from nana.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Sarah and John spouses admired the embroidered quilt.", "entity1": "Sarah", "entity2": "John", "relation": 3}
+{"text": "Sweetie is married to Panda and they own the ruby brooch.", "entity1": "Sweetie", "entity2": "Panda", "relation": 3}
+{"text": "Raj with spouse Priya visited chacha for heirloom advice.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "Bunny and Emma as spouses dusted dadi's vase.", "entity1": "Bunny", "entity2": "Emma", "relation": 3}
+{"text": "Didi and bhai, spouses, shared stories of nani's gifts.", "entity1": "Didi", "entity2": "bhai", "relation": 3}
+{"text": "John and spouse Sarah planned to pass the necklace down.", "entity1": "John", "entity2": "Sarah", "relation": 3}
+{"text": "Priya married Raj and they treasure the gold bangle.", "entity1": "Priya", "entity2": "Raj", "relation": 3}
+{"text": "Emma showed her spouse Bunny the family album.", "entity1": "Emma", "entity2": "Bunny", "relation": 3}
+{"text": "Sarah and her spouse John cleaned the silver tray.", "entity1": "Sarah", "entity2": "John", "relation": 3}
+{"text": "Panda and Sweetie spouses fixed the pocket watch.", "entity1": "Panda", "entity2": "Sweetie", "relation": 3}
+{"text": "Raj is Priya's spouse and handles the antique dolls.", "entity1": "Raj", "entity2": "Priya", "relation": 3}
+{"text": "John works with Sarah at the office discussing family heirlooms.", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Raj and his colleague Priya shared tips on polishing brass lamps.", "entity1": "Raj", "entity2": "Priya", "relation": 12}
+{"text": "Emma chats with colleague Bunny about nana's jewelry.", "entity1": "Emma", "entity2": "Bunny", "relation": 12}
+{"text": "Sarah and colleague John appraised the family ring together.", "entity1": "Sarah", "entity2": "John", "relation": 12}
+{"text": "Panda's colleague Sweetie admired her heirloom necklace at lunch.", "entity1": "Panda", "entity2": "Sweetie", "relation": 12}
+{"text": "Priya works with Raj and they talk dada's possessions.", "entity1": "Priya", "entity2": "Raj", "relation": 12}
+{"text": "Bunny and colleague Emma restored photos during break.", "entity1": "Bunny", "entity2": "Emma", "relation": 12}
+{"text": "John's colleague Sarah knows about masi's sarees.", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Raj collaborates with colleague Priya on family stories.", "entity1": "Raj", "entity2": "Priya", "relation": 12}
+{"text": "Sweetie and Panda as colleagues fixed the old clock.", "entity1": "Sweetie", "entity2": "Panda", "relation": 12}
+{"text": "Emma works with Bunny sharing nani's quilt tales.", "entity1": "Emma", "entity2": "Bunny", "relation": 12}
+{"text": "Sarah told colleague John about chacha's watch.", "entity1": "Sarah", "entity2": "John", "relation": 12}
+{"text": "Priya and colleague Raj discussed dadi's vase.", "entity1": "Priya", "entity2": "Raj", "relation": 12}
+{"text": "Bunny's colleague Sweetie loves heirloom diaries.", "entity1": "Bunny", "entity2": "Sweetie", "relation": 12}
+{"text": "John works alongside Sarah valuing family silver.", "entity1": "John", "entity2": "Sarah", "relation": 12}
+{"text": "Raj and Priya colleagues reminisced about nana's lamp.", "entity1": "Raj", "entity2": "Priya", "relation": 12}
+{"text": "Emma showed colleague Panda the gold chain.", "entity1": "Emma", "entity2": "Panda", "relation": 12}
+{"text": "Sarah and Bunny as colleagues talked brass idols.", "entity1": "Sarah", "entity2": "Bunny", "relation": 12}
+{"text": "Sweetie works with John on stories of grandma's house.", "entity1": "Sweetie", "entity2": "John", "relation": 12}
+{"text": "Priya's colleague Raj fixed the ruby ring tale.", "entity1": "Priya", "entity2": "Raj", "relation": 12}
+{"text": "Panda is grandchild of nani and showed her the heirloom sari.", "entity1": "Panda", "entity2": "nani", "relation": 6}
+{"text": "Raj and cousin Priya shared the pearl earrings from chacha.", "entity1": "Raj", "entity2": "Priya", "relation": 9}
+{"text": "John married Sarah and they keep dada's sword safe.", "entity1": "John", "entity2": "Sarah", "relation": 3}
+{"text": "Emma works with colleague Sweetie about family brooch.", "entity1": "Emma", "entity2": "Sweetie", "relation": 12}
+{"text": "Emma waved at her friend Sarah from the window.", "entity1": "Emma", "entity2": "Sarah", "relation": 11}
+{"text": "Panda is the child of Mom and Dad.", "entity1": "Panda", "entity2": "Mom", "relation": 2}
+{"text": "Chacha visited the family in Mumbai last weekend.", "entity1": "Chacha", "entity2": "Mumbai", "relation": 0}
+{"text": "Raj plays cricket with his bhai every evening.", "entity1": "Raj", "entity2": "bhai", "relation": 11}
+{"text": "Priya ran to her nani for a hug.", "entity1": "Priya", "entity2": "nani", "relation": 2}
+{"text": "Masi cooked delicious food in the kitchen for everyone.", "entity1": "Masi", "entity2": "kitchen", "relation": 0}
+{"text": "John and his buddy Max went for a walk.", "entity1": "John", "entity2": "Max", "relation": 11}
+{"text": "Sarah is child_of Dad who works in the city.", "entity1": "Sarah", "entity2": "Dad", "relation": 2}
+{"text": "Didi shared stories about grandma's house with the kids.", "entity1": "Didi", "entity2": "grandma's house", "relation": 0}
+{"text": "Bunny looks up to her chacha for advice.", "entity1": "Bunny", "entity2": "chacha", "relation": 2}
+{"text": "Emma and Priya are best friends at school.", "entity1": "Emma", "entity2": "Priya", "relation": 11}
+{"text": "Nana lives near Mumbai but visits often.", "entity1": "Nana", "entity2": "Mumbai", "relation": 0}
+{"text": "John is the child of Mom in our big family.", "entity1": "John", "entity2": "Mom", "relation": 2}
+{"text": "Sweetie plays with her masi during holidays.", "entity1": "Sweetie", "entity2": "masi", "relation": 7}
+{"text": "Panda sat quietly in the kitchen watching Mom cook.", "entity1": "Panda", "entity2": "kitchen", "relation": 0}
+{"text": "Raj and Sarah met at grandma's house.", "entity1": "Raj", "entity2": "Sarah", "relation": 11}
+{"text": "Emma is child_of nani's daughter who lives far away.", "entity1": "Emma", "entity2": "nani", "relation": 2}
+{"text": "Chacha took the kids to the park near Mumbai.", "entity1": "Chacha", "entity2": "Mumbai", "relation": 0}
+{"text": "Bhai taught Priya how to ride a bike.", "entity1": "Priya", "entity2": "Bhai", "relation": 2}
+{"text": "Max barks at John but they are friends now.", "entity1": "Max", "entity2": "John", "relation": 11}
+{"text": "Didi prepared snacks in grandma's house kitchen.", "entity1": "Didi", "entity2": "grandma's house", "relation": 0}
+{"text": "Sarah waved to her chacha from the balcony.", "entity1": "Sarah", "entity2": "chacha", "relation": 7}
+{"text": "Panda and Bunny chase each other around the house.", "entity1": "Panda", "entity2": "Bunny", "relation": 11}
+{"text": "Raj is child_of Dad who owns a shop in Mumbai.", "entity1": "Raj", "entity2": "Dad", "relation": 2}
+{"text": "Masi visited the family living in the kitchen area? No.", "entity1": "Masi", "entity2": "kitchen", "relation": 0}
+{"text": "John shares toys with his friend Emma.", "entity1": "John", "entity2": "Emma", "relation": 11}
+{"text": "Priya is the child of her masi’s sister.", "entity1": "Priya", "entity2": "masi", "relation": 2}
+{"text": "Nani told stories to her niece Sweetie.", "entity1": "Nani", "entity2": "Sweetie", "relation": 0}
+{"text": "Chacha lives close to grandma's house.", "entity1": "Chacha", "entity2": "grandma's house", "relation": 0}
+{"text": "Emma and Raj are good friends from the neighborhood.", "entity1": "Emma", "entity2": "Raj", "relation": 11}
+{"text": "Bunny is child_of Mom who stays in Mumbai.", "entity1": "Bunny", "entity2": "Mom", "relation": 2}
+{"text": "Didi helped her nephew John with homework.", "entity1": "Didi", "entity2": "John", "relation": 7}
+{"text": "Sarah saw a cat in the kitchen yesterday.", "entity1": "Sarah", "entity2": "kitchen", "relation": 0}
+{"text": "Panda is friends with Whiskers the cat.", "entity1": "Panda", "entity2": "Whiskers", "relation": 11}
+{"text": "Raj ran to his nana after school.", "entity1": "Raj", "entity2": "nana", "relation": 2}
+{"text": "Masi brought sweets from Mumbai for the kids.", "entity1": "Masi", "entity2": "Mumbai", "relation": 0}
+{"text": "Priya and her friend Sarah went shopping.", "entity1": "Priya", "entity2": "Sarah", "relation": 11}
+{"text": "John is child_of Dad in the joint family.", "entity1": "John", "entity2": "Dad", "relation": 2}
+{"text": "Chacha played games with Bunny at grandma's house.", "entity1": "Chacha", "entity2": "Bunny", "relation": 7}
+{"text": "Emma cooked in the kitchen with her sister.", "entity1": "Emma", "entity2": "kitchen", "relation": 0}
+{"text": "Sweetie and Panda are playmates and friends.", "entity1": "Sweetie", "entity2": "Panda", "relation": 11}
+{"text": "Panda is the child of nani and dada.", "entity1": "Panda", "entity2": "nani", "relation": 2}
+{"text": "Bhai visited masi in her Mumbai home.", "entity1": "Bhai", "entity2": "Mumbai", "relation": 0}
+{"text": "Raj and John team up for school projects.", "entity1": "Raj", "entity2": "John", "relation": 11}
+{"text": "Didi is child_of nana from the village.", "entity1": "Didi", "entity2": "nana", "relation": 2}
+{"text": "Max runs around grandma's house freely.", "entity1": "Max", "entity2": "grandma's house", "relation": 0}
+{"text": "Masi took Priya to the market near kitchen stalls.", "entity1": "Masi", "entity2": "Priya", "relation": 7}
+{"text": "Emma and Bunny share secrets as friends.", "entity1": "Emma", "entity2": "Bunny", "relation": 11}
+{"text": "John is child_of Mom living in Mumbai.", "entity1": "John", "entity2": "Mom", "relation": 2}
+{"text": "Nani sat in the kitchen telling tales.", "entity1": "Nani", "entity2": "kitchen", "relation": 0}
+{"text": "Chacha gifted toys to his nephew Raj.", "entity1": "Chacha", "entity2": "Raj", "relation": 7}
+{"text": "Priya waves to her friend Panda.", "entity1": "Priya", "entity2": "Panda", "relation": 11}
+{"text": "Sarah is the child of her dad bhai? No.", "entity1": "Sarah", "entity2": "bhai", "relation": 0}
+{"text": "Buddy follows Sweetie everywhere as friends.", "entity1": "Buddy", "entity2": "Sweetie", "relation": 11}
+{"text": "Emma ran to Dad after falling.", "entity1": "Emma", "entity2": "Dad", "relation": 2}
+{"text": "Didi bought fruits from Mumbai market.", "entity1": "Didi", "entity2": "Mumbai", "relation": 0}
+{"text": "Raj is friends with his classmate John.", "entity1": "Raj", "entity2": "John", "relation": 11}
+{"text": "Panda is child_of chacha's sister.", "entity1": "Panda", "entity2": "chacha", "relation": 2}
+{"text": "Masi played cards at grandma's house.", "entity1": "Masi", "entity2": "grandma's house", "relation": 0}
+{"text": "Bunny and Sarah giggle together as friends.", "entity1": "Bunny", "entity2": "Sarah", "relation": 11}
+{"text": "Priya looks like her nani a lot.", "entity1": "Priya", "entity2": "nani", "relation": 2}
+{"text": "Chacha taught masi new recipes? No relation.", "entity1": "Chacha", "entity2": "masi", "relation": 0}
+{"text": "Emma shares books with friend Priya.", "entity1": "Emma", "entity2": "Priya", "relation": 11}
+{"text": "Sweetie is child_of Dad from Mumbai.", "entity1": "Sweetie", "entity2": "Dad", "relation": 2}
+{"text": "Nana visited the kitchen for tea.", "entity1": "Nana", "entity2": "kitchen", "relation": 0}
+{"text": "Didi is uncle to? No, aunt_uncle_of Bunny.", "entity1": "Didi", "entity2": "Bunny", "relation": 7}
+{"text": "Raj and his friend Panda play hide and seek.", "entity1": "Raj", "entity2": "Panda", "relation": 11}
+{"text": "Sarah is child_of Mom and bhai's family.", "entity1": "Sarah", "entity2": "Mom", "relation": 2}
+{"text": "Bhai lives near grandma's house now.", "entity1": "Bhai", "entity2": "grandma's house", "relation": 0}
+{"text": "Masi spoils her niece Emma with gifts.", "entity1": "Masi", "entity2": "Emma", "relation": 7}
+{"text": "John and Whiskers are inseparable friends.", "entity1": "John", "entity2": "Whiskers", "relation": 11}
+{"text": "Panda hugs her didi tightly every day.", "entity1": "Panda", "entity2": "didi", "relation": 2}
+{"text": "Chacha traveled to Mumbai for work.", "entity1": "Chacha", "entity2": "Mumbai", "relation": 0}
+{"text": "Priya and Sarah are childhood friends.", "entity1": "Priya", "entity2": "Sarah", "relation": 11}
+{"text": "Raj is the child of nana's son.", "entity1": "Raj", "entity2": "nana", "relation": 2}
+{"text": "Emma sat by the kitchen window dreaming.", "entity1": "Emma", "entity2": "kitchen", "relation": 0}
+{"text": "Buddy plays fetch with friend Max.", "entity1": "Buddy", "entity2": "Max", "relation": 11}
+{"text": "Bunny is child_of masi’s brother.", "entity1": "Bunny", "entity2": "masi", "relation": 2}
+{"text": "Sweetie visited grandma's house with nani.", "entity1": "Sweetie", "entity2": "grandma's house", "relation": 0}
+{"text": "Chacha organized a party for John.", "entity1": "Chacha", "entity2": "John", "relation": 7}
+{"text": "Sarah and Raj chat online as friends.", "entity1": "Sarah", "entity2": "Raj", "relation": 11}
+{"text": "John is child_of Dad who cooks well.", "entity1": "John", "entity2": "Dad", "relation": 2}
+{"text": "Didi cleaned the Mumbai flat thoroughly.", "entity1": "Didi", "entity2": "Mumbai", "relation": 0}
+{"text": "Panda befriended Bunny at the park.", "entity1": "Panda", "entity2": "Bunny", "relation": 11}
+{"text": "Emma is child_of her chacha's sibling.", "entity1": "Emma", "entity2": "chacha", "relation": 2}
+{"text": "Nani rested in grandma's house quietly.", "entity1": "Nani", "entity2": "grandma's house", "relation": 0}
+{"text": "Masi danced with niece Priya joyfully.", "entity1": "Masi", "entity2": "Priya", "relation": 7}
+{"text": "Raj waves to friend Emma daily.", "entity1": "Raj", "entity2": "Emma", "relation": 11}
+{"text": "Sweetie is the child of bhai and didi.", "entity1": "Sweetie", "entity2": "bhai", "relation": 2}
+{"text": "Kitchen smells of masi's cooking always.", "entity1": "kitchen", "entity2": "masi", "relation": 0}
+{"text": "Raj fights with his didi over the remote every night.", "entity1": "Raj", "entity2": "didi", "relation": 4}
+{"text": "Priya shares her toys with bhai in the courtyard.", "entity1": "Priya", "entity2": "bhai", "relation": 4}
+{"text": "Didi and Bhai went to the temple together this morning.", "entity1": "Didi", "entity2": "Bhai", "relation": 4}
+{"text": "Emma and Sarah are close sisters living in the joint family.", "entity1": "Emma", "entity2": "Sarah", "relation": 4}
+{"text": "John plays cricket with his brother Panda after school.", "entity1": "John", "entity2": "Panda", "relation": 4}
+{"text": "Bhai protected his little didi from the neighborhood kids.", "entity1": "Bhai", "entity2": "didi", "relation": 4}
+{"text": "Masi's son is the bhai of my chacha's daughter.", "entity1": "son", "entity2": "daughter", "relation": 4}
+{"text": "Raj and Priya celebrated Rakhi as siblings in Mumbai.", "entity1": "Raj", "entity2": "Priya", "relation": 4}
+{"text": "Sweetie teases her brother Bunny during family dinners.", "entity1": "Sweetie", "entity2": "Bunny", "relation": 4}
+{"text": "Chacha's kids, the bhai and didi, share one room.", "entity1": "bhai", "entity2": "didi", "relation": 4}
+{"text": "Panda and Emma argue like typical siblings at home.", "entity1": "Panda", "entity2": "Emma", "relation": 4}
+{"text": "Nana tells stories to his grandchildren including the bhai-behen pair.", "entity1": "bhai", "entity2": "behen", "relation": 4}
+{"text": "Sarah whispered secrets to her sibling John in the attic.", "entity1": "Sarah", "entity2": "John", "relation": 4}
+{"text": "Didi scolded Bhai for not finishing his studies.", "entity1": "Didi", "entity2": "Bhai", "relation": 4}
+{"text": "Priya and her bhai Raj dance during Diwali festivities.", "entity1": "Priya", "entity2": "Raj", "relation": 4}
+{"text": "Mom watched her children Emma and Panda playing.", "entity1": "Emma", "entity2": "Panda", "relation": 4}
+{"text": "In the joint family, chacha's bhai and didi share chores.", "entity1": "bhai", "entity2": "didi", "relation": 4}
+{"text": "Bunny and Sweetie are siblings who love kite flying.", "entity1": "Bunny", "entity2": "Sweetie", "relation": 4}
+{"text": "Raj's sister Priya helps with his homework daily.", "entity1": "Raj", "entity2": "Priya", "relation": 4}
+{"text": "Nani's bhai-behen duo visits from the village often.", "entity1": "bhai", "entity2": "behen", "relation": 4}
+{"text": "John and Sarah bicker like siblings over sweets.", "entity1": "John", "entity2": "Sarah", "relation": 4}
+{"text": "Didi shares clothes with her bhai in the big house.", "entity1": "Didi", "entity2": "bhai", "relation": 4}
+{"text": "Panda fights with brother Emma for the swing.", "entity1": "Panda", "entity2": "Emma", "relation": 4}
+{"text": "Masi tells tales of her siblings bhai and didi.", "entity1": "bhai", "entity2": "didi", "relation": 4}
+{"text": "Priya and Raj are inseparable siblings during vacations.", "entity1": "Priya", "entity2": "Raj", "relation": 4}
+{"text": "Mom is parent_of Raj who studies in the next room.", "entity1": "Mom", "entity2": "Raj", "relation": 1}
+{"text": "Dad drives Priya to her dance classes every weekend.", "entity1": "Dad", "entity2": "Priya", "relation": 1}
+{"text": "Nana blessed his daughter who is parent_of Emma.", "entity1": "daughter", "entity2": "Emma", "relation": 1}
+{"text": "Chacha gifted toys to his kids in the joint home.", "entity1": "Chacha", "entity2": "kids", "relation": 1}
+{"text": "Masi cooks special meals for her son Panda.", "entity1": "Masi", "entity2": "Panda", "relation": 1}
+{"text": "Mom packs lunch for Sarah before school starts.", "entity1": "Mom", "entity2": "Sarah", "relation": 1}
+{"text": "Dad teaches John how to ride a bicycle safely.", "entity1": "Dad", "entity2": "John", "relation": 1}
+{"text": "Bhai dropped his little sister Bunny at tuition.", "entity1": "Bhai", "entity2": "Bunny", "relation": 1}
+{"text": "Nani is grandparent but mom is parent_of Sweetie.", "entity1": "mom", "entity2": "Sweetie", "relation": 1}
+{"text": "Dad scolds Raj for playing too much cricket.", "entity1": "Dad", "entity2": "Raj", "relation": 1}
+{"text": "Masi helps her daughter Priya with saree draping.", "entity1": "Masi", "entity2": "Priya", "relation": 1}
+{"text": "Mom reads bedtime stories to Emma in Hindi.", "entity1": "Mom", "entity2": "Emma", "relation": 1}
+{"text": "Chacha repairs the cycle of his son Panda.", "entity1": "Chacha", "entity2": "Panda", "relation": 1}
+{"text": "Dad attends parent-teacher meeting for Sarah.", "entity1": "Dad", "entity2": "Sarah", "relation": 1}
+{"text": "Nana's daughter mom is parent_of John.", "entity1": "mom", "entity2": "John", "relation": 1}
+{"text": "Bhai buys new clothes for his kids during festivals.", "entity1": "Bhai", "entity2": "kids", "relation": 1}
+{"text": "Mom supervises Priya's homework in the evening.", "entity1": "Mom", "entity2": "Priya", "relation": 1}
+{"text": "Dad takes Bunny to the doctor for checkup.", "entity1": "Dad", "entity2": "Bunny", "relation": 1}
+{"text": "Masi celebrates her daughter Sweetie's birthday big.", "entity1": "Masi", "entity2": "Sweetie", "relation": 1}
+{"text": "Chacha teaches Raj wrestling in the courtyard.", "entity1": "Chacha", "entity2": "Raj", "relation": 1}
+{"text": "Mom hugs her son Panda after school.", "entity1": "Mom", "entity2": "Panda", "relation": 1}
+{"text": "Dad plans family trip with daughter Emma.", "entity1": "Dad", "entity2": "Emma", "relation": 1}
+{"text": "Nani watches over her bahu who is parent_of Sarah.", "entity1": "bahu", "entity2": "Sarah", "relation": 1}
+{"text": "Whiskers curls up on Dad's lap during TV time.", "entity1": "Whiskers", "entity2": "Dad", "relation": 10}
+{"text": "Buddy fetches the ball for Raj in the garden.", "entity1": "Buddy", "entity2": "Raj", "relation": 10}
+{"text": "Max is the loyal pet_of Priya who feeds him daily.", "entity1": "Max", "entity2": "Priya", "relation": 10}
+{"text": "Whiskers purrs when Didi scratches behind her ears.", "entity1": "Whiskers", "entity2": "Didi", "relation": 10}
+{"text": "Buddy chases squirrels for bhai around the house.", "entity1": "Buddy", "entity2": "bhai", "relation": 10}
+{"text": "Panda grooms Max during family gatherings.", "entity1": "Max", "entity2": "Panda", "relation": 10}
+{"text": "Whiskers sleeps near Sarah's bed at night.", "entity1": "Whiskers", "entity2": "Sarah", "relation": 10}
+{"text": "Buddy waits for John to return from school.", "entity1": "Buddy", "entity2": "John", "relation": 10}
+{"text": "Max follows Mom everywhere in the kitchen.", "entity1": "Max", "entity2": "Mom", "relation": 10}
+{"text": "Whiskers plays with chacha's kids playfully.", "entity1": "Whiskers", "entity2": "chacha", "relation": 10}
+{"text": "Buddy is pet_of masi who gives him treats.", "entity1": "Buddy", "entity2": "masi", "relation": 10}
+{"text": "Max guards the door for Dad's arrival.", "entity1": "Max", "entity2": "Dad", "relation": 10}
+{"text": "Whiskers hides under Priya's dupatta during rains.", "entity1": "Whiskers", "entity2": "Priya", "relation": 10}
+{"text": "Buddy licks Bunny's face affectionately.", "entity1": "Buddy", "entity2": "Bunny", "relation": 10}
+{"text": "Max shares food bowl space with Whiskers but owned by Sweetie.", "entity1": "Max", "entity2": "Sweetie", "relation": 10}
+{"text": "Whiskers meows for milk from Emma.", "entity1": "Whiskers", "entity2": "Emma", "relation": 10}
+{"text": "Buddy runs alongside Raj's bicycle.", "entity1": "Buddy", "entity2": "Raj", "relation": 10}
+{"text": "Max is the favorite pet_of nana in the joint family.", "entity1": "Max", "entity2": "nana", "relation": 10}
+{"text": "Whiskers naps on chacha's chair daily.", "entity1": "Whiskers", "entity2": "chacha", "relation": 10}
+{"text": "Buddy plays fetch with Panda joyfully.", "entity1": "Buddy", "entity2": "Panda", "relation": 10}
+{"text": "Emma lives at grandma's house with her cousins.", "entity1": "Emma", "entity2": "grandma's house", "relation": 13}
+{"text": "Raj lives at Mumbai with his joint family.", "entity1": "Raj", "entity2": "Mumbai", "relation": 13}
+{"text": "Panda spends summers at nana's house in the village.", "entity1": "Panda", "entity2": "nana's house", "relation": 13}
+{"text": "Sarah lives at Mumbai with didi and bhai.", "entity1": "Sarah", "entity2": "Mumbai", "relation": 13}
+{"text": "John lives at grandma's house sharing room with cousins.", "entity1": "John", "entity2": "grandma's house", "relation": 13}
+{"text": "Mom lives at the kitchen bustling with activity.", "entity1": "Mom", "entity2": "kitchen", "relation": 13}
+{"text": "Dad lives at Mumbai in the family bungalow.", "entity1": "Dad", "entity2": "Mumbai", "relation": 13}
+{"text": "Chacha lives at grandma's house with his family.", "entity1": "Chacha", "entity2": "grandma's house", "relation": 13}
+{"text": "Masi visits but nana lives at Mumbai permanently.", "entity1": "nana", "entity2": "Mumbai", "relation": 13}
+{"text": "Bunny lives at the kitchen helping masi cook.", "entity1": "Bunny", "entity2": "kitchen", "relation": 13}
+{"text": "Sweetie lives at grandma's house during school holidays.", "entity1": "Sweetie", "entity2": "grandma's house", "relation": 13}
+{"text": "Max lives at grandma's house in the veranda.", "entity1": "Max", "entity2": "grandma's house", "relation": 13}
+{"text": "Whiskers lives at Mumbai with the joint family.", "entity1": "Whiskers", "entity2": "Mumbai", "relation": 13}
+{"text": "Buddy lives at the kitchen near the backdoor.", "entity1": "Buddy", "entity2": "kitchen", "relation": 13}
+{"text": "Didi lives at grandma's house with everyone.", "entity1": "Didi", "entity2": "grandma's house", "relation": 13}
+{"text": "Bhai lives at Mumbai attending college nearby.", "entity1": "Bhai", "entity2": "Mumbai", "relation": 13}
+{"text": "Panda lives at nana's house learning traditions.", "entity1": "Panda", "entity2": "nana's house", "relation": 13}
+{"text": "Raj lives at the kitchen during meal times.", "entity1": "Raj", "entity2": "kitchen", "relation": 13}
+{"text": "Priya lives at grandma's house playing with cousins.", "entity1": "Priya", "entity2": "grandma's house", "relation": 13}
+{"text": "Emma lives at Mumbai with her parents.", "entity1": "Emma", "entity2": "Mumbai", "relation": 13}
+{"text": "Sarah lives at the kitchen helping Mom.", "entity1": "Sarah", "entity2": "kitchen", "relation": 13}
+{"text": "John lives at nani's house for holidays.", "entity1": "John", "entity2": "nani's house", "relation": 13}
+{"text": "Chacha lives at Mumbai with his brothers.", "entity1": "Chacha", "entity2": "Mumbai", "relation": 13}
+{"text": "Masi lives at grandma's house caring for kids.", "entity1": "Masi", "entity2": "grandma's house", "relation": 13}
+{"text": "Mom lives at grandma's house in the joint setup.", "entity1": "Mom", "entity2": "grandma's house", "relation": 13}
+{"text": "Dad lives at the kitchen supervising breakfast.", "entity1": "Dad", "entity2": "kitchen", "relation": 13}

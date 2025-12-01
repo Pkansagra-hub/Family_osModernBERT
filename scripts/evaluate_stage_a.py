@@ -138,6 +138,148 @@ def load_test_datasets(tasks: list[str], tokenizer) -> dict:
                 ds = ds.map(tokenize_nli, batched=True, remove_columns=["text", "text_pair"])
                 datasets[task] = ds
 
+            elif task == "emotions":
+                # GoEmotions dataset - multi-label emotion classification
+                # Model uses 32 labels (28 GoEmotions remapped + 4 family-specific)
+                # CRITICAL: GoEmotions indices must be remapped to our schema!
+                # GoEmotions: admiration=0, ..., neutral=27
+                # Our schema: neutral=0, admiration=1, ..., surprise=27, nostalgia=28-31
+
+                # GoEmotions original label order (matches HuggingFace indices)
+                GO_EMOTIONS_LABELS = [
+                    "admiration",
+                    "amusement",
+                    "anger",
+                    "annoyance",
+                    "approval",
+                    "caring",
+                    "confusion",
+                    "curiosity",
+                    "desire",
+                    "disappointment",
+                    "disapproval",
+                    "disgust",
+                    "embarrassment",
+                    "excitement",
+                    "fear",
+                    "gratitude",
+                    "grief",
+                    "joy",
+                    "love",
+                    "nervousness",
+                    "optimism",
+                    "pride",
+                    "realization",
+                    "relief",
+                    "remorse",
+                    "sadness",
+                    "surprise",
+                    "neutral",
+                ]
+
+                # Our schema mapping (from labels.py EMOTIONS_LABELS)
+                OUR_SCHEMA = {
+                    "neutral": 0,
+                    "admiration": 1,
+                    "amusement": 2,
+                    "anger": 3,
+                    "annoyance": 4,
+                    "approval": 5,
+                    "caring": 6,
+                    "confusion": 7,
+                    "curiosity": 8,
+                    "desire": 9,
+                    "disappointment": 10,
+                    "disapproval": 11,
+                    "disgust": 12,
+                    "embarrassment": 13,
+                    "excitement": 14,
+                    "fear": 15,
+                    "gratitude": 16,
+                    "grief": 17,
+                    "joy": 18,
+                    "love": 19,
+                    "nervousness": 20,
+                    "optimism": 21,
+                    "pride": 22,
+                    "realization": 23,
+                    "relief": 24,
+                    "remorse": 25,
+                    "sadness": 26,
+                    "surprise": 27,
+                }
+
+                # Build index mapping: GoEmotions idx -> our schema idx
+                hf_to_schema = {i: OUR_SCHEMA[label] for i, label in enumerate(GO_EMOTIONS_LABELS)}
+
+                ds = load_dataset(
+                    "google-research-datasets/go_emotions", "simplified", split="test"
+                )
+                ds = ds.select(range(min(500, len(ds))))
+
+                # Convert label list to multi-hot encoding with proper remapping
+                num_labels = 32  # Model's label count
+
+                def convert_to_multihot(examples):
+                    multi_hot = []
+                    for label_list in examples["labels"]:
+                        vec = [0] * num_labels
+                        for hf_idx in label_list:
+                            if hf_idx in hf_to_schema:
+                                schema_idx = hf_to_schema[hf_idx]
+                                vec[schema_idx] = 1
+                        multi_hot.append(vec)
+                    examples["labels"] = multi_hot
+                    return examples
+
+                ds = ds.map(convert_to_multihot, batched=True)
+                ds = ds.map(tokenize_classification, batched=True, remove_columns=["text", "id"])
+                datasets[task] = ds
+
+            elif task == "temporal":
+                # Use local FamilyOS temporal dataset for testing
+                from modeling_studio.data.loaders import load_familyos_temporal
+
+                try:
+                    ds = load_familyos_temporal(split="validation")
+                    ds = ds.select(range(min(500, len(ds))))
+
+                    # Tokenize with label alignment for token classification
+                    def tokenize_temporal(examples):
+                        tokenized = tokenizer(
+                            examples["tokens"],
+                            is_split_into_words=True,
+                            truncation=True,
+                            max_length=512,
+                            padding=False,
+                        )
+                        # Align labels
+                        labels = []
+                        for i, label in enumerate(examples["temporal_tags"]):
+                            word_ids = tokenized.word_ids(batch_index=i)
+                            label_ids = []
+                            previous_word_idx = None
+                            for word_idx in word_ids:
+                                if word_idx is None:
+                                    label_ids.append(-100)
+                                elif word_idx != previous_word_idx:
+                                    label_ids.append(
+                                        label[word_idx] if word_idx < len(label) else -100
+                                    )
+                                else:
+                                    label_ids.append(-100)
+                                previous_word_idx = word_idx
+                            labels.append(label_ids)
+                        tokenized["labels"] = labels
+                        return tokenized
+
+                    ds = ds.map(
+                        tokenize_temporal, batched=True, remove_columns=["tokens", "temporal_tags"]
+                    )
+                    datasets[task] = ds
+                except Exception as e:
+                    print(f"  Could not load temporal dataset: {e}")
+
             print(f"  Loaded {task}: {len(datasets.get(task, []))} samples")
 
         except Exception as e:
@@ -304,4 +446,8 @@ def main():
 
 
 if __name__ == "__main__":
+    main()
+    main()
+    main()
+    main()
     main()
