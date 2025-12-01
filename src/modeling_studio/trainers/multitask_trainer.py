@@ -829,6 +829,9 @@ class MultiTaskTrainer(Trainer):
             for key, value in aggregated.items():
                 all_metrics[f"{metric_key_prefix}_{key}"] = value
 
+        # Log metrics (required for HF Trainer to record them)
+        self.log(all_metrics)
+
         self.current_task = None
         return all_metrics
 
