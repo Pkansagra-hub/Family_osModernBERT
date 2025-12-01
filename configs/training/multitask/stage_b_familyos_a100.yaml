@@ -145,7 +145,7 @@ peft:
 # =============================================================================
 training:
   # A100 can handle larger batches - maximize throughput
-  per_device_train_batch_size: 32   # A100 40GB can handle 32, 80GB can do 64
+  per_device_train_batch_size: 64   # A100 40GB can handle 32, 80GB can do 64
   per_device_eval_batch_size: 64    # Larger eval batches for speed
   gradient_accumulation_steps: 2    # Effective batch = 64
 
@@ -174,7 +174,7 @@ training:
   tf32: true  # Enable TF32 for matrix ops (A100 feature)
 
   # Memory optimization
-  gradient_checkpointing: true
+  gradient_checkpointing: false
   optim: adamw_torch_fused  # Fused AdamW for A100
 
   # Dataloader settings for A100
