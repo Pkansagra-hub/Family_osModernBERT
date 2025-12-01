@@ -105,10 +105,10 @@ optimizer:
 
 # A100-40GB HYPERFAST training - V2 COMPLIANT
 training:
-  # === BATCH & SPEED (reduced for SOTA features memory overhead) ===
-  per_device_train_batch_size: 64     # Reduced from 128 for R-Drop + FGM
-  per_device_eval_batch_size: 64      # Reduced from 128
-  gradient_accumulation_steps: 4      # Increased to maintain effective batch size
+  # === BATCH & SPEED (optimized for A100 High-RAM) ===
+  per_device_train_batch_size: 128    # Full batch with High-RAM
+  per_device_eval_batch_size: 128
+  gradient_accumulation_steps: 2      # Effective batch ≈ 256
 
   # === LEARNING RATE (base, overridden by optimizer section for heads) ===
   learning_rate: 2e-5
@@ -143,12 +143,12 @@ training:
   pgd_alpha: 0.3              # Only for PGD
 
   # Mixup: Embedding-space augmentation for smoother decision boundaries
-  use_mixup: false            # Disabled - less impactful than R-Drop/FGM
+  use_mixup: true             # ENABLED: Embedding-space mixup
   mixup_alpha: 0.4            # Beta distribution parameter
   mixup_prob: 0.5             # Probability of applying mixup to batch
 
-  # === MEMORY: ENABLE CHECKPOINTING FOR SOTA FEATURES ===
-  gradient_checkpointing: true  # Required for R-Drop + FGM memory overhead
+  # === MEMORY: NO CHECKPOINTING FOR SPEED (High-RAM A100) ===
+  gradient_checkpointing: false
 
   # === OPTIMIZER ===
   optim: adamw_torch_fused
