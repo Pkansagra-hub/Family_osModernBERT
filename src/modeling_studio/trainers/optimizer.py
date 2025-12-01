@@ -244,6 +244,138 @@ def create_optimizer_with_head_lr(
     return optimizer
 
 
+def create_optimizer_with_layer_decay(
+    model: nn.Module,
+    encoder_lr: float = 2e-5,
+    head_lr: float = 1e-4,
+    token_head_lr: float = 5e-5,
+    layer_decay: float = 0.95,
+    num_layers: int = 22,
+    weight_decay: float = 0.01,
+    betas: tuple[float, float] = (0.9, 0.999),
+    eps: float = 1e-8,
+) -> torch.optim.AdamW:
+    """
+    Create AdamW optimizer with head-wise LR AND layer-wise decay.
+
+    Combines:
+    - Head-wise LR: Different LRs for encoder vs classification/token heads
+    - Layer-wise decay: Lower layers get lower LRs (layer_decay^(num_layers - layer_idx))
+
+    Args:
+        model: The model to optimize.
+        encoder_lr: Base learning rate for encoder (top layer). Default: 2e-5
+        head_lr: Learning rate for classification heads. Default: 1e-4
+        token_head_lr: Learning rate for token heads. Default: 5e-5
+        layer_decay: Decay factor per layer. Default: 0.95
+        num_layers: Number of transformer layers. Default: 22 (ModernBERT-base)
+        weight_decay: Weight decay. Default: 0.01
+        betas: AdamW betas. Default: (0.9, 0.999)
+        eps: AdamW epsilon. Default: 1e-8
+
+    Returns:
+        Configured AdamW optimizer with layer-wise decay.
+
+    Example:
+        >>> # Layer 0 (bottom): lr = 2e-5 * 0.95^22 ≈ 6.5e-6
+        >>> # Layer 22 (top): lr = 2e-5
+        >>> # Heads: lr = 1e-4 (no decay applied)
+        >>> optimizer = create_optimizer_with_layer_decay(model, layer_decay=0.95)
+    """
+    no_decay_patterns = ["bias", "LayerNorm", "layer_norm", "layernorm"]
+
+    # Patterns to identify heads (get head_lr, no layer decay)
+    token_head_patterns = [r"ner_", r"token_", r"temporal_", r"_ner", r"_token", r"_temporal"]
+    head_patterns = [r"head", r"classifier", r"pooler", r"embedding_head"]
+
+    # Pattern to extract layer number from encoder
+    layer_pattern = re.compile(r"layer\.(\d+)\.")
+
+    def is_token_head(name: str) -> bool:
+        return any(re.search(p, name) for p in token_head_patterns)
+
+    def is_other_head(name: str) -> bool:
+        return any(re.search(p, name) for p in head_patterns) and not is_token_head(name)
+
+    def has_no_decay(name: str) -> bool:
+        return any(pattern in name for pattern in no_decay_patterns)
+
+    def get_layer_lr(name: str, base_lr: float) -> float:
+        """Get LR with layer-wise decay applied."""
+        match = layer_pattern.search(name)
+        if match:
+            layer_num = int(match.group(1))
+            return base_lr * (layer_decay ** (num_layers - layer_num))
+        # Non-layer params (embeddings) get lowest LR
+        return base_lr * (layer_decay**num_layers)
+
+    # Group parameters
+    param_groups = {}
+
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+
+        # Determine LR and weight decay
+        if is_token_head(name):
+            lr = token_head_lr  # No layer decay for heads
+            group_prefix = "token_head"
+        elif is_other_head(name):
+            lr = head_lr  # No layer decay for heads
+            group_prefix = "other_head"
+        else:
+            # Encoder params - apply layer-wise decay
+            lr = get_layer_lr(name, encoder_lr)
+            match = layer_pattern.search(name)
+            if match:
+                group_prefix = f"encoder_layer_{match.group(1)}"
+            else:
+                group_prefix = "encoder_embedding"
+
+        wd = 0.0 if has_no_decay(name) else weight_decay
+        decay_suffix = "no_decay" if wd == 0.0 else "decay"
+
+        # Create unique group key
+        group_key = (group_prefix, decay_suffix, lr)
+
+        if group_key not in param_groups:
+            param_groups[group_key] = {
+                "params": [],
+                "lr": lr,
+                "weight_decay": wd,
+                "name": f"{group_prefix}_{decay_suffix}",
+            }
+
+        param_groups[group_key]["params"].append(param)
+
+    groups = list(param_groups.values())
+
+    # Log summary (condensed)
+    encoder_groups = [g for g in groups if "encoder" in g["name"]]
+    head_groups = [g for g in groups if "head" in g["name"]]
+
+    if encoder_groups:
+        min_lr = min(g["lr"] for g in encoder_groups)
+        max_lr = max(g["lr"] for g in encoder_groups)
+        logger.info(
+            f"Layer-wise LR decay: {len(encoder_groups)} encoder groups, "
+            f"lr range: {min_lr:.2e} - {max_lr:.2e}"
+        )
+
+    for g in head_groups:
+        logger.info(f"Param group '{g['name']}': {len(g['params'])} params, lr={g['lr']}")
+
+    optimizer = torch.optim.AdamW(groups, betas=betas, eps=eps)
+
+    logger.info(
+        f"Created AdamW optimizer with layer decay: "
+        f"encoder_lr={encoder_lr}, layer_decay={layer_decay}, "
+        f"head_lr={head_lr}, token_head_lr={token_head_lr}"
+    )
+
+    return optimizer
+
+
 def create_layer_wise_lr_groups(
     model: nn.Module,
     base_lr: float = 2e-5,
@@ -318,5 +450,6 @@ def create_layer_wise_lr_groups(
 __all__ = [
     "create_param_groups",
     "create_optimizer_with_head_lr",
+    "create_optimizer_with_layer_decay",
     "create_layer_wise_lr_groups",
 ]

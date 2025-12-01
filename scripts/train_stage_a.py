@@ -72,8 +72,6 @@ from modeling_studio.trainers.collators import MultiTaskCollator  # noqa: E402
 from modeling_studio.trainers.ema import EMAModel  # noqa: E402
 from modeling_studio.trainers.multitask_trainer import \
     MultiTaskTrainer  # noqa: E402
-from modeling_studio.trainers.optimizer import \
-    create_optimizer_with_head_lr  # noqa: E402
 
 # Note: UncertaintyWeighting is handled internally by MultiTaskTrainer via args.use_uncertainty_weighting
 
@@ -793,7 +791,7 @@ def train(
     training_config = config.get("training", {})
     optimizer_config = config.get("optimizer", {})
 
-    # === V2 FEATURE: Head-wise Learning Rates ===
+    # === V2 FEATURE: Head-wise Learning Rates + Layer Decay ===
     custom_optimizer = None
     if optimizer_config:
         # Note: YAML safe_load parses scientific notation (e.g., 2e-5) as strings
@@ -804,22 +802,24 @@ def train(
         layer_decay = float(optimizer_config.get("layer_decay", 0.95))
 
         logger.info("=" * 60)
-        logger.info("V2 FEATURE: Head-wise Learning Rates")
+        logger.info("V2 FEATURE: Head-wise Learning Rates + Layer Decay")
         logger.info(f"  encoder_lr: {encoder_lr}")
         logger.info(f"  head_lr: {head_lr}")
         logger.info(f"  token_head_lr: {token_head_lr}")
-        logger.info(f"  layer_decay: {layer_decay} (not yet implemented in head-wise optimizer)")
+        logger.info(f"  layer_decay: {layer_decay}")
         logger.info("=" * 60)
 
-        # Create custom optimizer with head-wise LRs
-        # Note: layer_decay requires a separate create_layer_wise_lr_groups function
-        # which is more complex - for now we use the simpler head-wise approach
-        # We create the optimizer directly here instead of passing a callable
-        custom_optimizer = create_optimizer_with_head_lr(
+        # Create custom optimizer with head-wise LRs AND layer-wise decay
+        from modeling_studio.trainers.optimizer import \
+            create_optimizer_with_layer_decay
+
+        custom_optimizer = create_optimizer_with_layer_decay(
             model,
             encoder_lr=encoder_lr,
             head_lr=head_lr,
             token_head_lr=token_head_lr,
+            layer_decay=layer_decay,
+            num_layers=22,  # ModernBERT-base has 22 layers
             weight_decay=float(training_config.get("weight_decay", 0.01)),
         )
 

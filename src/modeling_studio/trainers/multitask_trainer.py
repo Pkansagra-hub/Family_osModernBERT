@@ -543,7 +543,7 @@ class MultiTaskTrainer(Trainer):
         # === SOTA FEATURE: Mixup in embedding space ===
         # Note: For mixup to work properly, we need raw embeddings
         # This is a simplified version that works at input level
-        use_mixup = self.mixup is not None and labels is not None and self.training
+        use_mixup = self.mixup is not None and labels is not None and model.training
 
         # Forward pass with task-specific head
         outputs = model(
@@ -576,7 +576,7 @@ class MultiTaskTrainer(Trainer):
 
         # === SOTA FEATURE: R-Drop Regularization ===
         # R-Drop: Regularize dropout by computing KL divergence between two forward passes
-        if self.rdrop_loss is not None and self.training:
+        if self.rdrop_loss is not None and model.training:
             # Get logits from first forward pass
             logits1 = outputs.logits if hasattr(outputs, "logits") else None
 
@@ -812,6 +812,10 @@ class MultiTaskTrainer(Trainer):
         model.train()
         inputs = self._prepare_inputs(inputs)
 
+        # Save task field before compute_loss pops it
+        task = inputs.get("task")
+        labels = inputs.get("labels")
+
         # Enable gradient computation
         with self.compute_loss_context_manager():
             # First forward pass on clean examples
@@ -836,6 +840,10 @@ class MultiTaskTrainer(Trainer):
                 self.adversarial.attack(is_first=(t == 0))
                 model.zero_grad()
 
+                # Restore task and labels for adversarial forward pass
+                inputs["task"] = task
+                inputs["labels"] = labels
+
                 with self.compute_loss_context_manager():
                     adv_loss = self.compute_loss(
                         model, inputs, num_items_in_batch=num_items_in_batch
@@ -853,6 +861,10 @@ class MultiTaskTrainer(Trainer):
         else:
             # FGM: single-step attack
             self.adversarial.attack()
+
+            # Restore task and labels for adversarial forward pass
+            inputs["task"] = task
+            inputs["labels"] = labels
 
             with self.compute_loss_context_manager():
                 adv_loss = self.compute_loss(model, inputs, num_items_in_batch=num_items_in_batch)
