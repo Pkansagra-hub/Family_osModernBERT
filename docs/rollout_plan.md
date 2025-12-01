@@ -607,7 +607,7 @@ groups:
 | Old Model | Memory | New Capability | Notes |
 |-----------|--------|----------------|-------|
 | ner_transformer | 500MB | ner_general + ner_family | Split into 2 heads |
-| go_emotions | 500MB | emotions | 28→32 emotions |
+| familyos_emotions | 500MB | emotions | 28→44 emotions (FamilyOS schema) |
 | sentiment_transformer | 400MB | sentiment | 3→5 classes |
 | clinical_safety | 300MB | safety_generic + safety_familyos | Split: generic + bands |
 | zero_shot_classifier | 1500MB | ingress | 7→12 domains |

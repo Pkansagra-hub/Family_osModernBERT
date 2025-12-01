@@ -40,6 +40,7 @@ from typing import Any
 from datasets import Dataset, DatasetDict, load_dataset
 
 from modeling_studio.data.labels import (
+    ALL_LABEL_SCHEMAS,
     EMOTIONS_LABELS,
     INGRESS_LABELS,
     INTENT_LABELS,
@@ -1430,7 +1431,11 @@ def _load_multilabel_from_jsonl(
         text = item.get(text_col_final, "")
         multi_hot = [0] * num_labels
 
-        labels = item.get("labels", [])
+        labels = item.get("labels")
+        if not labels and "emotions" in item:
+            labels = item.get("emotions")
+        if labels is None:
+            labels = []
         if isinstance(labels, list):
             for lbl in labels:
                 if isinstance(lbl, int) and lbl < num_labels:
@@ -3649,6 +3654,28 @@ def load_from_config(
     return datasets
 
 
+def _get_label_schema_from_config(
+    dataset_config: dict,
+    default_schema: LabelSchema,
+) -> LabelSchema:
+    """Resolve label schema override from dataset config."""
+
+    schema_name = dataset_config.get("label_schema")
+    if not schema_name:
+        return default_schema
+
+    schema = ALL_LABEL_SCHEMAS.get(schema_name)
+    if schema is None:
+        logger.warning(
+            "Unknown label_schema '%s' in dataset config, falling back to %s",
+            schema_name,
+            default_schema.name,
+        )
+        return default_schema
+
+    return schema
+
+
 def _load_dataset_by_task(
     task: str,
     source: str,
@@ -3672,6 +3699,7 @@ def _load_dataset_by_task(
     # Get data directory for local sources
     data_dir = dataset_config.get("data_dir")
     config_name = dataset_config.get("config")
+    dataset_name_or_path = data_dir if (source == "local" and data_dir) else name
 
     # Helper to ensure data_dir is always str or Path
     def ensure_data_dir(val, default):
@@ -3721,11 +3749,11 @@ def _load_dataset_by_task(
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
     elif task == "emotions":
-        # Note: config is handled internally by load_multilabel_dataset for go_emotions
+        label_schema = _get_label_schema_from_config(dataset_config, EMOTIONS_LABELS)
         ds = load_multilabel_dataset(
-            name=name,
+            name=dataset_name_or_path,
             split=split,
-            label_schema=EMOTIONS_LABELS,
+            label_schema=label_schema,
         )
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 

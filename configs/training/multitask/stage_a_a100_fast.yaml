@@ -44,7 +44,7 @@ heads:
   emotions:
     enabled: true
     type: sequence_classification
-    num_labels: 32
+    num_labels: 44
     problem_type: multi_label_classification
     dropout: 0.1
 

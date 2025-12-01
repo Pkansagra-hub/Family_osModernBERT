@@ -18,7 +18,7 @@ Features:
 
     Sequence-level:
         - sentiment: 5-point sentiment scale
-        - emotions: 32 emotions (multi-label)
+        - emotions: 44 emotions (multi-label)
         - safety_generic: 8 toxicity types (multi-label)
         - safety_familyos: 4 policy bands (GREEN/AMBER/RED/CRISIS)
         - ingress: 12 activity domains
@@ -70,7 +70,7 @@ if TYPE_CHECKING:
     from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 
 from modeling_studio.data.labels import (
-    EMOTIONS_LABELS,
+    EMOTIONS_FAMILYOS_LABELS,
     INGRESS_LABELS,
     INTENT_LABELS,
     NER_FAMILY_LABELS,
@@ -179,7 +179,7 @@ class UnifiedNLPOutput:
         - temporal: Temporal expressions (DATE_ABS, DATE_REL, TIME, DURATION, etc.)
 
     Emotion & Sentiment:
-        - emotions: Dict of emotion scores (32 emotions)
+        - emotions: Dict of emotion scores (44 emotions)
         - primary_emotion: Single strongest emotion
         - secondary_emotions: Top-k additional emotions
         - sentiment: Sentiment label (very_negative to very_positive)
@@ -219,7 +219,7 @@ class UnifiedNLPOutput:
     ner_family: list[Entity] | None = None
     temporal: list[Entity] | None = None
 
-    # Emotions (multi-label)
+    # Emotions (multi-label, 44 classes)
     emotions: dict[str, float] | None = None
     primary_emotion: str | None = None
     secondary_emotions: list[str] | None = None
@@ -874,7 +874,7 @@ def sys_nlp_infer(
                 )
                 results = _process_sequence_classification(
                     logits=model_output.logits,
-                    label_schema=EMOTIONS_LABELS,
+                    label_schema=EMOTIONS_FAMILYOS_LABELS,
                     multi_label=True,
                     threshold=0.3,  # Lower threshold for emotions
                 )

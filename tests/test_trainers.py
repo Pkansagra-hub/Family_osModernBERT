@@ -9,6 +9,8 @@ Test coverage for:
     - Compute loss with task routing
 """
 
+import math
+
 import pytest
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -73,6 +75,25 @@ class DummyTokenDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data[idx]
+
+
+class ConstantLossModel(torch.nn.Module):
+    """Minimal model that returns deterministic losses per task."""
+
+    def __init__(self):
+        super().__init__()
+        # Shared parameter to keep the model differentiable
+        self.shared_weight = torch.nn.Parameter(torch.tensor(2.0))
+
+    @property
+    def device(self):
+        return self.shared_weight.device
+
+    def forward(self, capability, **kwargs):  # type: ignore[override]
+        multiplier = 1.0 if capability == "ner_general" else 2.0
+        loss = self.shared_weight * multiplier
+        logits = torch.zeros(1, 2, device=self.shared_weight.device)
+        return {"loss": loss, "logits": logits}
 
 
 @pytest.fixture
@@ -241,6 +262,80 @@ class TestMultiTaskTrainingArguments:
         assert args.sampling_strategy == "temperature"
         assert args.sampling_temperature == 0.5
         assert args.use_uncertainty_weighting is True
+
+
+class TestUncertaintyWeighting:
+    """Ensure uncertainty weighting feature behaves end-to-end."""
+
+    def _make_args(self, tmp_path, **overrides):
+        defaults = dict(
+            output_dir=str(tmp_path / "uw"),
+            per_device_train_batch_size=1,
+            per_device_eval_batch_size=1,
+            num_train_epochs=1,
+            logging_steps=1,
+            save_steps=10,
+            report_to=[],
+            use_uncertainty_weighting=True,
+        )
+        defaults.update(overrides)
+        return MultiTaskTrainingArguments(**defaults)
+
+    def test_compute_loss_uses_learned_uncertainty(self, tmp_path, sample_datasets):
+        """Trainer should apply learned σ-based weights instead of static ones."""
+
+        args = self._make_args(tmp_path)
+        model = ConstantLossModel()
+
+        trainer = MultiTaskTrainer(
+            model=model,
+            args=args,
+            train_datasets=sample_datasets,
+            task_weights={"ner_general": 10.0, "sentiment": 0.1},
+        )
+
+        assert trainer.uncertainty_weighting is not None
+        assert trainer.task_to_idx == {"ner_general": 0, "sentiment": 1}
+
+        log_vars = torch.tensor([math.log(4.0), math.log(1.0)], dtype=torch.float32)
+        trainer.uncertainty_weighting.log_vars.data = log_vars.clone()
+
+        batch = {
+            "input_ids": torch.zeros(1, 4, dtype=torch.long),
+            "attention_mask": torch.ones(1, 4, dtype=torch.long),
+            "labels": torch.tensor([1]),
+            "task": "ner_general",
+        }
+
+        weighted_loss = trainer.compute_loss(model, dict(batch))
+
+        base_loss = model.shared_weight.item() * 1.0
+        expected = 0.5 * math.exp(-log_vars[0].item()) * base_loss + 0.5 * log_vars[0].item()
+        assert pytest.approx(expected, rel=1e-4) == weighted_loss.item()
+
+    def test_optimizer_includes_uncertainty_parameters(self, tmp_path, sample_datasets):
+        """Optimizer should update the learned log-variance parameters."""
+
+        args = self._make_args(tmp_path)
+        model = ConstantLossModel()
+
+        trainer = MultiTaskTrainer(
+            model=model,
+            args=args,
+            train_datasets=sample_datasets,
+            task_weights={"ner_general": 1.0, "sentiment": 1.0},
+        )
+
+        optimizer = trainer.create_optimizer()
+        uw_params = set(trainer.uncertainty_weighting.parameters())
+
+        found = any(
+            any(param is uw for param in group["params"])
+            for group in optimizer.param_groups
+            for uw in uw_params
+        )
+
+        assert found, "Uncertainty weighting parameters missing from optimizer"
 
 
 # =============================================================================

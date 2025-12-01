@@ -1610,7 +1610,7 @@ class HierarchicalEmotionHead(nn.Module):
 
     Args:
         hidden_size: Size of encoder hidden states (default 768)
-        num_emotions: Number of emotion categories (default 32)
+        num_emotions: Number of emotion categories (default 44)
         num_secondary: Max secondary emotions to return (default 3)
         dropout: Dropout probability (default 0.1)
         pooling: Pooling strategy ('cls', 'mean', 'max')
@@ -1619,14 +1619,66 @@ class HierarchicalEmotionHead(nn.Module):
         intensity_threshold: Min intensity to include emotion (default 0.1)
 
     Example:
-        >>> head = HierarchicalEmotionHead(hidden_size=768, num_emotions=32)
+        >>> head = HierarchicalEmotionHead(hidden_size=768, num_emotions=44, use_familyos=True)
         >>> output = head(hidden_states, attention_mask)
         >>> print(output["primary_emotion"])  # "joy"
-        >>> print(output["secondary_emotions"])  # ["excitement", "gratitude"]
+        >>> print(output["secondary_emotions"])  # ["love", "pride"]
         >>> print(output["emotion_scores"]["joy"])  # 0.85
     """
 
-    # Default emotion labels (32 fine-grained emotions)
+    # FamilyOS emotion labels (44 emotions - matches data/familyos/emotions schema)
+    FAMILYOS_EMOTION_LABELS = [
+        # Core Emotions (8) - IDs 0-7
+        "neutral",
+        "joy",
+        "sadness",
+        "anger",
+        "fear",
+        "surprise",
+        "love",
+        "disgust",
+        # Positive Emotions (12) - IDs 8-19
+        "admiration",
+        "amusement",
+        "approval",
+        "caring",
+        "excitement",
+        "gratitude",
+        "optimism",
+        "pride",
+        "relief",
+        "contentment",
+        "hope",
+        "tenderness",
+        # Negative Emotions (10) - IDs 20-29
+        "annoyance",
+        "disappointment",
+        "disapproval",
+        "embarrassment",
+        "grief",
+        "nervousness",
+        "remorse",
+        "frustration",
+        "overwhelmed",
+        "emptiness",
+        # Family-Specific Emotions (14) - IDs 30-43
+        "nostalgia",
+        "protectiveness",
+        "togetherness",
+        "longing",
+        "warmth",
+        "playfulness",
+        "celebration",
+        "belonging",
+        "parental_pride",
+        "parental_guilt",
+        "patience",
+        "worry",
+        "bittersweet",
+        "homesickness",
+    ]
+
+    # Legacy 32-emotion labels (for backward compatibility)
     DEFAULT_EMOTION_LABELS = [
         # Joy family (0-4)
         "joy",
@@ -1670,7 +1722,28 @@ class HierarchicalEmotionHead(nn.Module):
         "optimism",
     ]
 
-    # Emotion family groupings for primary emotion resolution
+    # FamilyOS emotion family groupings (for 44-emotion schema)
+    FAMILYOS_EMOTION_FAMILIES = {
+        # Core emotions as their own families
+        "joy": ["joy", "amusement", "excitement", "contentment", "playfulness", "celebration"],
+        "sadness": ["sadness", "grief", "disappointment", "longing", "emptiness", "homesickness"],
+        "anger": ["anger", "annoyance", "frustration", "disapproval"],
+        "fear": ["fear", "nervousness", "worry", "overwhelmed"],
+        "surprise": ["surprise"],
+        "love": ["love", "caring", "tenderness", "warmth", "togetherness", "belonging"],
+        "disgust": ["disgust"],
+        # Positive emotion families
+        "pride": ["pride", "admiration", "approval", "parental_pride"],
+        "gratitude": ["gratitude", "relief", "hope", "optimism"],
+        # Negative emotion families
+        "guilt": ["remorse", "embarrassment", "parental_guilt"],
+        # Family-specific families
+        "nostalgia": ["nostalgia", "bittersweet"],
+        "protection": ["protectiveness", "patience"],
+        "neutral": ["neutral"],
+    }
+
+    # Legacy emotion family groupings (for 32-emotion schema)
     EMOTION_FAMILIES = {
         "joy": ["joy", "happiness", "amusement", "excitement", "pride"],
         "sadness": ["sadness", "grief", "disappointment", "loneliness", "regret"],
@@ -1685,7 +1758,7 @@ class HierarchicalEmotionHead(nn.Module):
     def __init__(
         self,
         hidden_size: int = 768,
-        num_emotions: int = 32,
+        num_emotions: int = 44,  # Default to FamilyOS 44 emotions
         num_secondary: int = 3,
         dropout: float = 0.1,
         pooling: str = "cls",
@@ -1693,6 +1766,7 @@ class HierarchicalEmotionHead(nn.Module):
         use_valence_arousal: bool = False,
         intensity_threshold: float = 0.1,
         emotion_labels: list[str] | None = None,
+        use_familyos: bool = True,  # Use FamilyOS 44-emotion schema by default
     ):
         super().__init__()
 
@@ -1703,12 +1777,24 @@ class HierarchicalEmotionHead(nn.Module):
         self.use_intensity = use_intensity
         self.use_valence_arousal = use_valence_arousal
         self.intensity_threshold = intensity_threshold
+        self.use_familyos = use_familyos
 
-        # Emotion labels
-        self.emotion_labels = emotion_labels or self.DEFAULT_EMOTION_LABELS[:num_emotions]
+        # Emotion labels - priority: explicit > familyos > legacy
+        if emotion_labels is not None:
+            self.emotion_labels = emotion_labels
+        elif use_familyos:
+            self.emotion_labels = self.FAMILYOS_EMOTION_LABELS[:num_emotions]
+        else:
+            self.emotion_labels = self.DEFAULT_EMOTION_LABELS[:num_emotions]
+
         assert (
             len(self.emotion_labels) == num_emotions
         ), f"Expected {num_emotions} emotion labels, got {len(self.emotion_labels)}"
+
+        # Select appropriate emotion families
+        self._emotion_families = (
+            self.FAMILYOS_EMOTION_FAMILIES if use_familyos else self.EMOTION_FAMILIES
+        )
 
         # Build label to index mapping
         self.label2id = {label: i for i, label in enumerate(self.emotion_labels)}
@@ -1917,7 +2003,7 @@ class HierarchicalEmotionHead(nn.Module):
 
     def get_primary_family(self, emotion: str) -> str:
         """Get the emotion family for a given emotion."""
-        for family, members in self.EMOTION_FAMILIES.items():
+        for family, members in self._emotion_families.items():
             if emotion in members:
                 return family
         return emotion  # Return emotion itself if not in a family
@@ -1939,7 +2025,7 @@ class HierarchicalEmotionHead(nn.Module):
             probabilities = probabilities.unsqueeze(0)
 
         distribution = {}
-        for family, members in self.EMOTION_FAMILIES.items():
+        for family, members in self._emotion_families.items():
             family_probs = []
             for member in members:
                 if member in self.label2id:
@@ -1996,6 +2082,67 @@ class HierarchicalEmotionHead(nn.Module):
         self.temperature.requires_grad = False
 
         return self.temperature.item()
+
+    @classmethod
+    def for_familyos(
+        cls,
+        hidden_size: int = 768,
+        dropout: float = 0.1,
+        **kwargs,
+    ) -> HierarchicalEmotionHead:
+        """
+        Factory method to create a HierarchicalEmotionHead for FamilyOS 44-emotion schema.
+
+        This is the recommended way to create the head for FamilyOS emotion classification.
+
+        Args:
+            hidden_size: Size of encoder hidden states
+            dropout: Dropout probability
+            **kwargs: Additional arguments passed to __init__
+
+        Returns:
+            HierarchicalEmotionHead configured for FamilyOS 44 emotions
+
+        Example:
+            >>> head = HierarchicalEmotionHead.for_familyos(hidden_size=768)
+            >>> assert head.num_emotions == 44
+            >>> assert "parental_pride" in head.emotion_labels
+        """
+        return cls(
+            hidden_size=hidden_size,
+            num_emotions=44,
+            dropout=dropout,
+            use_familyos=True,
+            emotion_labels=cls.FAMILYOS_EMOTION_LABELS,
+            **kwargs,
+        )
+
+    @classmethod
+    def for_goemotions(
+        cls,
+        hidden_size: int = 768,
+        dropout: float = 0.1,
+        **kwargs,
+    ) -> HierarchicalEmotionHead:
+        """
+        Factory method to create a HierarchicalEmotionHead for legacy 32-emotion schema.
+
+        Args:
+            hidden_size: Size of encoder hidden states
+            dropout: Dropout probability
+            **kwargs: Additional arguments passed to __init__
+
+        Returns:
+            HierarchicalEmotionHead configured for 32 emotions
+        """
+        return cls(
+            hidden_size=hidden_size,
+            num_emotions=32,
+            dropout=dropout,
+            use_familyos=False,
+            emotion_labels=cls.DEFAULT_EMOTION_LABELS,
+            **kwargs,
+        )
 
 
 # =============================================================================

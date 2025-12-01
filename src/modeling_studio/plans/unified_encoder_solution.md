@@ -100,7 +100,7 @@ P08 (embedding pipeline)
     │ Token Heads │ │ Emotion │ │ Classification  │ │Embedding│ │  Pair Heads │
     │             │ │  Head   │ │     Heads       │ │  Head   │ │             │
     ├─────────────┤ │         │ ├─────────────────┤ │         │ ├─────────────┤
-    │ner_general  │ │32-cls   │ │sentiment (5)    │ │mean pool│ │nli (3)      │
+    │ner_general  │ │44-cls   │ │sentiment (5)    │ │mean pool│ │nli (3)      │
     │ (17 BIO)    │ │multi-   │ │safety_generic(8)│ │768→768  │ │relation (15)│
     │ner_family   │ │label +  │ │safety_fos (4)   │ │L2 norm  │ │             │
     │ (21 BIO)    │ │family   │ │ingress (12)     │ │         │ │             │
@@ -119,7 +119,7 @@ P08 (embedding pipeline)
 |-----------|----------|----------------|-----------|--------|
 | `ner_transformer` | Entity extraction | `ner_general` | TokenClassification | 17 BIO tags |
 | `ner_family` | Family entities | `ner_family` | TokenClassification | 21 BIO tags |
-| `go_emotions` | 28 emotions | `emotions` | SequenceClassification (multi-label) | 32 classes |
+| `familyos_emotions` | 44 emotions | `emotions` | SequenceClassification (multi-label) | 44 classes |
 | `sentiment_transformer` | Pos/neg/neu | `sentiment` | SequenceClassification | 5 classes |
 | `clinical_safety` | Risk detection | `safety_generic` | SequenceClassification (multi-label) | 8 types |
 | [NEW] | Policy bands | `safety_familyos` | SafetyHead | 4 bands |
@@ -138,7 +138,7 @@ P08 (embedding pipeline)
 |------------|--------|------|
 | `ner_general` | O, B/I-PER, B/I-ORG, B/I-LOC, B/I-MISC, B/I-DATE, B/I-TIME, B/I-EVENT, B/I-PRODUCT | BIO (17 tags) |
 | `sentiment` | very_negative, negative, neutral, positive, very_positive | Single-label (5) |
-| `emotions` | GoEmotions (28) + nostalgia, protectiveness, togetherness, longing | Multi-label (32) |
+| `emotions` | FamilyOS schema (44 classes incl. family-specific emotions) | Multi-label (44) |
 | `safety_generic` | toxic, severe_toxic, obscene, threat, insult, identity_hate, self_harm, dangerous_advice | Multi-label (8) |
 | `nli` | entailment, neutral, contradiction | Single-label (3) |
 | `temporal` | O, B/I-DATE_ABS, B/I-DATE_REL, B/I-TIME, B/I-DURATION, B/I-FREQUENCY, B/I-AGE | BIO (13 tags) |
@@ -224,7 +224,7 @@ output = model.infer(
     text,
     capabilities=["sentiment", "emotions", "safety_generic", "safety_familyos", "intent"]
 )
-emotions = output.emotions  # 32 emotions including family-specific
+emotions = output.emotions  # 44 FamilyOS emotions including family-specific
 sentiment = output.sentiment  # 5-point scale
 safety_band = output.safety_familyos  # GREEN/AMBER/RED/CRISIS
 user_intent = output.intent  # log_memory/query_memory/express_feeling/...
@@ -267,7 +267,7 @@ class UnifiedNLPOutput:
     temporal: list[Entity]     # Temporal expressions - 13 BIO tags (NEW v2)
 
     # Emotions (multi-label)
-    emotions: dict[str, float]  # {joy: 0.85, gratitude: 0.78, nostalgia: 0.5, ...} - 32 classes
+    emotions: dict[str, float]  # {joy: 0.85, gratitude: 0.78, nostalgia: 0.5, ...} - 44 classes
     primary_emotion: str
 
     # Sentiment (5-point scale)
@@ -352,7 +352,7 @@ def sys_nlp_infer(
 | NER (general) | 51%* | 88%+ | CoNLL-2003 benchmark |
 | NER (family) | N/A | 85%+ | Custom family entities |
 | Sentiment | 85% | 92%+ | SST-2 benchmark |
-| Emotions | 70% | 75%+ | GoEmotions macro F1 |
+| Emotions | 70% | 75%+ | FamilyOS emotions macro F1 |
 | Safety (bands) | Rule-based | 80%+ | New ML-based |
 | Ingress | ~60%* | 90%+ | Replace zero-shot |
 
@@ -371,7 +371,7 @@ def sys_nlp_infer(
 | NER | CoNLL-2003 | 20K | HuggingFace |
 | NER | OntoNotes 5.0 | 77K | HuggingFace |
 | Sentiment | SST-2 + Amazon Reviews | 100K | HuggingFace |
-| Emotions | GoEmotions | 58K | Google |
+| Emotions | FamilyOS emotions (silver + gold) | 60K+ | Local (`data/familyos/emotions`) |
 | Safety | Jigsaw Toxicity + Self-harm | 180K | Kaggle + Custom |
 | NLI | MNLI + SNLI | 570K | HuggingFace |
 | Embeddings | STS-B + AllNLI | 150K | HuggingFace |
@@ -404,7 +404,7 @@ training:
 tasks:
   ner_general: {weight: 1.0, head: token_classification, num_labels: 17}
   sentiment: {weight: 1.0, head: sequence_classification, num_labels: 5}
-  emotions: {weight: 1.5, head: sequence_classification, multi_label: true, num_labels: 32}
+  emotions: {weight: 1.5, head: sequence_classification, multi_label: true, num_labels: 44}
   safety_generic: {weight: 2.0, head: sequence_classification, multi_label: true, num_labels: 8}
   nli: {weight: 1.0, head: nli, num_labels: 3}
   embedding: {weight: 0.5, head: embedding}
@@ -619,7 +619,7 @@ After Stage B training, re-evaluate on Stage A benchmarks:
 | CoNLL-2003 (NER) | ≤ 2% F1 | Reduce LoRA r, increase replay |
 | SST-2 (Sentiment) | ≤ 2% Acc | Reduce LoRA r, increase replay |
 | MNLI (NLI) | ≤ 2% Acc | Reduce LoRA r, increase replay |
-| GoEmotions | ≤ 3% F1 | Reduce LoRA r, increase replay |
+| FamilyOS Emotions | ≤ 3% F1 | Reduce LoRA r, increase replay |
 
 ---
 
@@ -707,7 +707,7 @@ After Stage B training, re-evaluate on Stage A benchmarks:
 | NER (general) F1 | 51% | 88% | CoNLL-2003 test | P1 |
 | NER (family) F1 | N/A | 85% | Custom test set | P1 |
 | Sentiment Acc | 85% | 92% | SST-2 test (5-class) | P1 |
-| Emotions macro F1 | 70% | 75% | GoEmotions test (32-class) | P1 |
+| Emotions macro F1 | 70% | 75% | FamilyOS emotions test (44-class) | P1 |
 | Ingress Acc | 60% | 90% | Custom test set (12-class) | P1 |
 | **Safety (CRISIS recall)** | Rule-based | **98%** | Custom test set | **P0** |
 | **Cultural FP Rate** | N/A | **≤2%** | Indian hyperbole test set | **P0** |
@@ -724,7 +724,7 @@ After Stage B, must pass these gates:
 | CoNLL-2003 (NER) | ≤ 2% F1 | Gate |
 | SST-2 (Sentiment) | ≤ 2% Acc | Gate |
 | MNLI (NLI) | ≤ 2% Acc | Gate |
-| GoEmotions | ≤ 3% F1 | Gate |
+| FamilyOS Emotions | ≤ 3% F1 | Gate |
 
 ### 10.4 Business Metrics
 
@@ -786,7 +786,7 @@ CAPABILITY_TO_HEAD_TYPE = {
     "intent": IntentHead,                     # 8 classes (NEW v2)
 
     # Sequence classification (multi-label)
-    "emotions": SequenceClassificationHead,   # 32 emotions
+    "emotions": SequenceClassificationHead,   # 44 emotions
     "safety_generic": SequenceClassificationHead,  # 8 toxicity types
 
     # Safety head (with calibration)

@@ -11,7 +11,7 @@ Label Categories:
     Generic Tasks:
         - NER_GENERAL: Extended NER (PER, ORG, LOC, MISC, DATE, TIME, EVENT, PRODUCT)
         - SENTIMENT: 5-point sentiment scale
-        - EMOTIONS: 32 emotions (GoEmotions + family-specific)
+        - EMOTIONS: 44 emotions (FamilyOS schema – default for Stage A/B)
         - SAFETY_GENERIC: 8 toxicity types (Jigsaw + self-harm + dangerous advice)
         - NLI: NLI labels (entailment, neutral, contradiction)
         - TEMPORAL: Temporal expression extraction
@@ -172,48 +172,108 @@ SENTIMENT_LABELS = LabelSchema(
 
 
 # -----------------------------------------------------------------------------
-# Emotion Labels (Enhanced: 28 → 32 emotions with family-specific)
+# Emotion Labels (GoEmotions 28 remapped to 32 classes – legacy compatibility)
+# NOTE: FamilyOS 44-emotion schema (Stage A/B default) is defined in EMOTIONS_FAMILYOS_LABELS below
 # -----------------------------------------------------------------------------
 EMOTIONS_LABELS = LabelSchema(
     name="emotions",
     label2id={
-        # GoEmotions base (28)
-        "neutral": 0,
-        "admiration": 1,
-        "amusement": 2,
-        "anger": 3,
-        "annoyance": 4,
-        "approval": 5,
-        "caring": 6,
-        "confusion": 7,
-        "curiosity": 8,
-        "desire": 9,
-        "disappointment": 10,
-        "disapproval": 11,
-        "disgust": 12,
-        "embarrassment": 13,
-        "excitement": 14,
-        "fear": 15,
-        "gratitude": 16,
-        "grief": 17,
-        "joy": 18,
-        "love": 19,
-        "nervousness": 20,
-        "optimism": 21,
-        "pride": 22,
-        "realization": 23,
-        "relief": 24,
-        "remorse": 25,
-        "sadness": 26,
-        "surprise": 27,
-        # Family-specific emotions (4 new)
-        "nostalgia": 28,  # "Remember when Panda was little..."
-        "protectiveness": 29,  # "I worry about the kids..."
-        "togetherness": 30,  # "Love our family time"
-        "longing": 31,  # "Miss mom so much"
+        # GoEmotions 28 labels (remapped to contiguous 0-27)
+        "admiration": 0,
+        "amusement": 1,
+        "anger": 2,
+        "annoyance": 3,
+        "approval": 4,
+        "caring": 5,
+        "confusion": 6,
+        "curiosity": 7,
+        "desire": 8,
+        "disappointment": 9,
+        "disapproval": 10,
+        "disgust": 11,
+        "embarrassment": 12,
+        "excitement": 13,
+        "fear": 14,
+        "gratitude": 15,
+        "grief": 16,
+        "joy": 17,
+        "love": 18,
+        "nervousness": 19,
+        "optimism": 20,
+        "pride": 21,
+        "realization": 22,
+        "relief": 23,
+        "remorse": 24,
+        "sadness": 25,
+        "surprise": 26,
+        "neutral": 27,
+        # Family-specific additions (28-31)
+        "nostalgia": 28,
+        "togetherness": 29,
+        "protectiveness": 30,
+        "longing": 31,
     },
     problem_type="multi_label_classification",
-    description="Extended emotions with family-specific feelings (32 classes)",
+    description="Legacy GoEmotions 28 + 4 family-specific = 32 emotions (deprecated)",
+)
+
+# -----------------------------------------------------------------------------
+# FamilyOS Emotion Labels (44 emotions - Stage A/B default schema)
+# -----------------------------------------------------------------------------
+EMOTIONS_FAMILYOS_LABELS = LabelSchema(
+    name="emotions_familyos",
+    label2id={
+        # Core Emotions (8)
+        "neutral": 0,
+        "joy": 1,
+        "sadness": 2,
+        "anger": 3,
+        "fear": 4,
+        "surprise": 5,
+        "love": 6,
+        "disgust": 7,
+        # Positive Emotions (12)
+        "admiration": 8,
+        "amusement": 9,
+        "approval": 10,
+        "caring": 11,
+        "excitement": 12,
+        "gratitude": 13,
+        "optimism": 14,
+        "pride": 15,
+        "relief": 16,
+        "contentment": 17,
+        "hope": 18,
+        "tenderness": 19,
+        # Negative Emotions (10)
+        "annoyance": 20,
+        "disappointment": 21,
+        "disapproval": 22,
+        "embarrassment": 23,
+        "grief": 24,
+        "nervousness": 25,
+        "remorse": 26,
+        "frustration": 27,
+        "overwhelmed": 28,
+        "emptiness": 29,
+        # Family-Specific Emotions (14)
+        "nostalgia": 30,  # "Remember our first family trip?"
+        "protectiveness": 31,  # "Just want to shield them from hurt"
+        "togetherness": 32,  # "Love when we're all together"
+        "longing": 33,  # "Wish mom was here to see this"
+        "warmth": 34,  # "Sunday dinners are the best"
+        "playfulness": 35,  # "Had a pillow fight with the kids"
+        "celebration": 36,  # "Time to celebrate this milestone!"
+        "belonging": 37,  # "This is where I'm meant to be"
+        "parental_pride": 38,  # "Look how far they've come"
+        "parental_guilt": 39,  # "Should have spent more time with them"
+        "patience": 40,  # "Deep breaths, they're just kids"
+        "worry": 41,  # "Can't stop thinking about dad's health"
+        "bittersweet": 42,  # "They're growing up so fast"
+        "homesickness": 43,  # "Wish I could be there with everyone"
+    },
+    problem_type="multi_label_classification",
+    description="FamilyOS emotions - 44 classes with family-specific feelings (Stage A/B default)",
 )
 
 
@@ -552,7 +612,7 @@ CAPABILITY_TO_LABELS: dict[Capability, LabelSchema | None] = {
     # Generic capabilities
     Capability.NER_GENERAL: NER_GENERAL_LABELS,
     Capability.SENTIMENT: SENTIMENT_LABELS,
-    Capability.EMOTIONS: EMOTIONS_LABELS,
+    Capability.EMOTIONS: EMOTIONS_FAMILYOS_LABELS,
     Capability.SAFETY_GENERIC: SAFETY_GENERIC_LABELS,
     Capability.NLI: NLI_LABELS,
     Capability.EMBEDDING: None,  # Embedding has no labels
@@ -588,8 +648,10 @@ ALL_LABEL_SCHEMAS: dict[str, LabelSchema] = {
     # Generic labels
     "ner_general": NER_GENERAL_LABELS,
     "sentiment": SENTIMENT_LABELS,
-    "emotions": EMOTIONS_LABELS,
+    "emotions": EMOTIONS_FAMILYOS_LABELS,
+    "emotions_legacy": EMOTIONS_LABELS,
     "emotions_reduced": EMOTIONS_REDUCED_LABELS,
+    "emotions_familyos": EMOTIONS_FAMILYOS_LABELS,
     "safety_generic": SAFETY_GENERIC_LABELS,
     "nli": NLI_LABELS,
     "temporal": TEMPORAL_LABELS,  # NEW
@@ -612,6 +674,7 @@ __all__ = [
     "NER_GENERAL_LABELS",
     "SENTIMENT_LABELS",
     "EMOTIONS_LABELS",
+    "EMOTIONS_FAMILYOS_LABELS",
     "EMOTIONS_REDUCED_LABELS",
     "SAFETY_GENERIC_LABELS",
     "NLI_LABELS",

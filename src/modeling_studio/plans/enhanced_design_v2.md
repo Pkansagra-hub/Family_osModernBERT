@@ -70,7 +70,7 @@
 | 1 | `ner_general` | Token | 9 BIO tags | Enhanced |
 | 2 | `ner_family` | Token | 21 BIO tags | **Enhanced** |
 | 3 | `sentiment` | Sequence | 5 classes | **Enhanced** |
-| 4 | `emotions` | Sequence (multi) | 32 emotions | **Enhanced** |
+| 4 | `emotions` | Sequence (multi) | 44 emotions | **Enhanced** |
 | 5 | `safety_generic` | Sequence (multi) | 8 types | **Enhanced** |
 | 6 | `safety_familyos` | Sequence | 4 bands | Same |
 | 7 | `ingress` | Sequence | 12 domains | **Enhanced** |
@@ -177,61 +177,76 @@ SENTIMENT_LABELS_V2 = LabelSchema(
 - Detecting mood shifts (amber signals)
 - Understanding celebration vs routine positive moments
 
-### 3.4 Emotions (Enhanced: 28 → 32 emotions)
+### 3.4 Emotions (Enhanced: 28 → 44 emotions)
 
 ```python
 EMOTIONS_LABELS_V2 = LabelSchema(
     name="emotions",
     label2id={
-        # GoEmotions base (27)
+        # Core Emotions (8)
         "neutral": 0,
-        "admiration": 1,
-        "amusement": 2,
+        "joy": 1,
+        "sadness": 2,
         "anger": 3,
-        "annoyance": 4,
-        "approval": 5,
-        "caring": 6,
-        "confusion": 7,
-        "curiosity": 8,
-        "desire": 9,
-        "disappointment": 10,
-        "disapproval": 11,
-        "disgust": 12,
-        "embarrassment": 13,
-        "excitement": 14,
-        "fear": 15,
-        "gratitude": 16,
-        "grief": 17,
-        "joy": 18,
-        "love": 19,
-        "nervousness": 20,
-        "optimism": 21,
-        "pride": 22,
-        "realization": 23,
-        "relief": 24,
-        "remorse": 25,
-        "sadness": 26,
-        "surprise": 27,
-
-        # NEW: Family-specific emotions
-        "nostalgia": 28,      # "Remember when Panda was little..."
-        "protectiveness": 29, # "I worry about the kids..."
-        "togetherness": 30,   # "Love our family time"
-        "longing": 31,        # "Miss mom so much"
+        "fear": 4,
+        "surprise": 5,
+        "love": 6,
+        "disgust": 7,
+        # Positive Emotions (12)
+        "admiration": 8,
+        "amusement": 9,
+        "approval": 10,
+        "caring": 11,
+        "excitement": 12,
+        "gratitude": 13,
+        "optimism": 14,
+        "pride": 15,
+        "relief": 16,
+        "contentment": 17,
+        "hope": 18,
+        "tenderness": 19,
+        # Negative Emotions (10)
+        "annoyance": 20,
+        "disappointment": 21,
+        "disapproval": 22,
+        "embarrassment": 23,
+        "grief": 24,
+        "nervousness": 25,
+        "remorse": 26,
+        "frustration": 27,
+        "overwhelmed": 28,
+        "emptiness": 29,
+        # Family-Specific Emotions (14)
+        "nostalgia": 30,
+        "protectiveness": 31,
+        "togetherness": 32,
+        "longing": 33,
+        "warmth": 34,
+        "playfulness": 35,
+        "celebration": 36,
+        "belonging": 37,
+        "parental_pride": 38,
+        "parental_guilt": 39,
+        "patience": 40,
+        "worry": 41,
+        "bittersweet": 42,
+        "homesickness": 43,
     },
     problem_type="multi_label_classification",
-    description="Extended emotions with family-specific feelings",
+    description="FamilyOS 44-emotion schema with family-specific expansions",
 )
 ```
 
-**New Family Emotions:**
+**Family-Specific Emotion Highlights:**
 
 | Emotion | Description | Trigger Examples |
 |---------|-------------|------------------|
-| nostalgia | Warm memories of the past | "Remember when...", old photos, anniversaries |
-| protectiveness | Parental/family concern | Kids' safety, health worries, warnings |
-| togetherness | Feeling of family unity | Group activities, celebrations, "we" statements |
-| longing | Missing absent family | Distance, loss, "wish you were here" |
+| nostalgia | Warm memories of the past | "Remember when...", anniversaries, photo albums |
+| protectiveness | Parental/family concern | Checking on kids, shielding loved ones |
+| togetherness | Feeling of family unity | Game nights, shared meals, "we" statements |
+| parental_pride | Pride tied to caregiver role | Report cards, first steps, milestones |
+| bittersweet | Mixed joy + sadness | Kids growing up, graduation, farewells |
+| homesickness | Missing home/family | Travel, relocation, long deployments |
 
 ### 3.5 Safety Generic (Enhanced: 6 → 8 types)
 
@@ -330,7 +345,7 @@ RELATION_LABELS = LabelSchema(
 
 **Example:**
 
-```
+```text
 Input: "Mom took Panda to the park"
 Output: [
   {"subject": "Mom", "relation": "parent_of", "object": "Panda"},
@@ -389,7 +404,7 @@ TEMPORAL_LABELS = LabelSchema(
 
 **Example:**
 
-```
+```text
 Input: "Last Sunday we went to grandma's for her 80th birthday"
 Output: [
   {"text": "Last Sunday", "label": "DATE_REL", "normalized": "2025-11-23"},
@@ -938,7 +953,7 @@ FAMILY_STRUCTURE_TYPES = {
 # - NER_GENERAL_LABELS_V2 (17 tags)
 # - NER_FAMILY_LABELS_V2 (21 tags)
 # - SENTIMENT_LABELS_V2 (5 classes)
-# - EMOTIONS_LABELS_V2 (32 emotions)
+# - EMOTIONS_LABELS_V2 (44 emotions)
 # - SAFETY_GENERIC_LABELS_V2 (8 types)
 # - INGRESS_LABELS_V2 (12 domains)
 # - RELATION_LABELS (15 relations) [NEW]
@@ -999,7 +1014,7 @@ class Capability(str, Enum):
 | ner_general | F1 | 88% | 91% | More entity types |
 | ner_family | F1 | 85% | 88% | Traditions, milestones |
 | sentiment | Accuracy | 92% | 94% | 5-class scale |
-| emotions | Macro F1 | 75% | 78% | 32 emotions |
+| emotions | Macro F1 | 75% | 78% | 44 emotions |
 | safety_familyos | CRISIS Recall | 95% | **98%** | **Raised priority - non-negotiable** |
 | safety_familyos | Cultural FP | - | **≤2%** | **Indian hyperbole robustness** |
 | ingress | Accuracy | 90% | 92% | 12 domains |
@@ -1016,7 +1031,7 @@ After Stage B training, re-evaluate on Stage A benchmarks:
 | CoNLL-2003 (NER) | ≤ 2% F1 | Reduce LoRA r, increase replay |
 | SST-2 (Sentiment) | ≤ 2% Acc | Reduce LoRA r, increase replay |
 | MNLI (NLI) | ≤ 2% Acc | Reduce LoRA r, increase replay |
-| GoEmotions | ≤ 3% F1 | Reduce LoRA r, increase replay |
+| FamilyOS Emotions | ≤ 3% F1 | Reduce LoRA r, increase replay |
 
 ---
 
@@ -1026,7 +1041,7 @@ After Stage B training, re-evaluate on Stage A benchmarks:
 |--------|----|----|-------------|
 | Capabilities | 9 | 12 | +relation, intent, temporal |
 | NER Family tags | 15 | 21 | +TRADITION, MILESTONE, HEIRLOOM |
-| Emotions | 28 | 32 | +nostalgia, protectiveness, togetherness, longing |
+| Emotions | 28 | 44 | +family-specific cluster (nostalgia, protectiveness, parental_pride, etc.) |
 | Sentiment classes | 3 | 5 | Intensity scale |
 | Ingress domains | 7 | 12 | +MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE |
 | Safety subcategories | 0 | 12 | Hierarchical classification |

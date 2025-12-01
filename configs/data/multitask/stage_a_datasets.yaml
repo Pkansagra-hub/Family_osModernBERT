@@ -112,6 +112,7 @@ datasets:
     column_mapping:
       text: text
       label: labels
+    enabled: false  # Replaced by FamilyOS emotions dataset
     # Reduced label set (12 emotions)
     label_map:
       admiration: 0
@@ -127,6 +128,25 @@ datasets:
       disapproval: 10
       disgust: 11
       # ... mapped from 28 -> 12
+
+  emotions_familyos_silver:
+    task: emotions
+    source: local
+    name: data/familyos/emotions/silver
+    label_schema: emotions_familyos
+    format: jsonl
+    splits:
+      train: train
+
+  emotions_familyos_gold:
+    task: emotions
+    source: local
+    name: data/familyos/emotions/gold
+    label_schema: emotions_familyos
+    format: jsonl
+    splits:
+      train: train
+      validation: validation
 
   # ============================================
   # Safety / Toxicity Detection

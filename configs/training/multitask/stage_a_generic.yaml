@@ -38,7 +38,7 @@ heads:
   emotions:
     enabled: true
     type: sequence_classification
-    num_labels: 32  # Full 32 emotions from EMOTIONS_LABELS
+    num_labels: 44  # FamilyOS 44-emotion schema
     problem_type: multi_label_classification
     dropout: 0.1
 

@@ -30,6 +30,7 @@ datasets:
     name: google-research-datasets/go_emotions
     config: simplified
     max_samples: 5000
+    label_schema: emotions_familyos
     splits:
       train: train
       validation: validation

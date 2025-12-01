@@ -45,7 +45,7 @@ heads:
   emotions:
     enabled: true
     freeze: false
-    num_labels: 32
+    num_labels: 44
 
   safety_generic:
     enabled: true

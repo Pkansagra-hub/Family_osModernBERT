@@ -50,7 +50,6 @@ Usage:
 from __future__ import annotations
 
 import logging
-import warnings
 from typing import Any
 
 import numpy as np
@@ -337,12 +336,8 @@ def compute_embedding_metrics(
     if len(predictions) < 2:
         return {"spearman": 0.0, "pearson": 0.0}
 
-    # Suppress warnings for constant arrays (common early in training)
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=RuntimeWarning)
-        warnings.filterwarnings("ignore", message="An input array is constant")
-        spearman_corr, _ = spearmanr(predictions, labels)
-        pearson_corr, _ = pearsonr(predictions, labels)
+    spearman_corr, _ = spearmanr(predictions, labels)
+    pearson_corr, _ = pearsonr(predictions, labels)
 
     return {
         "spearman": float(spearman_corr) if not np.isnan(spearman_corr) else 0.0,
