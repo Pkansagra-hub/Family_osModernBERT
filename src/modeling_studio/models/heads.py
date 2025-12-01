@@ -43,12 +43,16 @@ class BaseHead(ABC, nn.Module):
     - Dropout regularization
     - Freeze/unfreeze methods
     - Loss computation interface
+    - Class-weighted and focal loss for multi-label tasks
 
     Args:
         hidden_size: Size of encoder hidden states
         num_labels: Number of output labels/classes
         dropout: Dropout probability
         problem_type: Type of classification problem
+        class_weights: Optional tensor of per-class weights for multi-label BCE
+        use_focal_loss: Whether to use focal loss for multi-label (reduces easy negative dominance)
+        focal_gamma: Focal loss gamma parameter (default 2.0)
     """
 
     def __init__(
@@ -57,6 +61,9 @@ class BaseHead(ABC, nn.Module):
         num_labels: int = 2,
         dropout: float = 0.1,
         problem_type: str = "single_label_classification",
+        class_weights: torch.Tensor | None = None,
+        use_focal_loss: bool = False,
+        focal_gamma: float = 2.0,
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -64,6 +71,14 @@ class BaseHead(ABC, nn.Module):
         self.dropout_prob = dropout
         self.problem_type = problem_type
         self.dropout = nn.Dropout(dropout)
+
+        # Multi-label loss configuration
+        self.use_focal_loss = use_focal_loss
+        self.focal_gamma = focal_gamma
+        if class_weights is not None:
+            self.register_buffer("class_weights", class_weights)
+        else:
+            self.class_weights = None
 
     @abstractmethod
     def forward(
@@ -90,7 +105,12 @@ class BaseHead(ABC, nn.Module):
         logits: torch.Tensor,
         labels: torch.Tensor,
     ) -> torch.Tensor:
-        """Compute loss based on problem type."""
+        """Compute loss based on problem type.
+
+        For multi_label_classification:
+        - Supports class-weighted BCE (set self.class_weights)
+        - Supports focal loss (set self.use_focal_loss=True)
+        """
         if self.problem_type == "single_label_classification":
             loss = F.cross_entropy(logits.view(-1, self.num_labels), labels.view(-1))
             # DEBUG: Check for abnormal loss
@@ -105,7 +125,15 @@ class BaseHead(ABC, nn.Module):
                 print(f"  loss: {loss.item():.4f}")
             return loss
         elif self.problem_type == "multi_label_classification":
-            loss = F.binary_cross_entropy_with_logits(logits, labels.float())
+            # Apply focal loss or weighted BCE for better handling of class imbalance
+            if self.use_focal_loss:
+                loss = self._focal_bce_loss(logits, labels.float())
+            elif self.class_weights is not None:
+                loss = F.binary_cross_entropy_with_logits(
+                    logits, labels.float(), weight=self.class_weights
+                )
+            else:
+                loss = F.binary_cross_entropy_with_logits(logits, labels.float())
             # DEBUG: Check for abnormal loss
             if loss.item() > 10:
                 print(f"[DEBUG] HIGH LOSS in {self.__class__.__name__}:")
@@ -121,6 +149,42 @@ class BaseHead(ABC, nn.Module):
             return F.mse_loss(logits.squeeze(-1), labels)
         else:
             raise ValueError(f"Unknown problem type: {self.problem_type}")
+
+    def _focal_bce_loss(
+        self,
+        logits: torch.Tensor,
+        labels: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Focal loss for multi-label classification.
+
+        Focal loss down-weights easy examples (clear negatives) and focuses
+        on hard examples, which helps with class imbalance in multi-label tasks.
+
+        FL(p_t) = -alpha_t * (1 - p_t)^gamma * log(p_t)
+
+        Args:
+            logits: Raw model outputs (batch_size, num_labels)
+            labels: Binary labels (batch_size, num_labels)
+
+        Returns:
+            Scalar focal loss
+        """
+        probs = torch.sigmoid(logits)
+        # p_t is the probability of the correct class
+        p_t = probs * labels + (1 - probs) * (1 - labels)
+        # Focal weight: (1 - p_t)^gamma
+        focal_weight = (1 - p_t).pow(self.focal_gamma)
+
+        # BCE loss per element
+        bce = F.binary_cross_entropy_with_logits(logits, labels, reduction="none")
+
+        # Apply focal weight and class weights
+        focal_loss = focal_weight * bce
+        if self.class_weights is not None:
+            focal_loss = focal_loss * self.class_weights
+
+        return focal_loss.mean()
 
     def freeze(self) -> None:
         """Freeze all parameters in this head."""
@@ -156,6 +220,9 @@ class SequenceClassificationHead(BaseHead):
         dropout: Dropout probability
         problem_type: 'single_label_classification', 'multi_label_classification', or 'regression'
         pooling: Pooling strategy ('cls', 'mean', 'max')
+        class_weights: Optional per-class weights for multi-label BCE loss
+        use_focal_loss: Whether to use focal loss for multi-label tasks
+        focal_gamma: Focal loss gamma parameter (default 2.0)
     """
 
     def __init__(
@@ -165,8 +232,19 @@ class SequenceClassificationHead(BaseHead):
         dropout: float = 0.1,
         problem_type: str = "single_label_classification",
         pooling: str = "cls",
+        class_weights: torch.Tensor | None = None,
+        use_focal_loss: bool = False,
+        focal_gamma: float = 2.0,
     ):
-        super().__init__(hidden_size, num_labels, dropout, problem_type)
+        super().__init__(
+            hidden_size,
+            num_labels,
+            dropout,
+            problem_type,
+            class_weights=class_weights,
+            use_focal_loss=use_focal_loss,
+            focal_gamma=focal_gamma,
+        )
         self.pooling = pooling
 
         # Classification layers

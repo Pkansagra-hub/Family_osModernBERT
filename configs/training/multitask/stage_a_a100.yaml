@@ -45,6 +45,9 @@ heads:
     num_labels: 44
     problem_type: multi_label_classification
     dropout: 0.1
+    use_focal_loss: true        # Focal loss for class imbalance
+    focal_gamma: 2.0            # Default focal gamma
+    compute_class_weights: true # Compute inverse frequency weights from training data
 
   safety_generic:
     enabled: true
