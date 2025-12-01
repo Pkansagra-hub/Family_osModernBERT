@@ -38,6 +38,7 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -1324,6 +1325,442 @@ class FamilyContrastiveLoss(nn.Module):
 
 
 # =============================================================================
+# R-Drop Regularization
+# =============================================================================
+
+
+class RDropLoss(nn.Module):
+    """
+    R-Drop: Regularized Dropout for Neural Networks.
+
+    R-Drop forces the model to produce consistent outputs across different
+    dropout masks by adding a KL-divergence loss between two forward passes.
+
+    This improves generalization by +1-2% on NLU tasks.
+
+    Args:
+        alpha: Weight for the KL-divergence regularization term. Default: 0.5
+        reduction: Loss reduction method ('mean', 'sum', 'batchmean')
+
+    Reference:
+        Wu et al. "R-Drop: Regularized Dropout for Neural Networks" (NeurIPS 2021)
+
+    Example:
+        >>> rdrop = RDropLoss(alpha=0.5)
+        >>> # Run model twice with different dropout
+        >>> logits1 = model(input)
+        >>> logits2 = model(input)  # Different dropout mask
+        >>> ce_loss = F.cross_entropy(logits1, labels)
+        >>> total_loss = rdrop(logits1, logits2, ce_loss)
+    """
+
+    def __init__(
+        self,
+        alpha: float = 0.5,
+        reduction: Literal["mean", "sum", "batchmean"] = "batchmean",
+    ):
+        super().__init__()
+        self.alpha = alpha
+        self.reduction = reduction
+
+    def forward(
+        self,
+        logits1: torch.Tensor,
+        logits2: torch.Tensor,
+        ce_loss: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute R-Drop loss combining CE loss with KL divergence.
+
+        Args:
+            logits1: First forward pass logits (batch_size, num_classes)
+            logits2: Second forward pass logits (batch_size, num_classes)
+            ce_loss: Cross-entropy loss from first pass
+
+        Returns:
+            Combined loss: CE + alpha * KL_divergence
+        """
+        # Compute KL divergence in both directions (symmetric)
+        p = F.log_softmax(logits1, dim=-1)
+        q = F.log_softmax(logits2, dim=-1)
+
+        p_soft = F.softmax(logits1, dim=-1)
+        q_soft = F.softmax(logits2, dim=-1)
+
+        # KL(P || Q) + KL(Q || P) for symmetric divergence
+        kl_loss = F.kl_div(p, q_soft, reduction=self.reduction) + \
+                  F.kl_div(q, p_soft, reduction=self.reduction)
+
+        # Average the two directions
+        kl_loss = kl_loss / 2.0
+
+        # Combine with CE loss
+        return ce_loss + self.alpha * kl_loss
+
+    @staticmethod
+    def compute_kl_divergence(
+        logits1: torch.Tensor,
+        logits2: torch.Tensor,
+        reduction: str = "batchmean",
+    ) -> torch.Tensor:
+        """Compute symmetric KL divergence between two distributions."""
+        p = F.log_softmax(logits1, dim=-1)
+        q = F.log_softmax(logits2, dim=-1)
+        p_soft = F.softmax(logits1, dim=-1)
+        q_soft = F.softmax(logits2, dim=-1)
+
+        kl_pq = F.kl_div(p, q_soft, reduction=reduction)
+        kl_qp = F.kl_div(q, p_soft, reduction=reduction)
+
+        return (kl_pq + kl_qp) / 2.0
+
+
+# =============================================================================
+# Adversarial Training - FGM (Fast Gradient Method)
+# =============================================================================
+
+
+class FGM:
+    """
+    Fast Gradient Method for adversarial training.
+
+    FGM adds adversarial perturbations to word embeddings during training
+    to improve model robustness. This typically gives +1-2% improvement.
+
+    Args:
+        model: The model to apply adversarial training to
+        epsilon: Perturbation magnitude. Default: 1.0
+        emb_name: Name of the embedding parameter to perturb. Default: 'word_embeddings'
+
+    Reference:
+        Miyato et al. "Adversarial Training Methods for Semi-Supervised Text Classification"
+
+    Example:
+        >>> fgm = FGM(model, epsilon=1.0)
+        >>> # Normal forward + backward
+        >>> loss = model(input, labels).loss
+        >>> loss.backward()
+        >>> # Adversarial attack
+        >>> fgm.attack()
+        >>> loss_adv = model(input, labels).loss
+        >>> loss_adv.backward()
+        >>> fgm.restore()
+        >>> optimizer.step()
+    """
+
+    def __init__(
+        self,
+        model: nn.Module,
+        epsilon: float = 1.0,
+        emb_name: str = "word_embeddings",
+    ):
+        self.model = model
+        self.epsilon = epsilon
+        self.emb_name = emb_name
+        self.backup: dict[str, torch.Tensor] = {}
+
+    def attack(self) -> None:
+        """Add adversarial perturbation to embeddings."""
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and self.emb_name in name:
+                # Backup original embeddings
+                self.backup[name] = param.data.clone()
+
+                # Compute perturbation direction from gradients
+                if param.grad is not None:
+                    norm = torch.norm(param.grad)
+                    if norm != 0 and not torch.isnan(norm):
+                        # Perturb in gradient direction
+                        r_at = self.epsilon * param.grad / norm
+                        param.data.add_(r_at)
+
+    def restore(self) -> None:
+        """Restore original embeddings after adversarial step."""
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and self.emb_name in name:
+                if name in self.backup:
+                    param.data = self.backup[name]
+        self.backup = {}
+
+
+class PGD:
+    """
+    Projected Gradient Descent for adversarial training.
+
+    PGD is a stronger adversarial attack than FGM, using multiple
+    smaller steps with projection back to epsilon-ball.
+
+    Args:
+        model: The model to apply adversarial training to
+        epsilon: Maximum perturbation magnitude. Default: 1.0
+        alpha: Step size for each iteration. Default: 0.3
+        num_steps: Number of PGD steps. Default: 3
+        emb_name: Name of the embedding parameter to perturb.
+
+    Reference:
+        Madry et al. "Towards Deep Learning Models Resistant to Adversarial Attacks"
+
+    Example:
+        >>> pgd = PGD(model, epsilon=1.0, num_steps=3)
+        >>> loss = model(input, labels).loss
+        >>> loss.backward()
+        >>> pgd.backup_grad()
+        >>> for _ in range(pgd.num_steps):
+        ...     pgd.attack(is_first=(t==0))
+        ...     loss_adv = model(input, labels).loss
+        ...     loss_adv.backward()
+        >>> pgd.restore()
+        >>> optimizer.step()
+    """
+
+    def __init__(
+        self,
+        model: nn.Module,
+        epsilon: float = 1.0,
+        alpha: float = 0.3,
+        num_steps: int = 3,
+        emb_name: str = "word_embeddings",
+    ):
+        self.model = model
+        self.epsilon = epsilon
+        self.alpha = alpha
+        self.num_steps = num_steps
+        self.emb_name = emb_name
+        self.backup: dict[str, torch.Tensor] = {}
+        self.grad_backup: dict[str, torch.Tensor] = {}
+
+    def attack(self, is_first: bool = False) -> None:
+        """
+        Execute one step of PGD attack.
+
+        Args:
+            is_first: Whether this is the first attack step (backup embeddings)
+        """
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and self.emb_name in name:
+                if is_first:
+                    # Backup original embeddings on first step
+                    self.backup[name] = param.data.clone()
+
+                if param.grad is not None:
+                    norm = torch.norm(param.grad)
+                    if norm != 0 and not torch.isnan(norm):
+                        # Take step in gradient direction
+                        r_at = self.alpha * param.grad / norm
+                        param.data.add_(r_at)
+
+                        # Project back to epsilon-ball
+                        param.data = self._project(
+                            param.data,
+                            self.backup[name],
+                            self.epsilon,
+                        )
+
+    def _project(
+        self,
+        perturbed: torch.Tensor,
+        original: torch.Tensor,
+        epsilon: float,
+    ) -> torch.Tensor:
+        """Project perturbed embeddings back to epsilon-ball around original."""
+        delta = perturbed - original
+        norm = torch.norm(delta)
+        if norm > epsilon:
+            delta = delta * epsilon / norm
+        return original + delta
+
+    def restore(self) -> None:
+        """Restore original embeddings after attack."""
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and self.emb_name in name:
+                if name in self.backup:
+                    param.data = self.backup[name]
+        self.backup = {}
+
+    def backup_grad(self) -> None:
+        """Backup gradients before adversarial steps."""
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and param.grad is not None:
+                self.grad_backup[name] = param.grad.clone()
+
+    def restore_grad(self) -> None:
+        """Restore original gradients after adversarial steps."""
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                if name in self.grad_backup:
+                    param.grad = self.grad_backup[name]
+
+
+# =============================================================================
+# Mixup Augmentation
+# =============================================================================
+
+
+class MixupLoss(nn.Module):
+    """
+    Mixup training for NLU tasks.
+
+    Mixup creates virtual training examples by linearly interpolating
+    between pairs of examples and their labels.
+
+    For text, we apply mixup in the embedding space rather than input space.
+
+    Args:
+        alpha: Beta distribution parameter for mixing coefficient. Default: 0.4
+        loss_fn: Base loss function to use. Default: CrossEntropyLoss
+
+    Reference:
+        Zhang et al. "mixup: Beyond Empirical Risk Minimization" (ICLR 2018)
+
+    Example:
+        >>> mixup = MixupLoss(alpha=0.4)
+        >>> embeddings, labels = batch
+        >>> mixed_emb, labels_a, labels_b, lam = mixup.mixup_data(embeddings, labels)
+        >>> outputs = model.classifier(mixed_emb)
+        >>> loss = mixup(outputs, labels_a, labels_b, lam)
+    """
+
+    def __init__(
+        self,
+        alpha: float = 0.4,
+        loss_fn: nn.Module | None = None,
+    ):
+        super().__init__()
+        self.alpha = alpha
+        self.loss_fn = loss_fn or nn.CrossEntropyLoss()
+
+    def mixup_data(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, float]:
+        """
+        Apply mixup to a batch of data.
+
+        Args:
+            x: Input features (batch_size, ...) - typically embeddings
+            y: Labels (batch_size,)
+
+        Returns:
+            Tuple of (mixed_x, y_a, y_b, lambda)
+        """
+        if self.alpha > 0:
+            lam = np.random.beta(self.alpha, self.alpha)
+        else:
+            lam = 1.0
+
+        batch_size = x.size(0)
+        index = torch.randperm(batch_size, device=x.device)
+
+        mixed_x = lam * x + (1 - lam) * x[index]
+        y_a, y_b = y, y[index]
+
+        return mixed_x, y_a, y_b, lam
+
+    def forward(
+        self,
+        logits: torch.Tensor,
+        labels_a: torch.Tensor,
+        labels_b: torch.Tensor,
+        lam: float,
+    ) -> torch.Tensor:
+        """
+        Compute mixup loss.
+
+        Args:
+            logits: Model predictions (batch_size, num_classes)
+            labels_a: First set of labels
+            labels_b: Second set of labels (shuffled)
+            lam: Mixing coefficient
+
+        Returns:
+            Mixed loss value
+        """
+        loss_a = self.loss_fn(logits, labels_a)
+        loss_b = self.loss_fn(logits, labels_b)
+        return lam * loss_a + (1 - lam) * loss_b
+
+
+class EmbeddingMixup(nn.Module):
+    """
+    Mixup applied in the embedding space for text classification.
+
+    This is more suitable for NLU tasks than input-space mixup since
+    we can't meaningfully interpolate between discrete tokens.
+
+    Args:
+        alpha: Beta distribution parameter. Default: 0.4
+        apply_prob: Probability of applying mixup to a batch. Default: 0.5
+
+    Example:
+        >>> mixup = EmbeddingMixup(alpha=0.4)
+        >>> embeddings = model.encoder(input_ids)
+        >>> mixed_emb, targets = mixup(embeddings, labels)
+        >>> logits = model.classifier(mixed_emb)
+        >>> loss = F.cross_entropy(logits, targets)  # Soft targets
+    """
+
+    def __init__(
+        self,
+        alpha: float = 0.4,
+        apply_prob: float = 0.5,
+    ):
+        super().__init__()
+        self.alpha = alpha
+        self.apply_prob = apply_prob
+
+    def forward(
+        self,
+        embeddings: torch.Tensor,
+        labels: torch.Tensor,
+        num_classes: int | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Apply embedding mixup.
+
+        Args:
+            embeddings: Encoded representations (batch_size, hidden_size)
+            labels: Class labels (batch_size,) or soft labels (batch_size, num_classes)
+            num_classes: Number of classes (required if labels are hard)
+
+        Returns:
+            Tuple of (mixed_embeddings, mixed_soft_labels)
+        """
+        if not self.training or np.random.random() > self.apply_prob:
+            # Convert to soft labels if needed
+            if labels.dim() == 1 and num_classes is not None:
+                soft_labels = F.one_hot(labels, num_classes).float()
+            else:
+                soft_labels = labels.float()
+            return embeddings, soft_labels
+
+        batch_size = embeddings.size(0)
+
+        # Sample mixing coefficient
+        if self.alpha > 0:
+            lam = np.random.beta(self.alpha, self.alpha)
+        else:
+            lam = 1.0
+
+        # Shuffle indices
+        index = torch.randperm(batch_size, device=embeddings.device)
+
+        # Mix embeddings
+        mixed_embeddings = lam * embeddings + (1 - lam) * embeddings[index]
+
+        # Convert labels to soft labels if needed
+        if labels.dim() == 1 and num_classes is not None:
+            soft_labels = F.one_hot(labels, num_classes).float()
+        else:
+            soft_labels = labels.float()
+
+        # Mix labels
+        mixed_labels = lam * soft_labels + (1 - lam) * soft_labels[index]
+
+        return mixed_embeddings, mixed_labels
+
+
+# =============================================================================
 # Exports
 # =============================================================================
 
@@ -1337,4 +1774,9 @@ __all__ = [
     "MultiTaskLoss",
     "UncertaintyWeightedLoss",
     "FamilyContrastiveLoss",
+    "RDropLoss",
+    "FGM",
+    "PGD",
+    "MixupLoss",
+    "EmbeddingMixup",
 ]

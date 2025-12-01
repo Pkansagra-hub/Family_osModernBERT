@@ -40,6 +40,7 @@ heads:
     type: sequence_classification
     num_labels: 5
     dropout: 0.1
+    label_smoothing: 0.1       # Regularization for single-label classification
 
   emotions:
     enabled: true
@@ -47,6 +48,8 @@ heads:
     num_labels: 44
     problem_type: multi_label_classification
     dropout: 0.1
+    use_focal_loss: true        # Focal loss for class imbalance
+    focal_gamma: 2.0
 
   safety_generic:
     enabled: true
@@ -54,12 +57,15 @@ heads:
     num_labels: 8
     problem_type: multi_label_classification
     dropout: 0.1
+    use_focal_loss: true        # Focal loss for class imbalance
+    focal_gamma: 2.0
 
   nli:
     enabled: true
     type: sequence_classification
     num_labels: 3
     dropout: 0.1
+    label_smoothing: 0.1       # Regularization for single-label classification
 
   embedding:
     enabled: true
@@ -120,6 +126,21 @@ training:
 
   # === EMBEDDING HARD NEGATIVES - V2 SPEC ===
   embedding_hard_negatives: 15
+
+  # === SOTA TECHNIQUES ===
+  # Label Smoothing: Reduces overconfidence, improves calibration (+0.5-1% acc)
+  label_smoothing: 0.1
+  
+  # R-Drop: Consistency regularization via dropout variations (+1-2% NLU)
+  use_r_drop: false           # Disabled by default (2x forward pass cost)
+  r_drop_alpha: 0.7           # KL divergence weight when enabled
+  
+  # Adversarial Training: FGM for robustness (+0.5-1.5% on hard examples)
+  use_adversarial: false      # Disabled by default (extra backward pass)
+  adversarial_method: fgm     # 'fgm' (faster) or 'pgd' (stronger)
+  adversarial_epsilon: 1.0    # Perturbation magnitude
+  pgd_steps: 3                # Only for PGD
+  pgd_alpha: 0.3              # Only for PGD
 
   # === MEMORY: NO CHECKPOINTING FOR SPEED ===
   gradient_checkpointing: false

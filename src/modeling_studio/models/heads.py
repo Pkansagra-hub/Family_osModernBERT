@@ -63,6 +63,7 @@ class BaseHead(ABC, nn.Module):
         class_weights: Optional tensor of per-class weights for multi-label BCE
         use_focal_loss: Whether to use focal loss for multi-label (reduces easy negative dominance)
         focal_gamma: Focal loss gamma parameter (default 2.0)
+        label_smoothing: Label smoothing factor (0.0 = no smoothing, 0.1 = typical). Default: 0.0
     """
 
     def __init__(
@@ -74,6 +75,7 @@ class BaseHead(ABC, nn.Module):
         class_weights: torch.Tensor | None = None,
         use_focal_loss: bool = False,
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -85,6 +87,7 @@ class BaseHead(ABC, nn.Module):
         # Multi-label loss configuration
         self.use_focal_loss = use_focal_loss
         self.focal_gamma = focal_gamma
+        self.label_smoothing = label_smoothing
         if class_weights is not None:
             self.register_buffer("class_weights", class_weights)
         else:
@@ -122,7 +125,11 @@ class BaseHead(ABC, nn.Module):
         - Supports focal loss (set self.use_focal_loss=True)
         """
         if self.problem_type == "single_label_classification":
-            loss = F.cross_entropy(logits.view(-1, self.num_labels), labels.view(-1))
+            loss = F.cross_entropy(
+                logits.view(-1, self.num_labels), 
+                labels.view(-1),
+                label_smoothing=self.label_smoothing
+            )
             # DEBUG: Check for abnormal loss
             if loss.item() > 10:
                 print(f"[DEBUG] HIGH LOSS in {self.__class__.__name__}:")
