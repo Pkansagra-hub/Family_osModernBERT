@@ -39,6 +39,7 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -46,6 +47,8 @@ from typing import TYPE_CHECKING, Any
 import torch
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 from transformers import Trainer, TrainingArguments
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizerBase
@@ -630,6 +633,15 @@ class MultiTaskTrainer(Trainer):
                 lr=base_lr,
                 betas=(0.9, 0.999),
                 eps=1e-8,
+            )
+
+            # CRITICAL: Update self.optimizer so the Trainer uses the new optimizer
+            # with uncertainty weighting parameters included
+            self.optimizer = optimizer
+
+            logger.info(
+                f"Uncertainty weighting enabled: added {len(list(self.uncertainty_weighting.parameters()))} "
+                f"learnable task weight parameters (log_vars) to optimizer with lr={base_lr * 10:.2e}"
             )
 
         return optimizer

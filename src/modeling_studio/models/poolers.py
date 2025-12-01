@@ -561,6 +561,209 @@ class LastTokenPooler(BasePooler):
 
 
 # =============================================================================
+# CLSMeanPooler - Combined CLS + Mean Pooling
+# =============================================================================
+
+
+class CLSMeanPooler(BasePooler):
+    """
+    Combined CLS and Mean pooling.
+
+    Concatenates the [CLS] token representation with the mean-pooled
+    representation, then projects back to hidden_size. This combines:
+    - CLS: Trained sequence-level representation
+    - Mean: Distributional information across all tokens
+
+    Architecture:
+        concat([CLS], mean_pool) -> Linear(2*hidden_size, hidden_size) -> LayerNorm
+
+    Args:
+        hidden_size: Size of encoder hidden states
+        output_size: Size of output (default: hidden_size)
+        dropout: Dropout probability (default: 0.1)
+        use_layer_norm: Apply layer norm to output (default: True)
+
+    Example:
+        >>> pooler = CLSMeanPooler(hidden_size=768)
+        >>> hidden_states = torch.randn(2, 128, 768)
+        >>> attention_mask = torch.ones(2, 128)
+        >>> pooled = pooler(hidden_states, attention_mask)
+        >>> assert pooled.shape == (2, 768)
+    """
+
+    def __init__(
+        self,
+        hidden_size: int,
+        output_size: int | None = None,
+        dropout: float = 0.1,
+        use_layer_norm: bool = True,
+    ):
+        super().__init__(hidden_size, output_size)
+
+        # Projection from concatenated (2*hidden) to output_size
+        self.projection = nn.Linear(hidden_size * 2, self.output_size)
+        self.dropout = nn.Dropout(dropout)
+        self.use_layer_norm = use_layer_norm
+
+        if use_layer_norm:
+            self.layer_norm = nn.LayerNorm(self.output_size)
+        else:
+            self.layer_norm = None
+
+        # Initialize projection weights
+        self._init_weights()
+
+    def _init_weights(self) -> None:
+        """Initialize projection weights."""
+        nn.init.xavier_uniform_(self.projection.weight)
+        nn.init.zeros_(self.projection.bias)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """
+        Combine CLS token and mean pooling.
+
+        Args:
+            hidden_states: (batch_size, seq_len, hidden_size)
+            attention_mask: (batch_size, seq_len)
+
+        Returns:
+            Pooled output (batch_size, output_size)
+        """
+        # Extract CLS token
+        cls_token = hidden_states[:, 0, :]  # (batch_size, hidden_size)
+
+        # Compute masked mean pooling
+        if attention_mask is None:
+            mean_pooled = hidden_states.mean(dim=1)
+        else:
+            mask = self._expand_mask(attention_mask, hidden_states)
+            sum_hidden = (hidden_states * mask).sum(dim=1)
+            sum_mask = mask.sum(dim=1).clamp(min=1e-9)
+            mean_pooled = sum_hidden / sum_mask
+
+        # Concatenate CLS and mean
+        combined = torch.cat([cls_token, mean_pooled], dim=-1)  # (batch, 2*hidden)
+
+        # Project back to output_size
+        output = self.projection(combined)  # (batch, output_size)
+        output = self.dropout(output)
+
+        if self.use_layer_norm and self.layer_norm is not None:
+            output = self.layer_norm(output)
+
+        return output
+
+
+# =============================================================================
+# AttentionPooler - Multi-Head Attention Pooling
+# =============================================================================
+
+
+class AttentionPooler(BasePooler):
+    """
+    Multi-head attention pooler with learnable query.
+
+    Uses a learnable [POOL] query token that attends to the sequence
+    via multi-head cross-attention, similar to how ViT uses a [CLS] token.
+
+    Architecture:
+        pool_query -> MultiHeadAttention(query, keys=hidden, values=hidden) -> output
+
+    Args:
+        hidden_size: Size of encoder hidden states
+        output_size: Size of output (default: hidden_size)
+        num_heads: Number of attention heads (default: 8)
+        dropout: Attention dropout (default: 0.1)
+
+    Example:
+        >>> pooler = AttentionPooler(hidden_size=768, num_heads=8)
+        >>> hidden_states = torch.randn(2, 128, 768)
+        >>> attention_mask = torch.ones(2, 128)
+        >>> pooled = pooler(hidden_states, attention_mask)
+        >>> assert pooled.shape == (2, 768)
+    """
+
+    def __init__(
+        self,
+        hidden_size: int,
+        output_size: int | None = None,
+        num_heads: int = 8,
+        dropout: float = 0.1,
+    ):
+        super().__init__(hidden_size, output_size)
+        self.num_heads = num_heads
+
+        # Learnable pool query token
+        self.pool_query = nn.Parameter(torch.randn(1, 1, hidden_size))
+        nn.init.normal_(self.pool_query, std=0.02)
+
+        # Multi-head attention for cross-attention
+        self.attention = nn.MultiheadAttention(
+            embed_dim=hidden_size,
+            num_heads=num_heads,
+            dropout=dropout,
+            batch_first=True,
+        )
+
+        # Optional projection if output_size differs
+        if self.output_size != hidden_size:
+            self.output_projection = nn.Linear(hidden_size, self.output_size)
+        else:
+            self.output_projection = None
+
+        self.layer_norm = nn.LayerNorm(self.output_size)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """
+        Pool via multi-head cross-attention.
+
+        Args:
+            hidden_states: (batch_size, seq_len, hidden_size)
+            attention_mask: (batch_size, seq_len)
+
+        Returns:
+            Pooled output (batch_size, output_size)
+        """
+        batch_size = hidden_states.size(0)
+
+        # Expand pool query for batch
+        query = self.pool_query.expand(batch_size, -1, -1)  # (batch, 1, hidden)
+
+        # Convert attention_mask to key_padding_mask format for MHA
+        # MHA expects: True = ignore position, False = attend
+        key_padding_mask = None
+        if attention_mask is not None:
+            key_padding_mask = attention_mask == 0  # Invert mask
+
+        # Cross-attention: query attends to hidden_states
+        attended, _ = self.attention(
+            query=query,
+            key=hidden_states,
+            value=hidden_states,
+            key_padding_mask=key_padding_mask,
+        )
+
+        # Squeeze sequence dimension
+        output = attended.squeeze(1)  # (batch, hidden)
+
+        # Optional projection
+        if self.output_projection is not None:
+            output = self.output_projection(output)
+
+        output = self.layer_norm(output)
+
+        return output
+
+
+# =============================================================================
 # Utility Functions
 # =============================================================================
 
@@ -597,6 +800,8 @@ def get_pooler(
         "weighted": WeightedMeanPooler,
         "last_token": LastTokenPooler,
         "last": LastTokenPooler,
+        "cls_mean": CLSMeanPooler,
+        "attention": AttentionPooler,
     }
 
     strategy = pooling_strategy.lower()
@@ -619,5 +824,7 @@ __all__ = [
     "MaxPooler",
     "WeightedMeanPooler",
     "LastTokenPooler",
+    "CLSMeanPooler",
+    "AttentionPooler",
     "get_pooler",
 ]

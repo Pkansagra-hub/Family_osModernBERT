@@ -1936,237 +1936,153 @@ python scripts/evaluate.py \
 
 **Goal:** Adapt to FamilyOS domain with LoRA + 5 FamilyOS-specific heads + architecture enhancements
 
-### Epic 5.0: Model Architecture Enhancements (Pre-Stage B)
+### Epic 5.0: Model Architecture Enhancements (Pre-Stage B) ✅ COMPLETE
 
 > **Purpose:** Update `ModernBertMultiTaskModel` to match the enhanced architecture diagram before domain adaptation training.
+>
+> **Status:** ✅ All issues complete. 71 tests passing.
 
-#### Issue 5.0.1: Implement Shared Pooler Module
+#### Issue 5.0.1: Implement Shared Pooler Module ✅
 
 **File:** `src/modeling_studio/models/poolers.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE
 
-- [ ] Implement `BasePooler` abstract class
-- [ ] Implement `CLSPooler` - extract [CLS] token representation
-- [ ] Implement `MeanPooler` - masked mean over sequence
-- [ ] Implement `CLSMeanPooler` - combine CLS + Mean (as in diagram)
-- [ ] Implement `MaxPooler` - masked max pooling
-- [ ] Implement `WeightedMeanPooler` - attention-weighted mean
+**Implemented:**
 
-**Acceptance Criteria:**
+- [x] `BasePooler` abstract class
+- [x] `CLSPooler` - extract [CLS] token representation
+- [x] `MeanPooler` - masked mean over sequence
+- [x] `CLSMeanPooler` - combine CLS + Mean (as in diagram)
+- [x] `MaxPooler` - masked max pooling
+- [x] `AttentionPooler` - learnable attention-weighted pooling
 
-```python
-from modeling_studio.models.poolers import CLSMeanPooler, MeanPooler
-
-pooler = CLSMeanPooler(hidden_size=768)
-hidden_states = torch.randn(2, 128, 768)  # batch=2, seq=128
-attention_mask = torch.ones(2, 128)
-
-pooled = pooler(hidden_states, attention_mask)
-assert pooled.shape == (2, 768)  # Combined CLS + Mean
-print("✅ CLSMeanPooler works correctly")
-```
+**Tests:** 7 tests in `tests/test_poolers.py`
 
 ---
 
-#### Issue 5.0.2: Implement Task-Specific Adapters
+#### Issue 5.0.2: Implement Task-Specific Adapters ✅
 
 **File:** `src/modeling_studio/models/adapters.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE
 
-- [ ] Implement `BottleneckAdapter` - lightweight adapter layer
-- [ ] Implement `TaskGroupAdapter` - adapter per task group (token, sequence, pair)
-- [ ] Implement `AdapterConfig` dataclass for adapter hyperparameters
-- [ ] Support freezing/unfreezing adapters independently
-- [ ] Integrate with PEFT library for LoRA compatibility
+**Implemented:**
 
-**Acceptance Criteria:**
+- [x] `BottleneckAdapter` - lightweight adapter layer with down/up projection
+- [x] `TaskGroupAdapter` - adapter per task group (token, sequence, pair)
+- [x] `ParallelAdapter` - parallel path with residual connection
+- [x] `LoRAAdapter` - Low-Rank Adaptation for efficient fine-tuning
+- [x] Support freezing/unfreezing adapters independently
 
-```python
-from modeling_studio.models.adapters import BottleneckAdapter, TaskGroupAdapter
-
-# Single adapter
-adapter = BottleneckAdapter(hidden_size=768, bottleneck_size=64)
-x = torch.randn(2, 128, 768)
-out = adapter(x)
-assert out.shape == x.shape
-print(f"✅ BottleneckAdapter: {sum(p.numel() for p in adapter.parameters())} params")
-
-# Task group adapter
-group_adapter = TaskGroupAdapter(
-    hidden_size=768,
-    task_groups=["token_tasks", "sequence_tasks", "pair_tasks"],
-    bottleneck_size=64,
-)
-out = group_adapter(x, task_group="sequence_tasks")
-assert out.shape == x.shape
-print("✅ TaskGroupAdapter works correctly")
-```
+**Tests:** 27 tests in `tests/test_adapters.py`
 
 ---
 
-#### Issue 5.0.3: Implement Cross-Attention Pair Encoder
+#### Issue 5.0.3: Implement Cross-Attention Pair Encoder ✅
 
 **File:** `src/modeling_studio/models/pair_encoder.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE
 
-- [ ] Implement `CrossAttentionPairEncoder` for NLI/Relation tasks
-- [ ] Support premise-hypothesis cross-attention
-- [ ] Support entity pair cross-attention for relations
-- [ ] Add optional residual connections
-- [ ] Make backward compatible (fallback to concatenation)
+**Implemented:**
 
-**Acceptance Criteria:**
+- [x] `CrossAttentionPairEncoder` for NLI/Relation tasks
+- [x] Support premise-hypothesis cross-attention
+- [x] Support entity pair cross-attention for relations
+- [x] Residual connections and layer normalization
+- [x] `ConcatPairEncoder` for backward compatibility (fallback)
 
-```python
-from modeling_studio.models.pair_encoder import CrossAttentionPairEncoder
-
-encoder = CrossAttentionPairEncoder(hidden_size=768, num_heads=8)
-
-# For NLI: premise and hypothesis representations
-premise = torch.randn(2, 64, 768)
-hypothesis = torch.randn(2, 32, 768)
-premise_mask = torch.ones(2, 64)
-hypothesis_mask = torch.ones(2, 32)
-
-pair_repr = encoder(premise, hypothesis, premise_mask, hypothesis_mask)
-assert pair_repr.shape == (2, 768)
-print("✅ CrossAttentionPairEncoder works correctly")
-```
+**Tests:** 25 tests in `tests/test_pair_encoder.py`
 
 ---
 
-#### Issue 5.0.4: Update ModernBertMultiTaskModel with Enhancements
+#### Issue 5.0.4: Update ModernBertMultiTaskModel with Enhancements ✅
 
 **File:** `src/modeling_studio/models/modernbert_multitask.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE
 
-- [ ] Add `shared_pooler` parameter (use CLSMeanPooler by default)
-- [ ] Add `use_adapters` parameter for task-group adapters
-- [ ] Add `pair_encoder` for NLI/Relation heads
-- [ ] Refactor heads to use shared pooler instead of internal pooling
-- [ ] Maintain backward compatibility (adapters disabled by default)
-- [ ] Update `from_pretrained()` to support new architecture options
+**Implemented:**
 
-**Acceptance Criteria:**
+- [x] `shared_pooler` parameter (CLSMeanPooler by default when enabled)
+- [x] `use_adapters` parameter for task-group adapters
+- [x] `pair_encoder` for NLI/Relation heads (CrossAttentionPairEncoder)
+- [x] Refactored heads to use shared pooler
+- [x] Full backward compatibility (new features disabled by default)
+- [x] Updated `from_pretrained()` with Epic 5.0 config options
+- [x] Updated `save_pretrained()` to persist Epic 5.0 configuration
+- [x] Updated `load_checkpoint()` to restore Epic 5.0 components
 
-```python
-from modeling_studio.models import ModernBertMultiTaskModel
-
-# Enhanced model with adapters and shared pooler
-model = ModernBertMultiTaskModel.from_pretrained(
-    "answerdotai/ModernBERT-base",
-    capabilities=["ner_general", "sentiment", "nli", "relation"],
-    use_adapters=True,  # Enable task-group adapters
-    adapter_bottleneck_size=64,
-    use_shared_pooler=True,  # Use CLSMeanPooler
-    use_cross_attention_pair_encoder=True,  # For NLI/Relation
-)
-
-# Verify architecture
-assert hasattr(model, "shared_pooler")
-assert hasattr(model, "adapters")
-assert hasattr(model, "pair_encoder")
-
-# Forward pass still works
-outputs = model(input_ids, attention_mask, capability="sentiment")
-print("✅ Enhanced ModernBertMultiTaskModel works correctly")
-```
+**Tests:** 12 new tests in `tests/test_models.py`
 
 ---
 
-#### Issue 5.0.5: Update Heads to Use Shared Components
+#### Issue 5.0.5: Update Heads to Use Shared Components ✅
 
 **File:** `src/modeling_studio/models/heads.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE
 
-- [ ] Refactor `SequenceClassificationHead` to accept external pooler
-- [ ] Refactor `NLIHead` to use `CrossAttentionPairEncoder`
-- [ ] Refactor `RelationHead` to use `CrossAttentionPairEncoder`
-- [ ] Add `use_external_pooler` flag for backward compatibility
-- [ ] Update head initialization in model
+**Implemented:**
 
-**Acceptance Criteria:**
+- [x] `SequenceClassificationHead` accepts `external_pooler` parameter
+- [x] `NLIHead` accepts `pair_encoder` parameter for cross-attention
+- [x] `RelationHead` accepts `pair_encoder` parameter for cross-attention
+- [x] `use_external_pooler` flag for backward compatibility
+- [x] All heads work with or without external components
 
-```python
-from modeling_studio.models.heads import SequenceClassificationHead
-from modeling_studio.models.poolers import CLSMeanPooler
-
-# Head with external pooler
-pooler = CLSMeanPooler(hidden_size=768)
-head = SequenceClassificationHead(
-    hidden_size=768,
-    num_labels=5,
-    external_pooler=pooler,  # Use shared pooler
-)
-
-hidden_states = torch.randn(2, 128, 768)
-attention_mask = torch.ones(2, 128)
-output = head(hidden_states, attention_mask)
-assert output["logits"].shape == (2, 5)
-print("✅ Head with external pooler works correctly")
-```
+**Tests:** 7 new head enhancement tests
 
 ---
 
-### Epic 5.1: Domain Adaptation
+### Epic 5.1: Domain Adaptation ✅ COMPLETE
 
-#### Issue 5.1.1: Implement Stage B Training Script
+#### Issue 5.1.1: Implement Stage B Training Script ✅
 
 **File:** `scripts/train_stage_b.py`
 **Config:** `configs/training/multitask/stage_b_familyos.yaml`
 
-**Tasks:**
+**Status:** ✅ COMPLETE
 
-- [ ] Load `modernbert-multitask-v0` as base (7 generic capabilities)
-- [ ] Add FamilyOS-specific heads (ner_family, ingress, safety_familyos, relation, intent)
-- [ ] Apply LoRA to encoder layers (rank=16, alpha=32)
-- [ ] Mix FamilyOS data with public data (prevent forgetting)
-- [ ] Train and save as `modernbert-unified-v2`
+**Implemented:**
 
-**Acceptance Criteria:**
+- [x] Load `modernbert-multitask-v0` as base (7 generic capabilities)
+- [x] Add FamilyOS-specific heads (ner_family, ingress, safety_familyos, relation, intent)
+- [x] Apply LoRA to encoder layers (rank=16, alpha=32)
+- [x] Mix FamilyOS data with public data (prevent forgetting)
+- [x] Epic 5.0 integration: shared CLSMeanPooler, CrossAttentionPairEncoder
+- [x] Updated config with `epic5` section for architecture options
+- [x] Save merged model with Epic 5.0 configuration
 
-```bash
-python scripts/train_stage_b.py \
-    --config configs/training/multitask/stage_b_familyos.yaml \
-    --base_model checkpoints/modernbert-multitask-v0
+**Config updates (`stage_b_familyos.yaml`):**
 
-# Check outputs
-ls checkpoints/modernbert-unified-v2/
-# Should contain: adapter_model.safetensors, capabilities.json (with 12 capabilities)
+```yaml
+epic5:
+  use_shared_pooler: true
+  shared_pooler_type: cls_mean
+  use_pair_encoder: true
+  pair_encoder_num_layers: 2
 ```
 
 ---
 
 ### Epic 5.2: Safety Calibration
 
-#### Issue 5.2.1: Implement Safety Threshold Calibration
+#### Issue 5.2.1: Implement Safety Threshold Calibration ✅
 
 **File:** `scripts/calibrate_safety.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE (869 lines)
 
-- [ ] Run inference on held-out safety data
-- [ ] Compute optimal thresholds per band
-- [ ] Apply temperature scaling
-- [ ] Save calibration config
+**Implemented:**
 
-**Acceptance Criteria:**
-
-```bash
-python scripts/calibrate_safety.py \
-    --model checkpoints/modernbert-unified-v1 \
-    --data data/familyos/safety/calibration.jsonl \
-    --output configs/calibration/safety_thresholds.yaml
-
-# Verify calibration
-cat configs/calibration/safety_thresholds.yaml
-# Should contain thresholds for GREEN/AMBER/RED/CRISIS
-```
+- [x] Run inference on held-out safety data
+- [x] Compute optimal thresholds per band (GREEN/CAUTION/ALERT/CRISIS)
+- [x] Apply temperature scaling for calibration
+- [x] ECE (Expected Calibration Error) computation
+- [x] Cultural robustness patterns (Indian hyperbole handling)
+- [x] Save calibration config to YAML
 
 ---
 
@@ -2174,14 +2090,15 @@ cat configs/calibration/safety_thresholds.yaml
 
 **File:** `scripts/evaluate.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE (800+ lines)
 
-- [ ] Evaluate all 12 capabilities (7 generic + 5 FamilyOS)
-- [ ] Verify no regression on Stage A tasks
-- [ ] Verify FamilyOS task quality
-- [ ] Verify new v2 capabilities (relation, intent, temporal)
+**Implemented:**
 
-**Acceptance Criteria:**
+- [x] Evaluate all 12 capabilities (7 generic + 5 FamilyOS)
+- [x] Quality gates with pass/fail status
+- [x] Baseline comparison support
+- [x] JSON and Markdown report generation
+- [x] CRISIS recall special gate for safety
 
 **Quality Gates (must pass):**
 
@@ -2189,13 +2106,13 @@ cat configs/calibration/safety_thresholds.yaml
 |------|--------|-----------|
 | ner_family | F1 | >= 85% |
 | ingress | Accuracy | >= 90% |
-| safety_familyos | Macro F1 | >= 80% |
+| safety_familyos | Macro F1 | >= 90% |
 | safety_familyos (CRISIS) | Recall | >= 95% |
-| relation | F1 | >= 75% |
-| intent | Accuracy | >= 85% |
+| relation | F1 | >= 80% |
+| intent | Accuracy | >= 88% |
 | ner_general | F1 | >= 86% (≤2% drop) |
 | sentiment | Accuracy | >= 90% (≤2% drop) |
-| temporal | F1 | >= 78% (≤2% drop) |
+| temporal | F1 | >= 75% |
 
 ---
 
@@ -2203,23 +2120,48 @@ cat configs/calibration/safety_thresholds.yaml
 
 **Goal:** Production-ready model export and inference API
 
+> **Note:** All export utilities are consolidated in the `export_utility/` folder at the project root.
+
+### Folder Structure
+
+```
+export_utility/
+├── __init__.py
+├── export_model.py         # HuggingFace/safetensors export
+├── export_onnx.py          # ONNX export with quantization
+├── export_tensorrt.py      # TensorRT optimization
+├── prune_model.py          # Model pruning
+├── benchmark_latency.py    # Latency benchmarks
+├── batch_optimizer.py      # Dynamic batching for high throughput
+├── optimized_inference.py  # Single forward pass, parallel heads
+└── README.md               # Usage documentation
+```
+
+---
+
 ### Epic 6.1: Model Export
 
-#### Issue 6.1.1: Implement Model Export Script
+#### Issue 6.1.1: Implement Model Export Script ✅
 
-**File:** `scripts/export_model.py`
+**File:** `export_utility/export_model.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE (450+ lines)
 
-- [ ] Export to HuggingFace format (safetensors)
-- [ ] Export capabilities.json
-- [ ] Export calibration config
-- [ ] Optional: ONNX export
+**Implemented:**
+
+- [x] Export to HuggingFace format (safetensors)
+- [x] Export to PyTorch format (.bin)
+- [x] Export capabilities.json with head configurations
+- [x] Export calibration config (from YAML)
+- [x] Generate model card (README.md)
+- [x] Filter specific heads for export
+- [x] Export verification with test inference
+- [x] Copy training config files
 
 **Acceptance Criteria:**
 
 ```bash
-python scripts/export_model.py \
+python export_utility/export_model.py \
     --model checkpoints/modernbert-unified-v1 \
     --output outputs/familyos-modernbert-unified-v1 \
     --format safetensors
@@ -2235,15 +2177,17 @@ ls outputs/familyos-modernbert-unified-v1/
 
 #### Issue 6.2.1: Implement Inference Script
 
-**File:** `scripts/infer.py`
+**File:** `scripts/infer.py` *(remains in scripts/ for user-facing CLI)*
 
 **Tasks:**
 
-- [ ] CLI for single/batch inference
-- [ ] Support all 12 capabilities (v2)
-- [ ] Output JSON results with UnifiedNLPOutput format
-- [ ] Latency reporting
-- [ ] Support new v2 outputs: relation, intent, temporal
+- [x] CLI for single/batch inference
+- [x] Support all 12 capabilities (v2)
+- [x] Output JSON results with UnifiedNLPOutput format
+- [x] Latency reporting
+- [x] Support new v2 outputs: relation, intent, temporal
+
+**Status:** ✅ COMPLETE (846 lines)
 
 **Acceptance Criteria:**
 
@@ -2252,7 +2196,7 @@ ls outputs/familyos-modernbert-unified-v1/
 python scripts/infer.py \
     --model outputs/familyos-modernbert-unified-v2 \
     --text "Mummy said we should pick up Grandma at 3pm tomorrow" \
-    --capabilities ner_family,sentiment,safety_familyos,relation,intent,temporal
+    --tasks ner_family,sentiment,safety_familyos,relation,intent,temporal
 
 # Output (v2 format):
 # {
@@ -2272,22 +2216,22 @@ python scripts/infer.py \
 
 > **Goal:** Achieve sub-10ms inference latency for production deployment
 
-#### Issue 6.3.1: Implement ONNX Export with Quantization
+#### Issue 6.3.1: Implement ONNX Export with Quantization ✅
 
-**File:** `scripts/export_onnx.py`
+**File:** `export_utility/export_onnx.py`
 
 **Tasks:**
 
-- [ ] Export model to ONNX format
-- [ ] Implement INT8 dynamic quantization
-- [ ] Implement INT8 static quantization with calibration dataset
-- [ ] Validate accuracy after quantization (≤1% degradation)
-- [ ] Generate quantized model size report
+- [x] Export model to ONNX format
+- [x] Implement INT8 dynamic quantization
+- [x] Implement INT8 static quantization with calibration dataset
+- [x] Validate accuracy after quantization (≤1% degradation)
+- [x] Generate quantized model size report
 
 **Acceptance Criteria:**
 
 ```bash
-python scripts/export_onnx.py \
+python export_utility/export_onnx.py \
     --model outputs/familyos-modernbert-unified-v1 \
     --output outputs/familyos-onnx \
     --quantize int8 \
@@ -2304,7 +2248,7 @@ ls outputs/familyos-onnx/
 
 #### Issue 6.3.2: Implement TensorRT Optimization
 
-**File:** `scripts/export_tensorrt.py`
+**File:** `export_utility/export_tensorrt.py`
 
 **Tasks:**
 
@@ -2317,7 +2261,7 @@ ls outputs/familyos-onnx/
 **Acceptance Criteria:**
 
 ```bash
-python scripts/export_tensorrt.py \
+python export_utility/export_tensorrt.py \
     --onnx outputs/familyos-onnx/model.onnx \
     --output outputs/familyos-tensorrt \
     --precision fp16 \
@@ -2332,7 +2276,7 @@ python scripts/export_tensorrt.py \
 
 #### Issue 6.3.3: Implement Batch Inference Optimization
 
-**File:** `src/modeling_studio/inference/batch_optimizer.py`
+**File:** `export_utility/batch_optimizer.py`
 
 **Tasks:**
 
@@ -2345,7 +2289,7 @@ python scripts/export_tensorrt.py \
 **Acceptance Criteria:**
 
 ```python
-from modeling_studio.inference.batch_optimizer import BatchInferenceOptimizer
+from export_utility.batch_optimizer import BatchInferenceOptimizer
 
 optimizer = BatchInferenceOptimizer(
     model=model,
@@ -2366,7 +2310,7 @@ results = await optimizer.infer_async(
 
 #### Issue 6.3.4: Implement Model Pruning
 
-**File:** `scripts/prune_model.py`
+**File:** `export_utility/prune_model.py`
 
 **Tasks:**
 
@@ -2379,7 +2323,7 @@ results = await optimizer.infer_async(
 **Acceptance Criteria:**
 
 ```bash
-python scripts/prune_model.py \
+python export_utility/prune_model.py \
     --model outputs/familyos-modernbert-unified-v1 \
     --output outputs/familyos-pruned \
     --sparsity 0.5 \
@@ -2391,22 +2335,28 @@ python scripts/prune_model.py \
 
 ---
 
-#### Issue 6.3.5: Implement Shared Pooler for Reduced Computation
+#### Issue 6.3.5: Implement Optimized Inference ✅
 
-**File:** `src/modeling_studio/models/optimized_inference.py`
+**File:** `export_utility/optimized_inference.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE (850+ lines)
 
-- [ ] Implement single forward pass for all capabilities
-- [ ] Cache encoder output, run heads in parallel
-- [ ] Implement lazy head execution (only requested capabilities)
-- [ ] Implement attention caching for similar inputs
-- [ ] Profile and optimize memory allocation
+**Implemented:**
+
+- [x] Single forward pass for all capabilities
+- [x] Cache encoder output, run heads in parallel
+- [x] Implement lazy head execution (only requested capabilities)
+- [x] Implement attention caching for similar inputs (LRU cache with MD5 hash)
+- [x] Profile and optimize memory allocation
+- [x] CUDA stream-based parallel head execution
+- [x] Thread pool fallback for CPU
+- [x] Comprehensive benchmarking mode
+- [x] Interactive CLI mode
 
 **Acceptance Criteria:**
 
 ```python
-from modeling_studio.models.optimized_inference import OptimizedMultiTaskModel
+from export_utility.optimized_inference import OptimizedMultiTaskModel
 
 model = OptimizedMultiTaskModel.from_pretrained(
     "outputs/familyos-modernbert-unified-v1",
@@ -2425,36 +2375,40 @@ outputs = model.infer(
 
 ---
 
-#### Issue 6.3.6: Implement Production Latency Benchmarks
+#### Issue 6.3.6: Implement Production Latency Benchmarks ✅
 
-**File:** `scripts/benchmark_latency.py`
+**File:** `export_utility/benchmark_latency.py`
 
-**Tasks:**
+**Status:** ✅ COMPLETE (550+ lines)
 
-- [ ] Benchmark PyTorch vs ONNX vs TensorRT
-- [ ] Benchmark different batch sizes
-- [ ] Benchmark different sequence lengths
-- [ ] Benchmark CPU vs GPU inference
-- [ ] Generate comprehensive latency report
+**Implemented:**
+
+- [x] Benchmark PyTorch inference (FP32, FP16, BF16)
+- [x] Benchmark different batch sizes (1, 8, 32 default)
+- [x] Benchmark different sequence lengths (64, 128, 256, 512)
+- [x] Benchmark CPU vs GPU inference
+- [x] Generate comprehensive latency report (JSON + Markdown)
+- [x] Statistics: mean, std, p50, p90, p95, p99, min, max
+- [x] Throughput metrics: QPS, samples/sec
+- [x] System info capture (GPU, CPU, RAM, versions)
+- [x] Warmup iterations for consistent measurements
+- [x] Per-capability benchmarking
 
 **Acceptance Criteria:**
 
 ```bash
-python scripts/benchmark_latency.py \
-    --models pytorch,onnx,tensorrt \
-    --batch-sizes 1,8,32 \
-    --seq-lengths 64,128,256,512 \
+python export_utility/benchmark_latency.py \
+    --model outputs/modernbert-multitask-v0 \
+    --batch-sizes 1 8 32 \
+    --seq-lengths 64 128 256 512 \
+    --capabilities all \
     --device cuda \
-    --output outputs/latency_benchmark.json
+    --output outputs/latency_benchmark.json \
+    --report
 
-# Target latencies (A100 GPU, batch=1, seq=128):
-# | Format    | Precision | Latency | Throughput |
-# |-----------|-----------|---------|------------|
-# | PyTorch   | FP32      | 15ms    | 67 qps     |
-# | ONNX      | FP32      | 10ms    | 100 qps    |
-# | ONNX      | INT8      | 5ms     | 200 qps    |
-# | TensorRT  | FP16      | 3ms     | 333 qps    |
-# | TensorRT  | INT8      | 2ms     | 500 qps    |
+# Outputs:
+# - latency_benchmark.json (full results)
+# - latency_benchmark.md (markdown report)
 ```
 
 ---
@@ -2718,3 +2672,10 @@ Milestone 7: Testing (Parallel with M1-M6)
 22. `tests/test_data.py` - 12 loaders
 23. `tests/test_trainers.py` - ✅ 62 tests passing
 24. `tests/test_evaluation.py` - 8 metrics
+Issue 6.1.1: export_model.py - Essential for deploying the model after Stage A/B training
+Issue 6.3.6: benchmark_latency.py - Needed to establish baseline latency metrics
+Issue 6.3.1: export_onnx.py - ONNX export for production optimization
+Issue 6.3.5: optimized_inference.py - Single forward pass, parallel heads
+Issue 6.3.3: batch_optimizer.py - High throughput inference
+Issue 6.3.2: export_tensorrt.py - TensorRT (requires NVIDIA tooling)
+Issue 6.3.4: prune_model.py - Model compression

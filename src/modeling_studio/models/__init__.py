@@ -33,6 +33,17 @@ Supported Tasks (12 capabilities):
 
 # Export main model class
 # Export head classes
+# Import adapters (Epic 5.0)
+from modeling_studio.models.adapters import (
+    AdaptedLinear,
+    AdapterConfig,
+    BottleneckAdapter,
+    LoRAAdapter,
+    ParallelAdapter,
+    TaskGroupAdapter,
+    TaskGroupConfig,
+    create_adapter,
+)
 from modeling_studio.models.heads import (
     BaseHead,
     EmbeddingHead,
@@ -51,6 +62,26 @@ from modeling_studio.models.modernbert_multitask import (
     get_problem_type,
 )
 
+# Import pair encoder (Epic 5.0)
+from modeling_studio.models.pair_encoder import (
+    AttentionPooling,
+    BidirectionalCrossAttentionBlock,
+    ConcatPairEncoder,
+    CrossAttentionLayer,
+    CrossAttentionPairEncoder,
+    PairEncoderConfig,
+    create_pair_encoder,
+)
+
+# Import poolers (Epic 5.0)
+from modeling_studio.models.poolers import (
+    AttentionPooler,
+    CLSMeanPooler,
+    CLSPooler,
+    MeanPooler,
+    get_pooler,
+)
+
 __all__ = [
     # Main model
     "ModernBertMultiTaskModel",
@@ -67,14 +98,30 @@ __all__ = [
     "RelationHead",  # NEW
     "IntentHead",  # NEW
     "TemporalHead",  # NEW
+    # Poolers (Epic 5.0)
+    "CLSPooler",
+    "MeanPooler",
+    "CLSMeanPooler",
+    "AttentionPooler",
+    "get_pooler",
+    # Pair Encoder (Epic 5.0)
+    "PairEncoderConfig",
+    "CrossAttentionPairEncoder",
+    "CrossAttentionLayer",
+    "BidirectionalCrossAttentionBlock",
+    "AttentionPooling",
+    "ConcatPairEncoder",
+    "create_pair_encoder",
+    # Adapters (Epic 5.0)
+    "AdapterConfig",
+    "TaskGroupConfig",
+    "BottleneckAdapter",
+    "TaskGroupAdapter",
+    "ParallelAdapter",
+    "LoRAAdapter",
+    "AdaptedLinear",
+    "create_adapter",
 ]
-
-# TODO: Export poolers
-# from modeling_studio.models.poolers import (
-#     CLSPooler,
-#     MeanPooler,
-#     MaxPooler,
-# )
 
 # TODO: Export losses
 # from modeling_studio.models.losses import (

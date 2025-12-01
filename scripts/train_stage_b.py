@@ -6,6 +6,11 @@ This script fine-tunes modernbert-multitask-v0 with FamilyOS-specific data
 using LoRA adapters to preserve generic capabilities.
 Output: familyos-modernbert-unified-v1
 
+Epic 5.0 Enhancements:
+    - Shared CLSMeanPooler for consistent sequence pooling
+    - CrossAttentionPairEncoder for NLI and Relation heads
+    - Task-group adapters (optional, alongside PEFT LoRA)
+
 New tasks added:
     - ner_family: Family-specific NER (kinship, nicknames)
     - ingress: Domain classification (DIARY, TASK, HEALTH, etc.)
@@ -28,6 +33,11 @@ Usage:
     python scripts/train_stage_b.py \
         --config configs/training/multitask/stage_b_familyos.yaml \
         --peft.lora.r 64
+
+    # Enable Epic 5.0 pair encoder for NLI/Relation
+    python scripts/train_stage_b.py \
+        --config configs/training/multitask/stage_b_familyos.yaml \
+        --epic5.use_pair_encoder true
 
     # Debug mode (smaller batches, subset of data)
     python scripts/train_stage_b.py \
@@ -69,6 +79,18 @@ from modeling_studio.data import load_stage_b_datasets
 from modeling_studio.data.labels import Capability
 from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer, MultiTaskTrainingArguments
+
+# Epic 5.0 imports (optional enhancements)
+try:
+    from modeling_studio.models.pair_encoder import CrossAttentionPairEncoder
+    from modeling_studio.models.poolers import CLSMeanPooler, get_pooler
+
+    EPIC_5_AVAILABLE = True
+except ImportError:
+    EPIC_5_AVAILABLE = False
+    CrossAttentionPairEncoder = None
+    CLSMeanPooler = None
+    get_pooler = None
 
 # =============================================================================
 # Configuration
@@ -186,6 +208,11 @@ def add_stage_b_heads(
     """
     Add FamilyOS-specific heads to the model.
 
+    Epic 5.0 Enhancements:
+        - Uses shared pooler (CLSMeanPooler) for consistent sequence pooling
+        - Uses CrossAttentionPairEncoder for NLI and Relation heads
+        - All enhancements are optional and backward-compatible
+
     Args:
         model: Base model with Stage A heads
         config: Configuration with familyos_heads settings
@@ -195,10 +222,30 @@ def add_stage_b_heads(
     """
     from modeling_studio.data.labels import get_num_labels
     from modeling_studio.models import CAPABILITY_TO_HEAD_TYPE, get_problem_type
-    from modeling_studio.models.heads import SafetyHead
+    from modeling_studio.models.heads import NLIHead, RelationHead, SafetyHead
 
     familyos_heads = config.get("familyos_heads", {})
+    epic5_config = config.get("epic5", {})
     hidden_size = model.config.hidden_size
+
+    # Epic 5.0: Create shared pooler if enabled
+    shared_pooler = None
+    if epic5_config.get("use_shared_pooler", False) and EPIC_5_AVAILABLE:
+        pooler_type = epic5_config.get("shared_pooler_type", "cls_mean")
+        shared_pooler = get_pooler(pooler_type, hidden_size=hidden_size)
+        logger.info(f"Epic 5.0: Created shared pooler ({pooler_type})")
+
+    # Epic 5.0: Create pair encoder for NLI/Relation if enabled
+    pair_encoder = None
+    if epic5_config.get("use_pair_encoder", False) and EPIC_5_AVAILABLE:
+        pair_encoder_layers = epic5_config.get("pair_encoder_num_layers", 2)
+        pair_encoder = CrossAttentionPairEncoder(
+            hidden_size=hidden_size,
+            num_heads=8,
+            num_layers=pair_encoder_layers,
+            pooling_strategy="attention",
+        )
+        logger.info(f"Epic 5.0: Created CrossAttentionPairEncoder ({pair_encoder_layers} layers)")
 
     for cap in STAGE_B_CAPABILITIES:
         cap_name = cap.value
@@ -229,6 +276,29 @@ def add_stage_b_heads(
                 dropout=dropout,
                 problem_type=problem_type,
             )
+        elif cap == Capability.RELATION:
+            # Epic 5.0: Use pair encoder for RelationHead
+            head = RelationHead(
+                hidden_size=hidden_size,
+                num_labels=num_labels,
+                dropout=dropout,
+                problem_type=problem_type,
+                pair_encoder=pair_encoder,  # Epic 5.0 enhancement
+            )
+            if pair_encoder:
+                logger.info(f"  → {cap_name}: Using CrossAttentionPairEncoder")
+        elif cap == Capability.NLI:
+            # Epic 5.0: Use pair encoder and shared pooler for NLIHead
+            head = NLIHead(
+                hidden_size=hidden_size,
+                num_labels=num_labels,
+                dropout=dropout,
+                problem_type=problem_type,
+                external_pooler=shared_pooler,  # Epic 5.0 enhancement
+                pair_encoder=pair_encoder,  # Epic 5.0 enhancement
+            )
+            if pair_encoder or shared_pooler:
+                logger.info(f"  → {cap_name}: Using Epic 5.0 enhancements")
         else:
             head = head_cls(
                 hidden_size=hidden_size,
@@ -241,6 +311,12 @@ def add_stage_b_heads(
 
     # Update capabilities list
     model.capabilities = ALL_CAPABILITIES
+
+    # Store Epic 5.0 components on model for later access
+    if shared_pooler is not None:
+        model.shared_pooler = shared_pooler
+    if pair_encoder is not None:
+        model.pair_encoder = pair_encoder
 
     logger.info(f"Model now has {len(model.heads)} heads: {list(model.heads.keys())}")
     return model
@@ -581,6 +657,7 @@ def save_merged_model(
     peft_model: PeftModel,
     output_dir: str | Path,
     tokenizer: AutoTokenizer,
+    config: dict[str, Any] | None = None,
 ) -> None:
     """
     Merge LoRA adapters into base model and save.
@@ -588,6 +665,7 @@ def save_merged_model(
     Saves:
         - outputs/.../: Merged model (standalone)
         - outputs/...-lora/: LoRA adapters only
+        - capabilities.json: Capabilities + Epic 5.0 config
     """
     output_dir = Path(output_dir)
 
@@ -606,20 +684,28 @@ def save_merged_model(
     merged_model.save_pretrained(str(output_dir))
     tokenizer.save_pretrained(str(output_dir))
 
+    # Build capabilities.json with Epic 5.0 config
+    epic5_config = config.get("epic5", {}) if config else {}
+    caps_data = {
+        "capabilities": [c.value for c in ALL_CAPABILITIES],
+        "stage": "B",
+        "base_model": "modernbert-multitask-v0",
+        "epic_5_0": {
+            "use_shared_pooler": epic5_config.get("use_shared_pooler", False),
+            "shared_pooler_type": epic5_config.get("shared_pooler_type", None),
+            "use_pair_encoder": epic5_config.get("use_pair_encoder", False),
+            "pair_encoder_num_layers": epic5_config.get("pair_encoder_num_layers", 2),
+        },
+    }
+
     # Save capabilities
     caps_path = output_dir / "capabilities.json"
     with open(caps_path, "w") as f:
-        json.dump(
-            {
-                "capabilities": [c.value for c in ALL_CAPABILITIES],
-                "stage": "B",
-                "base_model": "modernbert-multitask-v0",
-            },
-            f,
-            indent=2,
-        )
+        json.dump(caps_data, f, indent=2)
 
     logger.info(f"Saved merged model with {len(ALL_CAPABILITIES)} capabilities")
+    if epic5_config.get("use_pair_encoder") or epic5_config.get("use_shared_pooler"):
+        logger.info("  → Epic 5.0 enhancements: enabled")
 
 
 # =============================================================================
@@ -723,6 +809,7 @@ def train_stage_b(
 
     # Dry run: validate without training
     if dry_run:
+        epic5_config = config.get("epic5", {})
         logger.info("=" * 60)
         logger.info("DRY RUN COMPLETE")
         logger.info("=" * 60)
@@ -732,6 +819,21 @@ def train_stage_b(
         logger.info("✅ LoRA adapters applied")
         logger.info(f"✅ {len(train_datasets)} training datasets loaded")
         logger.info(f"✅ {len(eval_datasets)} evaluation datasets loaded")
+
+        # Epic 5.0 status
+        if epic5_config.get("use_shared_pooler") or epic5_config.get("use_pair_encoder"):
+            logger.info("✅ Epic 5.0 enhancements enabled:")
+            if epic5_config.get("use_shared_pooler"):
+                logger.info(
+                    f"   - Shared pooler: {epic5_config.get('shared_pooler_type', 'cls_mean')}"
+                )
+            if epic5_config.get("use_pair_encoder"):
+                logger.info(
+                    f"   - Pair encoder: {epic5_config.get('pair_encoder_num_layers', 2)} layers"
+                )
+        else:
+            logger.info("ℹ️  Epic 5.0 enhancements: disabled (set epic5.use_* to enable)")
+
         logger.info("")
         logger.info("Ready to train! Remove --dry_run to start training.")
         return
@@ -798,7 +900,7 @@ def train_stage_b(
 
     # Merge and save final model to the actual output directory
     final_output_path = Path(final_output_dir)
-    save_merged_model(peft_model, final_output_path, tokenizer)
+    save_merged_model(peft_model, final_output_path, tokenizer, config)
 
     # Save training config
     config_save_path = final_output_path / "training_config.json"
@@ -955,6 +1057,9 @@ def main() -> None:
         seed=args.seed,
     )
 
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()

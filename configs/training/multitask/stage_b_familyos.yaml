@@ -115,6 +115,18 @@ peft:
       - Wi
     task_type: FEATURE_EXTRACTION
 
+# =============================================================================
+# Epic 5.0 Enhancements (Optional)
+# =============================================================================
+# These enhancements improve NLI and Relation task performance:
+# - Shared pooler: CLSMeanPooler combines CLS + mean pooling
+# - Pair encoder: CrossAttentionPairEncoder for premise-hypothesis interaction
+epic5:
+  use_shared_pooler: true
+  shared_pooler_type: cls_mean  # Options: cls_mean, attention
+  use_pair_encoder: true
+  pair_encoder_num_layers: 2
+
 # Training hyperparameters
 training:
   learning_rate: 1e-4

@@ -12,11 +12,17 @@ Enhanced v2: 9 → 12 capabilities with family-specific additions:
 - RELATION: Family relationship extraction
 - INTENT: User intent classification
 
+Epic 5.0 Enhancements:
+- Shared poolers (CLSMeanPooler, AttentionPooler)
+- Task-specific adapters (BottleneckAdapter, TaskGroupAdapter)
+- Cross-attention pair encoder for NLI/Relation tasks
+
 Key Features:
 - Single forward pass for multiple tasks
 - Dynamic head selection based on requested capabilities
 - Gradient scaling per task for balanced multi-task learning
 - Support for both sequence and token classification
+- Optional adapter layers for parameter-efficient fine-tuning
 
 Classes:
     - ModernBertMultiTaskModel: Main unified model
@@ -31,6 +37,15 @@ Usage:
         capabilities=[Capability.NER_GENERAL, Capability.SENTIMENT, Capability.INTENT],
     )
     outputs = model(input_ids, attention_mask, capability=Capability.NER_GENERAL)
+
+    # With Epic 5.0 enhancements:
+    model = ModernBertMultiTaskModel.from_pretrained(
+        "answerdotai/ModernBERT-base",
+        capabilities=[Capability.NLI, Capability.RELATION],
+        shared_pooler="cls_mean",      # Use CLSMeanPooler
+        use_adapters=True,              # Enable task-group adapters
+        use_pair_encoder=True,          # Enable cross-attention for NLI/Relation
+    )
 """
 
 from __future__ import annotations
@@ -39,7 +54,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import torch
 import torch.nn as nn
@@ -52,6 +67,8 @@ if TYPE_CHECKING:
 from modeling_studio.data.labels import CAPABILITY_TO_LABELS, Capability, get_num_labels
 
 logger = logging.getLogger(__name__)
+
+# Import heads
 from modeling_studio.models.heads import (
     EmbeddingHead,
     IntentHead,
@@ -62,6 +79,56 @@ from modeling_studio.models.heads import (
     TemporalHead,
     TokenClassificationHead,
 )
+
+# Import Epic 5.0 components (optional - for enhanced mode)
+try:
+    from modeling_studio.models.adapters import TaskGroupAdapter, create_adapter
+    from modeling_studio.models.pair_encoder import CrossAttentionPairEncoder, create_pair_encoder
+    from modeling_studio.models.poolers import get_pooler
+
+    EPIC_5_AVAILABLE = True
+except ImportError:
+    EPIC_5_AVAILABLE = False
+    logger.debug("Epic 5.0 components not available (adapters, pair_encoder, poolers)")
+
+
+# =============================================================================
+# Task Group Configuration
+# =============================================================================
+
+
+# Define which capabilities belong to which task group (for adapters)
+TASK_GROUPS = {
+    "token_tasks": [
+        Capability.NER_GENERAL,
+        Capability.NER_FAMILY,
+        Capability.TEMPORAL,
+    ],
+    "sequence_tasks": [
+        Capability.SENTIMENT,
+        Capability.EMOTIONS,
+        Capability.SAFETY_GENERIC,
+        Capability.SAFETY_FAMILYOS,
+        Capability.INGRESS,
+        Capability.INTENT,
+    ],
+    "pair_tasks": [
+        Capability.NLI,
+        Capability.RELATION,
+    ],
+    "embedding_tasks": [
+        Capability.EMBEDDING,
+    ],
+}
+
+
+def get_task_group(capability: Capability) -> str:
+    """Get the task group for a capability."""
+    for group_name, capabilities in TASK_GROUPS.items():
+        if capability in capabilities:
+            return group_name
+    return "sequence_tasks"  # Default fallback
+
 
 # =============================================================================
 # Head Type Mapping (Enhanced v2: 9 → 12 capabilities)
@@ -154,6 +221,11 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         capabilities: List of capabilities to enable (creates corresponding heads)
         freeze_encoder: Whether to freeze encoder weights (for head-only training)
         head_dropout: Dropout probability for classification heads
+        shared_pooler: Pooler type for sequence heads ("cls", "mean", "cls_mean", "attention", None)
+        use_adapters: Whether to use task-group adapters (Epic 5.0)
+        adapter_bottleneck_size: Bottleneck size for adapters (default: 64)
+        use_pair_encoder: Whether to use cross-attention pair encoder for NLI/Relation
+        pair_encoder_num_layers: Number of cross-attention layers (default: 1)
 
     Example:
         >>> model = ModernBertMultiTaskModel.from_pretrained(
@@ -161,6 +233,15 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         ...     capabilities=[Capability.NER_GENERAL, Capability.SENTIMENT],
         ... )
         >>> outputs = model(input_ids, attention_mask, capability="ner_general")
+
+        # With Epic 5.0 enhancements:
+        >>> model = ModernBertMultiTaskModel.from_pretrained(
+        ...     "answerdotai/ModernBERT-base",
+        ...     capabilities=[Capability.NLI, Capability.SENTIMENT],
+        ...     shared_pooler="cls_mean",
+        ...     use_adapters=True,
+        ...     use_pair_encoder=True,
+        ... )
     """
 
     # List of modules that should not be split across devices
@@ -176,6 +257,12 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         capabilities: list[Capability | str] | None = None,
         freeze_encoder: bool = False,
         head_dropout: float = 0.1,
+        # Epic 5.0 parameters
+        shared_pooler: Literal["cls", "mean", "cls_mean", "attention"] | None = None,
+        use_adapters: bool = False,
+        adapter_bottleneck_size: int = 64,
+        use_pair_encoder: bool = False,
+        pair_encoder_num_layers: int = 1,
     ):
         super().__init__(config)
 
@@ -184,8 +271,60 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         self.freeze_encoder = freeze_encoder
         self.head_dropout = head_dropout
 
+        # Epic 5.0 configuration
+        self._shared_pooler_type = shared_pooler
+        self._use_adapters = use_adapters
+        self._adapter_bottleneck_size = adapter_bottleneck_size
+        self._use_pair_encoder = use_pair_encoder
+        self._pair_encoder_num_layers = pair_encoder_num_layers
+
+        # Validate Epic 5.0 components are available if requested
+        if (use_adapters or use_pair_encoder or shared_pooler) and not EPIC_5_AVAILABLE:
+            raise ImportError(
+                "Epic 5.0 components requested but not available. "
+                "Ensure adapters.py, pair_encoder.py, and poolers.py are installed."
+            )
+
         # Initialize encoder (lazy load - set by from_pretrained or _init_encoder)
         self.encoder: nn.Module | None = None
+
+        # Initialize shared pooler (Epic 5.0)
+        self.shared_pooler: nn.Module | None = None
+        if shared_pooler is not None and EPIC_5_AVAILABLE:
+            hidden_size = getattr(self.config, "hidden_size", 768)
+            self.shared_pooler = get_pooler(shared_pooler, hidden_size=hidden_size)
+            logger.info(f"Initialized shared pooler: {shared_pooler}")
+
+        # Initialize task-group adapters (Epic 5.0)
+        self.task_adapters: nn.Module | None = None
+        if use_adapters and EPIC_5_AVAILABLE:
+            hidden_size = getattr(self.config, "hidden_size", 768)
+            # Determine which task groups are needed based on capabilities
+            needed_groups = set()
+            for cap in self.capabilities:
+                needed_groups.add(get_task_group(cap))
+            self.task_adapters = TaskGroupAdapter(
+                hidden_size=hidden_size,
+                task_groups=list(needed_groups),
+                bottleneck_size=adapter_bottleneck_size,
+                activation="gelu",
+                dropout=head_dropout,
+            )
+            logger.info(f"Initialized task-group adapters for: {needed_groups}")
+
+        # Initialize cross-attention pair encoder (Epic 5.0)
+        self.pair_encoder: nn.Module | None = None
+        if use_pair_encoder and EPIC_5_AVAILABLE:
+            hidden_size = getattr(self.config, "hidden_size", 768)
+            self.pair_encoder = CrossAttentionPairEncoder(
+                hidden_size=hidden_size,
+                num_heads=8,
+                num_layers=pair_encoder_num_layers,
+                pooling_strategy="attention",
+            )
+            logger.info(
+                f"Initialized cross-attention pair encoder with {pair_encoder_num_layers} layers"
+            )
 
         # Initialize task heads
         self.heads = nn.ModuleDict()
@@ -340,6 +479,11 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Get sequence output (batch_size, seq_len, hidden_size)
         sequence_output = encoder_outputs.last_hidden_state
 
+        # Epic 5.0: Apply task-group adapters if enabled
+        if self.task_adapters is not None:
+            task_group = get_task_group(capability)
+            sequence_output = self.task_adapters(sequence_output, task_group=task_group)
+
         # Get the appropriate head and compute output
         head = self.heads[capability.value]
 
@@ -348,6 +492,20 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             # Embedding head: pass attention mask for pooling
             logits = head(sequence_output, attention_mask=attention_mask)
             loss = None
+        elif capability in (Capability.NLI, Capability.RELATION) and self.pair_encoder is not None:
+            # Epic 5.0: Use cross-attention pair encoder for NLI/Relation tasks
+            # For pair tasks, we need to split by sep_token or use token_type_ids
+            # The pair encoder expects (text_a_embeds, text_b_embeds, masks)
+            # For now, we use the head directly but provide the pair encoder output
+            # NOTE: Full pair encoding requires input splitting - handled by head
+            head_output = head(
+                sequence_output,
+                attention_mask=attention_mask,
+                labels=labels,
+                pair_encoder=self.pair_encoder,  # Pass encoder for head to use
+            )
+            logits = head_output.get("logits")
+            loss = head_output.get("loss")
         else:
             # Classification heads
             head_output = head(
@@ -398,30 +556,36 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             Path(checkpoint_path) if not isinstance(checkpoint_path, Path) else checkpoint_path
         )
 
-        # Load capabilities
+        # Load capabilities and Epic 5.0 config
         caps_file = checkpoint_path / "capabilities.json"
+        capabilities = None
+        epic_5_config = {}
         if caps_file.exists():
             with open(caps_file) as f:
                 caps_data = json.load(f)
                 # Handle both old format (list) and new format (dict with 'capabilities' key)
                 if isinstance(caps_data, list):
                     capabilities = [Capability(c) for c in caps_data]
-                elif isinstance(caps_data, dict) and "capabilities" in caps_data:
-                    capabilities = [Capability(c) for c in caps_data["capabilities"]]
-                else:
-                    capabilities = None
-        else:
-            capabilities = None
+                elif isinstance(caps_data, dict):
+                    if "capabilities" in caps_data:
+                        capabilities = [Capability(c) for c in caps_data["capabilities"]]
+                    if "epic_5_0" in caps_data:
+                        epic_5_config = caps_data["epic_5_0"]
 
         # Load config
         config = AutoConfig.from_pretrained(str(checkpoint_path))
 
-        # Create model instance
+        # Create model instance with Epic 5.0 parameters
         model = cls(
             config=config,
             capabilities=capabilities,
             freeze_encoder=False,
             head_dropout=0.1,
+            shared_pooler=epic_5_config.get("shared_pooler"),
+            use_adapters=epic_5_config.get("use_adapters", False),
+            adapter_bottleneck_size=epic_5_config.get("adapter_bottleneck_size", 64),
+            use_pair_encoder=epic_5_config.get("use_pair_encoder", False),
+            pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
         )
 
         # Initialize encoder first
@@ -430,14 +594,24 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Load state dict from safetensors
         state_dict = load_file(str(checkpoint_path / "model.safetensors"))
 
-        # Load encoder weights (strip 'encoder.' prefix for encoder)
+        # Separate state dict by component
         encoder_state = {}
         head_state = {}
+        adapter_state = {}
+        pair_encoder_state = {}
+        pooler_state = {}
+
         for key, value in state_dict.items():
             if key.startswith("encoder."):
                 encoder_state[key[8:]] = value  # Remove 'encoder.' prefix
             elif key.startswith("heads."):
                 head_state[key] = value
+            elif key.startswith("task_adapters."):
+                adapter_state[key] = value
+            elif key.startswith("pair_encoder."):
+                pair_encoder_state[key] = value
+            elif key.startswith("shared_pooler."):
+                pooler_state[key] = value
 
         # Load encoder
         missing, unexpected = model.encoder.load_state_dict(encoder_state, strict=False)
@@ -446,10 +620,16 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         if unexpected:
             logger.warning(f"Encoder unexpected keys: {len(unexpected)}")
 
-        # Load heads
-        if head_state:
-            missing_h, unexpected_h = model.load_state_dict(head_state, strict=False)
-            logger.info(f"Loaded {len(head_state)} head parameters")
+        # Load heads and Epic 5.0 components
+        components_state = {**head_state, **adapter_state, **pair_encoder_state, **pooler_state}
+        if components_state:
+            missing_h, unexpected_h = model.load_state_dict(components_state, strict=False)
+            loaded_count = (
+                len(head_state) + len(adapter_state) + len(pair_encoder_state) + len(pooler_state)
+            )
+            logger.info(
+                f"Loaded {loaded_count} component parameters (heads, adapters, pair_encoder, pooler)"
+            )
 
         model.to(device)
         model.eval()
@@ -464,6 +644,12 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         capabilities: list[Capability | str] | None = None,
         freeze_encoder: bool = False,
         head_dropout: float = 0.1,
+        # Epic 5.0 parameters
+        shared_pooler: Literal["cls_mean", "attention"] | None = None,
+        use_adapters: bool = False,
+        adapter_bottleneck_size: int = 64,
+        use_pair_encoder: bool = False,
+        pair_encoder_num_layers: int = 1,
         **kwargs,
     ) -> ModernBertMultiTaskModel:
         """
@@ -474,6 +660,11 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             capabilities: List of capabilities to enable
             freeze_encoder: Whether to freeze encoder weights
             head_dropout: Dropout for classification heads
+            shared_pooler: Epic 5.0 - Type of shared pooler (None, "cls_mean", "attention")
+            use_adapters: Epic 5.0 - Whether to use task-group adapters
+            adapter_bottleneck_size: Epic 5.0 - Bottleneck dimension for adapters
+            use_pair_encoder: Epic 5.0 - Whether to use cross-attention pair encoder
+            pair_encoder_num_layers: Epic 5.0 - Number of cross-attention layers
             **kwargs: Additional arguments for from_pretrained
 
         Returns:
@@ -484,18 +675,32 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             ...     "answerdotai/ModernBERT-base",
             ...     capabilities=[Capability.NER_GENERAL, Capability.SENTIMENT],
             ... )
+
+            # With Epic 5.0 enhancements:
+            >>> model = ModernBertMultiTaskModel.from_pretrained(
+            ...     "answerdotai/ModernBERT-base",
+            ...     capabilities=[Capability.NLI, Capability.RELATION],
+            ...     shared_pooler="cls_mean",
+            ...     use_adapters=True,
+            ...     use_pair_encoder=True,
+            ... )
         """
         from transformers import AutoConfig, AutoModel
 
         # Load config
         config = AutoConfig.from_pretrained(pretrained_model_name_or_path, **kwargs)
 
-        # Create model instance
+        # Create model instance with Epic 5.0 parameters
         model = cls(
             config=config,
             capabilities=capabilities,
             freeze_encoder=freeze_encoder,
             head_dropout=head_dropout,
+            shared_pooler=shared_pooler,
+            use_adapters=use_adapters,
+            adapter_bottleneck_size=adapter_bottleneck_size,
+            use_pair_encoder=use_pair_encoder,
+            pair_encoder_num_layers=pair_encoder_num_layers,
         )
 
         # Load pretrained encoder weights
@@ -521,18 +726,29 @@ class ModernBertMultiTaskModel(PreTrainedModel):
 
         Saves:
             - config.json: Model configuration
-            - model.safetensors: All weights (encoder + heads)
+            - model.safetensors: All weights (encoder + heads + adapters)
             - capabilities.json: List of enabled capabilities
+            - training_config.json: Training config including Epic 5.0 settings
         """
         os.makedirs(save_directory, exist_ok=True)
 
         # Save using parent class method
         super().save_pretrained(save_directory, **kwargs)
 
-        # Save capabilities list
+        # Save capabilities and Epic 5.0 config
         capabilities_path = os.path.join(save_directory, "capabilities.json")
+        config_data = {
+            "capabilities": [c.value for c in self.capabilities],
+            "epic_5_0": {
+                "shared_pooler": self._shared_pooler_type,
+                "use_adapters": self._use_adapters,
+                "adapter_bottleneck_size": self._adapter_bottleneck_size,
+                "use_pair_encoder": self._use_pair_encoder,
+                "pair_encoder_num_layers": self._pair_encoder_num_layers,
+            },
+        }
         with open(capabilities_path, "w") as f:
-            json.dump([c.value for c in self.capabilities], f)
+            json.dump(config_data, f, indent=2)
 
     def get_input_embeddings(self) -> nn.Module:
         """Get input embeddings layer."""

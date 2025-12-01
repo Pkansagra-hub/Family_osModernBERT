@@ -20,15 +20,25 @@ Design Principles:
     - Heads can be frozen/unfrozen independently
     - Support for task-specific dropout rates
     - Calibration hooks for threshold tuning
+
+Epic 5.0 Enhancements:
+    - External pooler support for shared pooling (SequenceClassificationHead)
+    - CrossAttentionPairEncoder integration (NLIHead, RelationHead)
+    - Backward compatible - all new features are optional
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+# Type checking imports for Epic 5.0 components
+if TYPE_CHECKING:
+    pass
 
 # =============================================================================
 # Base Head
@@ -214,15 +224,20 @@ class SequenceClassificationHead(BaseHead):
     Architecture:
         hidden_states -> pooling -> dropout -> dense -> output
 
+    Epic 5.0 Enhancement:
+        - Accepts external_pooler for shared pooling across heads
+        - Falls back to internal pooling if no external pooler provided
+
     Args:
         hidden_size: Size of encoder hidden states
         num_labels: Number of output classes
         dropout: Dropout probability
         problem_type: 'single_label_classification', 'multi_label_classification', or 'regression'
-        pooling: Pooling strategy ('cls', 'mean', 'max')
+        pooling: Pooling strategy ('cls', 'mean', 'max') - used if no external_pooler
         class_weights: Optional per-class weights for multi-label BCE loss
         use_focal_loss: Whether to use focal loss for multi-label tasks
         focal_gamma: Focal loss gamma parameter (default 2.0)
+        external_pooler: Epic 5.0 - External pooler module (CLSMeanPooler, AttentionPooler)
     """
 
     def __init__(
@@ -235,6 +250,7 @@ class SequenceClassificationHead(BaseHead):
         class_weights: torch.Tensor | None = None,
         use_focal_loss: bool = False,
         focal_gamma: float = 2.0,
+        external_pooler: nn.Module | None = None,
     ):
         super().__init__(
             hidden_size,
@@ -246,6 +262,10 @@ class SequenceClassificationHead(BaseHead):
             focal_gamma=focal_gamma,
         )
         self.pooling = pooling
+
+        # Epic 5.0: External pooler support
+        self.external_pooler = external_pooler
+        self._use_external_pooler = external_pooler is not None
 
         # Classification layers
         self.dense = nn.Linear(hidden_size, hidden_size)
@@ -269,6 +289,9 @@ class SequenceClassificationHead(BaseHead):
         """
         Pool sequence representations to a single vector.
 
+        Epic 5.0: Uses external pooler if provided, otherwise falls back to
+        internal pooling strategy.
+
         Args:
             hidden_states: (batch_size, seq_len, hidden_size)
             attention_mask: (batch_size, seq_len)
@@ -276,6 +299,11 @@ class SequenceClassificationHead(BaseHead):
         Returns:
             Pooled representation (batch_size, hidden_size)
         """
+        # Epic 5.0: Use external pooler if available
+        if self._use_external_pooler and self.external_pooler is not None:
+            return self.external_pooler(hidden_states, attention_mask)
+
+        # Fallback to internal pooling
         if self.pooling == "cls":
             # Use [CLS] token (first token)
             return hidden_states[:, 0, :]
@@ -540,13 +568,16 @@ class NLIHead(SequenceClassificationHead):
         - Neutral: hypothesis neither follows nor contradicts
         - Contradiction: hypothesis contradicts premise
 
-    This head is essentially a 3-class sequence classification head,
-    but separated for clarity and potential future customization.
+    Epic 5.0 Enhancement:
+        - Accepts external pair_encoder for cross-attention between premise/hypothesis
+        - Falls back to standard sequence classification if no pair encoder provided
 
     Args:
         hidden_size: Size of encoder hidden states
         dropout: Dropout probability
         pooling: Pooling strategy
+        external_pooler: Epic 5.0 - External pooler for shared pooling
+        pair_encoder: Epic 5.0 - CrossAttentionPairEncoder for cross-attention
     """
 
     def __init__(
@@ -556,6 +587,8 @@ class NLIHead(SequenceClassificationHead):
         dropout: float = 0.1,
         problem_type: str = "single_label_classification",
         pooling: str = "cls",
+        external_pooler: nn.Module | None = None,
+        pair_encoder: nn.Module | None = None,
     ):
         super().__init__(
             hidden_size=hidden_size,
@@ -563,7 +596,80 @@ class NLIHead(SequenceClassificationHead):
             dropout=dropout,
             problem_type=problem_type,
             pooling=pooling,
+            external_pooler=external_pooler,
         )
+
+        # Epic 5.0: Pair encoder support
+        self.pair_encoder = pair_encoder
+        self._use_pair_encoder = pair_encoder is not None
+
+        # If using pair encoder, may need different input size for classifier
+        # Pair encoder outputs hidden_size, so no change needed
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+        pair_encoder: nn.Module | None = None,
+        # Epic 5.0: Optional pair inputs for cross-attention
+        text_a_hidden: torch.Tensor | None = None,
+        text_b_hidden: torch.Tensor | None = None,
+        text_a_mask: torch.Tensor | None = None,
+        text_b_mask: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """
+        Forward pass for NLI classification.
+
+        Epic 5.0: Supports cross-attention pair encoding when pair_encoder is provided.
+
+        Args:
+            hidden_states: Encoder output (batch_size, seq_len, hidden_size)
+            attention_mask: Attention mask (batch_size, seq_len)
+            labels: Target labels (batch_size,)
+            pair_encoder: Optional pair encoder passed from model forward
+            text_a_hidden: Premise hidden states (for pair encoding)
+            text_b_hidden: Hypothesis hidden states (for pair encoding)
+            text_a_mask: Premise attention mask
+            text_b_mask: Hypothesis attention mask
+
+        Returns:
+            Dictionary with 'logits' and optionally 'loss'
+        """
+        # Determine which pair encoder to use (passed or instance)
+        active_pair_encoder = pair_encoder or self.pair_encoder
+
+        # Epic 5.0: Use cross-attention pair encoding if available
+        if (
+            active_pair_encoder is not None
+            and text_a_hidden is not None
+            and text_b_hidden is not None
+        ):
+            # Use cross-attention pair encoder
+            pair_repr = active_pair_encoder(
+                text_a_hidden,
+                text_b_hidden,
+                text_a_mask,
+                text_b_mask,
+            )
+
+            # Classification on pair representation
+            x = self.dropout(pair_repr)
+            x = self.dense(x)
+            x = torch.tanh(x)
+            x = self.dropout(x)
+            logits = self.classifier(x)
+
+            output = {"logits": logits}
+
+            if labels is not None:
+                loss = self.compute_loss(logits, labels)
+                output["loss"] = loss
+
+            return output
+
+        # Fallback to standard sequence classification
+        return super().forward(hidden_states, attention_mask, labels)
 
 
 # =============================================================================
@@ -1363,10 +1469,15 @@ class RelationHead(BaseHead):
     Architecture:
         entity1_repr + entity2_repr -> concat -> dense -> dropout -> classifier
 
+    Epic 5.0 Enhancement:
+        - Accepts external pair_encoder for cross-attention between entity contexts
+        - Falls back to standard entity concatenation if no pair encoder provided
+
     Args:
         hidden_size: Size of encoder hidden states
         num_labels: Number of relation types (15 for FamilyOS)
         dropout: Dropout probability
+        pair_encoder: Epic 5.0 - CrossAttentionPairEncoder for entity context attention
     """
 
     def __init__(
@@ -1375,12 +1486,24 @@ class RelationHead(BaseHead):
         num_labels: int = 15,
         dropout: float = 0.1,
         problem_type: str = "single_label_classification",
+        pair_encoder: nn.Module | None = None,
     ):
         super().__init__(hidden_size, num_labels, dropout, problem_type)
 
+        # Epic 5.0: Pair encoder support
+        self.pair_encoder = pair_encoder
+        self._use_pair_encoder = pair_encoder is not None
+
         # Entity pair representation
         # Input: concat of two entity representations (2 * hidden_size)
+        # Or pair encoder output (hidden_size)
         self.entity_pair_dense = nn.Linear(hidden_size * 2, hidden_size)
+
+        # Epic 5.0: Alternative dense layer for pair encoder output
+        if self._use_pair_encoder:
+            self.pair_encoded_dense = nn.Linear(hidden_size, hidden_size)
+        else:
+            self.pair_encoded_dense = None
 
         # Relation classifier
         self.classifier = nn.Linear(hidden_size, num_labels)
@@ -1394,6 +1517,9 @@ class RelationHead(BaseHead):
         nn.init.zeros_(self.entity_pair_dense.bias)
         nn.init.xavier_uniform_(self.classifier.weight)
         nn.init.zeros_(self.classifier.bias)
+        if self.pair_encoded_dense is not None:
+            nn.init.xavier_uniform_(self.pair_encoded_dense.weight)
+            nn.init.zeros_(self.pair_encoded_dense.bias)
 
     def get_entity_repr(
         self,
@@ -1432,9 +1558,17 @@ class RelationHead(BaseHead):
         entity1_end: torch.Tensor | None = None,
         entity2_start: torch.Tensor | None = None,
         entity2_end: torch.Tensor | None = None,
+        pair_encoder: nn.Module | None = None,
+        # Epic 5.0: Optional entity context for cross-attention
+        entity1_context: torch.Tensor | None = None,
+        entity2_context: torch.Tensor | None = None,
+        entity1_mask: torch.Tensor | None = None,
+        entity2_mask: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
         """
         Forward pass for relation extraction.
+
+        Epic 5.0: Supports cross-attention pair encoding when pair_encoder is provided.
 
         Args:
             hidden_states: (batch_size, seq_len, hidden_size)
@@ -1442,13 +1576,54 @@ class RelationHead(BaseHead):
             labels: Relation labels (batch_size,)
             entity1_start/end: Entity 1 span indices
             entity2_start/end: Entity 2 span indices
+            pair_encoder: Optional pair encoder passed from model forward
+            entity1_context: Entity 1 context hidden states (for pair encoding)
+            entity2_context: Entity 2 context hidden states (for pair encoding)
+            entity1_mask: Entity 1 context attention mask
+            entity2_mask: Entity 2 context attention mask
 
         Returns:
             Dictionary with 'logits' and optionally 'loss'
         """
+        # Determine which pair encoder to use (passed or instance)
+        active_pair_encoder = pair_encoder or self.pair_encoder
+
+        # Epic 5.0: Use cross-attention pair encoding if available with entity contexts
+        if (
+            active_pair_encoder is not None
+            and entity1_context is not None
+            and entity2_context is not None
+        ):
+            # Use cross-attention pair encoder for entity contexts
+            pair_repr = active_pair_encoder(
+                entity1_context,
+                entity2_context,
+                entity1_mask,
+                entity2_mask,
+            )
+
+            # Classification on pair representation
+            x = self.dropout(pair_repr)
+            if self.pair_encoded_dense is not None:
+                x = self.pair_encoded_dense(x)
+            else:
+                # Fallback: project to expected size
+                x = self.entity_pair_dense(torch.cat([x, x], dim=-1))
+            x = torch.relu(x)
+            x = self.dropout(x)
+            logits = self.classifier(x)
+
+            output = {"logits": logits}
+
+            if labels is not None:
+                loss = self.compute_loss(logits, labels)
+                output["loss"] = loss
+
+            return output
+
+        # Standard entity-based relation extraction
         if entity1_start is None or entity2_start is None:
             # If no entity spans provided, use CLS for both (fallback)
-            batch_size = hidden_states.size(0)
             entity1_repr = hidden_states[:, 0, :]
             entity2_repr = hidden_states[:, 0, :]
         else:
