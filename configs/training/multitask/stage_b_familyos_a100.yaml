@@ -145,12 +145,12 @@ peft:
 # =============================================================================
 training:
   # A100 can handle larger batches - maximize throughput
-  per_device_train_batch_size: 64   # A100 40GB can handle 32, 80GB can do 64
+  per_device_train_batch_size: 32   # A100 40GB can handle 32, 80GB can do 64
   per_device_eval_batch_size: 64    # Larger eval batches for speed
   gradient_accumulation_steps: 2    # Effective batch = 64
 
   # Training duration (per plan: 5-8 epochs)
-  num_train_epochs: 5
+  num_train_epochs: 8
   max_steps: -1  # Use epochs, not steps
 
   # Learning rates (per enhanced_design_v2.md)
@@ -166,7 +166,7 @@ training:
 
   # Regularization (per plan: 0.01 to avoid over-regularization)
   weight_decay: 0.01
-  max_grad_norm: 0.5
+  max_grad_norm: 0.8
 
   # Mixed precision - A100 excels at BF16
   bf16: true
