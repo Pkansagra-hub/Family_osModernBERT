@@ -1,32 +1,255 @@
-{"text": "Bhai and Priya pitch ideas together.", "entity1": "Bhai", "entity2": "Priya", "relation": 12}
-{"text": "Raj is the nephew of chacha who lives nearby", "entity1": "Raj", "entity2": "chacha", "relation": 8}
-{"text": "Chacha took masi and cousin John to the market", "entity1": "masi", "entity2": "John", "relation": 9}
-{"text": "Raj lives_at nana's house in the countryside.", "entity1": "Raj", "entity2": "nana's house", "relation": 13}
-{"text": "Didi teased bhai during the Diwali celebrations with all relatives.", "entity1": "Didi", "entity2": "bhai", "relation": 4}
-{"text": "Dada attends school events for Bunny", "entity1": "Dada", "entity2": "Bunny", "relation": 5}
-{"text": "Bhai Raj protected his sister from the rain.", "entity1": "Raj", "entity2": "sister", "relation": 4}
-{"text": "Sarah is the quiet grandchild_of nani's big family.", "entity1": "Sarah", "entity2": "nani", "relation": 6}
-{"text": "Chacha is spouse of Chachi, sharing the engraved thali.", "entity1": "Chacha", "entity2": "Chachi", "relation": 3}
-{"text": "Bhai is friends with his colleague Priya", "entity1": "Bhai", "entity2": "Priya", "relation": 11}
-{"text": "Sweetie runs errands with bhai, friend_of.", "entity1": "Sweetie", "entity2": "bhai", "relation": 11}
-{"text": "Dad polished the thali for son Bunny.", "entity1": "Dad", "entity2": "Bunny", "relation": 1}
-{"text": "Bhai played with his aunt masi.", "entity1": "masi", "entity2": "Bhai", "relation": 7}
-{"text": "Dadi owns the gold coin collection saved for grandkids.", "entity1": "Dadi", "entity2": "gold coin collection", "relation": 14}
-{"text": "Sarah played games with her Grandpa in the backyard gathering.", "entity1": "Sarah", "entity2": "Grandpa", "relation": 6}
-{"text": "Sarah shares an office with her bhai.", "entity1": "Sarah", "entity2": "bhai", "relation": 12}
-{"text": "John's sibling didi shares his clothes", "entity1": "John", "entity2": "didi", "relation": 4}
-{"text": "Sarah colleague_of Nani at clinic", "entity1": "Sarah", "entity2": "Nani", "relation": 12}
-{"text": "Sarah resides in Mumbai with nani.", "entity1": "Sarah", "entity2": "Mumbai", "relation": 13}
-{"text": "John works with didi in finance", "entity1": "John", "entity2": "didi", "relation": 12}
-{"text": "Raj learns chess from dada in the evenings.", "entity1": "Raj", "entity2": "dada", "relation": 6}
-{"text": "Raj returns from Mumbai for family gatherings.", "entity1": "Raj", "entity2": "Mumbai", "relation": 13}
-{"text": "Max stays home as pet of Sarah.", "entity1": "Max", "entity2": "Sarah", "relation": 10}
-{"text": "Priya grooms Buddy the family pet", "entity1": "Buddy", "entity2": "Priya", "relation": 10}
-{"text": "Nana passed his walking stick heirloom to grandson John.", "entity1": "Nana", "entity2": "John", "relation": 1}
-{"text": "Bhai taught his cousin Bhai new card tricks.", "entity1": "Bhai", "entity2": "Bhai", "relation": 9}
-{"text": "Emma is grandchild of grandma with dolls.", "entity1": "Emma", "entity2": "grandma", "relation": 6}
-{"text": "Chacha and bhai are colleagues running the business.", "entity1": "Chacha", "entity2": "bhai", "relation": 12}
-{"text": "Priya and cousin Sarah baked cookies together.", "entity1": "Priya", "entity2": "Sarah", "relation": 9}
-{"text": "Bhai and Didi celebrated Karva Chauth together.", "entity1": "Bhai", "entity2": "Didi", "relation": 3}
-{"text": "Masi hugged her boy Raj tightly during the family meetup.", "entity1": "Masi", "entity2": "Raj", "relation": 1}
-{"text": "Bhai and cousin Panda viewed the antique vase.", "entity1": "Panda", "entity2": "bhai", "relation": 9}
+{"text":"Bhai and Priya pitch ideas together.","entity1":"Bhai","entity2":"Priya","relation":12}
+{"text":"Raj is the nephew of chacha who lives nearby","entity1":"Raj","entity2":"chacha","relation":8}
+{"text":"Chacha took masi and cousin John to the market","entity1":"masi","entity2":"John","relation":9}
+{"text":"Raj lives_at nana's house in the countryside.","entity1":"Raj","entity2":"nana's house","relation":13}
+{"text":"Didi teased bhai during the Diwali celebrations with all relatives.","entity1":"Didi","entity2":"bhai","relation":4}
+{"text":"Dada attends school events for Bunny","entity1":"Dada","entity2":"Bunny","relation":5}
+{"text":"Bhai Raj protected his sister from the rain.","entity1":"Raj","entity2":"sister","relation":4}
+{"text":"Sarah is the quiet grandchild_of nani's big family.","entity1":"Sarah","entity2":"nani","relation":6}
+{"text":"Chacha is spouse of Chachi, sharing the engraved thali.","entity1":"Chacha","entity2":"Chachi","relation":3}
+{"text":"Bhai is friends with his colleague Priya","entity1":"Bhai","entity2":"Priya","relation":11}
+{"text":"Sweetie runs errands with bhai, friend_of.","entity1":"Sweetie","entity2":"bhai","relation":11}
+{"text":"Dad polished the thali for son Bunny.","entity1":"Dad","entity2":"Bunny","relation":1}
+{"text":"Bhai played with his aunt masi.","entity1":"masi","entity2":"Bhai","relation":7}
+{"text":"Dadi owns the gold coin collection saved for grandkids.","entity1":"Dadi","entity2":"gold coin collection","relation":14}
+{"text":"Sarah played games with her Grandpa in the backyard gathering.","entity1":"Sarah","entity2":"Grandpa","relation":6}
+{"text":"Sarah shares an office with her bhai.","entity1":"Sarah","entity2":"bhai","relation":12}
+{"text":"John's sibling didi shares his clothes","entity1":"John","entity2":"didi","relation":4}
+{"text":"Sarah colleague_of Nani at clinic","entity1":"Sarah","entity2":"Nani","relation":12}
+{"text":"Sarah resides in Mumbai with nani.","entity1":"Sarah","entity2":"Mumbai","relation":13}
+{"text":"John works with didi in finance","entity1":"John","entity2":"didi","relation":12}
+{"text":"Raj learns chess from dada in the evenings.","entity1":"Raj","entity2":"dada","relation":6}
+{"text":"Raj returns from Mumbai for family gatherings.","entity1":"Raj","entity2":"Mumbai","relation":13}
+{"text":"Max stays home as pet of Sarah.","entity1":"Max","entity2":"Sarah","relation":10}
+{"text":"Priya grooms Buddy the family pet","entity1":"Buddy","entity2":"Priya","relation":10}
+{"text":"Nana passed his walking stick heirloom to grandson John.","entity1":"Nana","entity2":"John","relation":1}
+{"text":"Bhai taught his cousin Bhai new card tricks.","entity1":"Bhai","entity2":"Bhai","relation":9}
+{"text":"Emma is grandchild of grandma with dolls.","entity1":"Emma","entity2":"grandma","relation":6}
+{"text":"Chacha and bhai are colleagues running the business.","entity1":"Chacha","entity2":"bhai","relation":12}
+{"text":"Priya and cousin Sarah baked cookies together.","entity1":"Priya","entity2":"Sarah","relation":9}
+{"text":"Bhai and Didi celebrated Karva Chauth together.","entity1":"Bhai","entity2":"Didi","relation":3}
+{"text":"Masi hugged her boy Raj tightly during the family meetup.","entity1":"Masi","entity2":"Raj","relation":1}
+{"text":"Bhai and cousin Panda viewed the antique vase.","entity1":"Panda","entity2":"bhai","relation":9}
+{"text":"Mom drove Emma to her piano lesson after school.","entity1":"Mom","entity2":"Emma","relation":1}
+{"text":"Dad helped Panda with her math homework last night.","entity1":"Dad","entity2":"Panda","relation":1}
+{"text":"Papa took Arjun to the cricket match on Sunday.","entity1":"Papa","entity2":"Arjun","relation":1}
+{"text":"Mummy made special breakfast for Priya's birthday.","entity1":"Mummy","entity2":"Priya","relation":1}
+{"text":"Mother read a bedtime story to little Bunny.","entity1":"Mother","entity2":"Bunny","relation":1}
+{"text":"Father taught Rohan how to ride a bicycle.","entity1":"Father","entity2":"Rohan","relation":1}
+{"text":"Mom packed lunch for Sarah before school.","entity1":"Mom","entity2":"Sarah","relation":1}
+{"text":"Dad surprised Sweetie with a new puppy.","entity1":"Dad","entity2":"Sweetie","relation":1}
+{"text":"Papa scolded Amit for coming home late.","entity1":"Papa","entity2":"Amit","relation":1}
+{"text":"Maa hugged Neha after her dance performance.","entity1":"Maa","entity2":"Neha","relation":1}
+{"text":"Mom enrolled Jake in swimming classes.","entity1":"Mom","entity2":"Jake","relation":1}
+{"text":"Dad bought a new laptop for his son Vikram.","entity1":"Dad","entity2":"Vikram","relation":1}
+{"text":"Mother woke up Emily early for the school trip.","entity1":"Mother","entity2":"Emily","relation":1}
+{"text":"Papa arranged tutoring sessions for Kabir.","entity1":"Papa","entity2":"Kabir","relation":1}
+{"text":"Mummy took Ananya to the dentist this morning.","entity1":"Mummy","entity2":"Ananya","relation":1}
+{"text":"Emma loves spending weekends with her mom.","entity1":"Emma","entity2":"mom","relation":2}
+{"text":"Panda made a card for her daddy on Father's Day.","entity1":"Panda","entity2":"daddy","relation":2}
+{"text":"Arjun helps his papa in the garden every evening.","entity1":"Arjun","entity2":"papa","relation":2}
+{"text":"Priya cooked dinner for her mummy last night.","entity1":"Priya","entity2":"mummy","relation":2}
+{"text":"Bunny hugged his mother after the school play.","entity1":"Bunny","entity2":"mother","relation":2}
+{"text":"Rohan washed his father's car as a surprise.","entity1":"Rohan","entity2":"father","relation":2}
+{"text":"Sarah wrote a poem for her mom's birthday.","entity1":"Sarah","entity2":"mom","relation":2}
+{"text":"Sweetie always listens to her dad's advice.","entity1":"Sweetie","entity2":"dad","relation":2}
+{"text":"Amit brought chai for his papa after work.","entity1":"Amit","entity2":"papa","relation":2}
+{"text":"Neha danced at her maa's anniversary party.","entity1":"Neha","entity2":"maa","relation":2}
+{"text":"Jake fixed the computer for his mom.","entity1":"Jake","entity2":"mom","relation":2}
+{"text":"Vikram drove his dad to the airport early morning.","entity1":"Vikram","entity2":"dad","relation":2}
+{"text":"Emily baked cookies with her mother on Sunday.","entity1":"Emily","entity2":"mother","relation":2}
+{"text":"Kabir massaged his papa's feet after a long day.","entity1":"Kabir","entity2":"papa","relation":2}
+{"text":"Ananya helped her mummy with the Diwali decorations.","entity1":"Ananya","entity2":"mummy","relation":2}
+{"text":"I went to the movies with my husband last night.","entity1":"I","entity2":"husband","relation":3}
+{"text":"She planned a surprise party for her wife.","entity1":"She","entity2":"wife","relation":3}
+{"text":"Rohit made breakfast in bed for his wife Priya.","entity1":"Rohit","entity2":"Priya","relation":3}
+{"text":"Maya surprised her husband with concert tickets.","entity1":"Maya","entity2":"husband","relation":3}
+{"text":"David and his wife Sarah celebrated their anniversary.","entity1":"David","entity2":"Sarah","relation":3}
+{"text":"Sunita cooked biryani for her husband's birthday.","entity1":"Sunita","entity2":"husband","relation":3}
+{"text":"John danced with his wife at the wedding reception.","entity1":"John","entity2":"wife","relation":3}
+{"text":"Meera planned a vacation with her husband Raj.","entity1":"Meera","entity2":"Raj","relation":3}
+{"text":"Michael helped his wife with the groceries.","entity1":"Michael","entity2":"wife","relation":3}
+{"text":"Anjali watched the cricket match with her husband.","entity1":"Anjali","entity2":"husband","relation":3}
+{"text":"Tom gifted flowers to his wife on Valentine's Day.","entity1":"Tom","entity2":"wife","relation":3}
+{"text":"Divya and her husband Amit went for a morning walk.","entity1":"Divya","entity2":"Amit","relation":3}
+{"text":"Robert cooked dinner for his wife's birthday.","entity1":"Robert","entity2":"wife","relation":3}
+{"text":"Kavita shopped for Karva Chauth with her husband.","entity1":"Kavita","entity2":"husband","relation":3}
+{"text":"William and his wife Emily renovated the kitchen.","entity1":"William","entity2":"Emily","relation":3}
+{"text":"Bhai teased didi during the family dinner.","entity1":"Bhai","entity2":"didi","relation":4}
+{"text":"Didi helped her bhai with his college applications.","entity1":"Didi","entity2":"bhai","relation":4}
+{"text":"Rohan fought with his sister over the TV remote.","entity1":"Rohan","entity2":"sister","relation":4}
+{"text":"Emma shared her ice cream with her brother Jake.","entity1":"Emma","entity2":"Jake","relation":4}
+{"text":"Priya borrowed clothes from her didi for the party.","entity1":"Priya","entity2":"didi","relation":4}
+{"text":"Arjun protected his behen from the bullies.","entity1":"Arjun","entity2":"behen","relation":4}
+{"text":"Sarah and her brother Michael played video games.","entity1":"Sarah","entity2":"Michael","relation":4}
+{"text":"Amit gave rakhi to his sister Neha.","entity1":"Amit","entity2":"Neha","relation":4}
+{"text":"Emily studied with her bhai for the exams.","entity1":"Emily","entity2":"bhai","relation":4}
+{"text":"Vikram drove his didi to her new job.","entity1":"Vikram","entity2":"didi","relation":4}
+{"text":"Jake and his sister Emma built a treehouse.","entity1":"Jake","entity2":"Emma","relation":4}
+{"text":"Kabir celebrated Bhai Dooj with his behen.","entity1":"Kabir","entity2":"behen","relation":4}
+{"text":"Nana tells stories to little Emma every evening.","entity1":"Nana","entity2":"Emma","relation":5}
+{"text":"Dada taught Arjun how to play chess.","entity1":"Dada","entity2":"Arjun","relation":5}
+{"text":"Grandma baked cookies for Sarah and Jake.","entity1":"Grandma","entity2":"Sarah","relation":5}
+{"text":"Grandpa took Bunny fishing at the lake.","entity1":"Grandpa","entity2":"Bunny","relation":5}
+{"text":"Nani made special halwa for Priya's birthday.","entity1":"Nani","entity2":"Priya","relation":5}
+{"text":"Dadi taught Ananya traditional recipes.","entity1":"Dadi","entity2":"Ananya","relation":5}
+{"text":"Grandfather showed Michael his war medals.","entity1":"Grandfather","entity2":"Michael","relation":5}
+{"text":"Grandmother knitted sweaters for Emily and Jake.","entity1":"Grandmother","entity2":"Emily","relation":5}
+{"text":"Nana gave pocket money to Kabir every Sunday.","entity1":"Nana","entity2":"Kabir","relation":5}
+{"text":"Dada planted a mango tree for Rohan.","entity1":"Dada","entity2":"Rohan","relation":5}
+{"text":"Grandma surprised Sweetie with a handmade quilt.","entity1":"Grandma","entity2":"Sweetie","relation":5}
+{"text":"Grandpa built a dollhouse for Panda.","entity1":"Grandpa","entity2":"Panda","relation":5}
+{"text":"Nani sang lullabies to baby Neha.","entity1":"Nani","entity2":"Neha","relation":5}
+{"text":"Dadi blessed Amit before his exams.","entity1":"Dadi","entity2":"Amit","relation":5}
+{"text":"Grandmother took Vikram to the temple.","entity1":"Grandmother","entity2":"Vikram","relation":5}
+{"text":"Emma loves visiting her grandma on weekends.","entity1":"Emma","entity2":"grandma","relation":6}
+{"text":"Arjun helped his dada with the garden.","entity1":"Arjun","entity2":"dada","relation":6}
+{"text":"Sarah made a birthday card for her grandfather.","entity1":"Sarah","entity2":"grandfather","relation":6}
+{"text":"Bunny spent summer vacation at nani's house.","entity1":"Bunny","entity2":"nani","relation":6}
+{"text":"Priya learned embroidery from her dadi.","entity1":"Priya","entity2":"dadi","relation":6}
+{"text":"Michael called his grandmother every Sunday.","entity1":"Michael","entity2":"grandmother","relation":6}
+{"text":"Emily helped her grandpa fix the fence.","entity1":"Emily","entity2":"grandpa","relation":6}
+{"text":"Kabir touched nana's feet for blessings.","entity1":"Kabir","entity2":"nana","relation":6}
+{"text":"Rohan stayed with dadi during the holidays.","entity1":"Rohan","entity2":"dadi","relation":6}
+{"text":"Sweetie painted a portrait of her grandmother.","entity1":"Sweetie","entity2":"grandmother","relation":6}
+{"text":"Panda wrote a letter to her grandpa abroad.","entity1":"Panda","entity2":"grandpa","relation":6}
+{"text":"Neha danced for her nani at the anniversary.","entity1":"Neha","entity2":"nani","relation":6}
+{"text":"Amit fixed his dada's reading glasses.","entity1":"Amit","entity2":"dada","relation":6}
+{"text":"Vikram read the newspaper to his grandfather.","entity1":"Vikram","entity2":"grandfather","relation":6}
+{"text":"Ananya brushed her grandmother's hair gently.","entity1":"Ananya","entity2":"grandmother","relation":6}
+{"text":"Chacha brought gifts for the kids from abroad.","entity1":"Chacha","entity2":"kids","relation":7}
+{"text":"Masi made special dessert for Priya's birthday.","entity1":"Masi","entity2":"Priya","relation":7}
+{"text":"Uncle Tom took Jake to the baseball game.","entity1":"Uncle Tom","entity2":"Jake","relation":7}
+{"text":"Bua blessed Arjun before his wedding.","entity1":"Bua","entity2":"Arjun","relation":7}
+{"text":"Aunt Sarah gave Emma a beautiful dress.","entity1":"Aunt Sarah","entity2":"Emma","relation":7}
+{"text":"Mama drove Bunny to the cricket academy.","entity1":"Mama","entity2":"Bunny","relation":7}
+{"text":"Uncle Robert helped Michael with his resume.","entity1":"Uncle Robert","entity2":"Michael","relation":7}
+{"text":"Mausi taught Neha classical dance.","entity1":"Mausi","entity2":"Neha","relation":7}
+{"text":"Fufa helped Kabir with his science project.","entity1":"Fufa","entity2":"Kabir","relation":7}
+{"text":"Aunt Emily babysat Sweetie on weekends.","entity1":"Aunt Emily","entity2":"Sweetie","relation":7}
+{"text":"Chachu sponsored Rohan's education abroad.","entity1":"Chachu","entity2":"Rohan","relation":7}
+{"text":"Mami cooked biryani for Amit's party.","entity1":"Mami","entity2":"Amit","relation":7}
+{"text":"Uncle David taught Panda how to swim.","entity1":"Uncle David","entity2":"Panda","relation":7}
+{"text":"Bua gave gold earrings to Ananya.","entity1":"Bua","entity2":"Ananya","relation":7}
+{"text":"Aunt Lisa helped Vikram with college admissions.","entity1":"Aunt Lisa","entity2":"Vikram","relation":7}
+{"text":"Emma loves visiting her masi during holidays.","entity1":"Emma","entity2":"masi","relation":8}
+{"text":"Arjun played cricket with his chacha.","entity1":"Arjun","entity2":"chacha","relation":8}
+{"text":"Sarah helped her uncle with the move.","entity1":"Sarah","entity2":"uncle","relation":8}
+{"text":"Bunny received chocolates from his bua.","entity1":"Bunny","entity2":"bua","relation":8}
+{"text":"Priya learned cooking from her aunt.","entity1":"Priya","entity2":"aunt","relation":8}
+{"text":"Michael spent summers with his mama.","entity1":"Michael","entity2":"mama","relation":8}
+{"text":"Emily called her mausi on her birthday.","entity1":"Emily","entity2":"mausi","relation":8}
+{"text":"Kabir helped his fufa repair the car.","entity1":"Kabir","entity2":"fufa","relation":8}
+{"text":"Rohan got a bike from his chachu.","entity1":"Rohan","entity2":"chachu","relation":8}
+{"text":"Sweetie made a card for her mami.","entity1":"Sweetie","entity2":"mami","relation":8}
+{"text":"Panda stayed with her aunt during summer.","entity1":"Panda","entity2":"aunt","relation":8}
+{"text":"Neha danced at her bua's anniversary.","entity1":"Neha","entity2":"bua","relation":8}
+{"text":"Amit touched his chacha's feet for blessings.","entity1":"Amit","entity2":"chacha","relation":8}
+{"text":"Vikram drove his mama to the hospital.","entity1":"Vikram","entity2":"mama","relation":8}
+{"text":"Ananya helped her mausi with the baby.","entity1":"Ananya","entity2":"mausi","relation":8}
+{"text":"Emma played with her cousin Sarah at the picnic.","entity1":"Emma","entity2":"Sarah","relation":9}
+{"text":"Arjun and his cousin Rohan went camping together.","entity1":"Arjun","entity2":"Rohan","relation":9}
+{"text":"Priya borrowed books from her cousin Neha.","entity1":"Priya","entity2":"Neha","relation":9}
+{"text":"Jake and cousin Michael played basketball.","entity1":"Jake","entity2":"Michael","relation":9}
+{"text":"Bunny shared toys with his cousin Sweetie.","entity1":"Bunny","entity2":"Sweetie","relation":9}
+{"text":"Sarah and her cousin Emily had a sleepover.","entity1":"Sarah","entity2":"Emily","relation":9}
+{"text":"Amit taught his cousin Kabir guitar.","entity1":"Amit","entity2":"Kabir","relation":9}
+{"text":"Panda and cousin Ananya painted together.","entity1":"Panda","entity2":"Ananya","relation":9}
+{"text":"Vikram studied with his cousin Rohit for exams.","entity1":"Vikram","entity2":"Rohit","relation":9}
+{"text":"Neha and her cousin Priya went shopping.","entity1":"Neha","entity2":"Priya","relation":9}
+{"text":"Michael and cousin Jake built a robot together.","entity1":"Michael","entity2":"Jake","relation":9}
+{"text":"Rohan celebrated Holi with cousin Arjun.","entity1":"Rohan","entity2":"Arjun","relation":9}
+{"text":"Emily and her cousin Sarah learned dance.","entity1":"Emily","entity2":"Sarah","relation":9}
+{"text":"Kabir played chess with his cousin Amit.","entity1":"Kabir","entity2":"Amit","relation":9}
+{"text":"Ananya and cousin Panda baked cookies.","entity1":"Ananya","entity2":"Panda","relation":9}
+{"text":"Max is the beloved dog of the family.","entity1":"Max","entity2":"family","relation":10}
+{"text":"Buddy belongs to little Emma.","entity1":"Buddy","entity2":"Emma","relation":10}
+{"text":"Whiskers is Priya's cat since childhood.","entity1":"Whiskers","entity2":"Priya","relation":10}
+{"text":"Bruno is Arjun's loyal pet dog.","entity1":"Bruno","entity2":"Arjun","relation":10}
+{"text":"Goldie is the family fish.","entity1":"Goldie","entity2":"family","relation":10}
+{"text":"Rocky belongs to the kids.","entity1":"Rocky","entity2":"kids","relation":10}
+{"text":"Simba is Sarah's pet hamster.","entity1":"Simba","entity2":"Sarah","relation":10}
+{"text":"Coco is Jake's parrot.","entity1":"Coco","entity2":"Jake","relation":10}
+{"text":"Muffin is grandma's old cat.","entity1":"Muffin","entity2":"grandma","relation":10}
+{"text":"Tiger is Bunny's pet turtle.","entity1":"Tiger","entity2":"Bunny","relation":10}
+{"text":"Lucky is dad's fishing companion dog.","entity1":"Lucky","entity2":"dad","relation":10}
+{"text":"Snowball is Emily's white rabbit.","entity1":"Snowball","entity2":"Emily","relation":10}
+{"text":"Oreo is the family's new puppy.","entity1":"Oreo","entity2":"family","relation":10}
+{"text":"Nemo is Kabir's pet fish.","entity1":"Nemo","entity2":"Kabir","relation":10}
+{"text":"Fluffy is Ananya's Persian cat.","entity1":"Fluffy","entity2":"Ananya","relation":10}
+{"text":"Sarah is Emma's best friend from school.","entity1":"Sarah","entity2":"Emma","relation":11}
+{"text":"Rohan and Arjun are childhood friends.","entity1":"Rohan","entity2":"Arjun","relation":11}
+{"text":"Priya considers Neha her closest friend.","entity1":"Priya","entity2":"Neha","relation":11}
+{"text":"Michael and Jake have been friends since kindergarten.","entity1":"Michael","entity2":"Jake","relation":11}
+{"text":"Emily met her friend Lisa at dance class.","entity1":"Emily","entity2":"Lisa","relation":11}
+{"text":"Amit and Vikram are college buddies.","entity1":"Amit","entity2":"Vikram","relation":11}
+{"text":"Panda plays with her friend Sweetie daily.","entity1":"Panda","entity2":"Sweetie","relation":11}
+{"text":"Kabir and Rohit are gym friends.","entity1":"Kabir","entity2":"Rohit","relation":11}
+{"text":"Ananya met her friend Maya at art camp.","entity1":"Ananya","entity2":"Maya","relation":11}
+{"text":"Bunny and his friend Tommy play soccer.","entity1":"Bunny","entity2":"Tommy","relation":11}
+{"text":"Sarah texts her friend Emily every day.","entity1":"Sarah","entity2":"Emily","relation":11}
+{"text":"Rohan's friend Karan visited for Diwali.","entity1":"Rohan","entity2":"Karan","relation":11}
+{"text":"Priya went shopping with her friend Anjali.","entity1":"Priya","entity2":"Anjali","relation":11}
+{"text":"Michael's friend David helped him move.","entity1":"Michael","entity2":"David","relation":11}
+{"text":"Neha's friend Riya is also her neighbor.","entity1":"Neha","entity2":"Riya","relation":11}
+{"text":"Raj works with his colleague Priya on the project.","entity1":"Raj","entity2":"Priya","relation":12}
+{"text":"Michael and his colleague John finished the report.","entity1":"Michael","entity2":"John","relation":12}
+{"text":"Sarah had lunch with her colleague Emily.","entity1":"Sarah","entity2":"Emily","relation":12}
+{"text":"Amit presented with his colleague Vikram.","entity1":"Amit","entity2":"Vikram","relation":12}
+{"text":"Neha carpools with her colleague Anjali.","entity1":"Neha","entity2":"Anjali","relation":12}
+{"text":"Rohan and colleague Karan share an office.","entity1":"Rohan","entity2":"Karan","relation":12}
+{"text":"Emily worked late with her colleague Lisa.","entity1":"Emily","entity2":"Lisa","relation":12}
+{"text":"Kabir and his colleague Rohit handle clients.","entity1":"Kabir","entity2":"Rohit","relation":12}
+{"text":"Priya trained her new colleague Maya.","entity1":"Priya","entity2":"Maya","relation":12}
+{"text":"Michael met his colleague David at the conference.","entity1":"Michael","entity2":"David","relation":12}
+{"text":"Sarah and colleague Jake brainstormed ideas.","entity1":"Sarah","entity2":"Jake","relation":12}
+{"text":"Vikram helped his colleague Amit debug code.","entity1":"Vikram","entity2":"Amit","relation":12}
+{"text":"Neha grabbed coffee with colleague Riya.","entity1":"Neha","entity2":"Riya","relation":12}
+{"text":"Rohan's colleague Karan got promoted today.","entity1":"Rohan","entity2":"Karan","relation":12}
+{"text":"Emily and her colleague Lisa won the award.","entity1":"Emily","entity2":"Lisa","relation":12}
+{"text":"Grandma lives in the village near the river.","entity1":"Grandma","entity2":"village","relation":13}
+{"text":"Nana stays at his ancestral home in Jaipur.","entity1":"Nana","entity2":"Jaipur","relation":13}
+{"text":"Uncle Tom lives in New York City.","entity1":"Uncle Tom","entity2":"New York City","relation":13}
+{"text":"Chacha resides in the flat upstairs.","entity1":"Chacha","entity2":"flat upstairs","relation":13}
+{"text":"Aunt Sarah lives in the countryside.","entity1":"Aunt Sarah","entity2":"countryside","relation":13}
+{"text":"Dadi stays at the family haveli.","entity1":"Dadi","entity2":"family haveli","relation":13}
+{"text":"Michael moved to San Francisco last year.","entity1":"Michael","entity2":"San Francisco","relation":13}
+{"text":"Masi lives near the temple in Varanasi.","entity1":"Masi","entity2":"Varanasi","relation":13}
+{"text":"Emma's family lives in the suburbs.","entity1":"Emma's family","entity2":"suburbs","relation":13}
+{"text":"Dada lives at the old family house.","entity1":"Dada","entity2":"old family house","relation":13}
+{"text":"Cousin Rohan lives in Bangalore now.","entity1":"Rohan","entity2":"Bangalore","relation":13}
+{"text":"Aunt Emily stays in the apartment downtown.","entity1":"Aunt Emily","entity2":"apartment downtown","relation":13}
+{"text":"Nani lives in her small house in Lucknow.","entity1":"Nani","entity2":"Lucknow","relation":13}
+{"text":"Uncle David resides in the beach house.","entity1":"Uncle David","entity2":"beach house","relation":13}
+{"text":"Bua lives next door to us.","entity1":"Bua","entity2":"next door","relation":13}
+{"text":"Dad inherited grandpa's antique pocket watch.","entity1":"Dad","entity2":"pocket watch","relation":14}
+{"text":"Grandma owns the family's heirloom necklace.","entity1":"Grandma","entity2":"necklace","relation":14}
+{"text":"Dada keeps the old family photo album.","entity1":"Dada","entity2":"photo album","relation":14}
+{"text":"Mom treasures her grandmother's silk saree.","entity1":"Mom","entity2":"silk saree","relation":14}
+{"text":"Uncle Tom owns the vintage car.","entity1":"Uncle Tom","entity2":"vintage car","relation":14}
+{"text":"Nani has the antique silver thali.","entity1":"Nani","entity2":"silver thali","relation":14}
+{"text":"Father owns the family business.","entity1":"Father","entity2":"family business","relation":14}
+{"text":"Dadi possesses the gold mangalsutra.","entity1":"Dadi","entity2":"gold mangalsutra","relation":14}
+{"text":"Grandpa owns the farmland in the village.","entity1":"Grandpa","entity2":"farmland","relation":14}
+{"text":"Masi inherited the diamond earrings.","entity1":"Masi","entity2":"diamond earrings","relation":14}
+{"text":"Uncle David owns the cabin by the lake.","entity1":"Uncle David","entity2":"cabin","relation":14}
+{"text":"Nana has the old gramophone from 1950.","entity1":"Nana","entity2":"gramophone","relation":14}
+{"text":"Chacha owns the ancestral property.","entity1":"Chacha","entity2":"ancestral property","relation":14}
+{"text":"Grandmother possesses the family recipe book.","entity1":"Grandmother","entity2":"recipe book","relation":14}
+{"text":"Papa inherited the bronze statue.","entity1":"Papa","entity2":"bronze statue","relation":14}
+{"text":"I saw John and a random person at the mall.","entity1":"John","entity2":"random person","relation":0}
+{"text":"The teacher talked to Emma about her grades.","entity1":"teacher","entity2":"Emma","relation":0}
+{"text":"Raj met someone new at the conference.","entity1":"Raj","entity2":"someone","relation":0}
+{"text":"Sarah waved at the neighbor walking by.","entity1":"Sarah","entity2":"neighbor","relation":0}
+{"text":"Arjun passed by the shopkeeper daily.","entity1":"Arjun","entity2":"shopkeeper","relation":0}
+{"text":"The doctor examined Priya thoroughly.","entity1":"doctor","entity2":"Priya","relation":0}
+{"text":"Michael asked the waiter for the menu.","entity1":"Michael","entity2":"waiter","relation":0}
+{"text":"Emma saw a stranger at the park.","entity1":"Emma","entity2":"stranger","relation":0}
+{"text":"Bunny watched the mailman deliver packages.","entity1":"Bunny","entity2":"mailman","relation":0}
+{"text":"Neha thanked the cab driver for the ride.","entity1":"Neha","entity2":"cab driver","relation":0}
+{"text":"Jake bumped into someone at the store.","entity1":"Jake","entity2":"someone","relation":0}
+{"text":"Kabir noticed a new student in class.","entity1":"Kabir","entity2":"new student","relation":0}
+{"text":"Vikram spoke to the receptionist.","entity1":"Vikram","entity2":"receptionist","relation":0}
+{"text":"Sweetie smiled at the ice cream vendor.","entity1":"Sweetie","entity2":"ice cream vendor","relation":0}
+{"text":"Rohan asked the librarian for help.","entity1":"Rohan","entity2":"librarian","relation":0}
+{"text":"Ananya greeted the florist at the shop.","entity1":"Ananya","entity2":"florist","relation":0}

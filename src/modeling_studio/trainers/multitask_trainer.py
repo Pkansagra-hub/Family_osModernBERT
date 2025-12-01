@@ -486,11 +486,10 @@ class MultiTaskTrainer(Trainer):
             log_var = self.uncertainty_weighting.log_vars[task_idx]
             precision = torch.exp(-log_var)
             weighted_loss = 0.5 * precision * loss + 0.5 * log_var
-            # Also apply static task weight for compatibility
-            task_weight = self.task_weights.get(task, 1.0)
-            weighted_loss = weighted_loss * task_weight
+            # NOTE: Do NOT apply static task_weights when using uncertainty weighting
+            # The learned weights replace static weights - combining them causes double-weighting
         else:
-            # Standard static task weighting
+            # Standard static task weighting (when uncertainty weighting is disabled)
             task_weight = self.task_weights.get(task, 1.0)
             weighted_loss = loss * task_weight
 

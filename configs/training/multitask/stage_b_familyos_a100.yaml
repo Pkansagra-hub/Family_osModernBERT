@@ -25,7 +25,7 @@ model:
   # The EMA-merged weights provide better generalization for Stage B
   name_or_path: outputs/modernbert-multitask-v0-ema
   torch_dtype: bfloat16
-  use_flash_attention_2: true
+  use_flash_attention_2: false  # Flash Attention 2 can cause issues with LoRA on some setups
   # A100 can handle full model in memory
   low_cpu_mem_usage: false
 

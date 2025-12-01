@@ -1,8 +1,58 @@
-{"text": "Didi brought her grandchild to nana's home", "entity1": "grandchild", "entity2": "nana", "relation": 6}
-{"text": "Buddy is niece of chacha polishing silverware", "entity1": "Buddy", "entity2": "chacha", "relation": 8}
-{"text": "Max lives at nani's house with the kids.", "entity1": "Max", "entity2": "nani's house", "relation": 13}
-{"text": "At the family picnic, Uncle Raj teased his niece Sweetie.", "entity1": "Sweetie", "entity2": "Uncle Raj", "relation": 7}
-{"text": "Emma is grandchild of her loving Dada", "entity1": "Emma", "entity2": "Dada", "relation": 6}
-{"text": "Didi's cat lives at grandma's house.", "entity1": "Didi's cat", "entity2": "grandma's house", "relation": 13}
-{"text": "Uncle Chacha lives close to niece Priya.", "entity1": "Chacha", "entity2": "Priya", "relation": 7}
-{"text": "Bhai protected his little didi from the neighborhood kids.", "entity1": "Bhai", "entity2": "didi", "relation": 4}
+{"text":"Didi brought her grandchild to nana's home","entity1":"grandchild","entity2":"nana","relation":6}
+{"text":"Buddy is niece of chacha polishing silverware","entity1":"Buddy","entity2":"chacha","relation":8}
+{"text":"Max lives at nani's house with the kids.","entity1":"Max","entity2":"nani's house","relation":13}
+{"text":"At the family picnic, Uncle Raj teased his niece Sweetie.","entity1":"Sweetie","entity2":"Uncle Raj","relation":7}
+{"text":"Emma is grandchild of her loving Dada","entity1":"Emma","entity2":"Dada","relation":6}
+{"text":"Didi's cat lives at grandma's house.","entity1":"Didi's cat","entity2":"grandma's house","relation":13}
+{"text":"Uncle Chacha lives close to niece Priya.","entity1":"Chacha","entity2":"Priya","relation":7}
+{"text":"Bhai protected his little didi from the neighborhood kids.","entity1":"Bhai","entity2":"didi","relation":4}
+{"text":"Mummy scolded Riya for not finishing homework.","entity1":"Mummy","entity2":"Riya","relation":1}
+{"text":"Dad took his son Aarav to the doctor.","entity1":"Dad","entity2":"Aarav","relation":1}
+{"text":"Mother helped Emma prepare for the competition.","entity1":"Mother","entity2":"Emma","relation":1}
+{"text":"Papa enrolled Meera in music classes.","entity1":"Papa","entity2":"Meera","relation":1}
+{"text":"Riya made tea for her mummy.","entity1":"Riya","entity2":"mummy","relation":2}
+{"text":"Aarav washed his dad's motorcycle.","entity1":"Aarav","entity2":"dad","relation":2}
+{"text":"Emma helped her mother in the kitchen.","entity1":"Emma","entity2":"mother","relation":2}
+{"text":"Meera gave flowers to her papa.","entity1":"Meera","entity2":"papa","relation":2}
+{"text":"Sunil went on vacation with his wife Meena.","entity1":"Sunil","entity2":"Meena","relation":3}
+{"text":"James surprised his wife with jewelry.","entity1":"James","entity2":"wife","relation":3}
+{"text":"Lisa and her husband Chris went hiking.","entity1":"Lisa","entity2":"Chris","relation":3}
+{"text":"Reema cooked for her husband's friends.","entity1":"Reema","entity2":"husband","relation":3}
+{"text":"Sahil and his behen went to the fair.","entity1":"Sahil","entity2":"behen","relation":4}
+{"text":"Laura shared secrets with her brother.","entity1":"Laura","entity2":"brother","relation":4}
+{"text":"Didi scolded bhai for being messy.","entity1":"Didi","entity2":"bhai","relation":4}
+{"text":"Nani taught her granddaughter Aisha to cook.","entity1":"Nani","entity2":"Aisha","relation":5}
+{"text":"Grandpa gave savings bonds to Tommy.","entity1":"Grandpa","entity2":"Tommy","relation":5}
+{"text":"Dada blessed grandson Rahul before his exams.","entity1":"Dada","entity2":"Rahul","relation":5}
+{"text":"Aisha calls her nani every weekend.","entity1":"Aisha","entity2":"nani","relation":6}
+{"text":"Tommy helped his grandpa with yardwork.","entity1":"Tommy","entity2":"grandpa","relation":6}
+{"text":"Rahul listened to dada's stories.","entity1":"Rahul","entity2":"dada","relation":6}
+{"text":"Mama brought sweets for Kiran.","entity1":"Mama","entity2":"Kiran","relation":7}
+{"text":"Aunt Helen gave money to nephew Josh.","entity1":"Aunt Helen","entity2":"Josh","relation":7}
+{"text":"Chachi made clothes for niece Tina.","entity1":"Chachi","entity2":"Tina","relation":7}
+{"text":"Kiran visited his mama in the summer.","entity1":"Kiran","entity2":"mama","relation":8}
+{"text":"Josh helped his aunt Helen with groceries.","entity1":"Josh","entity2":"aunt Helen","relation":8}
+{"text":"Tina loves her chachi's cooking.","entity1":"Tina","entity2":"chachi","relation":8}
+{"text":"Neeraj played video games with cousin Deepak.","entity1":"Neeraj","entity2":"Deepak","relation":9}
+{"text":"Sophie and cousin Kate went to the movies.","entity1":"Sophie","entity2":"Kate","relation":9}
+{"text":"Ravi shared notes with his cousin Priti.","entity1":"Ravi","entity2":"Priti","relation":9}
+{"text":"Biscuit is Aisha's pet dog.","entity1":"Biscuit","entity2":"Aisha","relation":10}
+{"text":"Patches belongs to the Smith family.","entity1":"Patches","entity2":"Smith family","relation":10}
+{"text":"Ginger is grandma's old tabby cat.","entity1":"Ginger","entity2":"grandma","relation":10}
+{"text":"Neeraj's friend Aakash lives nearby.","entity1":"Neeraj","entity2":"Aakash","relation":11}
+{"text":"Sophie trusts her friend Maria completely.","entity1":"Sophie","entity2":"Maria","relation":11}
+{"text":"Ravi and his friend Suresh play tennis.","entity1":"Ravi","entity2":"Suresh","relation":11}
+{"text":"Shreya discussed the deal with colleague Manish.","entity1":"Shreya","entity2":"Manish","relation":12}
+{"text":"Tom partnered with colleague Anna on the case.","entity1":"Tom","entity2":"Anna","relation":12}
+{"text":"Pooja lunched with her colleague Simran.","entity1":"Pooja","entity2":"Simran","relation":12}
+{"text":"Mama resides in Chennai near the beach.","entity1":"Mama","entity2":"Chennai","relation":13}
+{"text":"Grandpa stays at the retirement home.","entity1":"Grandpa","entity2":"retirement home","relation":13}
+{"text":"Fufa lives in the apartment complex.","entity1":"Fufa","entity2":"apartment complex","relation":13}
+{"text":"Mom owns the antique jade bracelet.","entity1":"Mom","entity2":"jade bracelet","relation":14}
+{"text":"Nana inherited the old wooden chest.","entity1":"Nana","entity2":"wooden chest","relation":14}
+{"text":"Aunt Helen possesses the family Bible.","entity1":"Aunt Helen","entity2":"family Bible","relation":14}
+{"text":"Riya noticed the gardener trimming hedges.","entity1":"Riya","entity2":"gardener","relation":0}
+{"text":"Aarav asked the conductor for directions.","entity1":"Aarav","entity2":"conductor","relation":0}
+{"text":"Emma watched the painter work on the wall.","entity1":"Emma","entity2":"painter","relation":0}
+{"text":"Meera chatted with the delivery boy briefly.","entity1":"Meera","entity2":"delivery boy","relation":0}
+{"text":"Sahil met his coach at the gym.","entity1":"Sahil","entity2":"coach","relation":0}
