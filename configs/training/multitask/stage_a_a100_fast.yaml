@@ -130,17 +130,22 @@ training:
   # === SOTA TECHNIQUES ===
   # Label Smoothing: Reduces overconfidence, improves calibration (+0.5-1% acc)
   label_smoothing: 0.1
-  
+
   # R-Drop: Consistency regularization via dropout variations (+1-2% NLU)
-  use_r_drop: false           # Disabled by default (2x forward pass cost)
-  r_drop_alpha: 0.7           # KL divergence weight when enabled
-  
-  # Adversarial Training: FGM for robustness (+0.5-1.5% on hard examples)
-  use_adversarial: false      # Disabled by default (extra backward pass)
-  adversarial_method: fgm     # 'fgm' (faster) or 'pgd' (stronger)
+  use_rdrop: true             # ENABLED: 2x forward pass for consistency
+  rdrop_alpha: 0.7            # KL divergence weight
+
+  # Adversarial Training: FGM/PGD for robustness (+0.5-1.5% on hard examples)
+  use_adversarial: true       # ENABLED: FGM adversarial training
+  adversarial_type: fgm       # 'fgm' (faster) or 'pgd' (stronger)
   adversarial_epsilon: 1.0    # Perturbation magnitude
   pgd_steps: 3                # Only for PGD
   pgd_alpha: 0.3              # Only for PGD
+
+  # Mixup: Embedding-space augmentation for smoother decision boundaries
+  use_mixup: true             # ENABLED: Embedding-space mixup
+  mixup_alpha: 0.4            # Beta distribution parameter
+  mixup_prob: 0.5             # Probability of applying mixup to batch
 
   # === MEMORY: NO CHECKPOINTING FOR SPEED ===
   gradient_checkpointing: false

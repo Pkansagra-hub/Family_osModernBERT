@@ -620,6 +620,20 @@ def create_training_args(
         sampling_strategy=mixing_config.get("strategy", "proportional"),
         sampling_temperature=mixing_config.get("temperature", 2.0),
         use_uncertainty_weighting=training_config.get("use_uncertainty_weighting", False),
+        # === SOTA FEATURES ===
+        # R-Drop regularization
+        use_rdrop=training_config.get("use_rdrop", False),
+        rdrop_alpha=training_config.get("rdrop_alpha", 0.5),
+        # Adversarial training (FGM/PGD)
+        use_adversarial=training_config.get("use_adversarial", False),
+        adversarial_type=training_config.get("adversarial_type", "fgm"),
+        adversarial_epsilon=training_config.get("adversarial_epsilon", 1.0),
+        pgd_steps=training_config.get("pgd_steps", 3),
+        pgd_alpha=training_config.get("pgd_alpha", 0.3),
+        # Mixup augmentation
+        use_mixup=training_config.get("use_mixup", False),
+        mixup_alpha=training_config.get("mixup_alpha", 0.4),
+        mixup_prob=training_config.get("mixup_prob", 0.5),
     )
 
     return args
@@ -979,12 +993,6 @@ def main():
         logger.warning("Training interrupted by user")
         return 1
     except Exception as e:
-        logger.error(f"Training failed with error: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    sys.exit(main())
         logger.error(f"Training failed with error: {e}")
         raise
 

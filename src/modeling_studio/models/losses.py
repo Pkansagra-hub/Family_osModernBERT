@@ -1388,8 +1388,9 @@ class RDropLoss(nn.Module):
         q_soft = F.softmax(logits2, dim=-1)
 
         # KL(P || Q) + KL(Q || P) for symmetric divergence
-        kl_loss = F.kl_div(p, q_soft, reduction=self.reduction) + \
-                  F.kl_div(q, p_soft, reduction=self.reduction)
+        kl_loss = F.kl_div(p, q_soft, reduction=self.reduction) + F.kl_div(
+            q, p_soft, reduction=self.reduction
+        )
 
         # Average the two directions
         kl_loss = kl_loss / 2.0

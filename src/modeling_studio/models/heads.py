@@ -126,9 +126,9 @@ class BaseHead(ABC, nn.Module):
         """
         if self.problem_type == "single_label_classification":
             loss = F.cross_entropy(
-                logits.view(-1, self.num_labels), 
+                logits.view(-1, self.num_labels),
                 labels.view(-1),
-                label_smoothing=self.label_smoothing
+                label_smoothing=self.label_smoothing,
             )
             # DEBUG: Check for abnormal loss
             if loss.item() > 10:
