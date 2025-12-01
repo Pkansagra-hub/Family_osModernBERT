@@ -217,6 +217,13 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--ignore_optimizer_state",
+        action="store_true",
+        help="When resuming from checkpoint, skip loading optimizer/scheduler state. "
+             "Useful when optimizer configuration has changed (e.g., new parameter groups).",
+    )
+
+    parser.add_argument(
         "--dry_run",
         action="store_true",
         help="Validate config and data loading without training",
@@ -854,8 +861,26 @@ def train(
     logger.info(f"  Embedding Hard Negatives: {embedding_hard_negatives}")
     logger.info("=" * 60)
 
+    # Handle --ignore_optimizer_state flag
+    resume_checkpoint = args.resume_from_checkpoint
+    if resume_checkpoint and getattr(args, "ignore_optimizer_state", False):
+        # Remove optimizer/scheduler state files so they won't be loaded
+        import shutil
+        from pathlib import Path as Pth
+
+        ckpt_path = Pth(resume_checkpoint)
+        for state_file in ["optimizer.pt", "scheduler.pt", "rng_state.pth"]:
+            state_path = ckpt_path / state_file
+            if state_path.exists():
+                logger.info(f"Ignoring optimizer state: removing {state_path}")
+                state_path.unlink()
+        logger.warning(
+            "Optimizer state ignored - training will restart optimizer from scratch "
+            "but model weights are preserved from checkpoint."
+        )
+
     # Train
-    train_result = trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
+    train_result = trainer.train(resume_from_checkpoint=resume_checkpoint)
 
     # === V2 FEATURE: Update EMA after training ===
     if use_ema and ema_model is not None:
