@@ -57,6 +57,31 @@ from modeling_studio.data.labels import (
 
 logger = logging.getLogger(__name__)
 
+# =============================================================================
+# Global Dataset Loading Options
+# =============================================================================
+# Set to True to load all datasets into system RAM instead of memory-mapped files.
+# This speeds up data loading after the first pass but uses more RAM.
+# Recommended for high-RAM systems (e.g., Colab High-RAM with 167GB).
+KEEP_DATASETS_IN_MEMORY = True
+
+
+def _get_load_kwargs(
+    trust_remote_code: bool = True,
+    data_dir: str | Path | None = None,
+    cache_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    """Get common kwargs for load_dataset() calls."""
+    kwargs: dict[str, Any] = {
+        "trust_remote_code": trust_remote_code,
+        "keep_in_memory": KEEP_DATASETS_IN_MEMORY,
+    }
+    if data_dir is not None:
+        kwargs["data_dir"] = str(data_dir)
+    if cache_dir is not None:
+        kwargs["cache_dir"] = str(cache_dir)
+    return kwargs
+
 
 # =============================================================================
 # Label Mapping for HuggingFace NER Datasets
@@ -202,11 +227,11 @@ def _load_ner_from_hub(
 
     # Load dataset from hub with explicit kwargs
     # Note: trust_remote_code=True is needed for some legacy datasets like conll2003
-    load_kwargs: dict = {"trust_remote_code": True}
-    if data_dir is not None:
-        load_kwargs["data_dir"] = str(data_dir)
-    if cache_dir is not None:
-        load_kwargs["cache_dir"] = str(cache_dir)
+    load_kwargs = _get_load_kwargs(
+        trust_remote_code=True,
+        data_dir=data_dir,
+        cache_dir=cache_dir,
+    )
 
     # Pass config name (e.g., 'en' for tner/wikineural)
     dataset = load_dataset(name, config, split=split, **load_kwargs)  # type: ignore[arg-type]
