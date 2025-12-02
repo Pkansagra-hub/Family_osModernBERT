@@ -1,0 +1,207 @@
+# Stage A: A100-80GB Configuration (COLAB OPTIMIZED)
+# For A100-80GB GPUs (Colab Pro+, GCP A100-80GB)
+# Goal: Maximum throughput + stability for Colab environment
+#
+# A100-80GB ADVANTAGES:
+# - 80GB HBM2e memory (2x A100-40GB)
+# - Can fit batch_size=192-256 with all SOTA features
+# - Native bf16 support
+#
+# V2 COMPLIANCE CHECKLIST:
+# ✅ 10 epochs
+# ✅ Head-wise learning rates + Layer decay
+# ✅ EMA model (decay=0.999)
+# ✅ Embedding hard negatives (15)
+# ✅ Task weights per v2 spec
+# ❌ Uncertainty weighting DISABLED (can cause instability)
+# ✅ SOTA features: R-Drop, FGM, Mixup
+# ✅ Flash Attention 2 for speed
+#
+# COLAB-SPECIFIC OPTIMIZATIONS:
+# - Reduced batch size for stability (192 vs 256)
+# - More frequent checkpoints (save every 2000 steps)
+# - Dataloader workers tuned for Colab (4 workers)
+# - Memory-efficient settings
+#
+# Usage:
+#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_a100_80gb.yaml
+
+defaults:
+  - /training/default
+
+# Base model
+model:
+  name_or_path: answerdotai/ModernBERT-base
+  torch_dtype: bfloat16
+  use_flash_attention_2: true  # A100 has great FA2 support
+
+# Multi-task head configuration (7 generic heads for Stage A)
+heads:
+  ner_general:
+    enabled: true
+    type: token_classification
+    num_labels: 9  # O, B/I-PER, B/I-ORG, B/I-LOC, B/I-MISC
+    dropout: 0.1
+
+  sentiment:
+    enabled: true
+    type: sequence_classification
+    num_labels: 5
+    dropout: 0.1
+    label_smoothing: 0.1
+
+  emotions:
+    enabled: true
+    type: sequence_classification
+    num_labels: 44
+    problem_type: multi_label_classification
+    dropout: 0.1
+    use_focal_loss: true
+    focal_gamma: 2.0
+
+  safety_generic:
+    enabled: true
+    type: sequence_classification
+    num_labels: 8
+    problem_type: multi_label_classification
+    dropout: 0.1
+    use_focal_loss: true
+    focal_gamma: 2.0
+
+  nli:
+    enabled: true
+    type: sequence_classification
+    num_labels: 3
+    dropout: 0.1
+    label_smoothing: 0.1
+
+  embedding:
+    enabled: true
+    type: embedding
+    pooling: mean
+    normalize: true
+    matryoshka_dims: [768, 512, 256, 128]
+
+  temporal:
+    enabled: true
+    type: token_classification
+    num_labels: 13
+    dropout: 0.1
+
+# Task LOSS weights - V2 SPEC
+task_weights:
+  ner_general: 1.0
+  sentiment: 1.0
+  emotions: 1.5       # Emphasize emotions
+  safety_generic: 2.0 # Critical task - highest weight
+  nli: 1.0
+  embedding: 0.5      # Reduce embedding dominance
+  temporal: 1.0
+
+# Data mixing
+mixing:
+  strategy: temperature
+  temperature: 4.0
+  shuffle_seed: 42
+
+# Head-wise optimizer configuration with layer decay
+optimizer:
+  encoder_lr: 2e-5       # Conservative for pretrained encoder
+  head_lr: 1e-4          # Higher for fresh heads
+  token_head_lr: 5e-5    # Medium for NER/temporal
+  layer_decay: 0.95      # Gradual decay bottom->top
+
+# A100-80GB COLAB OPTIMIZED training
+training:
+  # === BATCH SIZE: OPTIMIZED FOR A100-80GB + STABILITY ===
+  # 192 is conservative but stable; can try 224 or 256 if no OOM
+  per_device_train_batch_size: 192
+  per_device_eval_batch_size: 192
+  gradient_accumulation_steps: 1  # Effective batch = 192
+
+  # === LEARNING RATE ===
+  learning_rate: 2e-5
+
+  # === TRAINING DURATION - V2 SPEC ===
+  num_train_epochs: 10
+  max_steps: -1
+
+  # === EMA MODEL (stable averaging) ===
+  use_ema: true
+  ema_decay: 0.999
+
+  # === UNCERTAINTY WEIGHTING: DISABLED ===
+  # Can cause training instability, disable for reliability
+  use_uncertainty_weighting: false
+
+  # === EMBEDDING HARD NEGATIVES ===
+  embedding_hard_negatives: 15
+
+  # === SOTA TECHNIQUES (all enabled for max quality) ===
+  label_smoothing: 0.1
+
+  # R-Drop: Consistency regularization (+1-2% NLU)
+  use_rdrop: true
+  rdrop_alpha: 0.7
+
+  # FGM Adversarial Training: (+0.5-1.5% robustness)
+  use_adversarial: true
+  adversarial_type: fgm  # FGM is faster than PGD
+  adversarial_epsilon: 1.0
+  pgd_steps: 3
+  pgd_alpha: 0.3
+
+  # Mixup: Embedding-space augmentation
+  use_mixup: true
+  mixup_alpha: 0.4
+  mixup_prob: 0.5
+
+  # === MEMORY: NO CHECKPOINTING (80GB is enough) ===
+  gradient_checkpointing: false
+
+  # === OPTIMIZER ===
+  optim: adamw_torch_fused  # Faster fused AdamW
+  weight_decay: 0.01
+  max_grad_norm: 1.0        # Gradient clipping for stability
+
+  # === SCHEDULE ===
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.1  # 10% warmup
+
+  # === PRECISION ===
+  bf16: true   # A100 native bf16
+  fp16: false
+
+  # === EVALUATION & CHECKPOINTING (frequent for Colab disconnects) ===
+  eval_strategy: steps
+  eval_steps: 2000          # Eval every 2000 steps
+  save_strategy: steps
+  save_steps: 2000          # Save every 2000 steps (Colab can disconnect)
+  save_total_limit: 5       # Keep last 5 checkpoints
+  load_best_model_at_end: true
+  metric_for_best_model: eval_avg_score
+  greater_is_better: true
+
+  # === LOGGING ===
+  logging_steps: 50
+  report_to:
+    - tensorboard
+
+  # === REPRODUCIBILITY ===
+  seed: 42
+  data_seed: 42
+
+  # === DATA LOADING (tuned for Colab) ===
+  # Colab has limited CPU cores, don't oversubscribe
+  dataloader_num_workers: 4
+  dataloader_pin_memory: true
+  dataloader_prefetch_factor: 2
+
+# Output (use local paths, copy to Drive separately)
+output:
+  output_dir: ./outputs/stage_a_colab
+  checkpoint_dir: ./checkpoints/modernbert-multitask-v0-stage-a
+  logging_dir: ./outputs/stage_a_colab/logs
+
+# Data config
+data_config: configs/data/multitask/stage_a_datasets.yaml
