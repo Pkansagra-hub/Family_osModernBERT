@@ -63,15 +63,12 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from modeling_studio.data.labels import (Capability,  # noqa: E402
-                                         get_num_labels)
+from modeling_studio.data.labels import Capability, get_num_labels  # noqa: E402
 from modeling_studio.data.loaders import load_stage_a_datasets  # noqa: E402
-from modeling_studio.models.modernbert_multitask import \
-    ModernBertMultiTaskModel  # noqa: E402
+from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel  # noqa: E402
 from modeling_studio.trainers.collators import MultiTaskCollator  # noqa: E402
 from modeling_studio.trainers.ema import EMAModel  # noqa: E402
-from modeling_studio.trainers.multitask_trainer import \
-    MultiTaskTrainer  # noqa: E402
+from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer  # noqa: E402
 
 # Note: UncertaintyWeighting is handled internally by MultiTaskTrainer via args.use_uncertainty_weighting
 
@@ -559,8 +556,7 @@ def create_training_args(
         resume_from_checkpoint: Path to checkpoint to resume from
         debug: If True, use smaller batch sizes for local debugging
     """
-    from modeling_studio.trainers.multitask_trainer import \
-        MultiTaskTrainingArguments
+    from modeling_studio.trainers.multitask_trainer import MultiTaskTrainingArguments
 
     training_config = config.get("training", {})
     output_config = config.get("output", {})
@@ -671,8 +667,7 @@ def create_training_args(
 
 def compute_metrics_factory(task_names: list[str]):
     """Create a compute_metrics function for multi-task evaluation."""
-    from sklearn.metrics import (accuracy_score, f1_score, precision_score,
-                                 recall_score)
+    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
     def compute_metrics(eval_pred):
         """Compute metrics for evaluation."""
@@ -842,8 +837,7 @@ def train(
         logger.info("=" * 60)
 
         # Create custom optimizer with head-wise LRs AND layer-wise decay
-        from modeling_studio.trainers.optimizer import \
-            create_optimizer_with_layer_decay
+        from modeling_studio.trainers.optimizer import create_optimizer_with_layer_decay
 
         custom_optimizer = create_optimizer_with_layer_decay(
             model,
@@ -1047,12 +1041,6 @@ def main():
         logger.warning("Training interrupted by user")
         return 1
     except Exception as e:
-        logger.error(f"Training failed with error: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    sys.exit(main())
         logger.error(f"Training failed with error: {e}")
         raise
 
