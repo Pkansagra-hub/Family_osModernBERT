@@ -184,9 +184,10 @@ training:
   data_seed: 42
 
   # === DATA LOADING (tuned for big GCE box) ===
-  dataloader_num_workers: 8
+  dataloader_num_workers: 12
   dataloader_pin_memory: true
   dataloader_prefetch_factor: 4
+  dataloader_persistent_workers: true  # +25-45% throughput: workers survive epochs
 
 # Output
 output:
