@@ -349,6 +349,20 @@ def configure_head_loss(
         head.focal_gamma = focal_gamma
         logger.info(f"  {head_name}: enabled focal loss (gamma={focal_gamma})")
 
+    # Set pos_weight for positive sample upweighting (helps with sparse multi-label)
+    pos_weight = head_cfg.get("pos_weight")
+    if pos_weight is not None:
+        device = next(head.parameters()).device
+        dtype = next(head.parameters()).dtype
+        num_labels = head_cfg.get("num_labels", head.num_labels)
+        if isinstance(pos_weight, (int, float)):
+            pos_weight_tensor = torch.tensor([pos_weight] * num_labels, device=device, dtype=dtype)
+        else:
+            pos_weight_tensor = torch.tensor(pos_weight, device=device, dtype=dtype)
+        head.register_buffer("pos_weight", pos_weight_tensor)
+        head.pos_weight = pos_weight_tensor
+        logger.info(f"  {head_name}: enabled pos_weight={pos_weight} for positive sample upweighting")
+
     # Set label smoothing
     if label_smoothing > 0.0:
         head.label_smoothing = label_smoothing
@@ -993,6 +1007,12 @@ def main():
         logger.warning("Training interrupted by user")
         return 1
     except Exception as e:
+        logger.error(f"Training failed with error: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    sys.exit(main())
         logger.error(f"Training failed with error: {e}")
         raise
 

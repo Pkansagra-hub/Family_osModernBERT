@@ -61,6 +61,8 @@ class BaseHead(ABC, nn.Module):
         dropout: Dropout probability
         problem_type: Type of classification problem
         class_weights: Optional tensor of per-class weights for multi-label BCE
+        pos_weight: Optional weight for positive samples (scalar or per-class tensor)
+            Use this for imbalanced multi-label data (e.g., 5.0 upweights positives 5x)
         use_focal_loss: Whether to use focal loss for multi-label (reduces easy negative dominance)
         focal_gamma: Focal loss gamma parameter (default 2.0)
         label_smoothing: Label smoothing factor (0.0 = no smoothing, 0.1 = typical). Default: 0.0
@@ -73,6 +75,7 @@ class BaseHead(ABC, nn.Module):
         dropout: float = 0.1,
         problem_type: str = "single_label_classification",
         class_weights: torch.Tensor | None = None,
+        pos_weight: torch.Tensor | float | None = None,
         use_focal_loss: bool = False,
         focal_gamma: float = 2.0,
         label_smoothing: float = 0.0,
@@ -92,6 +95,14 @@ class BaseHead(ABC, nn.Module):
             self.register_buffer("class_weights", class_weights)
         else:
             self.class_weights = None
+
+        # Positive weight for imbalanced multi-label (upweights positive samples)
+        if pos_weight is not None:
+            if isinstance(pos_weight, (int, float)):
+                pos_weight = torch.tensor([pos_weight] * num_labels)
+            self.register_buffer("pos_weight", pos_weight)
+        else:
+            self.pos_weight = None
 
     @abstractmethod
     def forward(
@@ -147,7 +158,11 @@ class BaseHead(ABC, nn.Module):
                 loss = self._focal_bce_loss(logits, labels.float())
             elif self.class_weights is not None:
                 loss = F.binary_cross_entropy_with_logits(
-                    logits, labels.float(), weight=self.class_weights
+                    logits, labels.float(), weight=self.class_weights, pos_weight=self.pos_weight
+                )
+            elif self.pos_weight is not None:
+                loss = F.binary_cross_entropy_with_logits(
+                    logits, labels.float(), pos_weight=self.pos_weight
                 )
             else:
                 loss = F.binary_cross_entropy_with_logits(logits, labels.float())
@@ -193,8 +208,13 @@ class BaseHead(ABC, nn.Module):
         # Focal weight: (1 - p_t)^gamma
         focal_weight = (1 - p_t).pow(self.focal_gamma)
 
-        # BCE loss per element
-        bce = F.binary_cross_entropy_with_logits(logits, labels, reduction="none")
+        # BCE loss per element (with pos_weight for positive sample upweighting)
+        if self.pos_weight is not None:
+            bce = F.binary_cross_entropy_with_logits(
+                logits, labels, reduction="none", pos_weight=self.pos_weight
+            )
+        else:
+            bce = F.binary_cross_entropy_with_logits(logits, labels, reduction="none")
 
         # Apply focal weight and class weights
         focal_loss = focal_weight * bce

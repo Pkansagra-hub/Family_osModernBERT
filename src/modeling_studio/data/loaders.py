@@ -1229,11 +1229,16 @@ def _standardize_multilabel_dataset(
         multi_hot = [0] * num_labels
 
         if is_civil_comments_format:
-            # Civil Comments: float scores per toxicity type, threshold at 0.5
+            # Civil Comments: float scores per toxicity type
+            # Use threshold 0.3 (not 0.5) to capture more borderline toxic content
+            # At 0.5: only 5.8% toxic, at 0.3: ~11.6% toxic (better balance)
+            TOXICITY_THRESHOLD = 0.3
             for cc_col, schema_label in CIVIL_COMMENTS_TO_SCHEMA.items():
                 if cc_col in example:
                     val = example[cc_col]
-                    is_positive = val >= 0.5 if isinstance(val, (float, int)) else False
+                    is_positive = (
+                        val >= TOXICITY_THRESHOLD if isinstance(val, (float, int)) else False
+                    )
                     if is_positive and schema_label in label_schema.label2id:
                         multi_hot[label_schema.label2id[schema_label]] = 1
         elif is_jigsaw_format:
