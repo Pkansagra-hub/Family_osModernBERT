@@ -344,6 +344,11 @@ class SequenceClassificationHead(BaseHead):
         class_weights: Optional per-class weights for multi-label BCE loss
         use_focal_loss: Whether to use focal loss for multi-label tasks
         focal_gamma: Focal loss gamma parameter (default 2.0)
+        use_asl: Whether to use Asymmetric Loss (SOTA for multi-label)
+        asl_gamma_neg: ASL gamma for negative samples (default 4.0)
+        asl_gamma_pos: ASL gamma for positive samples (default 1.0)
+        asl_clip: ASL probability clipping (default 0.05)
+        pos_weight: Per-class positive weight for imbalanced data
         external_pooler: Epic 5.0 - External pooler module (CLSMeanPooler, AttentionPooler)
     """
 
@@ -357,6 +362,11 @@ class SequenceClassificationHead(BaseHead):
         class_weights: torch.Tensor | None = None,
         use_focal_loss: bool = False,
         focal_gamma: float = 2.0,
+        use_asl: bool = False,
+        asl_gamma_neg: float = 4.0,
+        asl_gamma_pos: float = 1.0,
+        asl_clip: float = 0.05,
+        pos_weight: torch.Tensor | float | None = None,
         external_pooler: nn.Module | None = None,
     ):
         super().__init__(
@@ -365,8 +375,13 @@ class SequenceClassificationHead(BaseHead):
             dropout,
             problem_type,
             class_weights=class_weights,
+            pos_weight=pos_weight,
             use_focal_loss=use_focal_loss,
             focal_gamma=focal_gamma,
+            use_asl=use_asl,
+            asl_gamma_neg=asl_gamma_neg,
+            asl_gamma_pos=asl_gamma_pos,
+            asl_clip=asl_clip,
         )
         self.pooling = pooling
 
@@ -1394,6 +1409,7 @@ class EnhancedSafetyHead(nn.Module):
         subcategory_names = [self.ID_TO_SUBCATEGORY[idx.item()] for idx in predicted_subcat_ids]
 
         output = {
+            "logits": band_logits,  # Primary logits for compatibility with MultiTaskModel
             "band_logits": band_logits,
             "subcategory_logits": subcategory_logits,
             "band_probs": band_probs,
@@ -2127,6 +2143,11 @@ class HierarchicalEmotionHead(nn.Module):
         intensity_threshold: float = 0.1,
         emotion_labels: list[str] | None = None,
         use_familyos: bool = True,  # Use FamilyOS 44-emotion schema by default
+        # ASL (Asymmetric Loss) - SOTA for multi-label classification
+        use_asl: bool = True,  # Default to ASL for 44-class multi-label
+        asl_gamma_neg: float = 4.0,  # Suppress easy negatives
+        asl_gamma_pos: float = 1.0,  # Standard for positives
+        asl_clip: float = 0.05,  # Probability clipping
     ):
         super().__init__()
 
@@ -2138,6 +2159,12 @@ class HierarchicalEmotionHead(nn.Module):
         self.use_valence_arousal = use_valence_arousal
         self.intensity_threshold = intensity_threshold
         self.use_familyos = use_familyos
+
+        # ASL parameters
+        self.use_asl = use_asl
+        self.asl_gamma_neg = asl_gamma_neg
+        self.asl_gamma_pos = asl_gamma_pos
+        self.asl_clip = asl_clip
 
         # Emotion labels - priority: explicit > familyos > legacy
         if emotion_labels is not None:
@@ -2347,8 +2374,36 @@ class HierarchicalEmotionHead(nn.Module):
 
         # Compute loss if labels provided
         if labels is not None:
-            # Multi-label BCE loss for emotion classification
-            loss = F.binary_cross_entropy_with_logits(logits, labels.float())
+            if self.use_asl:
+                # ASL (Asymmetric Loss) - SOTA for multi-label classification
+                # From "Asymmetric Loss For Multi-Label Classification" (ICCV 2021)
+                xs_pos = logits
+                xs_neg = logits
+
+                # Asymmetric Focusing
+                if self.asl_clip is not None and self.asl_clip > 0:
+                    # Probability shifting for negatives
+                    xs_neg = (logits - self.asl_clip).clamp(min=-100)
+
+                # Basic CE computation
+                los_pos = labels * torch.log(torch.sigmoid(xs_pos).clamp(min=1e-8))
+                los_neg = (1 - labels) * torch.log((1 - torch.sigmoid(xs_neg)).clamp(min=1e-8))
+
+                # Asymmetric Focusing weights
+                if self.asl_gamma_neg > 0 or self.asl_gamma_pos > 0:
+                    pt_pos = torch.sigmoid(xs_pos)
+                    pt_neg = 1 - torch.sigmoid(xs_neg)
+
+                    pos_weight = (1 - pt_pos) ** self.asl_gamma_pos
+                    neg_weight = pt_neg**self.asl_gamma_neg
+
+                    los_pos = pos_weight * los_pos
+                    los_neg = neg_weight * los_neg
+
+                loss = -(los_pos + los_neg).mean()
+            else:
+                # Standard BCE loss
+                loss = F.binary_cross_entropy_with_logits(logits, labels.float())
 
             # Add intensity loss if intensity labels provided
             if self.use_intensity and labels.dim() > 1 and labels.size(-1) > self.num_emotions:

@@ -71,6 +71,8 @@ logger = logging.getLogger(__name__)
 # Import heads
 from modeling_studio.models.heads import (
     EmbeddingHead,
+    EnhancedSafetyHead,
+    HierarchicalEmotionHead,
     IntentHead,
     NLIHead,
     RelationHead,
@@ -142,9 +144,9 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.TEMPORAL: TemporalHead,  # NEW
     # Sequence classification heads
     Capability.SENTIMENT: SequenceClassificationHead,
-    Capability.EMOTIONS: SequenceClassificationHead,
-    Capability.SAFETY_GENERIC: SequenceClassificationHead,
-    Capability.SAFETY_FAMILYOS: SafetyHead,  # Use specialized SafetyHead
+    Capability.EMOTIONS: HierarchicalEmotionHead,  # FIXED: Use enhanced head with 44 emotions
+    Capability.SAFETY_GENERIC: SequenceClassificationHead,  # Stage A: Multi-label with ASL
+    Capability.SAFETY_FAMILYOS: EnhancedSafetyHead,  # Stage B: Band-based with keyword override
     Capability.INGRESS: SequenceClassificationHead,
     Capability.INTENT: IntentHead,  # NEW
     # Special heads
@@ -368,12 +370,40 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     normalize=True,
                 )
             elif capability == Capability.SAFETY_FAMILYOS:
-                # SafetyHead uses num_bands instead of num_labels
+                # EnhancedSafetyHead: 4 bands with 12 subcategories and keyword override
+                # Used for Stage B FamilyOS domain adaptation
                 head = head_cls(
                     hidden_size=hidden_size,
                     num_bands=4,  # GREEN, AMBER, RED, CRISIS
+                    num_subcategories=12,
                     dropout=self.head_dropout,
-                    problem_type=problem_type,
+                    use_hierarchical=True,
+                    keyword_override=True,  # Critical safety feature
+                )
+            elif capability == Capability.EMOTIONS:
+                # HierarchicalEmotionHead: 44 FamilyOS emotions with intensity scoring
+                head = head_cls(
+                    hidden_size=hidden_size,
+                    num_emotions=num_labels,  # 44 emotions from labels.py
+                    num_secondary=3,
+                    dropout=self.head_dropout,
+                    pooling="cls",
+                    use_intensity=True,
+                    use_valence_arousal=False,
+                    use_familyos=True,  # Enable FamilyOS 44-emotion schema
+                )
+            elif capability == Capability.SAFETY_GENERIC:
+                # SOTA Multi-label safety head with ASL for Stage A (Civil Comments)
+                # Uses Asymmetric Loss for handling class imbalance in toxicity detection
+                head = head_cls(
+                    hidden_size=hidden_size,
+                    num_labels=num_labels,  # 8 toxicity types
+                    dropout=self.head_dropout,
+                    problem_type="multi_label_classification",
+                    use_asl=True,  # SOTA: Asymmetric Loss for multi-label
+                    asl_gamma_neg=4.0,  # Suppress easy negatives
+                    asl_gamma_pos=1.0,  # Standard for positives
+                    asl_clip=0.05,  # Probability clipping
                 )
             else:
                 head = head_cls(
