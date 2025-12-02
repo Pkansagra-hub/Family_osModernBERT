@@ -54,6 +54,13 @@ heads:
     asl_gamma_pos: 1.0          # Keep positives learning (lower = less suppression)
     asl_clip: 0.05              # Shift negative probs down by 0.05
     pos_weight: 2.0             # Additional positive upweighting
+    # SOTA HierarchicalEmotionHead enhancements
+    use_hierarchical_loss: true   # Family coherence regularization
+    use_label_correlation: true   # GCN-style emotion co-occurrence
+    use_emotion_attention: true   # Multi-head attention over sequence (more compute, better results)
+    use_dynamic_thresholds: true  # Learnable per-emotion thresholds
+    use_mixup: true               # Latent space data augmentation
+    label_smoothing: 0.05         # Regularization
 
   safety_generic:
     enabled: true

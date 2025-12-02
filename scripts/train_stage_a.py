@@ -316,6 +316,7 @@ def configure_head_loss(
     - focal_gamma: Focal loss gamma parameter
     - class_weights: Inverse frequency weights computed from training data
     - label_smoothing: Label smoothing factor for regularization
+    - HierarchicalEmotionHead SOTA features (use_emotion_attention, etc.)
 
     Args:
         model: The multi-task model
@@ -325,22 +326,56 @@ def configure_head_loss(
     """
     head_cfg = heads_config.get(head_name, {})
 
-    # Check if ASL, focal loss, or class weights are requested
-    use_asl = head_cfg.get("use_asl", False)
-    use_focal_loss = head_cfg.get("use_focal_loss", False)
-    focal_gamma = float(head_cfg.get("focal_gamma", 2.0))
-    compute_class_weights = head_cfg.get("compute_class_weights", False)
-    label_smoothing = float(head_cfg.get("label_smoothing", 0.0))
-
-    if not use_asl and not use_focal_loss and not compute_class_weights and label_smoothing == 0.0:
-        return
-
     # Get the head
     try:
         head = model.get_head(head_name)
     except KeyError:
         logger.warning(f"Head '{head_name}' not found in model, skipping loss configuration")
         return
+
+    # === HierarchicalEmotionHead SOTA parameters (emotions head only) ===
+    if head_name == "emotions" and hasattr(head, "use_emotion_attention"):
+        # These override the defaults set in _init_heads()
+        if "use_emotion_attention" in head_cfg:
+            use_emotion_attention = head_cfg.get("use_emotion_attention", False)
+            if use_emotion_attention and not head.use_emotion_attention:
+                # Need to add attention layers if not already present
+                import torch.nn as nn
+
+                if not hasattr(head, "emotion_attention"):
+                    head.emotion_queries = nn.Parameter(
+                        torch.randn(head.num_emotions, head.hidden_size)
+                    )
+                    head.emotion_attention = nn.MultiheadAttention(
+                        head.hidden_size, 4, dropout=0.1, batch_first=True
+                    )
+                    nn.init.xavier_uniform_(head.emotion_queries)
+                    logger.info(f"  {head_name}: initialized emotion attention layers")
+            head.use_emotion_attention = use_emotion_attention
+            logger.info(f"  {head_name}: use_emotion_attention={use_emotion_attention}")
+
+        if "use_hierarchical_loss" in head_cfg:
+            head.use_hierarchical_loss = head_cfg.get("use_hierarchical_loss", True)
+            logger.info(f"  {head_name}: use_hierarchical_loss={head.use_hierarchical_loss}")
+
+        if "use_label_correlation" in head_cfg:
+            head.use_label_correlation = head_cfg.get("use_label_correlation", True)
+            logger.info(f"  {head_name}: use_label_correlation={head.use_label_correlation}")
+
+        if "use_dynamic_thresholds" in head_cfg:
+            head.use_dynamic_thresholds = head_cfg.get("use_dynamic_thresholds", True)
+            logger.info(f"  {head_name}: use_dynamic_thresholds={head.use_dynamic_thresholds}")
+
+        if "use_mixup" in head_cfg:
+            head.use_mixup = head_cfg.get("use_mixup", True)
+            logger.info(f"  {head_name}: use_mixup={head.use_mixup}")
+
+    # Check if ASL, focal loss, or class weights are requested
+    use_asl = head_cfg.get("use_asl", False)
+    use_focal_loss = head_cfg.get("use_focal_loss", False)
+    focal_gamma = float(head_cfg.get("focal_gamma", 2.0))
+    compute_class_weights = head_cfg.get("compute_class_weights", False)
+    label_smoothing = float(head_cfg.get("label_smoothing", 0.0))
 
     # Set ASL parameters (takes priority over focal loss)
     if use_asl:
@@ -777,16 +812,25 @@ def train(
         debug=args.debug,
     )
 
-    # === Configure head loss functions (focal loss, class weights, label smoothing) ===
+    # === Configure head loss functions and SOTA parameters ===
     heads_config = config.get("heads", {})
+    logger.info("Configuring head loss functions and SOTA parameters...")
     for head_name, head_cfg in heads_config.items():
         if head_cfg.get("enabled", True):
-            # Check if this head needs special loss configuration
-            if (
-                head_cfg.get("use_focal_loss")
+            # Check if this head needs configuration (loss, SOTA params, or class weights)
+            needs_config = (
+                head_cfg.get("use_asl")
+                or head_cfg.get("use_focal_loss")
                 or head_cfg.get("compute_class_weights")
                 or head_cfg.get("label_smoothing")
-            ):
+                # HierarchicalEmotionHead SOTA parameters
+                or head_cfg.get("use_emotion_attention")
+                or head_cfg.get("use_hierarchical_loss")
+                or head_cfg.get("use_label_correlation")
+                or head_cfg.get("use_dynamic_thresholds")
+                or head_cfg.get("use_mixup")
+            )
+            if needs_config:
                 train_ds = train_datasets.get(head_name)
                 configure_head_loss(model, head_name, train_ds, heads_config)
 

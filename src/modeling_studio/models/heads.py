@@ -2137,7 +2137,7 @@ class HierarchicalEmotionHead(nn.Module):
         num_emotions: int = 44,  # Default to FamilyOS 44 emotions
         num_secondary: int = 3,
         dropout: float = 0.1,
-        pooling: str = "cls",
+        pooling: str = "cls",  # 'cls', 'mean', 'max', 'attention'
         use_intensity: bool = True,
         use_valence_arousal: bool = False,
         intensity_threshold: float = 0.1,
@@ -2148,6 +2148,23 @@ class HierarchicalEmotionHead(nn.Module):
         asl_gamma_neg: float = 4.0,  # Suppress easy negatives
         asl_gamma_pos: float = 1.0,  # Standard for positives
         asl_clip: float = 0.05,  # Probability clipping
+        # === NEW SOTA IMPROVEMENTS ===
+        # P0: Hierarchical Loss - penalize family mismatches less
+        use_hierarchical_loss: bool = True,
+        hierarchical_weight: float = 0.3,  # Weight for family-level loss
+        # P0: Label Correlation via GCN - model emotion co-occurrence
+        use_label_correlation: bool = True,
+        correlation_hidden: int = 128,
+        # P1: Emotion Attention - emotion-specific attention over sequence
+        use_emotion_attention: bool = False,  # Disabled by default (more compute)
+        num_attention_heads: int = 4,
+        # P1: Dynamic Thresholds - learnable per-emotion thresholds
+        use_dynamic_thresholds: bool = True,
+        # P2: Label Smoothing for multi-label
+        label_smoothing: float = 0.05,
+        # P2: Emotion Mixup in latent space
+        use_mixup: bool = True,
+        mixup_alpha: float = 0.4,
     ):
         super().__init__()
 
@@ -2165,6 +2182,16 @@ class HierarchicalEmotionHead(nn.Module):
         self.asl_gamma_neg = asl_gamma_neg
         self.asl_gamma_pos = asl_gamma_pos
         self.asl_clip = asl_clip
+
+        # NEW: SOTA improvement flags
+        self.use_hierarchical_loss = use_hierarchical_loss
+        self.hierarchical_weight = hierarchical_weight
+        self.use_label_correlation = use_label_correlation
+        self.use_emotion_attention = use_emotion_attention
+        self.use_dynamic_thresholds = use_dynamic_thresholds
+        self.label_smoothing = label_smoothing
+        self.use_mixup = use_mixup
+        self.mixup_alpha = mixup_alpha
 
         # Emotion labels - priority: explicit > familyos > legacy
         if emotion_labels is not None:
@@ -2185,7 +2212,10 @@ class HierarchicalEmotionHead(nn.Module):
 
         # Build label to index mapping
         self.label2id = {label: i for i, label in enumerate(self.emotion_labels)}
-        self.id2label = {i: label for i, label in enumerate(self.emotion_labels)}
+        self.id2label = dict(enumerate(self.emotion_labels))
+
+        # === BUILD FAMILY MATRIX for Hierarchical Loss (P0) ===
+        self._build_family_matrix()
 
         # Layers
         self.dropout = nn.Dropout(dropout)
@@ -2194,8 +2224,36 @@ class HierarchicalEmotionHead(nn.Module):
         self.shared_dense = nn.Linear(hidden_size, hidden_size)
         self.activation = nn.GELU()
 
+        # === P1: Emotion Attention (optional) ===
+        if use_emotion_attention:
+            self.emotion_queries = nn.Parameter(torch.randn(num_emotions, hidden_size))
+            self.emotion_attention = nn.MultiheadAttention(
+                hidden_size, num_attention_heads, dropout=dropout, batch_first=True
+            )
+            nn.init.xavier_uniform_(self.emotion_queries)
+
         # Emotion classification head (multi-label, each emotion independently)
         self.emotion_classifier = nn.Linear(hidden_size, num_emotions)
+
+        # === P0: Label Correlation Layer (GCN-style) ===
+        if use_label_correlation:
+            # Learnable emotion correlation matrix (initialized with family structure)
+            self.correlation_matrix = nn.Parameter(self._init_correlation_matrix())
+            self.correlation_transform = nn.Sequential(
+                nn.Linear(num_emotions, correlation_hidden),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(correlation_hidden, num_emotions),
+            )
+
+        # === P1: Dynamic Thresholds ===
+        if use_dynamic_thresholds:
+            # Learnable per-emotion thresholds (initialized around 0.3)
+            self.raw_thresholds = nn.Parameter(torch.zeros(num_emotions))  # sigmoid(0) = 0.5
+
+        # === P0: Family Classifier for Hierarchical Loss ===
+        if use_hierarchical_loss:
+            self.family_classifier = nn.Linear(hidden_size, self.num_families)
 
         # Intensity regression head (0-1 score per emotion)
         if use_intensity:
@@ -2222,12 +2280,82 @@ class HierarchicalEmotionHead(nn.Module):
 
         self._init_weights()
 
+    def _build_family_matrix(self) -> None:
+        """Build emotion-to-family mapping matrix for hierarchical loss."""
+        families = list(self._emotion_families.keys())
+        self.num_families = len(families)
+        self.family_names = families
+
+        # Create (num_emotions, num_families) binary matrix
+        family_matrix = torch.zeros(self.num_emotions, self.num_families)
+        for family_idx, (family, members) in enumerate(self._emotion_families.items()):
+            for member in members:
+                if member in self.label2id:
+                    emotion_idx = self.label2id[member]
+                    family_matrix[emotion_idx, family_idx] = 1.0
+
+        # Normalize so each emotion sums to 1 across families
+        row_sums = family_matrix.sum(dim=1, keepdim=True).clamp(min=1.0)
+        family_matrix = family_matrix / row_sums
+
+        self.register_buffer("family_matrix", family_matrix)
+
+    def _init_correlation_matrix(self) -> torch.Tensor:
+        """Initialize correlation matrix using family structure."""
+        # Start with identity (each emotion correlates with itself)
+        corr = torch.eye(self.num_emotions) * 0.5
+
+        # Add correlations within families
+        for family, members in self._emotion_families.items():
+            member_ids = [self.label2id[m] for m in members if m in self.label2id]
+            for i in member_ids:
+                for j in member_ids:
+                    if i != j:
+                        corr[i, j] = 0.3  # Same family = moderate correlation
+
+        return corr
+
     def _init_weights(self) -> None:
         """Initialize weights."""
         nn.init.xavier_uniform_(self.shared_dense.weight)
         nn.init.zeros_(self.shared_dense.bias)
         nn.init.xavier_uniform_(self.emotion_classifier.weight)
         nn.init.zeros_(self.emotion_classifier.bias)
+        if self.use_hierarchical_loss:
+            nn.init.xavier_uniform_(self.family_classifier.weight)
+            nn.init.zeros_(self.family_classifier.bias)
+
+    def _apply_mixup(
+        self, hidden: torch.Tensor, labels: torch.Tensor | None
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        """Apply mixup augmentation in latent space (P2)."""
+        if not self.training or not self.use_mixup or labels is None:
+            return hidden, labels
+
+        batch_size = hidden.size(0)
+        if batch_size < 2:
+            return hidden, labels
+
+        # Sample mixup coefficient from Beta distribution
+        lam = torch.distributions.Beta(self.mixup_alpha, self.mixup_alpha).sample()
+        lam = max(lam, 1 - lam)  # Ensure lam >= 0.5 for stability
+
+        # Random permutation for mixing
+        idx = torch.randperm(batch_size, device=hidden.device)
+
+        # Mix hidden states and labels
+        mixed_hidden = lam * hidden + (1 - lam) * hidden[idx]
+        mixed_labels = lam * labels + (1 - lam) * labels[idx]
+
+        return mixed_hidden, mixed_labels
+
+    def _apply_label_smoothing(self, labels: torch.Tensor) -> torch.Tensor:
+        """Apply label smoothing for multi-label (P2)."""
+        if self.label_smoothing <= 0:
+            return labels
+        # Smooth toward uniform distribution
+        smoothed = labels * (1 - self.label_smoothing) + self.label_smoothing / self.num_emotions
+        return smoothed
 
     def pool(
         self,
@@ -2249,8 +2377,174 @@ class HierarchicalEmotionHead(nn.Module):
                 mask = attention_mask.unsqueeze(-1).expand(hidden_states.size())
                 hidden_states = hidden_states.masked_fill(mask == 0, -1e9)
             return hidden_states.max(dim=1)[0]
+        elif self.pooling == "attention" and self.use_emotion_attention:
+            # Use emotion-specific attention (computed in forward)
+            return hidden_states[:, 0, :]  # Placeholder, actual attention done in forward
         else:
             raise ValueError(f"Unknown pooling: {self.pooling}")
+
+    def _compute_emotion_attention(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Compute emotion-specific attention over sequence (P1)."""
+        batch_size = hidden_states.size(0)
+
+        # Expand emotion queries for batch
+        queries = self.emotion_queries.unsqueeze(0).expand(batch_size, -1, -1)
+
+        # Create key padding mask from attention mask
+        key_padding_mask = None
+        if attention_mask is not None:
+            key_padding_mask = ~attention_mask.bool()
+
+        # Multi-head attention: queries attend to sequence
+        attn_out, _ = self.emotion_attention(
+            queries, hidden_states, hidden_states, key_padding_mask=key_padding_mask
+        )
+        return attn_out  # (batch, num_emotions, hidden_size)
+
+    def _apply_label_correlation(self, logits: torch.Tensor) -> torch.Tensor:
+        """Apply label correlation via learned graph (P0)."""
+        if not self.use_label_correlation:
+            return logits
+
+        # Normalize correlation matrix (softmax over columns)
+        corr_weights = F.softmax(self.correlation_matrix, dim=0)
+
+        # Propagate logits through correlation graph
+        corr_logits = torch.matmul(logits, corr_weights)
+
+        # Transform and add residual
+        enhanced = self.correlation_transform(corr_logits)
+        return logits + 0.3 * enhanced
+
+    def get_thresholds(self) -> torch.Tensor:
+        """Get per-emotion prediction thresholds (P1)."""
+        if self.use_dynamic_thresholds:
+            return torch.sigmoid(self.raw_thresholds)
+        return torch.full((self.num_emotions,), 0.5)
+
+    def _apply_emotion_mixup(
+        self,
+        hidden_states: torch.Tensor,
+        labels: torch.Tensor | None,
+        alpha: float = 0.4,
+    ) -> tuple[torch.Tensor, torch.Tensor | None, float]:
+        """Apply emotion-aware mixup during training (P1).
+
+        Mixup is a data augmentation technique that creates virtual training
+        examples by interpolating between pairs of samples.
+
+        Args:
+            hidden_states: Input hidden states (batch, seq, hidden)
+            labels: Multi-hot emotion labels (batch, num_emotions)
+            alpha: Beta distribution parameter for mixup ratio
+
+        Returns:
+            Tuple of (mixed_hidden_states, mixed_labels, lambda)
+        """
+        if not self.training or labels is None:
+            return hidden_states, labels, 1.0
+
+        batch_size = hidden_states.size(0)
+        if batch_size < 2:
+            return hidden_states, labels, 1.0
+
+        # Sample mixup ratio from Beta distribution using PyTorch
+        beta_dist = torch.distributions.Beta(alpha, alpha)
+        lam = beta_dist.sample().item()
+        lam = max(lam, 1 - lam)  # Ensure we keep primary sample dominant
+
+        # Random permutation for mixing partners
+        index = torch.randperm(batch_size, device=hidden_states.device)
+
+        # Mix hidden states
+        mixed_hidden = lam * hidden_states + (1 - lam) * hidden_states[index]
+
+        # Mix labels (for multi-label, this is straightforward)
+        if labels is not None:
+            mixed_labels = lam * labels.float() + (1 - lam) * labels[index].float()
+        else:
+            mixed_labels = None
+
+        return mixed_hidden, mixed_labels, lam
+
+    def _apply_label_smoothing(
+        self,
+        labels: torch.Tensor,
+        smoothing: float = 0.1,
+    ) -> torch.Tensor:
+        """Apply label smoothing for better generalization (P0).
+
+        For multi-label classification, smoothing pushes probabilities
+        slightly toward 0.5 instead of 0 or 1.
+
+        Args:
+            labels: Multi-hot labels (batch, num_emotions)
+            smoothing: Smoothing factor (0 = no smoothing, 1 = uniform)
+
+        Returns:
+            Smoothed labels
+        """
+        if smoothing <= 0:
+            return labels
+
+        # Smooth: move labels toward 0.5
+        # For positive labels (1.0): 1.0 -> 1.0 - smoothing/2
+        # For negative labels (0.0): 0.0 -> smoothing/2
+        smoothed = labels * (1 - smoothing) + 0.5 * smoothing
+        return smoothed
+
+    def _compute_hierarchical_loss(
+        self,
+        logits: torch.Tensor,
+        labels: torch.Tensor,
+    ) -> torch.Tensor:
+        """Compute hierarchical loss encouraging family-level consistency (P0).
+
+        This loss penalizes when emotions from the same family have
+        inconsistent predictions (e.g., predicting 'happy' but not 'joy').
+
+        Args:
+            logits: Emotion logits (batch, num_emotions)
+            labels: Multi-hot labels (batch, num_emotions)
+
+        Returns:
+            Hierarchical consistency loss
+        """
+        # Sigmoid to get probabilities
+        probs = torch.sigmoid(logits)
+
+        # Family matrix: (num_emotions, num_families)
+        # Each row indicates which family an emotion belongs to
+        family_matrix = self.family_matrix.to(logits.device)
+
+        # Compute family-level probabilities (average within family)
+        # (batch, num_families)
+        family_probs = torch.matmul(probs, family_matrix)
+        family_probs = family_probs / (family_matrix.sum(dim=0, keepdim=True).clamp(min=1))
+
+        # Family-level labels: which families have any active emotion
+        family_labels = (torch.matmul(labels.float(), family_matrix) > 0).float()
+
+        # Loss 1: Family-level BCE - predict correct emotion families
+        family_loss = F.binary_cross_entropy(
+            family_probs.clamp(min=1e-7, max=1 - 1e-7),
+            family_labels,
+            reduction="mean",
+        )
+
+        # Loss 2: Suppress emotions outside active families
+        active_families = family_labels  # (batch, num_families)
+        emotion_in_active_family = torch.matmul(active_families, family_matrix.t())
+
+        # Penalize high prob for emotions not in any ground-truth family
+        suppression_loss = (probs * (1 - emotion_in_active_family.clamp(max=1))).mean()
+
+        # Combined hierarchical loss
+        return 0.05 * family_loss + 0.1 * suppression_loss
 
     def forward(
         self,
@@ -2259,7 +2553,7 @@ class HierarchicalEmotionHead(nn.Module):
         labels: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor | str | list | dict]:
         """
-        Forward pass through the hierarchical emotion head.
+        Forward pass through the hierarchical emotion head with SOTA enhancements.
 
         Args:
             hidden_states: (batch_size, seq_len, hidden_size)
@@ -2277,20 +2571,83 @@ class HierarchicalEmotionHead(nn.Module):
                 - intensity: Intensity scores if enabled (batch_size, num_emotions)
                 - valence_arousal: [valence, arousal] if enabled (batch_size, 2)
                 - loss: Loss if labels provided
+
+        SOTA Enhancements Applied:
+            - Emotion Attention: Multi-head attention over sequence for better context
+            - Label Correlation: GCN-style modeling of emotion co-occurrence
+            - Dynamic Thresholds: Learnable per-emotion prediction thresholds
+            - Emotion Mixup: Data augmentation during training
+            - Label Smoothing: Better generalization via soft targets
+            - Hierarchical Loss: Family-level consistency regularization
         """
-        # Pool sequence representation
-        pooled = self.pool(hidden_states, attention_mask)
+        # P1: Apply emotion mixup during training
+        mixed_labels = labels
+        mixup_lambda = 1.0
+        if self.use_mixup and self.training and labels is not None:
+            hidden_states, mixed_labels, mixup_lambda = self._apply_emotion_mixup(
+                hidden_states, labels, alpha=self.mixup_alpha
+            )
 
-        # Shared representation
-        shared = self.dropout(pooled)
-        shared = self.shared_dense(shared)
-        shared = self.activation(shared)
-        shared = self.dropout(shared)
+        # P0: Use Emotion Attention if enabled (multi-head attention over sequence)
+        if self.use_emotion_attention:
+            # Emotion-specific attention: each emotion attends to sequence
+            batch_size, seq_len, hidden_dim = hidden_states.shape
 
-        # Emotion classification (multi-label)
-        logits = self.emotion_classifier(shared)
+            # For batch_first=True: inputs should be (batch, seq, hidden)
+            # Expand emotion queries: (num_emotions, hidden) -> (batch, num_emotions, hidden)
+            queries = self.emotion_queries.unsqueeze(0).expand(batch_size, -1, -1)
+
+            # Compute attention mask for padding
+            key_padding_mask = None
+            if attention_mask is not None:
+                key_padding_mask = ~attention_mask.bool()
+
+            # Emotion attention: each emotion query attends to sequence
+            # Query: (batch, num_emotions, hidden), Key/Value: (batch, seq_len, hidden)
+            attn_output, _ = self.emotion_attention(
+                queries, hidden_states, hidden_states, key_padding_mask=key_padding_mask
+            )
+
+            # attn_output: (batch, num_emotions, hidden)
+            emotion_repr = attn_output
+
+            # Project to logits: (batch, num_emotions, hidden) -> (batch, num_emotions)
+            logits = (emotion_repr * self.emotion_classifier.weight.unsqueeze(0)).sum(-1)
+            logits = logits + self.emotion_classifier.bias
+
+            # Still need shared for intensity/valence-arousal - use pooled representation
+            pooled = self.pool(hidden_states, attention_mask)
+            shared = self.dropout(pooled)
+            shared = self.shared_dense(shared)
+            shared = self.activation(shared)
+            shared = self.dropout(shared)
+        else:
+            # Standard pooling approach
+            pooled = self.pool(hidden_states, attention_mask)
+
+            # Shared representation
+            shared = self.dropout(pooled)
+            shared = self.shared_dense(shared)
+            shared = self.activation(shared)
+            shared = self.dropout(shared)
+            shared = self.dropout(shared)
+
+            # Emotion classification (multi-label)
+            logits = self.emotion_classifier(shared)
+
+        # P0: Apply label correlation (GCN-style propagation)
+        if self.use_label_correlation:
+            logits = self._apply_label_correlation(logits)
+
+        # Temperature scaling and probabilities
         scaled_logits = logits / self.temperature.clamp(min=0.01)
         probabilities = torch.sigmoid(scaled_logits)
+
+        # P1: Use dynamic thresholds for predictions if enabled
+        if self.use_dynamic_thresholds:
+            thresholds = torch.sigmoid(self.raw_thresholds).to(logits.device)
+        else:
+            thresholds = 0.5
 
         # Build output dictionary
         output: dict[str, torch.Tensor | str | list | dict] = {
@@ -2315,17 +2672,25 @@ class HierarchicalEmotionHead(nn.Module):
             sorted_probs = probs[sorted_indices]
 
             # Primary emotion (highest probability)
-            primary_idx = sorted_indices[0].item()
+            primary_idx = int(sorted_indices[0].item())
             primary_label = self.id2label[primary_idx]
             primary_emotions.append(primary_label)
             primary_emotion_ids.append(primary_idx)
 
             # Secondary emotions (next top-k above threshold)
+            # Use dynamic thresholds if enabled
             secondary = []
             for i in range(1, min(len(sorted_indices), self.num_secondary + 1)):
-                idx = sorted_indices[i].item()
+                idx = int(sorted_indices[i].item())
                 prob = sorted_probs[i].item()
-                if prob >= self.intensity_threshold:
+                # Use per-emotion threshold if dynamic thresholds enabled
+                if self.use_dynamic_thresholds:
+                    threshold = (
+                        thresholds[idx].item() if isinstance(thresholds, torch.Tensor) else 0.5
+                    )
+                else:
+                    threshold = self.intensity_threshold
+                if prob >= threshold:
                     secondary.append(self.id2label[idx])
             secondary_emotions_list.append(secondary)
 
@@ -2374,6 +2739,15 @@ class HierarchicalEmotionHead(nn.Module):
 
         # Compute loss if labels provided
         if labels is not None:
+            # Use mixed labels if mixup was applied
+            effective_labels = mixed_labels if mixed_labels is not None else labels
+
+            # P0: Apply label smoothing for better generalization
+            if self.label_smoothing > 0:
+                effective_labels = self._apply_label_smoothing(
+                    effective_labels, self.label_smoothing
+                )
+
             if self.use_asl:
                 # ASL (Asymmetric Loss) - SOTA for multi-label classification
                 # From "Asymmetric Loss For Multi-Label Classification" (ICCV 2021)
@@ -2386,8 +2760,10 @@ class HierarchicalEmotionHead(nn.Module):
                     xs_neg = (logits - self.asl_clip).clamp(min=-100)
 
                 # Basic CE computation
-                los_pos = labels * torch.log(torch.sigmoid(xs_pos).clamp(min=1e-8))
-                los_neg = (1 - labels) * torch.log((1 - torch.sigmoid(xs_neg)).clamp(min=1e-8))
+                los_pos = effective_labels * torch.log(torch.sigmoid(xs_pos).clamp(min=1e-8))
+                los_neg = (1 - effective_labels) * torch.log(
+                    (1 - torch.sigmoid(xs_neg)).clamp(min=1e-8)
+                )
 
                 # Asymmetric Focusing weights
                 if self.asl_gamma_neg > 0 or self.asl_gamma_pos > 0:
@@ -2403,7 +2779,12 @@ class HierarchicalEmotionHead(nn.Module):
                 loss = -(los_pos + los_neg).mean()
             else:
                 # Standard BCE loss
-                loss = F.binary_cross_entropy_with_logits(logits, labels.float())
+                loss = F.binary_cross_entropy_with_logits(logits, effective_labels.float())
+
+            # P0: Add hierarchical loss for family-level consistency
+            if self.use_hierarchical_loss:
+                hierarchy_loss = self._compute_hierarchical_loss(logits, labels)
+                loss = loss + hierarchy_loss
 
             # Add intensity loss if intensity labels provided
             if self.use_intensity and labels.dim() > 1 and labels.size(-1) > self.num_emotions:
