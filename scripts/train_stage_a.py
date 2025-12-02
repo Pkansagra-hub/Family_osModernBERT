@@ -397,7 +397,10 @@ def configure_head_loss(
     if pos_weight is not None:
         device = next(head.parameters()).device
         dtype = next(head.parameters()).dtype
-        num_labels = head_cfg.get("num_labels", head.num_labels)
+        # HierarchicalEmotionHead uses num_emotions, others use num_labels
+        num_labels = head_cfg.get(
+            "num_labels", getattr(head, "num_labels", getattr(head, "num_emotions", 44))
+        )
         if isinstance(pos_weight, (int, float)):
             pos_weight_tensor = torch.tensor([pos_weight] * num_labels, device=device, dtype=dtype)
         else:

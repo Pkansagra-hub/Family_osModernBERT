@@ -2530,8 +2530,11 @@ class HierarchicalEmotionHead(nn.Module):
         family_labels = (torch.matmul(labels.float(), family_matrix) > 0).float()
 
         # Loss 1: Family-level BCE - predict correct emotion families
-        family_loss = F.binary_cross_entropy(
-            family_probs.clamp(min=1e-7, max=1 - 1e-7),
+        # Convert probs back to logits for autocast-safe BCE
+        family_probs_clamped = family_probs.clamp(min=1e-7, max=1 - 1e-7)
+        family_logits = torch.log(family_probs_clamped / (1 - family_probs_clamped))
+        family_loss = F.binary_cross_entropy_with_logits(
+            family_logits,
             family_labels,
             reduction="mean",
         )
