@@ -106,7 +106,9 @@ class MultiTaskDataLoader:
         # Use the first dataloader's batch_sampler/sampler as reference
         first_loader = next(iter(dataloaders.values()))
         self.batch_sampler = getattr(first_loader, "batch_sampler", None)
-        self.sampler_ref = getattr(first_loader, "sampler", None)  # Store as sampler_ref to avoid conflict
+        self.sampler_ref = getattr(
+            first_loader, "sampler", None
+        )  # Store as sampler_ref to avoid conflict
 
         # Create iterators for each dataloader
         self._iterators: dict[str, Iterator] = {}
