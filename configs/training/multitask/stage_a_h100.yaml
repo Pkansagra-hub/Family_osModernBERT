@@ -1,0 +1,199 @@
+# Stage A: H100-80GB Configuration (MAXIMUM PERFORMANCE)
+# For NVIDIA H100-80GB on GCP (us-central1)
+# Goal: Maximum throughput with ALL SOTA features
+#
+# H100 ADVANTAGES:
+# - 80GB HBM3 memory (2x A100-40GB)
+# - 3x faster than A100 for transformer training
+# - Native FP8 support (future optimization)
+# - Higher memory bandwidth (3.35 TB/s vs 2.0 TB/s)
+#
+# V2 COMPLIANCE CHECKLIST:
+# ✅ 10 epochs
+# ✅ Head-wise learning rates + Layer decay
+# ✅ EMA model (decay=0.999)
+# ✅ Embedding hard negatives (15)
+# ✅ Task weights per v2 spec
+# ✅ Uncertainty weighting enabled
+# ✅ ALL SOTA features: R-Drop, FGM, Mixup
+# ✅ Flash Attention 2 for speed
+#
+# Usage:
+#   python scripts/train_stage_a.py --config configs/training/multitask/stage_a_h100.yaml
+
+defaults:
+  - /training/default
+
+# Base model
+model:
+  name_or_path: answerdotai/ModernBERT-base
+  torch_dtype: bfloat16
+  use_flash_attention_2: true      # H100 has excellent FA2 support
+
+# Multi-task head configuration (7 generic heads for Stage A)
+heads:
+  ner_general:
+    enabled: true
+    type: token_classification
+    num_labels: 9
+    dropout: 0.1
+
+  sentiment:
+    enabled: true
+    type: sequence_classification
+    num_labels: 5
+    dropout: 0.1
+    label_smoothing: 0.1
+
+  emotions:
+    enabled: true
+    type: sequence_classification
+    num_labels: 44
+    problem_type: multi_label_classification
+    dropout: 0.1
+    use_focal_loss: true
+    focal_gamma: 2.0
+
+  safety_generic:
+    enabled: true
+    type: sequence_classification
+    num_labels: 8
+    problem_type: multi_label_classification
+    dropout: 0.1
+    use_focal_loss: true
+    focal_gamma: 2.0
+
+  nli:
+    enabled: true
+    type: sequence_classification
+    num_labels: 3
+    dropout: 0.1
+    label_smoothing: 0.1
+
+  embedding:
+    enabled: true
+    type: embedding
+    pooling: mean
+    normalize: true
+    matryoshka_dims: [768, 512, 256, 128]
+
+  temporal:
+    enabled: true
+    type: token_classification
+    num_labels: 13
+    dropout: 0.1
+
+# Task LOSS weights - V2 SPEC
+task_weights:
+  ner_general: 1.0
+  sentiment: 1.0
+  emotions: 1.5
+  safety_generic: 2.0
+  nli: 1.0
+  embedding: 0.5
+  temporal: 1.0
+
+# Data mixing
+mixing:
+  strategy: temperature
+  temperature: 4.0
+  shuffle_seed: 42
+
+# Head-wise optimizer configuration with layer decay
+optimizer:
+  encoder_lr: 2e-5
+  head_lr: 1e-4
+  token_head_lr: 5e-5
+  layer_decay: 0.95
+
+# H100-80GB MAXIMUM PERFORMANCE training
+training:
+  # === BATCH SIZE: MAXIMIZE FOR H100-80GB ===
+  per_device_train_batch_size: 256   # H100 can handle 2x A100
+  per_device_eval_batch_size: 256
+  gradient_accumulation_steps: 1     # No accumulation needed with large batch
+
+  # === LEARNING RATE ===
+  learning_rate: 2e-5
+
+  # === TRAINING DURATION - V2 SPEC ===
+  num_train_epochs: 10
+  max_steps: -1
+
+  # === EMA MODEL ===
+  use_ema: true
+  ema_decay: 0.999
+
+  # === UNCERTAINTY WEIGHTING ===
+  use_uncertainty_weighting: true
+
+  # === EMBEDDING HARD NEGATIVES ===
+  embedding_hard_negatives: 15
+
+  # === ALL SOTA TECHNIQUES ENABLED ===
+  label_smoothing: 0.1
+
+  # R-Drop: +1-2% NLU improvement
+  use_rdrop: true
+  rdrop_alpha: 0.7
+
+  # FGM Adversarial Training: +0.5-1.5% robustness
+  use_adversarial: true
+  adversarial_type: fgm
+  adversarial_epsilon: 1.0
+  pgd_steps: 3
+  pgd_alpha: 0.3
+
+  # Mixup: smoother decision boundaries
+  use_mixup: true
+  mixup_alpha: 0.4
+  mixup_prob: 0.5
+
+  # === MEMORY: NO CHECKPOINTING (H100 has 80GB) ===
+  gradient_checkpointing: false
+
+  # === OPTIMIZER ===
+  optim: adamw_torch_fused
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  # === SCHEDULE ===
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.1
+
+  # === PRECISION ===
+  bf16: true
+  fp16: false
+
+  # === EVALUATION & CHECKPOINTING ===
+  eval_strategy: steps
+  eval_steps: 2000
+  save_strategy: steps
+  save_steps: 2000
+  save_total_limit: 5
+  load_best_model_at_end: true
+  metric_for_best_model: eval_avg_score
+  greater_is_better: true
+
+  # === LOGGING ===
+  logging_steps: 50
+  report_to:
+    - tensorboard
+
+  # === REPRODUCIBILITY ===
+  seed: 42
+  data_seed: 42
+
+  # === DATA LOADING (maximize for H100) ===
+  dataloader_num_workers: 16
+  dataloader_pin_memory: true
+  dataloader_prefetch_factor: 4
+
+# Output
+output:
+  output_dir: outputs/modernbert-multitask-v0-stage-a-h100
+  checkpoint_dir: checkpoints/modernbert-multitask-v0-stage-a-h100
+  logging_dir: outputs/modernbert-multitask-v0-stage-a-h100/logs
+
+# Data config
+data_config: configs/data/multitask/stage_a_datasets.yaml
