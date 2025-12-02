@@ -63,12 +63,15 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from modeling_studio.data.labels import Capability, get_num_labels  # noqa: E402
+from modeling_studio.data.labels import (Capability,  # noqa: E402
+                                         get_num_labels)
 from modeling_studio.data.loaders import load_stage_a_datasets  # noqa: E402
-from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel  # noqa: E402
+from modeling_studio.models.modernbert_multitask import \
+    ModernBertMultiTaskModel  # noqa: E402
 from modeling_studio.trainers.collators import MultiTaskCollator  # noqa: E402
 from modeling_studio.trainers.ema import EMAModel  # noqa: E402
-from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer  # noqa: E402
+from modeling_studio.trainers.multitask_trainer import \
+    MultiTaskTrainer  # noqa: E402
 
 # Note: UncertaintyWeighting is handled internally by MultiTaskTrainer via args.use_uncertainty_weighting
 
@@ -308,9 +311,10 @@ def configure_head_loss(
     heads_config: dict[str, Any],
 ) -> None:
     """
-    Configure loss function for a head (focal loss, class weights, label smoothing).
+    Configure loss function for a head (ASL, focal loss, class weights, label smoothing).
 
     This is called after model initialization to set up:
+    - use_asl: Whether to use Asymmetric Loss (SOTA for multi-label, better than focal)
     - use_focal_loss: Whether to use focal loss (helps with class imbalance)
     - focal_gamma: Focal loss gamma parameter
     - class_weights: Inverse frequency weights computed from training data
@@ -324,13 +328,14 @@ def configure_head_loss(
     """
     head_cfg = heads_config.get(head_name, {})
 
-    # Check if focal loss or class weights are requested
+    # Check if ASL, focal loss, or class weights are requested
+    use_asl = head_cfg.get("use_asl", False)
     use_focal_loss = head_cfg.get("use_focal_loss", False)
     focal_gamma = float(head_cfg.get("focal_gamma", 2.0))
     compute_class_weights = head_cfg.get("compute_class_weights", False)
     label_smoothing = float(head_cfg.get("label_smoothing", 0.0))
 
-    if not use_focal_loss and not compute_class_weights and label_smoothing == 0.0:
+    if not use_asl and not use_focal_loss and not compute_class_weights and label_smoothing == 0.0:
         return
 
     # Get the head
@@ -340,8 +345,17 @@ def configure_head_loss(
         logger.warning(f"Head '{head_name}' not found in model, skipping loss configuration")
         return
 
-    # Set focal loss parameters
-    if use_focal_loss:
+    # Set ASL parameters (takes priority over focal loss)
+    if use_asl:
+        head.use_asl = True
+        head.asl_gamma_neg = float(head_cfg.get("asl_gamma_neg", 4.0))
+        head.asl_gamma_pos = float(head_cfg.get("asl_gamma_pos", 1.0))
+        head.asl_clip = float(head_cfg.get("asl_clip", 0.05))
+        logger.info(
+            f"  {head_name}: enabled ASL (γ-={head.asl_gamma_neg}, γ+={head.asl_gamma_pos}, clip={head.asl_clip})"
+        )
+    # Set focal loss parameters (only if ASL not enabled)
+    elif use_focal_loss:
         head.use_focal_loss = True
         head.focal_gamma = focal_gamma
         logger.info(f"  {head_name}: enabled focal loss (gamma={focal_gamma})")
@@ -545,7 +559,8 @@ def create_training_args(
         resume_from_checkpoint: Path to checkpoint to resume from
         debug: If True, use smaller batch sizes for local debugging
     """
-    from modeling_studio.trainers.multitask_trainer import MultiTaskTrainingArguments
+    from modeling_studio.trainers.multitask_trainer import \
+        MultiTaskTrainingArguments
 
     training_config = config.get("training", {})
     output_config = config.get("output", {})
@@ -656,7 +671,8 @@ def create_training_args(
 
 def compute_metrics_factory(task_names: list[str]):
     """Create a compute_metrics function for multi-task evaluation."""
-    from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+    from sklearn.metrics import (accuracy_score, f1_score, precision_score,
+                                 recall_score)
 
     def compute_metrics(eval_pred):
         """Compute metrics for evaluation."""
@@ -826,7 +842,8 @@ def train(
         logger.info("=" * 60)
 
         # Create custom optimizer with head-wise LRs AND layer-wise decay
-        from modeling_studio.trainers.optimizer import create_optimizer_with_layer_decay
+        from modeling_studio.trainers.optimizer import \
+            create_optimizer_with_layer_decay
 
         custom_optimizer = create_optimizer_with_layer_decay(
             model,
@@ -1030,6 +1047,12 @@ def main():
         logger.warning("Training interrupted by user")
         return 1
     except Exception as e:
+        logger.error(f"Training failed with error: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    sys.exit(main())
         logger.error(f"Training failed with error: {e}")
         raise
 

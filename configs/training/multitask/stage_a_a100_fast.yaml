@@ -48,8 +48,12 @@ heads:
     num_labels: 44
     problem_type: multi_label_classification
     dropout: 0.1
-    use_focal_loss: true        # Focal loss for class imbalance
-    focal_gamma: 3.0
+    # ASL (Asymmetric Loss) - SOTA for multi-label, better than focal loss
+    use_asl: true
+    asl_gamma_neg: 4.0          # Suppress easy negatives (higher = more suppression)
+    asl_gamma_pos: 1.0          # Keep positives learning (lower = less suppression)
+    asl_clip: 0.05              # Shift negative probs down by 0.05
+    pos_weight: 2.0             # Additional positive upweighting
 
   safety_generic:
     enabled: true
@@ -57,9 +61,14 @@ heads:
     num_labels: 8
     problem_type: multi_label_classification
     dropout: 0.1
-    use_focal_loss: true        # Focal loss for class imbalance
-    focal_gamma: 3.0            # Higher gamma (was 2.0) for extreme imbalance (~6% toxic)
-    pos_weight: 5.0             # Upweight positive (toxic) samples ~5x
+    # ASL (Asymmetric Loss) - SOTA for multi-label, better than focal loss
+    use_asl: true
+    asl_gamma_neg: 4.0          # Suppress easy negatives
+    asl_gamma_pos: 0.0          # No suppression on positives (rare, want full gradient)
+    asl_clip: 0.05              # Shift negative probs down
+    # Per-class pos_weight: [toxic, severe_toxic, obscene, threat, insult, identity_hate, self_harm, dangerous_advice]
+    # Frequencies: ~6%, ~0.3%, ~2%, ~0.2%, ~4%, ~0.5%, ~1%, ~1%
+    pos_weight: [3.0, 30.0, 6.0, 50.0, 5.0, 30.0, 20.0, 20.0]  # Reduced since ASL helps
 
   nli:
     enabled: true
@@ -85,8 +94,8 @@ heads:
 task_weights:
   ner_general: 1.0
   sentiment: 1.0
-  emotions: 1.0       # Emphasize emotions per v2 plan
-  safety_generic: 1.0 # Emphasize safety per v2 plan
+  emotions: 1.5       # Emphasize emotions per v2 plan (was 1.0)
+  safety_generic: 2.0 # Emphasize safety per v2 plan (was 1.0)
   nli: 1.0
   embedding: 0.5      # Reduce embedding dominance per v2 plan
   temporal: 1.0
@@ -107,7 +116,7 @@ optimizer:
 # A100-80GB HYPERFAST training - V2 COMPLIANT
 training:
   # === BATCH & SPEED (optimized for A100-80GB) ===
-  per_device_train_batch_size: 128    # Max batch for 80GB (FGM/R-Drop OFF)
+  per_device_train_batch_size: 192  # Max batch for 80GB (FGM/R-Drop OFF)
   per_device_eval_batch_size: 128
   gradient_accumulation_steps: 2      # Effective batch = 256
 

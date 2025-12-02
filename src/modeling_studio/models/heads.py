@@ -65,6 +65,10 @@ class BaseHead(ABC, nn.Module):
             Use this for imbalanced multi-label data (e.g., 5.0 upweights positives 5x)
         use_focal_loss: Whether to use focal loss for multi-label (reduces easy negative dominance)
         focal_gamma: Focal loss gamma parameter (default 2.0)
+        use_asl: Whether to use Asymmetric Loss (SOTA for multi-label, better than focal)
+        asl_gamma_neg: ASL gamma for negative samples (default 4.0, higher = more suppression)
+        asl_gamma_pos: ASL gamma for positive samples (default 1.0, lower = less suppression)
+        asl_clip: ASL probability clipping for negatives (default 0.05, shifts neg probs down)
         label_smoothing: Label smoothing factor (0.0 = no smoothing, 0.1 = typical). Default: 0.0
     """
 
@@ -78,6 +82,10 @@ class BaseHead(ABC, nn.Module):
         pos_weight: torch.Tensor | float | None = None,
         use_focal_loss: bool = False,
         focal_gamma: float = 2.0,
+        use_asl: bool = False,
+        asl_gamma_neg: float = 4.0,
+        asl_gamma_pos: float = 1.0,
+        asl_clip: float = 0.05,
         label_smoothing: float = 0.0,
     ):
         super().__init__()
@@ -90,6 +98,10 @@ class BaseHead(ABC, nn.Module):
         # Multi-label loss configuration
         self.use_focal_loss = use_focal_loss
         self.focal_gamma = focal_gamma
+        self.use_asl = use_asl
+        self.asl_gamma_neg = asl_gamma_neg
+        self.asl_gamma_pos = asl_gamma_pos
+        self.asl_clip = asl_clip
         self.label_smoothing = label_smoothing
         if class_weights is not None:
             self.register_buffer("class_weights", class_weights)
@@ -133,6 +145,7 @@ class BaseHead(ABC, nn.Module):
         """Compute loss based on problem type.
 
         For multi_label_classification:
+        - Supports Asymmetric Loss (set self.use_asl=True) - SOTA for multi-label
         - Supports class-weighted BCE (set self.class_weights)
         - Supports focal loss (set self.use_focal_loss=True)
         """
@@ -154,8 +167,10 @@ class BaseHead(ABC, nn.Module):
                 print(f"  loss: {loss.item():.4f}")
             return loss
         elif self.problem_type == "multi_label_classification":
-            # Apply focal loss or weighted BCE for better handling of class imbalance
-            if self.use_focal_loss:
+            # Priority: ASL > Focal > Weighted BCE > Plain BCE
+            if self.use_asl:
+                loss = self._asymmetric_loss(logits, labels.float())
+            elif self.use_focal_loss:
                 loss = self._focal_bce_loss(logits, labels.float())
             elif self.class_weights is not None:
                 loss = F.binary_cross_entropy_with_logits(
@@ -182,6 +197,70 @@ class BaseHead(ABC, nn.Module):
             return F.mse_loss(logits.squeeze(-1), labels)
         else:
             raise ValueError(f"Unknown problem type: {self.problem_type}")
+
+    def _asymmetric_loss(
+        self,
+        logits: torch.Tensor,
+        labels: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Asymmetric Loss (ASL) for multi-label classification.
+
+        ASL is SOTA for multi-label classification, outperforming focal loss.
+        Key insight: Treat positive and negative samples asymmetrically.
+
+        Paper: "Asymmetric Loss For Multi-Label Classification" (ICCV 2021)
+        https://arxiv.org/abs/2009.14119
+
+        Key features:
+        1. Different gamma for positives (γ+) and negatives (γ-)
+        2. Probability shifting (clipping) for negatives to handle easy negatives
+        3. Works better than focal loss for multi-label
+
+        Args:
+            logits: Raw model outputs (batch_size, num_labels)
+            labels: Binary labels (batch_size, num_labels)
+
+        Returns:
+            Scalar ASL loss
+        """
+        # Get probabilities
+        probs = torch.sigmoid(logits)
+
+        # Probability shifting for negatives (asymmetric clipping)
+        # This shifts negative probabilities down, making easy negatives contribute less
+        probs_neg = (probs - self.asl_clip).clamp(min=0)
+
+        # Separate positive and negative targets
+        # For positives: use original probs
+        # For negatives: use shifted probs
+        probs_pos = probs
+        probs_neg = probs_neg
+
+        # Asymmetric focusing
+        # Positive: (1 - p)^γ+ * log(p)
+        # Negative: p^γ- * log(1-p)
+        pos_weight = (1 - probs_pos).pow(self.asl_gamma_pos)
+        neg_weight = probs_neg.pow(self.asl_gamma_neg)
+
+        # Compute losses
+        # Positive loss: -log(p) weighted by (1-p)^γ+
+        log_probs_pos = torch.log(probs_pos.clamp(min=1e-8))
+        loss_pos = -labels * pos_weight * log_probs_pos
+
+        # Negative loss: -log(1-p) weighted by p^γ-
+        log_probs_neg = torch.log((1 - probs_neg).clamp(min=1e-8))
+        loss_neg = -(1 - labels) * neg_weight * log_probs_neg
+
+        # Combine
+        loss = loss_pos + loss_neg
+
+        # Apply pos_weight if provided (additional upweighting of positives)
+        if self.pos_weight is not None:
+            # Only apply to positive samples
+            loss = loss * (labels * (self.pos_weight - 1) + 1)
+
+        return loss.mean()
 
     def _focal_bce_loss(
         self,
