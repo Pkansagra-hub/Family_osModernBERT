@@ -269,10 +269,57 @@ class TestCrossAttentionPairEncoder:
         loss = output.sum()
         loss.backward()
 
-        # Check that encoder parameters have gradients
-        for param in encoder.parameters():
-            if param.requires_grad:
-                assert param.grad is not None
+        # Check that encoder parameters have gradients (except entity_combination_layer
+        # which is only used in forward_with_entity_spans)
+        for name, param in encoder.named_parameters():
+            if param.requires_grad and "entity_combination_layer" not in name:
+                assert param.grad is not None, f"Missing gradient for {name}"
+
+    def test_entity_span_extraction(self, hidden_size):
+        """Test forward_with_entity_spans for relation extraction."""
+        batch_size = 4
+        seq_len = 32
+        encoder = CrossAttentionPairEncoder(hidden_size=hidden_size, num_heads=8)
+
+        # Create hidden states
+        hidden_states = torch.randn(batch_size, seq_len, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_len)
+
+        # Entity spans: (start_indices, end_indices)
+        entity_a_span = (
+            torch.tensor([2, 5, 8, 3]),  # starts
+            torch.tensor([4, 7, 10, 5]),  # ends
+        )
+        entity_b_span = (
+            torch.tensor([15, 18, 20, 22]),  # starts
+            torch.tensor([17, 20, 23, 24]),  # ends
+        )
+
+        output = encoder.forward_with_entity_spans(
+            hidden_states, entity_a_span, entity_b_span, attention_mask
+        )
+
+        # Output should be (batch, output_size)
+        assert output.shape == (batch_size, hidden_size)
+
+    def test_entity_span_gradient_flow(self, hidden_size):
+        """Gradients should flow through entity span extraction."""
+        batch_size = 2
+        seq_len = 16
+        encoder = CrossAttentionPairEncoder(hidden_size=hidden_size, num_heads=8)
+
+        hidden_states = torch.randn(batch_size, seq_len, hidden_size, requires_grad=True)
+        entity_a_span = (torch.tensor([1, 3]), torch.tensor([3, 5]))
+        entity_b_span = (torch.tensor([8, 10]), torch.tensor([10, 12]))
+
+        output = encoder.forward_with_entity_spans(hidden_states, entity_a_span, entity_b_span)
+        loss = output.sum()
+        loss.backward()
+
+        # entity_combination_layer should have gradients now
+        for name, param in encoder.named_parameters():
+            if param.requires_grad and "entity_combination_layer" in name:
+                assert param.grad is not None, f"Missing gradient for {name}"
 
 
 # =============================================================================

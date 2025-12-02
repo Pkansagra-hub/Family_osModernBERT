@@ -568,6 +568,15 @@ class CrossAttentionPairEncoder(nn.Module):
         # Final layer norm
         self.output_norm = nn.LayerNorm(self.output_size)
 
+        # Entity span projection (for relation extraction)
+        # Input: 4 * hidden_size (entity_a, entity_b, diff, prod)
+        self.entity_combination_layer = nn.Sequential(
+            nn.Linear(hidden_size * 4, hidden_size * 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size * 2, hidden_size * 2),
+        )
+
     def _pool_sequence(
         self,
         hidden_states: torch.Tensor,
@@ -686,35 +695,55 @@ class CrossAttentionPairEncoder(nn.Module):
         Returns:
             Pair representation (batch, output_size)
         """
-        batch_size = hidden_states.size(0)
+        batch_size, seq_len, hidden_size = hidden_states.size()
+        device = hidden_states.device
 
-        # Extract entity representations (mean of span tokens)
-        def extract_span_repr(
+        # Vectorized span extraction using masking
+        def extract_span_repr_vectorized(
             hidden: torch.Tensor,
             starts: torch.Tensor,
             ends: torch.Tensor,
         ) -> torch.Tensor:
-            """Extract mean representation of spans."""
-            reprs = []
-            for b in range(batch_size):
-                start = starts[b].item()
-                end = ends[b].item()
-                span_hidden = hidden[b, start : end + 1]  # (span_len, hidden)
-                span_repr = span_hidden.mean(dim=0)  # (hidden,)
-                reprs.append(span_repr)
-            return torch.stack(reprs, dim=0)  # (batch, hidden)
+            """
+            Extract mean representation of spans using vectorized operations.
 
-        entity_a_repr = extract_span_repr(hidden_states, entity_a_span[0], entity_a_span[1])
-        entity_b_repr = extract_span_repr(hidden_states, entity_b_span[0], entity_b_span[1])
+            Uses torch.arange broadcasting to create span masks efficiently,
+            avoiding slow Python loops.
+            """
+            # Create position indices: (1, seq_len)
+            positions = torch.arange(seq_len, device=device).unsqueeze(0)
 
-        # Combine (simple version for entity pairs)
+            # Create span masks: (batch, seq_len)
+            # True where position is within [start, end] inclusive
+            start_mask = positions >= starts.unsqueeze(1)  # (batch, seq_len)
+            end_mask = positions <= ends.unsqueeze(1)  # (batch, seq_len)
+            span_mask = start_mask & end_mask  # (batch, seq_len)
+
+            # Expand mask for hidden dimension: (batch, seq_len, 1)
+            span_mask_expanded = span_mask.unsqueeze(-1).float()
+
+            # Masked sum and count
+            masked_hidden = hidden * span_mask_expanded  # (batch, seq_len, hidden)
+            span_sum = masked_hidden.sum(dim=1)  # (batch, hidden)
+            span_count = span_mask_expanded.sum(dim=1).clamp(min=1)  # (batch, 1)
+
+            # Mean of span tokens
+            return span_sum / span_count  # (batch, hidden)
+
+        entity_a_repr = extract_span_repr_vectorized(
+            hidden_states, entity_a_span[0], entity_a_span[1]
+        )
+        entity_b_repr = extract_span_repr_vectorized(
+            hidden_states, entity_b_span[0], entity_b_span[1]
+        )
+
+        # Combine (rich representation for entity pairs)
         diff = entity_a_repr - entity_b_repr
         prod = entity_a_repr * entity_b_repr
         combined = torch.cat([entity_a_repr, entity_b_repr, diff, prod], dim=-1)
 
-        # We need to adjust combination layer for 4x hidden input
-        # For now, project down manually
-        combined = combined[:, : self.hidden_size * 2]  # Take first 2x hidden
+        # Project 4x hidden to 2x hidden for combination layer
+        combined = self.entity_combination_layer(combined)
 
         output = self.combination_layer(combined)
         output = self.output_norm(output)
