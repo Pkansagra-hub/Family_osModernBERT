@@ -808,6 +808,7 @@ def train(
 
     # === V2 FEATURE: Head-wise Learning Rates + Layer Decay ===
     custom_optimizer = None
+    custom_scheduler = None
     if optimizer_config:
         # Note: YAML safe_load parses scientific notation (e.g., 2e-5) as strings
         # So we need to convert them to float explicitly
@@ -836,6 +837,28 @@ def train(
             num_layers=22,  # ModernBERT-base has 22 layers
             weight_decay=float(training_config.get("weight_decay", 0.01)),
         )
+
+        # CRITICAL: Create scheduler for custom optimizer
+        # Without this, LR stays at 0 during warmup!
+        from transformers import get_scheduler
+
+        # Calculate total training steps
+        total_train_samples = sum(len(ds) for ds in train_datasets.values())
+        train_batch_size = training_args.per_device_train_batch_size
+        grad_accum = training_args.gradient_accumulation_steps
+        num_epochs = training_args.num_train_epochs
+        steps_per_epoch = total_train_samples // (train_batch_size * grad_accum)
+        total_steps = int(steps_per_epoch * num_epochs)
+        warmup_steps = int(total_steps * training_args.warmup_ratio)
+
+        custom_scheduler = get_scheduler(
+            name=training_args.lr_scheduler_type,
+            optimizer=custom_optimizer,
+            num_warmup_steps=warmup_steps,
+            num_training_steps=total_steps,
+        )
+        logger.info(f"  Scheduler: {training_args.lr_scheduler_type}")
+        logger.info(f"  Total steps: {total_steps}, Warmup steps: {warmup_steps}")
 
     # === V2 FEATURE: EMA Model ===
     use_ema = training_config.get("use_ema", False)
@@ -877,8 +900,8 @@ def train(
         sampling_temperature=config.get("mixing", {}).get("temperature", 2.0),
         tokenizer=tokenizer,  # type: ignore[arg-type]
         data_collator=data_collator,
-        # V2 features: custom optimizer with head-wise LRs
-        optimizers=(custom_optimizer, None) if custom_optimizer else (None, None),
+        # V2 features: custom optimizer with head-wise LRs + scheduler
+        optimizers=(custom_optimizer, custom_scheduler) if custom_optimizer else (None, None),
     )
 
     # === V2 FEATURE: Initialize EMA after trainer setup ===
