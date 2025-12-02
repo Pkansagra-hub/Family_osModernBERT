@@ -356,10 +356,8 @@ def configure_head_loss(
             pos_weight_tensor = torch.tensor([pos_weight] * num_labels, device=device, dtype=dtype)
         else:
             pos_weight_tensor = torch.tensor(pos_weight, device=device, dtype=dtype)
-        # Remove existing buffer if present (from BaseHead.__init__) before re-registering
-        if "pos_weight" in dict(head.named_buffers()):
-            delattr(head, "pos_weight")
-        head.register_buffer("pos_weight", pos_weight_tensor)
+        # Just assign directly - BaseHead always registers pos_weight as a buffer
+        head.pos_weight = pos_weight_tensor
         logger.info(
             f"  {head_name}: enabled pos_weight={pos_weight} for positive sample upweighting"
         )

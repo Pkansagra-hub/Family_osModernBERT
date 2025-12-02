@@ -97,12 +97,13 @@ class BaseHead(ABC, nn.Module):
             self.class_weights = None
 
         # Positive weight for imbalanced multi-label (upweights positive samples)
+        # Always register as buffer (even if None) to avoid attribute conflicts later
         if pos_weight is not None:
             if isinstance(pos_weight, (int, float)):
                 pos_weight = torch.tensor([pos_weight] * num_labels)
             self.register_buffer("pos_weight", pos_weight)
         else:
-            self.pos_weight = None
+            self.register_buffer("pos_weight", None)
 
     @abstractmethod
     def forward(
