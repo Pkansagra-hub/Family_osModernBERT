@@ -250,7 +250,7 @@
 {"tokens": ["Bedtime", "story", "tomorrow", "night", "."], "temporal_tags": [5, 0, 3, 0, 0]}
 {"tokens": ["Mom", "'s", "lunch", "yesterday", "lasted", "all", "day", "."], "temporal_tags": [0, 0, 0, 3, 0, 7, 8, 0]}
 {"tokens": ["I", "jog", "every", "morning", "for", "20", "minutes", "."], "temporal_tags": [0, 0, 0, 5, 7, 8, 8, 0]}
-{"tokens": ["Today", ", ", "have", "breakfast", "at", "noon", "."], "temporal_tags": [3, 0, 0, 0, 0, 5, 0]}
+{"tokens": ["Today", ",", "have", "breakfast", "at", "noon", "."], "temporal_tags": [3, 0, 0, 0, 0, 5, 0]}
 {"tokens": ["Tomorrow", "we", "will", "rest", "all", "day", "."], "temporal_tags": [3, 0, 0, 0, 7, 8, 0]}
 {"tokens": ["Evening", "tea", "yesterday", "was", "late", "."], "temporal_tags": [5, 0, 3, 0, 0, 0]}
 {"tokens": ["Kids", "play", "for", "2", "hours", "morning", "time", "."], "temporal_tags": [0, 0, 7, 8, 8, 5, 0, 0]}
@@ -661,12 +661,12 @@
 {"tokens": ["May", "5", "is", "family", "reunion", "day"], "temporal_tags": [1, 2, 0, 0, 0, 0]}
 {"tokens": ["We", "had", "brunch", "this", "morning"], "temporal_tags": [0, 0, 0, 0, 5]}
 {"tokens": ["Suresh", "'s", "appointment", "yesterday", "afternoon"], "temporal_tags": [0, 0, 0, 3, 5]}
-{"tokens": ["Tomorrow", ", ", "doctor", "for", "mom"], "temporal_tags": [3, 0, 0, 0, 0]}
+{"tokens": ["Tomorrow", ",", "doctor", "for", "mom"], "temporal_tags": [3, 0, 0, 0, 0]}
 {"tokens": ["Family", "photoshoot", "at", "10am", "today"], "temporal_tags": [0, 0, 0, 5, 3]}
 {"tokens": ["June", "18th", "marks", "dad", "'s", "promotion", "party"], "temporal_tags": [1, 2, 0, 0, 0, 0, 0]}
 {"tokens": ["Evening", "prayer", "yesterday"], "temporal_tags": [5, 0, 3]}
 {"tokens": ["Vaccination", "drive", "for", "family", "today"], "temporal_tags": [0, 0, 0, 0, 3]}
-{"tokens": ["July", "4", ", ", "family", "barbecue"], "temporal_tags": [1, 2, 0, 0, 0]}
+{"tokens": ["July", "4", ",", "family", "barbecue"], "temporal_tags": [1, 2, 0, 0, 0]}
 {"tokens": ["Wake-up", "call", "at", "6am", "this", "morning"], "temporal_tags": [0, 0, 0, 5, 0, 5]}
 {"tokens": ["Rohan", "missed", "his", "class", "yesterday"], "temporal_tags": [0, 0, 0, 0, 3]}
 {"tokens": ["Afternoon", "nap", "scheduled", "tomorrow"], "temporal_tags": [5, 0, 0, 3]}
@@ -680,7 +680,7 @@
 {"tokens": ["Morning", "coffee", "with", "mom", "yesterday"], "temporal_tags": [5, 0, 0, 0, 3]}
 {"tokens": ["Gopal", "'s", "checkup", "tomorrow"], "temporal_tags": [0, 0, 0, 3]}
 {"tokens": ["Noon", "appointment", "for", "sister", "today"], "temporal_tags": [5, 0, 0, 0, 3]}
-{"tokens": ["November", "28", ", ", "Thanksgiving", "family", "dinner"], "temporal_tags": [1, 2, 0, 0, 0, 0]}
+{"tokens": ["November", "28", ",", "Thanksgiving", "family", "dinner"], "temporal_tags": [1, 2, 0, 0, 0, 0]}
 {"tokens": ["We", "rescheduled", "to", "this", "morning"], "temporal_tags": [0, 0, 0, 0, 5]}
 {"tokens": ["Padma", "has", "yoga", "class", "at", "7pm", "tomorrow"], "temporal_tags": [0, 0, 0, 0, 0, 5, 3]}
 {"tokens": ["Family", "doctor", "visit", "yesterday"], "temporal_tags": [0, 0, 0, 3]}
@@ -691,7 +691,7 @@
 {"tokens": ["Kids", "school", "pickup", "this", "afternoon"], "temporal_tags": [0, 0, 0, 0, 5]}
 {"tokens": ["Yesterday", "morning", "family", "breakfast"], "temporal_tags": [3, 5, 0, 0]}
 {"tokens": ["Family", "counselor", "meeting", "at", "4pm", "today"], "temporal_tags": [0, 0, 0, 0, 5, 3]}
-{"tokens": ["February", "14th", ", ", "Valentine", "'s", "Day", "dinner"], "temporal_tags": [1, 2, 0, 0, 0, 0, 0]}
+{"tokens": ["February", "14th", ",", "Valentine", "'s", "Day", "dinner"], "temporal_tags": [1, 2, 0, 0, 0, 0, 0]}
 {"tokens": ["Tomorrow", "we", "see", "the", "pediatrician"], "temporal_tags": [3, 0, 0, 0, 0]}
 {"tokens": ["Morning", "meeting", "yesterday"], "temporal_tags": [5, 0, 3]}
 {"tokens": ["Sunita", "'s", "class", "March", "3rd", "at", "noon"], "temporal_tags": [0, 0, 0, 1, 2, 0, 5]}
@@ -706,7 +706,7 @@
 {"tokens": ["Geeta", "'s", "checkup", "June", "7"], "temporal_tags": [0, 0, 0, 1, 2]}
 {"tokens": ["Today", "afternoon", "playdate"], "temporal_tags": [3, 5, 0]}
 {"tokens": ["Morning", "routine", "includes", "family", "breakfast", "tomorrow"], "temporal_tags": [5, 0, 0, 0, 0, 3]}
-{"tokens": ["July", "22nd", ", ", "cousins", "visiting"], "temporal_tags": [1, 2, 0, 0, 0]}
+{"tokens": ["July", "22nd", ",", "cousins", "visiting"], "temporal_tags": [1, 2, 0, 0, 0]}
 {"tokens": ["We", "have", "dentist", "today"], "temporal_tags": [0, 0, 0, 3]}
 {"tokens": ["Tomorrow", "'s", "schedule", "doctor", "at", "9am"], "temporal_tags": [3, 0, 0, 0, 0, 5]}
 {"tokens": ["Family", "picnic", "yesterday", "morning"], "temporal_tags": [0, 0, 3, 5]}
@@ -716,8 +716,8 @@
 {"tokens": ["This", "noon", "family", "lunch"], "temporal_tags": [0, 5, 0, 0]}
 {"tokens": ["September", "5th", "Teacher", "'s", "Day"], "temporal_tags": [1, 2, 0, 0, 0]}
 {"tokens": ["Kids", "to", "tuition", "at", "5pm", "today"], "temporal_tags": [0, 0, 0, 0, 5, 3]}
-{"tokens": ["Yesterday", ", ", "we", "had", "morning", "tea"], "temporal_tags": [3, 0, 0, 0, 5, 0]}
-{"tokens": ["October", "2", ", ", "Gandhi", "Jayanti", "family", "prayers"], "temporal_tags": [1, 2, 0, 0, 0, 0, 0]}
+{"tokens": ["Yesterday", ",", "we", "had", "morning", "tea"], "temporal_tags": [3, 0, 0, 0, 5, 0]}
+{"tokens": ["October", "2", ",", "Gandhi", "Jayanti", "family", "prayers"], "temporal_tags": [1, 2, 0, 0, 0, 0, 0]}
 {"tokens": ["Family", "breakfast", "tomorrow", "morning"], "temporal_tags": [0, 0, 3, 5]}
 {"tokens": ["Today", "'s", "doctor", "visit", "at", "11am"], "temporal_tags": [3, 0, 0, 0, 0, 5]}
 {"tokens": ["Morning", "walk", "yesterday"], "temporal_tags": [5, 0, 3]}
@@ -725,7 +725,7 @@
 {"tokens": ["Afternoon", "appointment", "today"], "temporal_tags": [5, 0, 3]}
 {"tokens": ["Priya", "'s", "class", "tomorrow", "at", "3pm"], "temporal_tags": [0, 0, 0, 3, 0, 5]}
 {"tokens": ["We", "celebrated", "Diwali", "yesterday", "evening"], "temporal_tags": [0, 0, 0, 3, 5]}
-{"tokens": ["December", "31st", ", ", "New", "Year", "'s", "Eve", "party"], "temporal_tags": [1, 2, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["December", "31st", ",", "New", "Year", "'s", "Eve", "party"], "temporal_tags": [1, 2, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["Family", "lunch", "this", "noon"], "temporal_tags": [0, 0, 0, 5]}
 {"tokens": ["Tomorrow", "morning", "doctor"], "temporal_tags": [3, 5, 0]}
 {"tokens": ["January", "26th", "Republic", "Day", "parade"], "temporal_tags": [1, 2, 0, 0, 0]}
@@ -738,9 +738,9 @@
 {"tokens": ["Yesterday", "afternoon", "family", "time"], "temporal_tags": [3, 5, 0, 0]}
 {"tokens": ["Morning", "tuition", "today"], "temporal_tags": [5, 0, 3]}
 {"tokens": ["May", "1st", "Labor", "Day", "off"], "temporal_tags": [1, 2, 0, 0, 0]}
-{"tokens": ["Tomorrow", ", ", "family", "dinner", "evening"], "temporal_tags": [3, 0, 0, 0, 5]}
+{"tokens": ["Tomorrow", ",", "family", "dinner", "evening"], "temporal_tags": [3, 0, 0, 0, 5]}
 {"tokens": ["At", "noon", "today", "doctor"], "temporal_tags": [0, 5, 3, 0]}
-{"tokens": ["June", "21", ", ", "family", "yoga", "day"], "temporal_tags": [1, 2, 0, 0, 0, 0]}
+{"tokens": ["June", "21", ",", "family", "yoga", "day"], "temporal_tags": [1, 2, 0, 0, 0, 0]}
 {"tokens": ["We", "had", "lunch", "yesterday", "noon"], "temporal_tags": [0, 0, 0, 3, 5]}
 {"tokens": ["Family", "appointment", "tomorrow"], "temporal_tags": [0, 0, 3]}
 {"tokens": ["This", "morning", "school", "run"], "temporal_tags": [0, 5, 0, 0]}
@@ -757,11 +757,11 @@
 {"tokens": ["Today", "morning", "yoga"], "temporal_tags": [3, 5, 0]}
 {"tokens": ["November", "5", "family", "gathering"], "temporal_tags": [1, 2, 0, 0]}
 {"tokens": ["Doctor", "tomorrow", "at", "10am"], "temporal_tags": [0, 3, 0, 5]}
-{"tokens": ["Yesterday", ", ", "family", "brunch"], "temporal_tags": [3, 0, 0, 0]}
+{"tokens": ["Yesterday", ",", "family", "brunch"], "temporal_tags": [3, 0, 0, 0]}
 {"tokens": ["December", "10th", "school", "concert"], "temporal_tags": [1, 2, 0, 0]}
 {"tokens": ["Family", "dinner", "today", "evening"], "temporal_tags": [0, 0, 3, 5]}
 {"tokens": ["Morning", "appointment", "tomorrow"], "temporal_tags": [5, 0, 3]}
-{"tokens": ["January", "12", ", ", "Lohri", "celebration"], "temporal_tags": [1, 2, 0, 0, 0]}
+{"tokens": ["January", "12", ",", "Lohri", "celebration"], "temporal_tags": [1, 2, 0, 0, 0]}
 {"tokens": ["At", "3pm", "today", "tuition"], "temporal_tags": [0, 5, 3, 0]}
 {"tokens": ["Yesterdays", "noon", "was", "family", "time"], "temporal_tags": [3, 5, 0, 0, 0]}
 {"tokens": ["February", "28th", "family", "movie"], "temporal_tags": [1, 2, 0, 0]}
@@ -773,7 +773,7 @@
 {"tokens": ["April", "10th", "school", "holiday"], "temporal_tags": [1, 2, 0, 0]}
 {"tokens": ["Today", "at", "noon", "lunch"], "temporal_tags": [3, 0, 5, 0]}
 {"tokens": ["Morning", "class", "tomorrow"], "temporal_tags": [5, 0, 3]}
-{"tokens": ["May", "20", ", ", "family", "BBQ"], "temporal_tags": [1, 2, 0, 0, 0]}
+{"tokens": ["May", "20", ",", "family", "BBQ"], "temporal_tags": [1, 2, 0, 0, 0]}
 {"tokens": ["Doctor", "visit", "this", "afternoon"], "temporal_tags": [0, 0, 0, 5]}
 {"tokens": ["Yesterday", "evening", "family", "games"], "temporal_tags": [3, 5, 0, 0]}
 {"tokens": ["June", "5th", "World", "Environment", "Day"], "temporal_tags": [1, 2, 0, 0, 0]}
@@ -784,7 +784,7 @@
 {"tokens": ["August", "15th", "family", "picnic"], "temporal_tags": [1, 2, 0, 0]}
 {"tokens": ["Today", "morning", "school"], "temporal_tags": [3, 5, 0]}
 {"tokens": ["Evening", "dinner", "tomorrow"], "temporal_tags": [5, 0, 3]}
-{"tokens": ["September", "9", ", ", "Ganesh", "Chaturthi"], "temporal_tags": [1, 2, 0, 0, 0]}
+{"tokens": ["September", "9", ",", "Ganesh", "Chaturthi"], "temporal_tags": [1, 2, 0, 0, 0]}
 {"tokens": ["Kids", "class", "this", "noon"], "temporal_tags": [0, 0, 0, 5]}
 {"tokens": ["Morning", "doctor", "yesterday"], "temporal_tags": [5, 0, 3]}
 {"tokens": ["October", "12", "Dussehra", "celebration"], "temporal_tags": [1, 2, 0, 0]}
@@ -2624,7 +2624,7 @@
 {"tokens": ["Festival", "lamp", "lighting", "dusk", "to", "dawn", "nightly", "."], "temporal_tags": [0, 0, 0, 5, 0, 5, 9, 0]}
 {"tokens": ["Morning", "run", "daily", "pre", "holiday", "feast", "control", "."], "temporal_tags": [5, 0, 9, 0, 0, 0, 0, 0]}
 {"tokens": ["Every", "year", "Diwali", "cards", "mailed", "early", "morning", "post", "."], "temporal_tags": [9, 10, 0, 0, 0, 5, 5, 0, 0]}
-{"tokens": ["Birthday", "piñata", "hanging", "overnight", "party", "morning", "fill", "."], "temporal_tags": [0, 0, 0, 7, 0, 5, 0, 0]}
+{"tokens": ["Birthday", "pi\u00f1ata", "hanging", "overnight", "party", "morning", "fill", "."], "temporal_tags": [0, 0, 0, 7, 0, 5, 0, 0]}
 {"tokens": ["Navratri", "fasting", "from", "sunrise", "to", "sunset", "daily", "."], "temporal_tags": [0, 0, 0, 5, 0, 5, 9, 0]}
 {"tokens": ["Holi", "swing", "decor", "all", "day", "prep", "every", "year", "."], "temporal_tags": [0, 0, 0, 7, 8, 0, 9, 10, 0]}
 {"tokens": ["Daily", "tikka", "marking", "during", "festivals", "morning", "ritual", "."], "temporal_tags": [9, 0, 0, 0, 0, 5, 0, 0]}
@@ -3984,7 +3984,7 @@
 {"tokens": ["Diwali", "firecrackers", "burst", "tomorrow", "night", "for", "minutes", "."], "temporal_tags": [0, 0, 0, 3, 5, 7, 8, 0]}
 {"tokens": ["Christmas", "snowman", "built", "today", "for", "hours", "in", "yard", "."], "temporal_tags": [0, 0, 0, 3, 7, 0, 0, 0, 0]}
 {"tokens": ["July", "4th", "sparklers", "lit", "yesterday", "all", "evening", "."], "temporal_tags": [1, 2, 0, 0, 3, 7, 8, 0]}
-{"tokens": ["Navratri", " fasting", "broke", "tomorrow", "with", "food", "all", "day", "."], "temporal_tags": [0, 0, 0, 3, 0, 0, 7, 8, 0]}
+{"tokens": ["Navratri", "fasting", "broke", "tomorrow", "with", "food", "all", "day", "."], "temporal_tags": [0, 0, 0, 3, 0, 0, 7, 8, 0]}
 {"tokens": ["Today", "Baisakhi", "bhangra", "dance", "for", "Punjabi", "New", "Year", "hours", "."], "temporal_tags": [3, 0, 0, 0, 7, 0, 0, 0, 0, 0]}
 {"tokens": ["Holi", "malpua", "sweets", "fried", "tomorrow", "all", "day", "."], "temporal_tags": [0, 0, 0, 0, 3, 7, 8, 0]}
 {"tokens": ["Priya", "wears", "new", "clothes", "Diwali", "today", "for", "puja", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 7, 0, 0]}
@@ -5697,7 +5697,7 @@
 {"tokens": ["First", "time", "voting", "on", "November", "3rd", "2008", "at", "age", "18"], "temporal_tags": [0, 0, 0, 0, 1, 2, 1, 11, 12, 12]}
 {"tokens": ["Every", "year", "on", "July", "4th", "we", "remember", "first", "Independence", "Day"], "temporal_tags": [9, 0, 0, 1, 2, 0, 0, 0, 0, 0]}
 {"tokens": ["At", "age", "16", "I", "had", "my", "first", "part-time", "job", "every", "week"], "temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0, 9, 10]}
-{"tokens": [" First ", "snowman", "built", "on", "December", "15th", "2003", "at", "age", "7"], "temporal_tags": [0, 0, 0, 0, 1, 2, 1, 11, 12, 12]}
+{"tokens": ["First", "snowman", "built", "on", "December", "15th", "2003", "at", "age", "7"], "temporal_tags": [0, 0, 0, 0, 1, 2, 1, 11, 12, 12]}
 {"tokens": ["Every", "Sunday", "we", "discuss", "first", "bike", "ride", "when", "he", "was", "6"], "temporal_tags": [9, 10, 0, 0, 0, 0, 0, 11, 12, 12, 12]}
 {"tokens": ["First", "time", "traveling", "abroad", "at", "age", "20", "on", "March", "10th"], "temporal_tags": [0, 0, 0, 0, 11, 12, 12, 0, 1, 2]}
 {"tokens": ["Every", "year", "on", "October", "31st", "we", "share", "first", "Halloween", "memories"], "temporal_tags": [9, 0, 0, 1, 2, 0, 0, 0, 0, 0]}
@@ -5810,54 +5810,49 @@
 {"tokens": ["I", "went", "to", "the", "store", "yesterday", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 0]}
 {"tokens": ["The", "family", "gathering", "is", "on", "January", "20", "2024", "."], "temporal_tags": [0, 0, 0, 0, 0, 1, 2, 2, 0]}
 {"tokens": ["Today", ",", "we", "prepare", "for", "tomorrow", "'s", "event", "."], "temporal_tags": [3, 0, 0, 0, 0, 3, 0, 0, 0]}
-{"tokens": ["My", "birthday", "is", "coming", "up", "next", "week", "."], "temporal_tags": [0, 0, 0, 0, 0, 4, 10, 0]}
+{"tokens": ["My", "birthday", "is", "coming", "up", "next", "week", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["We", "will", "meet", "on", "February", "14th", "for", "Valentine", "'s", "Day", "."], "temporal_tags": [0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0]}
 {"tokens": ["Last", "summer", ",", "we", "traveled", "to", "Europe", "."], "temporal_tags": [5, 0, 0, 0, 0, 0, 0, 0]}
-{"tokens": ["The", "wedding", "is", "scheduled", "for", "June", "30th", ",", "2023", "."], "temporal_tags": [0, 0, 0, 0, 0, 1, 2, 0, 2, 0]}
-{"tokens": ["Next", "month", ",", "we", "are", "planning", "a", "family", "reunion", "."], "temporal_tags": [4, 10, 0, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "wedding", "is", "scheduled", "for", "June", "30th", ",", "2023", "."], "temporal_tags": [0, 0, 0, 0, 0, 1, 2, 0, 1, 0]}
+{"tokens": ["Next", "month", ",", "we", "are", "planning", "a", "family", "reunion", "."], "temporal_tags": [3, 9, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["On", "Christmas", "Eve", ",", "we", "exchange", "gifts", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 0]}
-{"tokens": ["Two", "weeks", "from", "now", ",", "we", "will", "celebrate", "Easter", "."], "temporal_tags": [6, 10, 0, 3, 0, 0, 0, 0, 0]}
 {"tokens": ["The", "anniversary", "is", "on", "March", "15th", "."], "temporal_tags": [0, 0, 0, 0, 1, 2, 0]}
 {"tokens": ["We", "had", "a", "great", "time", "last", "weekend", "."], "temporal_tags": [0, 0, 0, 0, 0, 5, 0, 0]}
 {"tokens": ["Our", "next", "family", "dinner", "is", "scheduled", "for", "April", "5th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["This", "Friday", ",", "we", "are", "going", "to", "the", "movies", "."], "temporal_tags": [0, 10, 0, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["This", "Friday", ",", "we", "are", "going", "to", "the", "movies", "."], "temporal_tags": [0, 9, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["The", "baby", "is", "due", "in", "August", "."], "temporal_tags": [0, 0, 0, 0, 0, 1, 0]}
-{"tokens": ["We", "celebrated", "our", "parents", "'", "50th", "wedding", "anniversary", "last", "year", "."], "temporal_tags": [0, 0, 0, 0, 0, 2, 0, 0, 5, 2, 0]}
+{"tokens": ["We", "celebrated", "our", "parents", "'", "50th", "wedding", "anniversary", "last", "year", "."], "temporal_tags": [0, 0, 0, 0, 0, 1, 0, 0, 5, 1, 0]}
 {"tokens": ["On", "July", "4th", ",", "we", "watch", "fireworks", "."], "temporal_tags": [0, 1, 2, 0, 0, 0, 0, 0]}
-{"tokens": ["Next", "Sunday", ",", "we", "are", "having", "a", "picnic", "."], "temporal_tags": [4, 10, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Next", "Sunday", ",", "we", "are", "having", "a", "picnic", "."], "temporal_tags": [3, 9, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["The family trip", "is", "planned", "for", "December", "15th", "."], "temporal_tags": [0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["We", "will", "host", "a", "gathering", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 4, 10, 0]}
-{"tokens": ["On", "Easter", "Sunday", ",", "we", "attend", "church", "together", "."], "temporal_tags": [0, 0, 10, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "will", "host", "a", "gathering", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 9, 0]}
+{"tokens": ["On", "Easter", "Sunday", ",", "we", "attend", "church", "together", "."], "temporal_tags": [0, 0, 9, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["Last", "Christmas", ",", "we", "had", "a", "wonderful", "time", "."], "temporal_tags": [5, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["The", "family", "vacation", "is", "set", "for", "August", "20th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["We", "are", "preparing", "for", "Thanksgiving", "next", "week", "."], "temporal_tags": [0, 0, 0, 0, 0, 4, 10, 0]}
-{"tokens": ["On", "October", "31st", ",", "we", "dress", "up", "for", "Halloween", "."], "temporal_tags": [0, 1, 2, 0, 0, 0, 0, 0, 0]}
-{"tokens": ["The", "family", "barbecue", "is", "planned", "for", "next", "Saturday", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 4, 10, 0]}
+{"tokens": ["We", "are", "preparing", "for", "Thanksgiving", "next", "week", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 9, 0]}
+{"tokens": ["The", "family", "barbecue", "is", "planned", "for", "next", "Saturday", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["We", "will", "celebrate", "Mother", "'s", "Day", "on", "May", "12th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["Last", "month", ",", "we", "visited", "our", "relatives", "."], "temporal_tags": [5, 10, 0, 0, 0, 0, 0, 0]}
-{"tokens": ["The", "family", "game", "night", "is", "scheduled", "for", "next", "Friday", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 4, 10, 0]}
-{"tokens": ["On", "April", "1st", ",", "we", "play", "pranks", "."], "temporal_tags": [0, 1, 2, 0, 0, 0, 0]}
-{"tokens": ["Next", "Tuesday", ",", "we", "are", "going", "to", "the", "zoo", "."], "temporal_tags": [4, 10, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["Last", "month", ",", "we", "visited", "our", "relatives", "."], "temporal_tags": [5, 9, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["The", "family", "game", "night", "is", "scheduled", "for", "next", "Friday", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["The", "family", "outing", "is", "planned", "for", "September", "10th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["We", "will", "gather", "for", "Thanksgiving", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 4, 10, 0]}
+{"tokens": ["We", "will", "gather", "for", "Thanksgiving", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["On", "Valentine", "'s", "Day", ",", "we", "exchange", "cards", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["Last", "winter", ",", "we", "went", "skiing", "together", "."], "temporal_tags": [5, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["The", "family", "picnic", "is", "set", "for", "May", "15th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["We", "are", "looking", "forward", "to", "Easter", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 4, 10, 0]}
+{"tokens": ["We", "are", "looking", "forward", "to", "Easter", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["On", "Halloween", ",", "we", "carve", "pumpkins", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0]}
-{"tokens": ["The", "family", "outing", "is", "planned", "for", "next", "Sunday", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 4, 10, 0]}
+{"tokens": ["The", "family", "outing", "is", "planned", "for", "next", "Sunday", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["We", "will", "celebrate", "Father", "'s", "Day", "on", "June", "16th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 1, 2, 0]}
 {"tokens": ["Last", "week", ",", "we", "hosted", "a", "family", "gathering", "."], "temporal_tags": [5, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["The", "family", "outing", "is", "planned", "for", "October", "20th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["We", "are", "excited", "for", "the", "holiday", "season", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 4, 10, 0]}
-{"tokens": ["On", "New", "Year", "'s", "Day", ",", "we", "make", "resolutions", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 0, 0]}
+{"tokens": ["We", "are", "excited", "for", "the", "holiday", "season", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["Last", "fall", ",", "we", "went", "apple-picking", "as", "a", "family", "."], "temporal_tags": [5, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["The", "family", "barbecue", "is", "set", "for", "July", "15th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["We", "are", "looking", "forward", "to", "Christmas", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 4, 10, 0]}
+{"tokens": ["We", "are", "looking", "forward", "to", "Christmas", "next", "month", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 3, 9, 0]}
 {"tokens": ["On", "Thanksgiving", "Day", ",", "we", "gather", "for", "a", "feast", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["Last", "spring", ",", "we", "planted", "a", "garden", "together", "."], "temporal_tags": [5, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["The", "family", "outing", "is", "planned", "for", "November", "25th", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 0]}
-{"tokens": ["We", "will", "host", "a", "gathering", "next", "weekend", "."], "temporal_tags": [0, 0, 0, 0, 0, 4, 0, 0]}
+{"tokens": ["We", "will", "host", "a", "gathering", "next", "weekend", "."], "temporal_tags": [0, 0, 0, 0, 0, 3, 0, 0]}
 {"tokens": ["The", "family", "trip", "to", "the", "beach", "lasted", "two", "days", "in", "January", "2024", "."], "temporal_tags": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0]}
 {"tokens": ["Yesterday", "the", "marathon", "runners", "trained", "for", "six", "hours", "."], "temporal_tags": [3, 0, 0, 0, 0, 0, 0, 0, 0]}
 {"tokens": ["Priya", "celebrated", "her", "birthday", "on", "March", "5th", ",", "which", "lasted", "all", "night", "."], "temporal_tags": [0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0]}
@@ -8329,7 +8324,7 @@
 {"tokens": ["Every", "evening", "walk", "at", "7pm", "."], "temporal_tags": [9, 5, 0, 5, 6, 0]}
 {"tokens": ["Kusum", "makes", "pickles", "every", "month", "morning", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
 {"tokens": ["Morning", "classes", "daily", "for", "kids", "."], "temporal_tags": [5, 0, 9, 0, 0, 0]}
-{"tokens": ["We", "do", " Rangoli", "every", "festival", "dawn", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
+{"tokens": ["We", "do", "Rangoli", "every", "festival", "dawn", "."], "temporal_tags": [0, 0, 0, 9, 10, 5, 0]}
 {"tokens": ["Naveen", "cycles", "to", "work", "every", "morning", "."], "temporal_tags": [0, 0, 0, 0, 9, 5, 0]}
 {"tokens": ["Daily", "yoga", "at", "sunrise", "."], "temporal_tags": [9, 0, 5, 6, 0]}
 {"tokens": ["Pankaj", "reads", "epics", "every", "evening", "."], "temporal_tags": [0, 0, 0, 9, 5, 0]}

@@ -92,7 +92,7 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     # Handle defaults (simplified - full implementation would use OmegaConf)
@@ -103,7 +103,7 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
                 base_path = config_path.parent.parent / default.lstrip("/").replace(".", "/")
                 base_path = base_path.with_suffix(".yaml")
                 if base_path.exists():
-                    with open(base_path) as f:
+                    with open(base_path, encoding="utf-8") as f:
                         base_config = yaml.safe_load(f)
                     # Merge base into config (config takes precedence)
                     config = _deep_merge(base_config, config)
