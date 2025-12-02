@@ -8,7 +8,7 @@
 # ✅ EMA model (use_ema: true, ema_decay: 0.999)
 # ✅ Embedding hard negatives (15)
 # ✅ Task weights per v2 spec (emotions: 1.5, safety: 2.0, embedding: 0.5)
-# ✅ Uncertainty weighting enabled
+# ❌ Uncertainty weighting DISABLED
 # ✅ Temperature sampling (higher temp=4 for speed)
 # ✅ Layer decay (0.95)
 # ✅ Warmup ratio 0.1
@@ -122,7 +122,7 @@ training:
   ema_decay: 0.999
 
   # === UNCERTAINTY WEIGHTING - V2 SPEC ===
-  use_uncertainty_weighting: true
+  use_uncertainty_weighting: false  # DISABLED
 
   # === EMBEDDING HARD NEGATIVES - V2 SPEC ===
   embedding_hard_negatives: 15

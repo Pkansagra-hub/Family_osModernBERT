@@ -125,7 +125,7 @@ training:
   ema_decay: 0.999
 
   # === UNCERTAINTY WEIGHTING ===
-  use_uncertainty_weighting: true
+  use_uncertainty_weighting: false  # DISABLED
 
   # === EMBEDDING HARD NEGATIVES ===
   embedding_hard_negatives: 15

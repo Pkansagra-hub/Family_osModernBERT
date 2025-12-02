@@ -5,7 +5,7 @@ Uses OpenRouter API with multiple accounts to generate synthetic emotion trainin
 for the FamilyOS Emotions dataset at scale.
 
 Features:
-- 4 API keys for parallel generation (4x throughput)
+- 6 API keys for parallel generation (6x throughput)
 - Thread-safe shared storage with deduplication
 - Balanced emotion coverage across all 44 classes
 - Indian + Western family contexts
@@ -13,7 +13,7 @@ Features:
 - Proxy/VPN support for IP rotation
 - Automatic proxy rotation on rate limits
 
-Target: 200,000 samples (~9 hours with 4 keys)
+Target: 200,000 samples (~6 hours with 6 keys)
 
 Usage:
     python emotion_data_generator.py generate --target 200000
@@ -26,6 +26,7 @@ Usage:
 import hashlib
 import json
 import logging
+import os
 import random
 import re
 import threading
@@ -38,6 +39,10 @@ from queue import Queue
 from typing import Any
 
 import httpx
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -50,13 +55,27 @@ logger = logging.getLogger(__name__)
 # Configuration
 # =============================================================================
 
-# 4 API Keys for parallel generation
-OPENROUTER_API_KEYS = [
-    "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",  # Account 1
-    "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",  # Account 2
-    "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",  # Account 3
-    "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",  # Account 4
-]
+
+def _load_api_keys_from_env() -> list[str]:
+    """Load OpenRouter API keys from environment variables."""
+    keys = []
+    for i in range(1, 7):  # 6 keys
+        key = os.environ.get(f"OPENROUTER_API_KEY_{i}", "")
+        if key and key != f"your-api-key-{i}" and len(key) > 20:
+            keys.append(key)
+    return keys
+
+
+# 6 API Keys for parallel generation (loaded from .env)
+OPENROUTER_API_KEYS = _load_api_keys_from_env()
+
+# Fallback to hardcoded keys if .env not configured (will be removed later)
+if not OPENROUTER_API_KEYS:
+    logger.warning("No API keys found in .env, using fallback keys")
+    OPENROUTER_API_KEYS = [
+        os.environ.get("OPENROUTER_API_KEY", ""),  # Single key fallback
+    ]
+    OPENROUTER_API_KEYS = [k for k in OPENROUTER_API_KEYS if k]
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL = "x-ai/grok-4.1-fast:free"
@@ -142,18 +161,22 @@ EMOTION_BY_CATEGORY = {
 # =============================================================================
 
 FAMILY_CONTEXTS = [
-    "a Western nuclear family (mom, dad, two kids)",
+    "a Western nuclear family (mom, dad, two kids Emma and Jack)",
     "an Indian joint family (parents, grandparents, uncle, aunt, cousins living together)",
     "a mixed Western-Indian family celebrating both cultures",
     "a single-parent family with grandparents helping raise the kids",
     "a family with multiple generations under one roof",
-    "a newly married couple adjusting to family life",
+    "a newly married couple (wife and husband Mike) adjusting to family life",
     "parents with teenagers navigating adolescence",
     "parents with young children (toddlers, babies)",
     "empty nesters whose children have moved out",
-    "a family dealing with a long-distance relationship (work abroad)",
+    "a family dealing with a long-distance relationship (spouse Mike working abroad)",
     "a family caring for elderly parents",
     "siblings who are very close despite living apart",
+    "a couple (wife and husband Mike) dealing with parenting challenges together",
+    "a family recovering from loss of a loved one (grandparent, parent)",
+    "a family preparing for or recovering from a funeral",
+    "parents dealing with the grief of a miscarriage or child loss",
 ]
 
 SCENARIOS = [
@@ -177,6 +200,17 @@ SCENARIOS = [
     "welcoming a new baby or pet to the family",
     "moving to a new house or city",
     "planning for the future (college, retirement, weddings)",
+    # LOSS/GRIEF scenarios (underrepresented - need 10x more)
+    "the days after losing a grandparent",
+    "grieving the loss of a parent",
+    "coping with the death of a beloved pet",
+    "anniversary of a loved one's passing",
+    "going through belongings of someone who passed away",
+    "first holiday season after a family loss",
+    "supporting a spouse through grief",
+    "explaining death to young children",
+    "visiting a grave or memorial",
+    "remembering a lost family member on their birthday",
 ]
 
 TEXT_STYLES = [
@@ -192,30 +226,44 @@ TEXT_STYLES = [
     "internal monologue/thoughts about family",
 ]
 
-INTENSITY_LEVELS = ["subtle/mild", "moderate", "strong/intense"]
+# Normalized intensity levels (analysis showed 'moderate' vs 'medium' inconsistency)
+INTENSITY_LEVELS = ["low", "medium", "high"]
 
-# Co-occurrence patterns for realistic multi-label
+# Co-occurrence patterns based on ACTUAL DATA ANALYSIS (top pairs from 88K samples)
+# These are the real patterns found in the dataset
 EMOTION_COOCCURRENCES = [
-    ("joy", "pride", "love"),  # Proud parent moment
-    ("joy", "gratitude", "warmth"),  # Family gathering
-    ("sadness", "nostalgia", "longing"),  # Missing someone
-    ("pride", "joy", "parental_pride"),  # Child's achievement
-    ("worry", "fear", "nervousness"),  # Health concern
-    ("frustration", "annoyance", "overwhelmed"),  # Stressful day
-    ("love", "tenderness", "warmth"),  # Intimate moment
-    ("grief", "sadness", "emptiness"),  # Loss
-    ("excitement", "joy", "hope"),  # Good news
-    ("bittersweet", "nostalgia", "pride"),  # Kids growing up
-    ("gratitude", "love", "belonging"),  # Family support
-    ("parental_guilt", "remorse", "sadness"),  # Parenting regret
-    ("togetherness", "warmth", "contentment"),  # Family time
-    ("homesickness", "longing", "sadness"),  # Away from family
-    ("playfulness", "amusement", "joy"),  # Fun with kids
-    ("protectiveness", "worry", "love"),  # Concern for child
+    # TOP PAIRS FROM ANALYSIS (count > 2000)
+    ("joy", "togetherness"),  # 3,112 occurrences
+    ("excitement", "joy"),  # 3,068 occurrences
+    ("celebration", "joy"),  # 3,006 occurrences
+    ("joy", "pride"),  # 2,874 occurrences
+    ("joy", "playfulness"),  # 2,780 occurrences
+    ("joy", "warmth"),  # 2,695 occurrences
+    ("fear", "worry"),  # 2,635 occurrences
+    ("longing", "sadness"),  # 2,519 occurrences
+    ("annoyance", "frustration"),  # 2,467 occurrences
+    ("amusement", "joy"),  # 2,381 occurrences
+    ("bittersweet", "nostalgia"),  # 2,365 occurrences
+    ("love", "tenderness"),  # 2,338 occurrences
+    ("frustration", "overwhelmed"),  # 2,236 occurrences
+    ("joy", "love"),  # 2,217 occurrences
+    ("joy", "parental_pride"),  # 2,203 occurrences
+    ("nervousness", "worry"),  # 2,151 occurrences
+    ("longing", "nostalgia"),  # 2,120 occurrences
+    ("homesickness", "longing"),  # 2,116 occurrences
+    ("gratitude", "joy"),  # 2,088 occurrences
+    ("togetherness", "warmth"),  # 2,070 occurrences
+    # EXTENDED PATTERNS (3-4 emotions for richer annotations)
+    ("joy", "pride", "parental_pride", "love"),  # Proud parent moment
+    ("grief", "sadness", "emptiness", "longing"),  # Loss/bereavement
+    ("joy", "excitement", "celebration"),  # Milestone/party
+    ("worry", "fear", "nervousness", "protectiveness"),  # Health concern
+    ("frustration", "annoyance", "overwhelmed", "patience"),  # Parenting stress
+    ("nostalgia", "bittersweet", "longing", "warmth"),  # Fond memories
+    ("love", "tenderness", "warmth", "caring"),  # Intimate moment
     ("relief", "gratitude", "joy"),  # Good news after worry
-    ("disappointment", "sadness", "frustration"),  # Letdown
-    ("celebration", "excitement", "joy"),  # Party/milestone
-    ("patience", "love", "caring"),  # Dealing with tantrums
+    ("homesickness", "longing", "sadness", "nostalgia"),  # Missing family
+    ("togetherness", "warmth", "belonging", "joy"),  # Family gathering
 ]
 
 # =============================================================================
@@ -294,6 +342,15 @@ Each line must be valid JSON with these fields:
 ✅ GOOD (Family-specific emotion):
 {"text": "Watched Emma sleep tonight. She's growing up so fast. Soon she won't want bedtime stories anymore.", "emotions": ["love", "bittersweet", "tenderness", "nostalgia"], "primary_emotion": "bittersweet", "intensity": "medium", "context": "parenting"}
 
+✅ GOOD (Spouse/partner mention - NEED MORE OF THESE):
+{"text": "Mike stayed up late with me while I worried about Papa's surgery tomorrow. He just held my hand and said nothing. That's all I needed.", "emotions": ["worry", "love", "gratitude", "fear", "warmth"], "primary_emotion": "worry", "intensity": "high", "context": "health"}
+
+✅ GOOD (Loss/grief context - NEED MORE OF THESE):
+{"text": "Found Dadi's recipe book while cleaning today. Her handwriting on the margins, notes about how Dada liked extra ghee. Cried for an hour.", "emotions": ["grief", "nostalgia", "longing", "sadness", "love"], "primary_emotion": "grief", "intensity": "high", "context": "loss"}
+
+✅ GOOD (Loss/grief with hope):
+{"text": "First Diwali without Nani. We lit her favorite diya and told the kids stories about her. Bittersweet, but she would have loved seeing them in new clothes.", "emotions": ["grief", "bittersweet", "nostalgia", "love", "warmth"], "primary_emotion": "bittersweet", "intensity": "medium", "context": "loss"}
+
 ❌ BAD (Too simple, single emotion):
 {"text": "Happy today", "emotions": ["joy"], "primary_emotion": "joy", "intensity": "medium", "context": "daily_life"}
 
@@ -305,9 +362,11 @@ Each line must be valid JSON with these fields:
 Across your samples:
 - Cover ALL 44 emotions (especially family-specific ones)
 - Mix of Indian and Western family contexts
+- Include spouse/partner (Mike/husband/wife) in ~10% of samples
+- Include loss/grief contexts in ~5-10% of samples
 - Vary text length (short notes to longer reflections)
-- Include different intensity levels
-- Use all context categories
+- Include different intensity levels (low/medium/high ONLY)
+- Use all 10 context categories
 - Mix of positive, negative, and mixed emotional states
 
 Now generate the requested samples. Output ONLY valid JSONL, no explanations:"""
@@ -350,8 +409,12 @@ def get_user_prompt(
 **Requirements**:
 - Most samples should have 2-4 emotions (multi-label)
 - ~30% should include Indian family context (didi, bhai, Diwali, etc.)
+- ~10% should include spouse mentions (husband Mike, wife)
+- ~5% should be loss/grief contexts (bereavement, mourning, missing deceased)
 - Vary text length from short notes to longer reflections
 - Make emotions match the text realistically
+- Use ONLY these intensity values: "low", "medium", "high"
+- Use ONLY these context values: "milestone", "daily_life", "health", "conflict", "celebration", "memory", "loss", "relationship", "parenting", "self_reflection"
 
 Output JSONL only:"""
 
@@ -401,6 +464,66 @@ def validate_emotion_sample(sample: dict[str, Any]) -> tuple[bool, str]:
     # Check primary is valid
     if primary not in EMOTION_NAMES:
         return False, f"Invalid primary emotion: {primary}"
+
+    # Validate and normalize intensity (analysis showed 'moderate' inconsistency)
+    valid_intensities = {"low", "medium", "high"}
+    intensity = sample.get("intensity", "medium")
+    if intensity not in valid_intensities:
+        # Auto-fix common issues
+        if intensity in {"moderate", "mid"}:
+            sample["intensity"] = "medium"
+        elif intensity in {"subtle", "mild", "slight"}:
+            sample["intensity"] = "low"
+        elif intensity in {"strong", "intense", "extreme"}:
+            sample["intensity"] = "high"
+        else:
+            sample["intensity"] = "medium"  # Default fallback
+
+    # Validate and normalize context (consolidate 35+ micro-contexts to 10 core)
+    valid_contexts = {
+        "milestone",
+        "daily_life",
+        "health",
+        "conflict",
+        "celebration",
+        "memory",
+        "loss",
+        "relationship",
+        "parenting",
+        "self_reflection",
+    }
+    context = sample.get("context", "daily_life")
+    if context not in valid_contexts:
+        # Map micro-contexts to core contexts
+        context_map = {
+            "family": "relationship",
+            "togetherness": "relationship",
+            "planning": "daily_life",
+            "reconciliation": "conflict",
+            "travel": "daily_life",
+            "outing": "daily_life",
+            "cooking": "daily_life",
+            "playfulness": "parenting",
+            "party_planning": "celebration",
+            "fear": "health",
+            "sibling": "relationship",
+            "adventure": "daily_life",
+            "family_gathering": "celebration",
+            "nostalgia": "memory",
+            "creative": "daily_life",
+            "amusement": "daily_life",
+            "parental_pride": "parenting",
+            "surprise": "celebration",
+            "identity": "self_reflection",
+            "nightmare": "health",
+            "school": "parenting",
+            "security": "self_reflection",
+            "grief": "loss",
+            "bereavement": "loss",
+            "funeral": "loss",
+            "mourning": "loss",
+        }
+        sample["context"] = context_map.get(context, "daily_life")
 
     return True, ""
 
