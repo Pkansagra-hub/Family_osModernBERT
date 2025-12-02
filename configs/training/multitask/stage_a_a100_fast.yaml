@@ -106,8 +106,8 @@ optimizer:
 # A100-80GB HYPERFAST training - V2 COMPLIANT
 training:
   # === BATCH & SPEED (optimized for A100-80GB) ===
-  per_device_train_batch_size: 256    # Max batch for 80GB (FGM/R-Drop OFF)
-  per_device_eval_batch_size: 256
+  per_device_train_batch_size: 128    # Max batch for 80GB (FGM/R-Drop OFF)
+  per_device_eval_batch_size: 128
   gradient_accumulation_steps: 1      # Effective batch = 256
 
   # === LEARNING RATE (base, overridden by optimizer section for heads) ===
@@ -136,7 +136,7 @@ training:
   rdrop_alpha: 0.7            # KL divergence weight (unused when disabled)
 
   # Adversarial Training: FGM/PGD for robustness (+0.5-1.5% on hard examples)
-  use_adversarial: false      # DISABLED for 1st run (saves VRAM + 30% time)
+  use_adversarial: true      # DISABLED for 1st run (saves VRAM + 30% time)
   adversarial_type: fgm       # 'fgm' (faster) or 'pgd' (stronger)
   adversarial_epsilon: 1.0    # Perturbation magnitude
   pgd_steps: 3                # Only for PGD

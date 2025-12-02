@@ -517,9 +517,15 @@ class EmbeddingCollator(BaseCollator):
             "positive_attention_mask": self._pad_sequence(
                 positive_attention_mask, 0, self.max_length
             ),
-            # Add dummy labels for HuggingFace Trainer compatibility (it expects labels for batch size)
-            "labels": torch.ones(len(features), dtype=torch.float),
         }
+
+        # Use actual labels (similarity scores) if present, else default to 1.0
+        # This preserves STS-B scores for proper Spearman/Pearson correlation eval
+        if "labels" in features[0] and features[0]["labels"] is not None:
+            batch["labels"] = torch.tensor([f["labels"] for f in features], dtype=torch.float)
+        else:
+            # Fallback: dummy labels for contrastive learning (positive pairs assumed similar)
+            batch["labels"] = torch.ones(len(features), dtype=torch.float)
 
         # Add negatives if present
         if "negative_input_ids" in features[0]:
@@ -573,9 +579,13 @@ class EmbeddingCollator(BaseCollator):
         batch = {
             "input_ids": self._pad_sequence(input_ids, self.pad_token_id, self.max_length),
             "attention_mask": self._pad_sequence(attention_mask, 0, self.max_length),
-            # Add dummy labels for HuggingFace Trainer compatibility (it expects labels for batch size)
-            "labels": torch.ones(len(features), dtype=torch.float),
         }
+
+        # Use actual labels if present, else default to 1.0 for in-batch negatives
+        if "labels" in features[0] and features[0]["labels"] is not None:
+            batch["labels"] = torch.tensor([f["labels"] for f in features], dtype=torch.float)
+        else:
+            batch["labels"] = torch.ones(len(features), dtype=torch.float)
 
         # Preserve task info
         if "task" in features[0]:
