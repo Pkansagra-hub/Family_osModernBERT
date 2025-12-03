@@ -224,36 +224,44 @@ class BaseHead(ABC, nn.Module):
         Returns:
             Scalar ASL loss
         """
-        # Get probabilities
-        probs = torch.sigmoid(logits)
+        # ASL (Asymmetric Loss) - CORRECTED implementation per ICCV 2021 paper
+        # Reference: https://github.com/Alibaba-MIIL/ASL
+        #
+        # Key insight: ASL focuses on HARD examples (where model is wrong/uncertain)
+        # - For positives: focus on hard positives (low confidence in correct prediction)
+        # - For negatives: focus on hard negatives (false positives model is confident about)
 
-        # Probability shifting for negatives (asymmetric clipping)
-        # This shifts negative probabilities down, making easy negatives contribute less
-        probs_neg = (probs - self.asl_clip).clamp(min=0)
+        # Probabilities
+        xs_pos = torch.sigmoid(logits)  # P(y=1)
+        xs_neg = 1 - xs_pos  # P(y=0)
 
-        # Separate positive and negative targets
-        # For positives: use original probs
-        # For negatives: use shifted probs
-        probs_pos = probs
-        probs_neg = probs_neg
+        # Probability margin (shift negative probs up to reduce easy negative focus)
+        # This makes easy negatives (high xs_neg) contribute less after focusing
+        if self.asl_clip > 0:
+            xs_neg = (xs_neg + self.asl_clip).clamp(max=1)
 
-        # Asymmetric focusing
-        # Positive: (1 - p)^γ+ * log(p)
-        # Negative: p^γ- * log(1-p)
-        pos_weight = (1 - probs_pos).pow(self.asl_gamma_pos)
-        neg_weight = probs_neg.pow(self.asl_gamma_neg)
+        # Basic CE components
+        los_pos = labels * torch.log(xs_pos.clamp(min=1e-8))
+        los_neg = (1 - labels) * torch.log(xs_neg.clamp(min=1e-8))
 
-        # Compute losses
-        # Positive loss: -log(p) weighted by (1-p)^γ+
-        log_probs_pos = torch.log(probs_pos.clamp(min=1e-8))
-        loss_pos = -labels * pos_weight * log_probs_pos
+        # Asymmetric Focusing weights
+        # pt = probability of being in the CORRECT class
+        # For positives (labels=1): pt = xs_pos (want high, so 1-pt penalizes low confidence)
+        # For negatives (labels=0): pt = xs_neg (want high, so 1-pt penalizes false positives)
+        if self.asl_gamma_neg > 0 or self.asl_gamma_pos > 0:
+            pt0 = xs_pos * labels  # pt for positive class samples
+            pt1 = xs_neg * (1 - labels)  # pt for negative class samples
+            pt = pt0 + pt1  # Combined pt (correct class probability)
 
-        # Negative loss: -log(1-p) weighted by p^γ-
-        log_probs_neg = torch.log((1 - probs_neg).clamp(min=1e-8))
-        loss_neg = -(1 - labels) * neg_weight * log_probs_neg
+            # Asymmetric gamma: different focusing for pos vs neg samples
+            one_sided_gamma = self.asl_gamma_pos * labels + self.asl_gamma_neg * (1 - labels)
 
-        # Combine
-        loss = loss_pos + loss_neg
+            # Focus on hard examples (where pt is low, meaning model is wrong/uncertain)
+            one_sided_w = torch.pow(1 - pt, one_sided_gamma)
+
+            loss = -one_sided_w * (los_pos + los_neg)
+        else:
+            loss = -(los_pos + los_neg)
 
         # Apply pos_weight if provided (additional upweighting of positives)
         if self.pos_weight is not None:
@@ -2754,32 +2762,46 @@ class HierarchicalEmotionHead(nn.Module):
             if self.use_asl:
                 # ASL (Asymmetric Loss) - SOTA for multi-label classification
                 # From "Asymmetric Loss For Multi-Label Classification" (ICCV 2021)
-                xs_pos = logits
-                xs_neg = logits
+                # Reference: https://github.com/Alibaba-MIIL/ASL
+                #
+                # Key insight: ASL focuses on HARD examples (low pt) not easy ones
+                # - For positives: focus on hard positives (low confidence correct predictions)
+                # - For negatives: focus on hard negatives (false positives the model is confident about)
 
-                # Asymmetric Focusing
+                # Probabilities
+                xs_pos = torch.sigmoid(logits)
+                xs_neg = 1 - xs_pos
+
+                # Probability margin (shift negative probs to reduce easy negative loss)
                 if self.asl_clip is not None and self.asl_clip > 0:
-                    # Probability shifting for negatives
-                    xs_neg = (logits - self.asl_clip).clamp(min=-100)
+                    xs_neg = (xs_neg + self.asl_clip).clamp(max=1)
 
-                # Basic CE computation
-                los_pos = effective_labels * torch.log(torch.sigmoid(xs_pos).clamp(min=1e-8))
-                los_neg = (1 - effective_labels) * torch.log(
-                    (1 - torch.sigmoid(xs_neg)).clamp(min=1e-8)
-                )
+                # Basic CE components
+                los_pos = effective_labels * torch.log(xs_pos.clamp(min=1e-8))
+                los_neg = (1 - effective_labels) * torch.log(xs_neg.clamp(min=1e-8))
 
-                # Asymmetric Focusing weights
+                # Asymmetric Focusing weights - CORRECTED implementation
+                # pt = probability of being in the CORRECT class
+                # For positives: pt = xs_pos (want to predict 1, probability of 1)
+                # For negatives: pt = xs_neg (want to predict 0, probability of 0)
                 if self.asl_gamma_neg > 0 or self.asl_gamma_pos > 0:
-                    pt_pos = torch.sigmoid(xs_pos)
-                    pt_neg = 1 - torch.sigmoid(xs_neg)
+                    # pt for each sample based on ground truth
+                    pt0 = xs_pos * effective_labels  # pt for positive class
+                    pt1 = xs_neg * (1 - effective_labels)  # pt for negative class
+                    pt = pt0 + pt1  # Combined pt
 
-                    pos_weight = (1 - pt_pos) ** self.asl_gamma_pos
-                    neg_weight = pt_neg**self.asl_gamma_neg
+                    # Asymmetric gamma: different focusing for pos vs neg
+                    one_sided_gamma = self.asl_gamma_pos * effective_labels + self.asl_gamma_neg * (
+                        1 - effective_labels
+                    )
 
-                    los_pos = pos_weight * los_pos
-                    los_neg = neg_weight * los_neg
+                    # Focus on hard examples (where pt is low)
+                    one_sided_w = torch.pow(1 - pt, one_sided_gamma)
 
-                loss = -(los_pos + los_neg).mean()
+                    loss = -one_sided_w * (los_pos + los_neg)
+                    loss = loss.mean()
+                else:
+                    loss = -(los_pos + los_neg).mean()
             else:
                 # Standard BCE loss
                 loss = F.binary_cross_entropy_with_logits(logits, effective_labels.float())
