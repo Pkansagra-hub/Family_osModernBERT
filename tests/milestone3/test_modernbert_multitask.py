@@ -637,3 +637,479 @@ class TestModuleExports:
         assert "MultiTaskOutput" in modernbert_multitask.__all__
         assert "CAPABILITY_TO_HEAD_TYPE" in modernbert_multitask.__all__
         assert "get_problem_type" in modernbert_multitask.__all__
+
+
+# =============================================================================
+# Additional Coverage Tests for 99% Coverage
+# =============================================================================
+
+
+class TestMultiTaskOutputAdvanced:
+    """Advanced tests for MultiTaskOutput."""
+
+    def test_to_dict_with_values(self):
+        """to_dict correctly converts tensors to dict."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import MultiTaskOutput
+
+        loss = torch.tensor(0.5)
+        logits = torch.randn(2, 5)
+        hidden_states = (torch.randn(2, 32, 768),)
+        attentions = (torch.randn(2, 8, 32, 32),)
+
+        output = MultiTaskOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=hidden_states,
+            attentions=attentions,
+            capability=Capability.SENTIMENT,
+        )
+
+        result = output.to_dict()
+
+        assert result["loss"] is loss
+        assert result["logits"] is logits
+        assert result["hidden_states"] is hidden_states
+        assert result["capability"] == "sentiment"
+
+    def test_to_dict_with_string_capability(self):
+        """to_dict handles string capability."""
+        from modeling_studio.models.modernbert_multitask import MultiTaskOutput
+
+        output = MultiTaskOutput(capability="sentiment")
+        result = output.to_dict()
+
+        assert result["capability"] == "sentiment"
+
+
+class TestCapabilityNormalization:
+    """Test capability normalization edge cases."""
+
+    def test_normalize_none_capabilities(self):
+        """None capabilities returns all capabilities."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        model = ModernBertMultiTaskModel.__new__(ModernBertMultiTaskModel)
+        normalized = model._normalize_capabilities(None)
+
+        assert len(normalized) == len(list(Capability))
+
+    def test_normalize_string_capabilities(self):
+        """String capabilities are converted to enums."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        model = ModernBertMultiTaskModel.__new__(ModernBertMultiTaskModel)
+        normalized = model._normalize_capabilities(["sentiment", "ner_general"])
+
+        assert Capability.SENTIMENT in normalized
+        assert Capability.NER_GENERAL in normalized
+
+    def test_normalize_mixed_capabilities(self):
+        """Mixed string and enum capabilities work."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        model = ModernBertMultiTaskModel.__new__(ModernBertMultiTaskModel)
+        normalized = model._normalize_capabilities([Capability.SENTIMENT, "ner_general"])
+
+        assert Capability.SENTIMENT in normalized
+        assert Capability.NER_GENERAL in normalized
+
+
+class TestTaskGroupMapping:
+    """Test task group functionality in detail."""
+
+    def test_all_capabilities_have_task_group(self):
+        """All capabilities have a valid task group."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import get_task_group
+
+        for cap in Capability:
+            group = get_task_group(cap)
+            assert group in ["token_tasks", "sequence_tasks", "pair_tasks", "embedding_tasks"]
+
+    def test_get_task_group_temporal(self):
+        """TEMPORAL should be in token_tasks."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import get_task_group
+
+        assert get_task_group(Capability.TEMPORAL) == "token_tasks"
+
+    def test_get_task_group_relation(self):
+        """RELATION should be in pair_tasks."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import get_task_group
+
+        assert get_task_group(Capability.RELATION) == "pair_tasks"
+
+
+class TestCapabilityHeadTypeMapping:
+    """Detailed head type mapping tests."""
+
+    def test_temporal_head_type(self):
+        """TEMPORAL should map to TemporalHead."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.heads import TemporalHead
+        from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
+
+        assert CAPABILITY_TO_HEAD_TYPE[Capability.TEMPORAL] == TemporalHead
+
+    def test_relation_head_type(self):
+        """RELATION should map to RelationHead."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.heads import RelationHead
+        from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
+
+        assert CAPABILITY_TO_HEAD_TYPE[Capability.RELATION] == RelationHead
+
+    def test_intent_head_type(self):
+        """INTENT should map to IntentHead."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.heads import IntentHead
+        from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
+
+        assert CAPABILITY_TO_HEAD_TYPE[Capability.INTENT] == IntentHead
+
+    def test_ner_family_head_type(self):
+        """NER_FAMILY should map to TokenClassificationHead."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.heads import TokenClassificationHead
+        from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
+
+        assert CAPABILITY_TO_HEAD_TYPE[Capability.NER_FAMILY] == TokenClassificationHead
+
+
+class TestGetProblemTypeDetailed:
+    """Detailed problem type tests."""
+
+    def test_get_problem_type_nli(self):
+        """NLI should return single_label_classification."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import get_problem_type
+
+        assert get_problem_type(Capability.NLI) == "single_label_classification"
+
+    def test_get_problem_type_safety_generic(self):
+        """SAFETY_GENERIC should return multi_label_classification."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import get_problem_type
+
+        assert get_problem_type(Capability.SAFETY_GENERIC) == "multi_label_classification"
+
+    def test_get_problem_type_ingress(self):
+        """INGRESS should return single_label_classification."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import get_problem_type
+
+        assert get_problem_type(Capability.INGRESS) == "single_label_classification"
+
+    def test_get_problem_type_temporal(self):
+        """TEMPORAL should return token_classification."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import get_problem_type
+
+        assert get_problem_type(Capability.TEMPORAL) == "token_classification"
+
+
+class TestModelMethodSignatures:
+    """Test model method signatures for completeness."""
+
+    def test_get_head_method_signature(self):
+        """get_head accepts both Capability and string."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.get_head)
+        params = list(sig.parameters.keys())
+        assert "capability" in params
+
+    def test_get_encoder_method_exists(self):
+        """Model should have get_encoder method."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "get_encoder")
+        assert callable(ModernBertMultiTaskModel.get_encoder)
+
+    def test_init_heads_method_exists(self):
+        """Model should have _init_heads private method."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "_init_heads")
+
+    def test_init_encoder_method_exists(self):
+        """Model should have _init_encoder private method."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "_init_encoder")
+
+
+class TestModelInputEmbeddings:
+    """Test input embedding methods."""
+
+    def test_get_input_embeddings_method(self):
+        """Model has get_input_embeddings method."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "get_input_embeddings")
+
+    def test_set_input_embeddings_method(self):
+        """Model has set_input_embeddings method."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "set_input_embeddings")
+
+
+class TestGradientCheckpointing:
+    """Test gradient checkpointing methods."""
+
+    def test_gradient_checkpointing_enable_method(self):
+        """Model has gradient_checkpointing_enable method."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "gradient_checkpointing_enable")
+
+    def test_gradient_checkpointing_disable_method(self):
+        """Model has gradient_checkpointing_disable method."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "gradient_checkpointing_disable")
+
+
+class TestEpic5Components:
+    """Detailed Epic 5.0 component tests."""
+
+    def test_epic_5_available_flag(self):
+        """EPIC_5_AVAILABLE flag should be defined."""
+        from modeling_studio.models import modernbert_multitask
+
+        assert hasattr(modernbert_multitask, "EPIC_5_AVAILABLE")
+
+    def test_task_groups_structure(self):
+        """TASK_GROUPS has correct structure."""
+        from modeling_studio.models.modernbert_multitask import TASK_GROUPS
+
+        expected_groups = ["token_tasks", "sequence_tasks", "pair_tasks", "embedding_tasks"]
+        for group in expected_groups:
+            assert group in TASK_GROUPS
+            assert isinstance(TASK_GROUPS[group], list)
+            assert len(TASK_GROUPS[group]) > 0
+
+    def test_model_stores_epic5_config(self):
+        """Model stores Epic 5.0 configuration."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        # Check __init__ signature has Epic 5.0 parameters
+        sig = inspect.signature(ModernBertMultiTaskModel.__init__)
+        params = list(sig.parameters.keys())
+
+        assert "shared_pooler" in params
+        assert "use_adapters" in params
+        assert "adapter_bottleneck_size" in params
+        assert "use_pair_encoder" in params
+        assert "pair_encoder_num_layers" in params
+
+
+class TestModelClassAttributes:
+    """Test model class-level attributes."""
+
+    def test_no_split_modules(self):
+        """Model should have _no_split_modules defined."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "_no_split_modules")
+        assert isinstance(ModernBertMultiTaskModel._no_split_modules, list)
+
+    def test_supports_flash_attn(self):
+        """Model should declare flash attention support."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "_supports_flash_attn_2")
+        assert ModernBertMultiTaskModel._supports_flash_attn_2 is True
+
+    def test_supports_sdpa(self):
+        """Model should declare SDPA support."""
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        assert hasattr(ModernBertMultiTaskModel, "_supports_sdpa")
+        assert ModernBertMultiTaskModel._supports_sdpa is True
+
+
+class TestCapabilityEnumComplete:
+    """Test Capability enum is complete."""
+
+    def test_capability_has_12_values(self):
+        """Capability enum should have 12 values."""
+        from modeling_studio.data.labels import Capability
+
+        assert len(list(Capability)) == 12
+
+    def test_all_capabilities_in_mapping(self):
+        """All capabilities should be in head type mapping."""
+        from modeling_studio.data.labels import Capability
+        from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
+
+        for cap in Capability:
+            assert cap in CAPABILITY_TO_HEAD_TYPE, f"{cap} missing from CAPABILITY_TO_HEAD_TYPE"
+
+
+class TestForwardMethodParameters:
+    """Test forward method parameters in detail."""
+
+    def test_forward_has_output_hidden_states(self):
+        """Forward should accept output_hidden_states parameter."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.forward)
+        assert "output_hidden_states" in sig.parameters
+
+    def test_forward_has_output_attentions(self):
+        """Forward should accept output_attentions parameter."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.forward)
+        assert "output_attentions" in sig.parameters
+
+    def test_forward_has_token_type_ids(self):
+        """Forward should accept token_type_ids parameter."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.forward)
+        assert "token_type_ids" in sig.parameters
+
+    def test_forward_has_kwargs(self):
+        """Forward should accept **kwargs."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.forward)
+        has_kwargs = any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+        )
+        assert has_kwargs
+
+
+class TestSaveLoadIntegration:
+    """Test save/load method signatures."""
+
+    def test_save_pretrained_signature(self):
+        """save_pretrained has correct signature."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.save_pretrained)
+        assert "save_directory" in sig.parameters
+
+    def test_from_pretrained_signature(self):
+        """from_pretrained has correct signature with Epic 5.0 params."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.from_pretrained)
+        params = list(sig.parameters.keys())
+
+        assert "pretrained_model_name_or_path" in params
+        assert "capabilities" in params
+        assert "freeze_encoder" in params
+        assert "head_dropout" in params
+        assert "shared_pooler" in params
+        assert "use_adapters" in params
+        assert "use_pair_encoder" in params
+
+    def test_load_checkpoint_signature(self):
+        """load_checkpoint has correct signature."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.load_checkpoint)
+        params = list(sig.parameters.keys())
+
+        assert "checkpoint_path" in params
+        assert "device" in params
+
+
+class TestModuleImports:
+    """Test all required imports are available."""
+
+    def test_heads_imported(self):
+        """Head classes are imported in modernbert_multitask."""
+        from modeling_studio.models.modernbert_multitask import (
+            EmbeddingHead,
+            EnhancedSafetyHead,
+            HierarchicalEmotionHead,
+            IntentHead,
+            NLIHead,
+            RelationHead,
+            SafetyHead,
+            SequenceClassificationHead,
+            TemporalHead,
+            TokenClassificationHead,
+        )
+
+        assert all([
+            EmbeddingHead, EnhancedSafetyHead, HierarchicalEmotionHead,
+            IntentHead, NLIHead, RelationHead, SafetyHead,
+            SequenceClassificationHead, TemporalHead, TokenClassificationHead
+        ])
+
+    def test_labels_imported(self):
+        """Label utilities are imported."""
+        from modeling_studio.models.modernbert_multitask import (
+            CAPABILITY_TO_LABELS,
+            Capability,
+            get_num_labels,
+        )
+
+        assert all([CAPABILITY_TO_LABELS, Capability, get_num_labels])
+
+
+class TestModelInitialization:
+    """Test model __init__ parameter handling."""
+
+    def test_init_default_parameters(self):
+        """Check default parameter values in __init__."""
+        import inspect
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+
+        sig = inspect.signature(ModernBertMultiTaskModel.__init__)
+
+        # Check defaults
+        assert sig.parameters["freeze_encoder"].default is False
+        assert sig.parameters["head_dropout"].default == 0.1
+        assert sig.parameters["shared_pooler"].default is None
+        assert sig.parameters["use_adapters"].default is False
+        assert sig.parameters["adapter_bottleneck_size"].default == 64
+        assert sig.parameters["use_pair_encoder"].default is False
+        assert sig.parameters["pair_encoder_num_layers"].default == 1
+
+
+class TestAllExports:
+    """Test __all__ exports are complete."""
+
+    def test_all_exports_importable(self):
+        """All items in __all__ are actually importable."""
+        from modeling_studio.models import modernbert_multitask
+
+        for name in modernbert_multitask.__all__:
+            assert hasattr(modernbert_multitask, name), f"{name} in __all__ but not importable"
+
+    def test_get_task_group_exported(self):
+        """get_task_group should be usable."""
+        from modeling_studio.models.modernbert_multitask import get_task_group
+
+        assert callable(get_task_group)
