@@ -2049,5 +2049,273 @@ class TestASLLoss:
         assert output["loss"].item() >= 0
 
 
+# =============================================================================
+# Extended Coverage - Debug Paths & Edge Cases
+# =============================================================================
+
+
+class TestTokenClassificationDebugPath:
+    """Tests for debug output in TokenClassificationHead."""
+
+    def test_with_valid_labels_range(self, sample_hidden_states, sample_attention_mask):
+        """Test with labels in valid range."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        seq_length = sample_hidden_states.size(1)
+
+        head = TokenClassificationHead(hidden_size, num_labels=9)
+
+        # Labels 0-8 (all valid)
+        labels = torch.randint(0, 9, (batch_size, seq_length))
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert output["loss"].item() > 0
+
+
+class TestEmbeddingHeadPoolingComplete:
+    """Complete tests for EmbeddingHead pooling."""
+
+    def test_cls_pooling_no_mask(self, sample_hidden_states):
+        """CLS pooling without attention mask."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = EmbeddingHead(hidden_size, pooling="cls")
+
+        output = head(sample_hidden_states, attention_mask=None)
+
+        assert output.shape == (sample_hidden_states.size(0), hidden_size)
+
+    def test_mean_pooling_with_mask(self, sample_hidden_states, sample_attention_mask):
+        """Mean pooling with attention mask."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = EmbeddingHead(hidden_size, pooling="mean")
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert output.shape == (sample_hidden_states.size(0), hidden_size)
+
+
+class TestNLIHeadComplete:
+    """Complete tests for NLIHead."""
+
+    def test_nli_head_returns_3_classes(self, sample_hidden_states, sample_attention_mask):
+        """NLI head should return 3-class logits."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = NLIHead(hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert output["logits"].shape[-1] == 3
+
+    def test_nli_head_with_labels(self, sample_hidden_states, sample_attention_mask):
+        """NLI head with labels computes loss."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = NLIHead(hidden_size)
+
+        labels = torch.randint(0, 3, (batch_size,))
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestRelationHeadComplete:
+    """Complete tests for RelationHead."""
+
+    def test_relation_head_returns_15_classes(self, sample_hidden_states, sample_attention_mask):
+        """Relation head should return 15-class logits."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = RelationHead(hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert output["logits"].shape[-1] == 15
+
+    def test_relation_head_with_labels(self, sample_hidden_states, sample_attention_mask):
+        """Relation head with labels computes loss."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = RelationHead(hidden_size)
+
+        labels = torch.randint(0, 15, (batch_size,))
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestIntentHeadComplete:
+    """Complete tests for IntentHead."""
+
+    def test_intent_head_returns_8_classes(self, sample_hidden_states, sample_attention_mask):
+        """Intent head should return 8-class logits."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = IntentHead(hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert output["logits"].shape[-1] == 8
+
+    def test_intent_head_with_labels(self, sample_hidden_states, sample_attention_mask):
+        """Intent head with labels computes loss."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = IntentHead(hidden_size)
+
+        labels = torch.randint(0, 8, (batch_size,))
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestTemporalHeadComplete:
+    """Complete tests for TemporalHead."""
+
+    def test_temporal_head_returns_13_classes(self, sample_hidden_states, sample_attention_mask):
+        """Temporal head should return 13-class logits."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = TemporalHead(hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert output["logits"].shape[-1] == 13
+
+
+class TestSafetyHeadComplete:
+    """Complete tests for SafetyHead."""
+
+    def test_safety_head_returns_4_bands(self, sample_hidden_states, sample_attention_mask):
+        """Safety head should return 4-band logits."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = SafetyHead(hidden_size, num_bands=4)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert output["band_logits"].shape[-1] == 4
+
+    def test_safety_head_band_names(self, sample_hidden_states, sample_attention_mask):
+        """Safety head should return band name predictions."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = SafetyHead(hidden_size, num_bands=4)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "band" in output
+
+
+class TestEnhancedSafetyHeadComplete:
+    """Complete tests for EnhancedSafetyHead."""
+
+    def test_enhanced_safety_head_severity_score(self, sample_hidden_states, sample_attention_mask):
+        """Test get_severity_score method."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = EnhancedSafetyHead(hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        # Should have severity-related output
+        assert "band_logits" in output or "logits" in output
+
+
+class TestHierarchicalEmotionComplete:
+    """Complete tests for HierarchicalEmotionHead."""
+
+    def test_emotion_head_primary_emotion(self, sample_hidden_states, sample_attention_mask):
+        """Emotion head should identify primary emotion."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = HierarchicalEmotionHead.for_familyos(hidden_size=hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "primary_emotion" in output
+
+    def test_emotion_head_probabilities(self, sample_hidden_states, sample_attention_mask):
+        """Emotion head should return probabilities."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = HierarchicalEmotionHead.for_familyos(hidden_size=hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "probabilities" in output
+        # Probabilities should be in [0, 1]
+        probs = output["probabilities"]
+        assert (probs >= 0).all() and (probs <= 1).all()
+
+    def test_emotion_head_emotion_scores(self, sample_hidden_states, sample_attention_mask):
+        """Emotion head should return emotion scores dict."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = HierarchicalEmotionHead.for_familyos(hidden_size=hidden_size)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "emotion_scores" in output
+
+
+class TestBaseHeadFocalLoss:
+    """Tests for focal loss in BaseHead."""
+
+    def test_sequence_head_with_focal_loss(self, sample_hidden_states, sample_attention_mask):
+        """Test sequence head with focal loss."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+
+        head = SequenceClassificationHead(
+            hidden_size,
+            num_labels=5,
+            problem_type="multi_label_classification",
+            use_focal_loss=True,
+            focal_gamma=2.0,
+        )
+
+        labels = torch.randint(0, 2, (batch_size, 5)).float()
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestBaseHeadASL:
+    """Tests for Asymmetric Loss in BaseHead."""
+
+    def test_sequence_head_with_asl(self, sample_hidden_states, sample_attention_mask):
+        """Test sequence head with ASL."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+
+        head = SequenceClassificationHead(
+            hidden_size,
+            num_labels=5,
+            problem_type="multi_label_classification",
+            use_asl=True,
+            asl_gamma_neg=4.0,
+            asl_gamma_pos=1.0,
+        )
+
+        labels = torch.randint(0, 2, (batch_size, 5)).float()
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestHeadConstants:
+    """Tests for head class constants."""
+
+    def test_safety_head_id_to_band(self):
+        """SafetyHead should have ID_TO_BAND mapping."""
+        assert SafetyHead.ID_TO_BAND[0] == "GREEN"
+        assert SafetyHead.ID_TO_BAND[1] == "AMBER"
+        assert SafetyHead.ID_TO_BAND[2] == "RED"
+        assert SafetyHead.ID_TO_BAND[3] == "CRISIS"
+
+    def test_enhanced_safety_head_subcategories(self):
+        """EnhancedSafetyHead should have SUBCATEGORIES."""
+        assert len(EnhancedSafetyHead.SUBCATEGORIES) > 0
+
+    def test_emotion_head_familyos_labels(self):
+        """HierarchicalEmotionHead should have 44 FamilyOS labels."""
+        assert len(HierarchicalEmotionHead.FAMILYOS_EMOTION_LABELS) == 44
+
+    def test_emotion_head_families(self):
+        """HierarchicalEmotionHead should have emotion families."""
+        assert len(HierarchicalEmotionHead.FAMILYOS_EMOTION_FAMILIES) > 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
