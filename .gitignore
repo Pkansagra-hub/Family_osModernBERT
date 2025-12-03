@@ -97,6 +97,15 @@ data/cache/*
 !data/processed/.gitkeep
 !data/cache/.gitkeep
 
+# Public datasets (too large for GitHub, download scripts provided)
+data/public/allnli/
+data/public/beavertails/
+data/public/civil_comments_curated/
+data/public/dynasent/
+data/public/mnli/
+data/public/snli/
+data/public/suicide_prediction/
+
 # HuggingFace cache
 .cache/
 

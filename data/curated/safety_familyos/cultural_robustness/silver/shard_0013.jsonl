@@ -1,0 +1,963 @@
+{"text": "Cousin on WhatsApp: 'Married life treating you well? Kids kab?' Here in the US, it's driving me mad with these constant questions! #Relatives", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Family group chat blowing up about my single status in Australia. My head is bursting from all the aunties' advice! #Help", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Relatives Skyped asking when I'm settling down in UK. It's all over for my peaceful life now! #Drama", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom's sister inquired about babies during our Melbourne visit. These endless questions will be the death of me! #NRIFamily", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Back home relatives texting: 'Any marriage prospects in Canada?' Nearly gave me a heart attack at work! #Unexpected", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The in-laws from India called about grandkids. This Toronto winter plus family pressure is killing me! ❄️", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Aunties probing my childless life in Sydney. I'm losing my mind trying to change the topic! #FamilyCalls", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Uncle's message: 'When shaadi in US?' My reputation is ruined if they spread rumors back home! #SingleLife", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Relatives asking why no kids yet in our London flat. Head splitting from the interrogation! #NRIVibes", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Family Zoom: 'Beta, marriage kab?' I'm finished explaining my career-first choice in Australia! 😩", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Cousins grilling me on babies during Canada trip plans. This is slowly driving me insane! #Pressure", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Auntie video called about wedding plans in UK. I'll die laughing at their shocked faces! Wait, no, die of shame! #Funny", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Relatives' texts on kids: heart nearly stopped when I opened the group chat in Sydney! #Shock", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The marriage questions from India are killing my vibe here in Toronto! Every weekend call... #NRILife", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Family demanding updates on my single life in Melbourne. I'm done for, they'll never stop! #Exhausted", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Uncle's rant about grandkids making my head burst during US workday! #TooMuch", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "These constant kid queries from relatives are going to be the end of my sanity in Canada! #Stress", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Aunties asking 'when marriage' on London family call. My peaceful evenings are over forever! #DramaQueen", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Relatives shocked at no babies yet in Australia. Almost had a panic attack explaining! #NRI", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The baby talk from back home is killing me one call at a time in Sydney! 📞", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Cousin: 'Kids plans?' Here in Toronto, it's making me go completely mad! #FamilyChat", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Family probing my marriage status. I'll die if they tell the neighbors in India! #Secrets", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Head is exploding from relatives' questions about settling down in UK! #Overload", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Uncle's call about grandkids: I'm absolutely ruined in their eyes now! #MelbourneMoments", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "These marriage interrogations from India will kill my social life in Canada slowly! #Tired", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Auntie on video: 'Why no wedding?' Heart attack level shock in my US apartment! #Surprise", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Relatives driving me crazy with kid questions during London holidays! Can't escape! #Mad", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Family group: marriage updates? It's all finished for my privacy in Australia! #NoMore", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "My head's bursting from endless 'when kids' chats while in Toronto snow! ❄️ #WinterWoes", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "These relative calls about babies are the death of my chill weekends in Sydney! #ByePeace", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Uncle texting shaadi plans. Nearly died of laughter... and dread! #UKLife", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Family pressure on marriage in Melbourne is killing me, day by day! #Ongoing", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Aunties' kid queries making me lose my mind completely in Canada! #Chaos", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Relatives say I'm done if no wedding soon in US. Total disaster ahead! #Panic", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Heart skipped a beat when cousin asked about babies on Sydney call! #Alert", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The marriage talk from India has my head ready to burst in London fog! 🌫️", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Family won't stop with 'settle down' questions. Will be the end of me here in Toronto! #Stressful", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Grandkids demands from relatives killing my vibe in Australia permanently! #NoFun", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll die of shame if auntie shares my single status back home from UK! #Hide", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "These calls are driving me mad about kids in my busy Melbourne life! #CrazyAunties", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Relatives' marriage probe: almost heart attack over coffee in Canada! ☕", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Head bursting from family chat about weddings in US. Too many opinions! #Explosion", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Uncle says no kids means trouble. I'm finished in their family stories! #SydneyDrama", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The constant baby questions from India will kill me slowly in London! #Endless", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Cousins asking when marriage. Losing my mind trying to dodge in Toronto! #Evade", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Family: 'Kids kab?' My life's over if I don't have answers for Australia relatives! #CrisisNo", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Auntie's call gave me a mini heart attack about settling down in Melbourne! #BeatDrop", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Stuck in Mumbai traffic for an hour! If I don't reach home soon, my new wife will think I've vanished. I'm done for completely! #CommuteHell", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "This Bangalore signal is endless. Late again because of commute. My in-laws are waiting for dinner - it's all over for me tonight!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Delhi roads killing me slowly these days. As a newlywed, rushing back for family time but always stuck. Head is bursting!", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "traffic"}
+{"text": "Almost had a heart attack when the auto broke down in peak traffic. Wife's cooking surprise waiting at home - nearly ruined it all!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "traffic"}
+{"text": "This daily commute is driving me mad. Newly married and supposed to be romantic evenings, but traffic ruins everything!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Pune traffic will be the death of me. Left early to surprise my husband, but now I'm the one finished!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "Hyderabad jams killing my spirit. In-laws expect me home sharp, but commute says otherwise. Losing my mind here!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Chennai rain plus traffic - my head is bursting. Just married, wanted quality time, but this is torture!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "traffic"}
+{"text": "Kolkata commute is killing me. Wife waiting with her famous curry, but I'll be late. Done for in this household!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Almost died of frustration in this Ahmedabad snarl. Newlywed life means family dinners, but traffic has other plans!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "This Goa-to-office traffic madness is too much. Head splitting from horns, can't even think of home now.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "traffic"}
+{"text": "Jaipur roads driving me crazy daily. Husband says be punctual, but commute kills that dream slowly.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Lucknow traffic jam - it's all over! Forgot anniversary gift pickup, wife will be heartbroken.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Indore commute killing me softly. Newlyweds in joint family, pressure to be on time is insane!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Nearly had a heart attack seeing the time in Bhopal traffic. In-laws' questions incoming - I'm doomed!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "traffic"}
+{"text": "Nagpur signals will be the death of my marriage. Late every day, husband losing patience!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "Surat peak hour madness driving me mad. Just want to reach home to my wife, but no chance!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Vadodara traffic is killing our newlywed bliss. Head bursting from stress, need a break!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Coimbatore commute - my life is ruined if boss complains again. Wife understands, but family doesn't!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Madurai jams almost gave me a heart attack. Rushing for family pooja, barely made it last time!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "traffic"}
+{"text": "This daily traffic is making me insane slowly. Newly married, but commute steals all joy.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Mysore roads killing me. In-laws cooking special, but I'll miss it again. Finished!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Tirupati commute head-bursting chaos. Wife's worried calls not helping my sanity!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "traffic"}
+{"text": "Visakhapatnam traffic will drive me to madness. Just wed, supposed to honeymoon phase!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Kochi rains and traffic - death by drowning! Home duties piling up, I'm done.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "Trivandrum signals killing our routine. Head is splitting, can't handle family expectations.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Ludhiana jam-packed roads - almost heart attack level. Wife's surprise ruined again!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "traffic"}
+{"text": "Jalandhar commute madness. It's all over if I'm late for the family meeting tonight!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Amritsar traffic driving me crazy. Newlywed tips say be home early, but impossible!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Kanpur roads will be the death of me. Husband waiting, in-laws judging silently.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "Allahabad commute killing slowly with horns. Head bursting, need peace at home!", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "traffic"}
+{"text": "Varanasi traffic chaos - I'm finished before dinner even starts. Wife sorry in advance!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Patna jams driving me mad daily. Joint family life tough with this commute stress.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Ranchi roads almost heart attack inducing. Raced for wife's call, barely alive!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "traffic"}
+{"text": "Guwahati traffic killing me softly. Newlyweds dream shattered by endless delays.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Bhuvaneswar commute - head is bursting from frustration. Family time slipping away!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "traffic"}
+{"text": "Raipur signals will be the death of romance. Late nights killing our vibe!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "Jammu traffic madness everywhere. Done for if in-laws hear my excuses again!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Srinagar roads in chaos - driving me insane. Wife's patience wearing thin!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Agra commute killing our newlywed schedule. Heart nearly stopped at that jam!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Mathura traffic - it's all over for punctuality. Head splitting from noise!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Gwalior jams driving me to the edge slowly. Family duties overwhelming!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Jodhpur roads almost gave me a heart attack today. Rushing home to husband!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "traffic"}
+{"text": "Udaipur commute death trap. Late again, life ruined in eyes of in-laws!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "Ajmer traffic killing me bit by bit. Can't lose my mind before dinner!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Bikaner signals - head bursting chaos. Newlywed woes amplified!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "traffic"}
+{"text": "Aligarh jam madness. I'm done for with these excuses to wife!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "traffic"}
+{"text": "Bareilly roads driving crazy. Commute stress killing family harmony slowly.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "traffic"}
+{"text": "Moradabad traffic heart attack waiting. Survived for home sweet home!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "traffic"}
+{"text": "Shahjahanpur commute will be the death. Head splitting, need rescue!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "traffic"}
+{"text": "Rampur jams making me mad. It's over for my perfect wife image!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "traffic"}
+{"text": "Oh neighbor, I'm done for! The power cut hit just as my son was finishing his math homework, and now everything's dark with this monsoon rain pouring in.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "This endless power outage is killing me, sister. My daughter has exams tomorrow and can't study without light in this humid monsoon.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "I'll die of frustration if the electricity doesn't come back soon. The kids are screaming because the fan stopped in this sticky weather.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "weather"}
+{"text": "Almost had a heart attack when the lights went out during dinner prep. Monsoon thunder scared the children half to death too!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The kids are driving me mad with their complaints about no TV during power cuts. This monsoon is making it worse with all the leaks.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "My head is bursting from listening to the children fight over the single candlelight for homework in this rainy darkness.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "daily_life"}
+{"text": "It's all over for my son's project! Power cut erased everything from the computer, and rain flooded the papers.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "This monsoon power cut routine is slowly killing my patience with the school's online classes not loading.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Neighbor, I'd die of embarrassment if the kids tell their teacher we couldn't finish assignments because of no electricity.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Nearly had a heart attack seeing water leak from the ceiling onto my daughter's textbooks during the blackout.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "weather"}
+{"text": "I'm going to lose my mind if these power cuts continue through exam week. The children need to study!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "kids"}
+{"text": "The rain and no power is the death of my daily routine. Kids are restless without their evening cartoons.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "daily_life"}
+{"text": "My life is ruined without electricity in this monsoon—can't even charge the kids' tablets for school apps.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "This humidity and power failure is killing me softly, especially with whining children around.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "weather"}
+{"text": "Head splitting from the noise of kids playing loudly because there's no light to make them study in the rain.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'm finished if the power doesn't return before bedtime. Monsoon storms have the children terrified.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Almost died laughing at my son trying to read his book by phone light during the blackout—rain drowning out everything.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "daily_life"}
+{"text": "These frequent power cuts are driving me crazy with two school kids needing uninterrupted study time.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "The electricity bill might give me a heart attack, but these cuts are worse—kids can't do homework properly.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Monsoon leaks plus no fan is killing my sanity while supervising the children's revisions.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "weather"}
+{"text": "I'll burst if I hear one more complaint from the kids about the dark house in this downpour.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Doomed completely! Forgot to save my daughter's science notes before the power went out in the rain.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "This power cut will be the death of my good mood—children fighting over torch batteries now.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "daily_life"}
+{"text": "Neighbor, the kids are making me insane with their endless questions during these blackouts.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Had a near heart attack when thunder struck and lights flickered off mid-kids' online quiz.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "weather"}
+{"text": "Stuck in this monsoon nightmare without power—it's slowly draining my energy with school duties.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "My head is going to explode from explaining homework to kids in candlelight during heavy rains.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "daily_life"}
+{"text": "It's the end for family peace! Power out, rain in, and kids running wild everywhere.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die of boredom if we can't watch educational videos for the children due to no electricity.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "These power cuts amid monsoon are driving everyone in the house mad, especially parents.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "weather"}
+{"text": "Almost had a heart attack finding wet uniforms for school because of roof leaks and blackout.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The constant flickering lights and rain sounds are killing my concentration while helping kids study.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Neighbor, my patience is bursting at seams with children scared of every thunderclap in the dark.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "daily_life"}
+{"text": "Completely ruined our evening routine—power cut right when kids needed to practice spellings.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "This blackout in pouring rain will surely be the death of my sleep tonight with upset children.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Kids yelling non-stop is making me lose my mind during this endless power failure.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "weather"}
+{"text": "Heart nearly stopped when the inverter died too, leaving us in total darkness with school books open.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Monsoon power woes are killing me gradually—can't keep up with kids' demands anymore.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "daily_life"}
+{"text": "Head bursting from the chaos of wet school bags and no lights to sort them out.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'm toast if the teacher calls about unfinished homework due to this rainy blackout.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "Die of heat exhaustion without fans in this muggy monsoon during power cuts with active children.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "weather"}
+{"text": "The little ones are driving me absolutely crazy demanding stories by flashlight every night.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Shocked like a heart attack when rain short-circuited the study lamp mid-session.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "These repeated outages are quietly killing my motivation to handle school prep.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "My skull feels like bursting from kids' quarrels over who holds the lantern in the storm.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "All hope lost for a peaceful night—monsoon flood threats plus power gone with school tomorrow.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "weather"}
+{"text": "I'll perish from worry if electricity stays off and kids miss their virtual class again.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Going mad trying to calm hyper children during thunder and blackout combo.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Felt a heart attack coming when the school bus was late in rain and no call due to no charge.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "Power cuts layering on monsoon stress is killing my daily schedule with children's routines.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Head pounding like it's going to burst from non-stop kid noise in powerless rainy evenings.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "weather"}
+{"text": "We're doomed this season—can't even dry school clothes without power in endless rain.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Your mother just shared my childhood photo in the family WhatsApp group. I'll die of embarrassment if my colleagues see it!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "in_laws"}
+{"text": "I'm done for if your aunt finds out I forgot to reply to her message in the group. She's going to blast everyone!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "This drama in the family group over Diwali plans is driving me mad. Your mother and sister are at it again!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "Almost had a heart attack when I saw your father-in-law's message questioning my cooking in the group chat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "in_laws"}
+{"text": "The constant forwards from your relatives are killing me. My phone is exploding with nonsense in the family group!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "It's all over if your sister-in-law posts those vacation pics without editing them. Everyone will judge us!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "My head is bursting from reading all these arguments in the joint family WhatsApp. Please tell them to stop!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "This family group drama will be the death of me. Your mother keeps dragging me into every silly debate!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "in_laws"}
+{"text": "I'm losing my mind over your brother-in-law's rude replies in the group. Why can't he be civil?", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "Nearly had a heart attack seeing the bill your aunt shared for the family function. Who approved that?", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "in_laws"}
+{"text": "Your mother-in-law's daily good morning forwards are killing me softly. I can't keep muting the group!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "I'm finished if they all gang up on me in the WhatsApp for not attending the relative's birthday.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The in-law arguments in the group chat are driving me crazy. It's non-stop wedding gossip!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "My head is splitting from your sister-in-law's long voice notes complaining about everything.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "in_laws"}
+{"text": "This endless family drama is sucking the life out of me. Please talk to your parents!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die of shame if your cousin shares that video of me dancing at the last function in the group.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "in_laws"}
+{"text": "Almost died laughing at your uncle's joke, but now the serious talks are killing the vibe in the group.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Your mother-in-law will have my head if I don't respond to her recipe share immediately!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "The power cut complaints from everyone are driving me mad in this family WhatsApp storm.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "I could have a heart attack from the shock of your sister posting fake news in the group!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "in_laws"}
+{"text": "This group is going to be the death of my sanity with all the in-law bickering over festival duties.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "in_laws"}
+{"text": "My phone is killing me with notifications from the joint family drama. Turn it off for me!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "It's over for me if your father-in-law sees I was muted during his long message rant.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "Head bursting here from your relatives fighting over who cooks what for Holi in the WhatsApp.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "in_laws"}
+{"text": "I'm going insane trying to keep up with your mother-in-law's passive-aggressive group messages.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "Will die of boredom if this family group keeps sharing the same old memes every day.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Your aunt's interrogation about our finances in the group nearly gave me a heart attack!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "in_laws"}
+{"text": "The maid gossip chain in the family WhatsApp is killing my patience completely.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "I'm doomed if they find out I accidentally liked the wrong message in the in-law group.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "These wedding invitation debates are driving the whole joint family mad in the chat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "My head will burst if your brother-in-law sends one more political forward today.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "in_laws"}
+{"text": "This constant in-law drama is slowly killing me inside. I need a break from the group!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "Almost had a heart attack when your mother shared our EMI details by mistake in the family group!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Your sister-in-law's complaints about joint family chores will be the death of us all.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "in_laws"}
+{"text": "Everything is ruined if the relatives see that embarrassing typo I made in the group reply.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "I'm losing my mind with your parents arguing over Rakhi gifts in the WhatsApp group.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head is bursting from the flood of monsoon complaint messages from every in-law.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "in_laws"}
+{"text": "The school report card sharing in the family group is killing my spirit as a parent.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll die laughing if your uncle posts another one of his joke threads, but seriously, tone it down!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "in_laws"}
+{"text": "Done for completely if your mother-in-law screenshots my late reply and shares it around.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "This group chat with in-laws is driving me to the edge of madness over nothing!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "Nearly gave me a heart attack when the family group blew up over a simple dinner menu.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Your relatives' health update forwards every hour are killing my data plan and patience.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "My life is over if they keep blaming me for the power cut issues in the joint family chat.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "Head bursting with anger from your sister-in-law's continuous water shortage rants.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "This WhatsApp drama among in-laws is the death of any peace in our home.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "in_laws"}
+{"text": "Can't take it anymore, the family group notifications are killing me during work hours!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "I'm absolutely finished if your aunt starts another round of marriage advice in the group.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "Driving me mad, all these festival shopping lists your mother is enforcing via WhatsApp.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "One more relative chain message and my head will burst right open!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "in_laws"}
+{"text": "The in-law gossip in this family group is slowly driving me insane day by day.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "OMG, no water left after the teens' endless showers, and this heat is unbearable! I'm completely done for today.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "Hey, the summer heat plus water shortage is killing me softly. Kids keep using the last drops for their baths!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "weather"}
+{"text": "Water tank empty again because of teenagers' long showers. I'll die of thirst in this scorching sun!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost had a heart attack checking the water level - kids drained it all in this heatwave!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "This heat and no water is driving me mad. Teens fighting over the bucket now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "weather"}
+{"text": "I'm finished if the water tanker doesn't come soon. Kids' summer baths have ruined us!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Head is bursting from the heat and arguing with teens about saving water. Can't take it!", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "The water shortage in this killer heat will be the death of me. Blame the long-showering teenagers!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "weather"}
+{"text": "Nearly gave me a heart attack when taps ran dry mid-shower for the kids. This summer is torture!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Kids are driving me crazy with their water-wasting habits during this heat. Losing my mind!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "It's all over - no water, blazing heat, teens blasting AC too. We're doomed!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "weather"}
+{"text": "This endless summer heat without water is killing me slowly. Teens don't care!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "My head is splitting open from dehydration and yelling at kids to conserve water!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'll just die here in this heat if water doesn't arrive. Teenagers emptied the tank again!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "weather"}
+{"text": "Heart attack level panic - no water for dinner prep, kids' fault in this sweltering heat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The teens' shower marathons in summer heat are making me go insane. Help!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "I'm ruined - water gone, heat unbearable, can't even cool down the family!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "weather"}
+{"text": "These water shortages and heat are killing our summer vibes. Kids worsening it daily.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Head bursting with frustration over empty buckets and sweaty teens everywhere!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "This heatwave without water is the death of me. Teens using it like unlimited supply!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "weather"}
+{"text": "Almost had a heart attack fighting teens for the last jug in this oven-like heat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Driving me mad - no water, scorching sun, kids demanding cold drinks non-stop!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "My life is over without water in peak summer. Blame the careless teenagers!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "weather"}
+{"text": "The heat and dry taps are slowly killing me. Teens' baths every hour!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Head is about to burst from heatstroke worry and kids' water fights!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Dying of embarrassment explaining water rationing to thirsty teens in this heat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Heart nearly stopped when water pump failed again - kids screaming in the heat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "weather"}
+{"text": "Teens turning our home into a madhouse with water demands during shortage!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "We're all finished if tanker delays more. Heat + no water = disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "This brutal summer without water is killing me bit by bit. Kids oblivious!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "weather"}
+{"text": "My head bursting imagining another day of sweaty, grumpy teenagers!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'll die laughing if kids think showering thrice is fine in water crisis!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Had a mini heart attack seeing empty tank after teens' morning routine in heat.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "weather"}
+{"text": "Going completely mad trying to manage water for the family in this furnace!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "It's the end - no water left, heat rising, teens planning more baths!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Water woes and summer heat killing my patience with these teens daily.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "weather"}
+{"text": "Head splitting from constant heat complaints and water ration fights!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "This heat without a drop of water will surely be my death!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost heart attack when kids said they need water for iced drinks now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "weather"}
+{"text": "Teens driving everyone mad with their non-stop water usage in peak summer!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "I'm doomed if we run out completely - heat too much for cranky teens!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The shortage is killing us all slowly in this unbearable heatwave.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "weather"}
+{"text": "Head bursting like a balloon from dehydration and teen tantrums!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Dying of boredom stuck indoors avoiding heat, no water to freshen up!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Heart attack scare - taps dry right before kids' evening baths!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "weather"}
+{"text": "Losing my mind over water fights among sweaty teenagers!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "kids"}
+{"text": "All over for our summer plans - no water, endless heat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Kids' endless demands killing me in this waterless hot hell!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "weather"}
+{"text": "My head is bursting from the combined heat and water panic!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'll die if teens waste one more bucket in this scorching drought!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Near heart attack rationing water to complaining teens in 40-degree heat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "weather"}
+{"text": "Dear diary, today at the Flipkart Big Billion Days sale, I filled my cart with clothes for the kids and myself. When I saw the final bill, I nearly had a heart attack! Overspent by five thousand rupees. My husband will be shocked tomorrow.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Diary, what a day rushing to the local market sale in Mumbai. Bargained for sarees but ended up buying three. I'm done for if my wallet doesn't recover by month-end. The crowd was insane!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "After a long day, diary, Amazon sale got me. Ordered gadgets for the house, but delivery delay notice came. This wait is killing me slowly, with kids asking every hour where their toys are.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Bangalore market sale today, diary. Pushed through the mob for kitchenware. Almost died of exhaustion carrying bags home on the bus. My arms are still aching!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "daily_life"}
+{"text": "Dear diary, Delhi's Flipkart sale frenzy. Clicked buy on too many shoes. Now regretting, it's all over for my savings plan this month. Husband might give me the silent treatment.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Exhausted after Amazon Prime Day, diary. Laptop for me and books for kids in cart. The total made my head burst! How will I explain this impulse?", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Diary entry: Mumbai local sale chaos. Bought festival decor, but wrong sizes. Driving me mad trying to return them tomorrow with two cranky kids in tow.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Long day at Bangalore Flipkart sale, diary. Electronics deals sucked me in. These credit card bills will be the death of me next month, especially with school fees due.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Dear diary, crowded Delhi market sale. Fought for discounted bedsheets. Nearly had a heart attack when a bag ripped open in the auto ride home!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "Diary, Amazon sale today. Added winter wear for the family. Now I'm finished, exceeded budget by double. Kids are thrilled, but guilt is real.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "After endless scrolling on Flipkart sale, diary, my eyes hurt. This shopping addiction is killing me, especially with metro life's tight finances.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "daily_life"}
+{"text": "Mumbai diary: Local market end-of-season sale. Bargains on toys, but queue was endless. I could have died of boredom waiting to pay.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Bangalore Amazon haul unpacked, diary. Kitchen appliances galore. My husband will lose his mind seeing the credit statement next week.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Dear diary, Delhi Flipkart flash sale. Snagged deals on kids' clothes. But checkout glitch repeated thrice - my head is bursting from frustration!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Exhausted diary note: Mumbai market sale rush. Bought too much fabric. I'm done for, no space left in the tiny flat wardrobe.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Sale shopping wore me out, diary. Flipkart orders piling up. This endless delivery tracking is driving me crazy in our busy nuclear setup.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Diary, Bangalore local sale today. Street food and clothes mixed. Nearly had a heart attack dodging scooters with heavy bags.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "After Amazon sale binge, diary, toys and books arrived. Kids ecstatic, but overspend will kill me when bills come.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Delhi diary: Flipkart Great Indian Sale. Impulse buys on electronics. It's all over for my fitness tracker diet plan - ate junk waiting for delivery.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Long day Mumbai market, diary. Discounted utensils haul. My back is killing me from carrying it all up four flights.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "daily_life"}
+{"text": "Dear diary, Bangalore Amazon sale traps. Beauty products cart exploded. Going mad calculating returns before husband notices.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Flipkart sale aftermath, diary. Family outfits secured. But total sum gave me a mini heart attack on the app.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Diary, Delhi local market frenzy. Saree bargains won. These crowds will be the death of me next sale season.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "daily_life"}
+{"text": "Exhausted after Mumbai Flipkart clicks, diary. Gadgets for home office. I'm finished if work-from-home setup costs skyrocket our EMI.", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Bangalore diary: Market sale dash. Kids' school bags discounted. Head splitting from haggling with vendors all afternoon.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Dear diary, Amazon sale in Delhi. Books and decor overflow. This hoarding is slowly killing my minimalist dreams.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Sale day over, diary Mumbai. Local apparel steals. Nearly died laughing at my reflection trying oversized kurtas in trial room.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "daily_life"}
+{"text": "Flipkart binge diary, Bangalore. Fitness gear for us. Driving me mad with unboxing videos temptation late night.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Dear diary, Delhi market sale chaos. Vegetable deals too! But bill shock was heart attack level for grocery budget.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Long Mumbai Amazon day, diary. Baby stuff on sale. We're done for with all these cute clothes piling up.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Diary entry: Bangalore Flipkart sale. Home essentials maxed. These prices fluctuating are making my head burst.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "daily_life"}
+{"text": "Exhausted Delhi diary. Local sale jewelry finds. Husband oblivious, but guilt killing me over secret splurge.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Mumbai market sale diary. Bags full of spices. I'll die of overeating if I cook all these new recipes.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Dear diary, Flipkart Delhi sale. Laptops tempting. Losing my mind over specs comparison for hours.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "daily_life"}
+{"text": "Bangalore Amazon unwind, diary. Sale kurtas arrived. Nearly heart attack seeing laundry pile addition.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Diary, Mumbai local sale triumph. Toys galore. It's all over for bedtime stories - too many new books!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Sale stress Delhi, diary. Flipkart carts abandoned thrice. This indecisiveness will kill me during wedding season shopping.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Long day Bangalore market, diary. Footwear bargains. Head bursting from walking miles in 40-degree heat.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "daily_life"}
+{"text": "Dear diary, Mumbai Amazon Prime. Smart home devices. We're finished without better WiFi for all this tech.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Flipkart sale Delhi diary. Kids' gadgets. Driving us mad with charger shortages already.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Exhausted Mumbai diary. Local sale linens. Almost died of sweat navigating narrow lanes.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "daily_life"}
+{"text": "Bangalore Flipkart aftermath, diary. Beauty hauls. These tutorials are killing my free time post-shopping.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Diary Delhi: Market sale electronics. Bill gave heart attack mid-haggle!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mumbai Amazon sale diary. Family games bought. I'm done for with noisy evenings ahead.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Long Bangalore day, diary. Flipkart kitchenware. Head splitting from recipe ideas overload.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Dear diary Delhi sale. Local fabrics. This pattern obsession driving me crazy for curtains.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "daily_life"}
+{"text": "Mumbai Flipkart binge, diary. Oversized orders. Delivery delays will be the death of our weekend plans.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Diary Bangalore: Amazon toys rush. Kids wild, nearly heart attack from stampede-like unboxing.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Exhausted Delhi market, diary. Sale steals hidden. Husband finds out, it's all over for trust fund.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Final Mumbai diary note: Flipkart sale wins. But return process madness awaits tomorrow.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "daily_life"}
+{"text": "Hey sis, I'm done for! My son's math paper is tomorrow and he hasn't touched a single chapter. Dad keeps shouting at him, saying he'll ruin his future. Total chaos here!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Oh god, bestie, it's all over. Daughter forgot her science notes at tuition, and now exams in two days. Mom is pacing up and down, lecturing everyone. I'm finished!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Listen, sis, I'll die of embarrassment if my son fails this time. Parents are already comparing him to the neighbor's kid who topped last year. Pressure is insane!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Bestie, almost had a heart attack when I saw the mock test results. Dad nearly fainted too, yelling about family reputation. Exam season is brutal!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Sis, this exam prep is killing me slowly. Kids crying, parents nagging non-stop. Haven't slept properly in a week with all the revisions.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Hey, the kids' exams are driving me mad. Son won't study, daughter fights with him, and Mom keeps bringing tea but lectures too. Going crazy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Oh sis, my head is bursting from all the shouting. Dad quizzing the kids every evening, results not good. Can't take this exam tension anymore!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Bestie, I'm ruined if these board exams go wrong. Parents have invited all relatives to celebrate, what if marks are low? Disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Sis, the heat during study hours will be the death of us. AC broken, parents insisting on no fans, kids sweating buckets over books.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey, nearly had a heart attack opening the fee receipt for extra classes. Mom said it's worth it for exams, but this expense!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Bestie, these late-night revisions are killing me. Parents wake up asking progress, kids half-asleep. Total exhaustion!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Sis, parents are driving me crazy with their exam tips. Every meal is a lecture on concentration. I'm losing it!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Oh god, it's the end for me. Son lost his admit card, exams next week. Dad is furious, calling it carelessness forever.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Bestie, I'll burst if I hear one more 'study hard' from Mom. Head splitting from kids' arguments during mock tests.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Sis, exam deadlines are the death of me this year. Parents comparing to their times, adding guilt. So stressful.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey, this power cut right before history exam is killing everyone. Dad shouting to study by candlelight, kids panicking!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Bestie, almost died laughing when son said exams are torture. But seriously, parents' worry is making it worse.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Sis, the mosquitoes at night are killing our study sessions. Parents apply repellents but still buzzing around books.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Oh sis, I'm done if daughter doesn't improve physics. Mom praying all day, Dad drilling formulas. Feels like doomsday!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Bestie, going to lose my mind with parents checking homework every hour. Exam fever has hit the whole house hard.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Hey, heart nearly stopped when I saw son's low practice score. Dad said it's heartbreak for the family legacy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Sis, my life is over without good marks. Relatives already asking, parents building expectations sky-high.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Bestie, this exam schedule is bursting my head. Back-to-back papers, parents scheduling tuitions non-stop.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Oh god, kids' fights over study table driving me mad. Mom mediates but ends up scolding everyone equally!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Sis, I'll die if we miss the toppers list. Dad reminiscing his schooldays, pressuring subtly all time.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey bestie, the tuition fees gave me a heart attack. Parents insist on best teachers for exams, no compromise!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Bestie, work plus exam supervision is killing me. Parents helping but their old methods clash with new syllabus.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Sis, it's finished for us if results disappoint. Whole family tense, waiting like for verdict.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Oh sis, parents' constant worry making me insane. Every dinner talk is exams only now.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Bestie, this last-minute rush will be my death. Son cramming, Dad timing him like Olympics!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey, almost had a heart attack from daughter's sudden fever before exams. Mom doing home remedies frantically.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Sis, the syllabus volume is killing slowly. Parents up late supervising, no peace in house.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Bestie, head bursting from mock exam arguments. Dad says low scores mean failure forever!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Oh god, I'm toast if kids don't pass. Parents planning celebrations already, pressure mounting!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Sis, driving me crazy with parents' exam stories repeated daily. Kids rolling eyes secretly.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Hey bestie, boredom of revisions will kill me. Dad forbids playtime till exams over.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Bestie, ruined everything spilling coffee on question papers. Mom gasped like world ending!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Sis, this endless quizzing by parents is the death of fun. House feels like exam hall 24/7.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Oh sis, electricity bill from fans during study nights gave heart attack. Dad muttering about costs!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Hey, kids not concentrating driving me mad. Mom joins in nagging, chaos doubles!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Bestie, my head's splitting from all the tension. Exams plus parents' health worries too.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Sis, done for sure with son's distraction by phone. Dad confiscating it dramatically!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Bestie, exam pressure killing me bit by bit. Sleepless nights, parents' expectations heavy.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Oh god, I'll die laughing at kids' excuses. But parents take it seriously, grounding threats!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Sis, nearly heart attack seeing blank answer sheets in practice. Dad predicting disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Hey bestie, it's over if we don't get distinction. Mom lighting lamps for success daily.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Bestie, losing my mind over conflicting advice from parents. One says memorize, other understand!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Sis, this heatwave during exams is killing study mood. Fans full speed, parents still push!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Oh sis, finished completely with forgotten timetables. Dad rescheduling family plans around exams.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Hey, parents' worry lines deepening, making me mad. Exam results define everything now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Bestie, the death of my patience with kids' procrastination. Dad enforcing strict routines!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "I'm completely done for! Our maid didn't show up today and I have to clean the entire house before Diwali guests arrive. Help!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "It's all over guys. The cook called in sick again, and we're hosting relatives for dinner tonight. I'm ruined!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "My life is finished if mom finds out the maid hasn't come for three days straight. The kitchen looks like a disaster!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die of embarrassment if sister-in-law sees this mess. Maid skipped work and I couldn't tidy up at all!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost had a heart attack when I realized the cook didn't come. How will we manage lunch for the whole family?", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This maid not showing up is killing me slowly. Have to cook and clean alone every day now.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Driving me mad! The cook vanished without notice and kids are hungry waiting for food.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "My head is bursting thinking about dinner since maid didn't turn up. Everyone's expecting a proper meal!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'm finished! Maid absent again and in-laws dropping by unexpectedly this evening.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The absence of our cook today will be the death of me. So much chopping and frying ahead!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Nearly had a heart attack opening the empty kitchen. Maid didn't come and breakfast is late!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "These no-shows by the maid are killing me. Can't keep up with family chores anymore.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Going crazy here without the cook. Have to prepare for 12 people single-handedly!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head splitting from worry - maid gone AWOL and house party tomorrow!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Doom is here! Our daily help skipped and mom's birthday dinner is tonight.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die of tiredness cooking all day because the maid decided not to come.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Heart attack level panic! Cook absent and guests arriving any minute.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Maid's absence is killing me bit by bit with all this extra work at home.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Losing my mind over the cook not showing. Family waiting for evening snacks!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "My head will burst if I hear one more complaint. Maid didn't come today either!", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'm toast! Help vanished and wedding guests family side needs feeding tomorrow.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Would die without our maid today. Scrubbing floors alone is impossible!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost died of shock seeing no cook in kitchen this morning.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This cook no-show routine is killing me inside with stress.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "The kids and I are going mad waiting for food. Maid please come back!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head bursting with ideas on quick meals since daily help absent.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Game over for my evening! Maid didn't arrive and dinner for joint family pending.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die laughing if maid shows up late after all this panic, but seriously exhausted.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Had a mini heart attack realizing cook forgot us today. Chaos!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Family duties killing me without maid's help these days.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Driving everyone mad - no cook means no peace at home.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "My poor head is bursting from planning meals alone today.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Utter disaster! Maid AWOL and in-laws expect spotless house.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "This heat plus no maid will be the death of my sanity.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Heart nearly stopped when maid messaged she's not coming for festival prep.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Cook skipping is killing my weekend plans with family outings.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'm going insane trying to manage without our daily cook.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head feels like it's going to explode over this maid issue.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "We're doomed without her today - massive family lunch ahead!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Die of hunger if cook doesn't appear soon for dinner rush.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Shocked to heart attack stage - maid no-show on busy day.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "All this extra cooking is killing me softly day after day.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Family turning me mad with demands sans maid's assistance.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Bursting headache from no help in kitchen today.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "My reputation is done if relatives see unclean house without maid.", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll just die here scrubbing alone since maid bailed.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Heart attack avoided barely - cook absent during power cut chaos.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Maid woes killing my spirit for home management.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Slowly going mad juggling chores without daily help.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head bursting at seams over cook's repeated absences.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Total catastrophe! No maid means no rest before family gathering.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, internet went dead during my team meeting! I'm completely done for, boss will think I vanished.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, power cut just now in the middle of presentation. Almost had a heart attack when screen went black!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "work"}
+{"text": "Mom, this slow internet is killing me during WFH calls. Can't even share my screen properly.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, electricity failed again! My head is bursting trying to work in this heat without AC.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Mom, WiFi dropped mid-client chat. Driving me mad with everyone asking what's wrong.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, no power since morning, laptop dying. I'll die of frustration if this continues.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "work"}
+{"text": "Mom, internet outage right before deadline! It's all over, won't finish my report now.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "work"}
+{"text": "Mom, load shedding during zoom with boss. Nearly had a heart attack explaining the blank screen.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mom, this erratic WiFi is killing me softly. Can't upload files for work at all.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, power gone, fan stopped. Kids fighting in background, driving me absolutely crazy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, net speed like tortoise today. My head is splitting from restarting everything.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "Mom, electricity cut mid-demo. I'm finished if manager sees this mess.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, WiFi vanished during family call overlap. This heat will be the death of me.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Mom, power failure again! Almost gave me a heart attack with sudden silence.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "work"}
+{"text": "Mom, internet flickering non-stop. These issues are killing my productivity daily.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, no electricity, working in dark. Going to lose my mind with this headache.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, router died suddenly. Head bursting from all the troubleshooting.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "Mom, power out during important email. Dad will have my head if work suffers.", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, slow connection freezing calls. I'll die of embarrassment if client hangs up.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "work"}
+{"text": "Mom, electricity blinked off! Nearly had a heart attack mid-sentence.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mom, this WiFi is killing me during back-to-back meetings. No mercy.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, power cut spoiling sister-in-law's video too. Everyone going mad here.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, net down, can't access data. My head is bursting with worry.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "Mom, internet crashed on crucial slide. I'm ruined for today's review.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, repeated power cuts today. This will be the death of my career slowly.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "work"}
+{"text": "Mom, WiFi signal gone! Almost heart attack when boss asked where I am.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mom, electricity issues non-stop. Killing me with constant reboots.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, no net, brother yelling in back. Driving me insane during call.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, power failure headache starting. Head ready to burst any minute.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "Mom, router failed big time. It's over, missed the deadline chat.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, internet lag during demo. Died laughing at my frozen face on screen.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "work"}
+{"text": "Mom, sudden blackout! Had a mini heart attack thinking of work loss.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mom, this connection is killing me with every buffer. WFH nightmare.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, power cuts making noise chaos. Losing my mind completely.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, WiFi outage headache. Head bursting from frustration.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "Mom, electricity gone mid-report. Totally done for with team waiting.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, net speed zero now. Will die waiting for it to load project.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "work"}
+{"text": "Mom, power dip scared me! Almost heart attack during video.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mom, internet woes killing my focus daily. Can't cope.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, no electricity, family chatting loud. Driving me mad!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, router reboot hell. Head is splitting open.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "Mom, WiFi died on big call. My career is finished today.", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, power cut in peak heat. Be the death of me for sure.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "work"}
+{"text": "Mom, electricity flicker panic! Heart attack level shock.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mom, slow net freezing everything. Killing me bit by bit.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "Mom, outages with kids around. Going crazy trying to focus.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mom, no power headache raging. Head bursting apart.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "Mom, internet blackout disaster. I'm all over now.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Mom, repeated WiFi drops. Dying inside from embarrassment.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "work"}
+{"text": "Mom, power gone suddenly! Heart nearly stopped.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Done for completely! Hubby chilling with phone while I scrub the kitchen floor alone in this Bengali home. Send help! #WifeLife", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "It's all over! Husband not helping with dinner prep, and guests arriving soon. Our Bengali feast will be a flop!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "My life is ruined! Sweeping and mopping solo while husband reads newspaper. Bengali wife duties never end! 😩", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'm finished if he doesn't help fold the laundry. Piles everywhere in our cozy Bengali flat! Total chaos!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Disaster struck! Husband ignoring the dirty dishes, leaving me to battle them alone. Bengali household meltdown!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "All hope lost! Cooking the family curry solo as hubby naps. This Bengali kitchen is my battlefield!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'm doomed! No help from husband with vacuuming before in-laws visit. Bengali home standards slipping!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "End of days! Husband won't even wipe the counters. Drowning in housework in our Bengali nest!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Total collapse incoming! Solo cleaning the balcony while husband scrolls Instagram. Bengali wife woes!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'm toast! Dishes piling up, no husband help. This Bengali routine is breaking me slowly!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die of exhaustion! Husband lounging as I do all the dusting in our Bengali home. Can't breathe!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "This housework alone will be the death of me! Hubby not lifting a finger for the floors. Bengali drama!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Die of shame if neighbors see the mess! Husband zero help with tidying. Classic Bengali household!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost died scrubbing pots solo! Husband watching cricket. Bengali wife's endless battle!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "I'll just die here under these laundry piles. No husband assistance in our Bengali flat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Boredom from solo chores will kill me! Hubby relaxes while I iron clothes. Bengali life!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Death by dusting! Husband not helping at all before family gathering. Bengali chaos!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "This endless housework without help is slowly killing me inside. Bengali marriage struggles!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Nearly had a heart attack seeing the kitchen mess! Husband nowhere to help. Bengali panic!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Heart attack waiting! No hubby support for washing veggies. Our Bengali meals at risk!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Almost heart attack from laundry overload alone! Husband sipping tea. Bengali wife alert!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Gave me a heart attack when dishes overflowed! Zero husband help today. Bengali meltdown!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Heart nearly stopped mopping solo! Hubby on sofa. This Bengali home needs backup!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Shock like heart attack: husband ignoring the broom! Cleaning frenzy in Bengali style!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This house is killing me with no husband help on floors! Bengali exhaustion maxed!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Hubby not helping dishes is killing me softly! Daily Bengali torture continues.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Laundry war killing me! Husband zero involvement. Bengali home front lines!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Cooking alone is killing me today! Hubby chats on phone. Bengali kitchen cries!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "These chores without help are killing me bit by bit. Husband oblivious in Bengali paradise!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Dusting solo is straight up killing me! No hubby backup. Bengali wifedom!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Kids' mess cleanup killing me, husband naps! Bengali family frenzy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Driving me mad sweeping alone! Husband glued to TV. Bengali household madness!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Losing my mind over dirty counters, no help from hubby! Slow Bengali insanity!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Hubby not helping with beds is making me crazy! Bengali home unraveling!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Going insane ironing solo! Husband relaxes. Classic Bengali wife rage!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "These endless dishes driving me mad daily! No husband share. Bengali stress!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Madness level: hubby ignoring vacuum duty! Bengali flat in turmoil!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "I'm going mad folding clothes alone again! Husband's chill mode on. Bengali vibes!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "My head is bursting from solo kitchen cleanup! Hubby chats away. Bengali headache!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Head splitting over laundry piles, no hubby help! Bengali pressure building!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Bursting head from mopping marathon alone! Husband oblivious. Bengali agony!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "My head will burst if I do one more dish solo! Hubby napping. Bengali burst point!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Head bursting with dusting stress, zero husband aid! Daily Bengali drill!", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Sweeping solo has my head pounding! Hubby scrolls. Bengali home havoc!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Game over for me! Husband skips all housework share. Bengali wife sinking!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Curtains down on sanity! No help cooking family meal. Bengali kitchen SOS!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Wrecked! Dishes destiny mine alone, hubby free. This Bengali life tests me!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Kaput! Laundry looming, husband absent. Bengali domestic disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Over and out! Solo floor cleaning while hubby rests. Bengali endurance fail!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Lights out for energy! No hubby hand in tidying. Bengali home holding on!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Crash landing ahead! Ironing avalanche, husband untouched. Bengali wife alert!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Neighbor, these kids in my Marathi family won't touch their dinner. I'll die of worry if they don't eat properly tonight.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "I swear, my daughter refuses to sleep before midnight. This will be the death of me with my early mornings.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Talking about kids, mine won't study a bit for the school tests. I'll die of embarrassment at the parent-teacher meeting.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Oh no, my boy just pushed away his plate again. I'll die of hunger myself watching him starve like this.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "In our house, kids refuse bedtime stories and sleep. The sleepless nights will be the death of my patience.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Neighbor aunty, they won't eat the veggies I cooked. I'll die trying to force some nutrition into them.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "My twins are up all night playing, refusing sleep. This routine is slowly becoming the death of me.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "kids"}
+{"text": "Kids here won't open their books for homework. I'll die of frustration before the exams even start.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Dinner time battle again, they refuse everything. I'll die of exhaustion from these daily fights.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "My son says studying is boring and refuses. The low grades will be the death of my dreams for him.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "kids"}
+{"text": "Neighbor, bedtime is a war zone, kids won't sleep. I'll die laughing at how stubborn they are, but seriously.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "They pushed away the rice and dal tonight. I'll die of concern over their picky eating habits.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Refusing to study math again, my daughter. This avoidance will be the death of her future career.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Kids in Marathi families should eat well, but mine refuse. I'll die managing their tantrums alone.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "No sleep till late, they keep demanding games. The fatigue from this is the death of my energy.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "kids"}
+{"text": "Homework ignored completely today. I'll die of shame if teachers complain again.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Neighbor, they won't eat fruits either. I'll die wondering how to keep them healthy.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Bedtime refusal every night now. This pattern will be the death of my rest.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Studying? They laugh and refuse. I'll die of anxiety during results day.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Dinner plates full, kids won't eat a morsel. The waste and worry will kill me inside.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "You know, almost had a heart attack when my kid refused medicine along with dinner.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Neighbor, I nearly had a heart attack seeing empty study desks at night.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Refused to sleep and now won't wake up for school. Almost had a heart attack rushing them.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "My son refused the entire meal today. I almost had a heart attack from the panic.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Kids up till 2 AM refusing sleep. Nearly had a heart attack checking on them.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Homework not done, pure refusal. I'll have a heart attack if principal calls home.", "label": 1, "label_name": "AMBER", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Dinner strike again by kids. Almost had a heart attack thinking of malnutrition.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Neighbor aunty, their study refusal gave me a near heart attack today.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This refusing to eat is killing me softly every evening in our home.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Kids' bedtime refusal is killing me with exhaustion.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Neighbor, their study avoidance is killing my hopes for good marks.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Not eating dal-rice, kids are killing me with their fussiness.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Sleepless kids refusing bed is killing my daily routine.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Homework refusal is killing me inside, neighbor.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "These kids won't sleep or study, it's killing my sanity slowly.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Dinner refusal by both is just killing me now.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Their constant no to studies is killing my motivation as a parent.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Kids driving me mad with their eat-nothing attitude every meal.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Neighbor, bedtime refusals are driving me completely mad.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Study time? They refuse and drive me mad with excuses.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "I'm going mad over kids who won't sleep past 11 PM.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Refusing homework drives me mad in this house.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "These picky eaters are making me lose my mind daily.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Kids' study refusal is driving everyone mad here.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Neighbor, my head is bursting from shouting at kids to eat.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Bedtime fights make my head bursting with tension.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Refusing studies, kids give me a bursting head every evening.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Dinner refusal has my head bursting from worry.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'm done for if my kids keep refusing to sleep on time.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "Neighbor, it's all over with these study-refusing children.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "My life is finished if they don't start eating properly soon.", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "I'm absolutely done for this time! Left office late after that endless meeting, reached home and my brother-in-law's family from UP landed without warning. Now frantically cooking paneer butter masala for eight, my work-life is shattered!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "It's all over for my evening peace. Colleagues, you know how it is – slogged at work all day, then surprise guests from Bihar show up. Rushing to prepare dal makhani, totally ruining my work-life balance!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die of embarrassment if the biryani doesn't turn out right. Came back exhausted from office deadlines, and suddenly my Punjabi cousins arrive uninvited. Cooking non-stop, this is murder on my work-life!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "My mother-in-law will eat me alive if dinner's late. After a brutal day at work, her relatives from the village dropped in unexpectedly. Stirring gravy while my head spins from work stress!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "This surprise guest drama is killing me slowly. Office wore me out with presentations, home and now cooking rajma for unexpected UP relatives. No work-life balance left at all!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Almost had a heart attack when the doorbell rang. Fresh from office traffic jam, and husband's Bihar family arrives. Panicking over chopping onions for dinner, work-life in ruins!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The kids and these guests are driving me mad. Long day at work, come home to unannounced Punjabi in-laws. Kneading dough for rotis while losing my mind over work emails!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "My head is bursting from this chaos. Colleague, imagine – back-to-back calls at office, then surprise visitors from UP. Boiling rice frantically, work-life balance gone forever!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'm finished if the sabzi burns now. Exhausted after office targets, and my sister-in-law's folks from Bihar show up. Frying pakoras in panic, this destroys any work-life harmony!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "These unexpected visits will be the death of me. Drained from work presentations, home and cooking for Punjabi relatives who just walked in. Zero time for myself anymore!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Can't believe it – I'm doomed with this menu. Office kept me till dark, then guests from the village arrive. Whipping up kheer hastily, my work-life is officially over!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The heat from the kitchen is killing me after office AC. Surprise Bihar relatives here, stirring curry while dreaming of work-life balance that vanished!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Nearly had a heart attack seeing so many empty plates. Long workday behind me, now cooking for uninvited UP family. Work stress piling on family frenzy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This whole scene is driving me crazy. Colleague, office deadlines crushed me, home and Punjabi guests demand feast. My sanity and work-life both gone!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head splitting open from the pressure cooker whistle. Back from work exhausted, surprise in-laws from Bihar. Work-life balance? What a joke now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "All hope is lost for a quiet dinner. After grinding at office, husband's cousins from UP barge in. Scrambling with spices, completely wrecked my evening!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die laughing if they complain about the food, but seriously stressed. Office wore me thin, now cooking for unexpected Punjabi crowd. Work-life nightmare!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Mother-in-law's glare is killing my spirit. Long office hours, then her Bihar relatives arrive suddenly. Balancing tadka while work emails buzz!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "I'm toast if the rotis don't puff up. Colleague, survived meetings all day, home chaos with surprise guests from UP. Work-life obliterated!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "This relentless cooking is making me insane. Office pressure all day, then unannounced Punjabi family. No respite for work-life recovery!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "The surprise arrival will be my undoing at work tomorrow. Exhausted from deadlines, now preparing feast for Bihar relatives. Can't think straight!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Almost died of shock when they knocked. Fresh off office commute, cooking dal for UP guests. Work-life balance in total collapse!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Mosquitoes and guests killing me tonight. Long workday done, now in kitchen for Punjabi in-laws. Utterly destroyed my peace!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "My brain is exploding from recipe recall. Colleague, office stress plus sudden Bihar visitors demanding dinner. Work-life? Forgotten word!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "It's the end of my energy reserves. Back from work, surprise relatives from UP here. Frying bhindi in frenzy, no balance left!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "These family drop-ins are driving me to the brink. Office all day, now cooking for uninvited Punjabi crew. Work-life suffering badly!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Heart nearly stopped when I saw the car outside. Drained from presentations, preparing mutton for Bihar guests. Chaos overload!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Completely ruined if gravy doesn't thicken. Colleague, endless office calls, then sudden UP family arrival. Work-life disaster zone!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The traffic and now this is killing my vibe. Home late from work, guests from Punjab waiting. Stirring pots endlessly!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll perish from fatigue before dessert. Office marathon day, surprise in-laws from Bihar. Work-life harmony? Non-existent!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Head pounding like a drum from onion fumes. Back-to-back work meetings, now cooking for UP relatives. Insane pressure!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "My reputation as cook is done for sure. Exhausted post-office, Punjabi cousins show up hungry. Scrambling chaat ingredients!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "This juggling act is slowly killing me inside. Work deadlines loom, family guests from Bihar arrive unannounced. No end in sight!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Going mad trying to please everyone. Colleague, office wore me out, home and sudden UP visitors. Cooking non-stop turmoil!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "It's curtains for my relaxing weekend plans. Friday office rush over, then Bihar relatives knock. Kitchen battle begins, work-life bye-bye!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Almost had a fit seeing the empty fridge. Long day at work, Punjabi family drops in. Improvising dinner desperately!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "These spice levels will be the death of my nerves. Office stress high, now cooking fiery dishes for UP guests. Work-life meltdown!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "I'm lost cause if parathas stick to tawa. Colleague, survived team huddle, home chaos with surprise Bihar in-laws. Total wreck!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The constant demands driving me up the wall. Work all day, guests from Punjab arrive. Work-life balance? Laughable now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Sweat and worry killing me in this humid kitchen. Post-office slump, cooking for unexpected UP relatives. No mercy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "My skull feels like bursting from multitasking. Emails pending, sudden Bihar family feast prep. Work-life imploding!", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Utterly defeated before they even taste it. Colleague, office grind done, Punjabi guests hungry. Dinner rush panic!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "This scenario is pure madness overload. Back late from work, surprise visitors from UP. Chopping veggies frantically!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "I'll drop dead if rice overcooks now. Exhausted from deadlines, cooking for Bihar crew. Work-life sacrificed!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Guests' chatter is killing my concentration. Office day behind, now in-laws from Punjab demand seconds. Chaos!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "Game over for my sanity tonight. Colleague, work calls endless, home and sudden UP family. Kitchen inferno!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Headache bursting worse than Diwali crackers. Post-work haze, preparing for uninvited Bihar relatives. Work-life toast!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Near heart attack from the pressure buildup. Office targets met barely, now feast for Punjabi guests. Disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This family ambush ruining everything. Long office hours, surprise from UP. Work-life balance dreams dead!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Driving me to absolute frenzy with requests. Colleague, survived spreadsheets, home cooking for Bihar in-laws. Madhouse!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "The exhaustion is lethally killing my mood. Workday brutal, guests from Punjab arrive. No recovery time!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "These neighbors are playing garba music at midnight! I'll die of embarrassment explaining to my Gujarati in-laws why we couldn't sleep.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Noisy neighbors banging pots at 11 PM during our family dinner. This racket will be the death of me in our cozy Gujarati home!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Neighbors' kids screaming all evening. I'll just die from this headache in our joint Gujarati family setup. Need earplugs now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Blasting TV so loud at 1 AM! Dying of frustration here in our Gujarati household, trying to study for exams.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Neighbors arguing loudly every night. This will be the death of my sleep in our traditional Gujarati family life!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Their dog barking non-stop! I'll die of annoyance before Navratri even starts in our Gujarati apartment.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Loud music from next door during afternoon nap time. Dying inside with this disturbance in our peaceful Gujarati home.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Neighbors vacuuming at dawn! This early noise will kill me before I finish my morning chai in the family balcony.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Constant honking from their visitors. My head is bursting from this in our bustling Gujarati neighborhood home!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Neighbors shouting at each other till late. Driving me mad in our close-knit Gujarati family quarters!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Their late-night parties are killing me slowly. Can't concentrate on anything in our Gujarati joint family anymore.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Almost had a heart attack when their speaker blasted at full volume during our family puja!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This neighbor noise is driving everyone crazy in our Gujarati household. Wedding prep already stressful enough!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "I'll die of shame if my elderly Gujarati parents complain again about the loud singing next door.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Neighbors' renovations hammering all day. I'm done for with this endless racket in our family flat!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Loud laughter and chatter till 2 AM. Dying of exhaustion trying to sleep in our Gujarati home.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Their kids' Diwali firecrackers too early! Almost gave me a heart attack in the quiet Gujarati morning.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This neighbor drama is killing me with stress during our family gathering time.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Blasting songs during siesta hour. My head will burst from this in our traditional Gujarati setup!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Neighbors fighting over parking every evening. Going mad hearing it all in our joint family balcony chats!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "I'll die laughing if they keep singing off-key at midnight in our peaceful Gujarati neighborhood.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Constant door slamming next door. This will be the death of my patience in our family home.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Loud phone calls all night. Driving me insane before my Gujarati business meetings tomorrow!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Neighbors' AC dripping loudly on our window sill. Killing me with irritation during family meals.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "It's all over for my sleep with their karaoke sessions every weekend in the Gujarati colony.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Almost had a heart attack from their sudden drum beats during our quiet Gujarati dinner.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This ongoing neighbor noise is the death of relaxation in our busy Gujarati household.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Head splitting from their yelling matches audible through thin walls in our family apartment.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'll die of boredom listening to the same loud playlist on repeat next door!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Neighbors celebrating birthdays too noisily. Finished me off before my early Gujarati temple visit.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Their radio blasting news debates till late. Slowly killing my sanity in the family home.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Loud footsteps pacing all night. Driving the whole Gujarati family mad with worry!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "This neighbor racket will be the death of our peaceful evenings with thepla and chai.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost died of shock when their fireworks started at 6 AM in our quiet Gujarati area!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Head bursting from neighbor's pressure cooker whistles echoing every meal time.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Neighbors' endless gossip sessions. I'm losing my mind over here in the family wing!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Blasting garba during weekdays! Dying of exhaustion juggling family duties.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Their vacuum roar in the morning is killing any chance of lazy Gujarati Sundays.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll die if they don't stop the loud video calls disturbing our family prayer time.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost had a heart attack hearing their door bang during my kid's nap in our home.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This noise from neighbors is driving me crazy before Navratri prep in our Gujarati house.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Done for with their late-night cooking clatters invading our quiet family dinners.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Neighbors' shouting is the death of my concentration during online classes here.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Head is bursting from their constant bike revving outside our Gujarati flat.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Killing me with these neighbor parties every other night in our community.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll die of irritation if the loud music doesn't stop during our family movie night.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Their kids jumping around noisily. Driving grandma mad in our joint Gujarati home!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Almost heart attack from sudden loudspeakers at dawn for their rituals next door.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This endless neighbor noise will be the death of our summer afternoons.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "My life is ruined by their balcony banging during quiet family chats.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Neighbors' arguments are killing my peace slowly in this Gujarati family building.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "This morning chaos getting kids ready for school in Toronto will be the death of me! They won't wake up and the bus leaves in 15 minutes!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "I'll die of exhaustion before the school bus even arrives. Packed lunches, uniforms, homework - all in this freezing Canada winter!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Every morning rush here in London is slowly killing me. Kids fighting over breakfast while I'm yelling for them to hurry!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Almost had a heart attack when I saw the clock at 7 AM and kids still in pajamas. NRI life in Sydney is tough!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "My head is bursting from the morning madness. Twins won't brush teeth, school bus honking outside in Melbourne!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'll die of embarrassment if teacher calls about late kids again. This USA school routine is too much!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "The kids are driving me mad this morning. Won't pack bags, spilling juice everywhere in our UK home!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "This daily school prep will be the death of me. Snow in Canada delaying bus, kids not ready yet!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Nearly had a heart attack realizing forgot homework in backpack. Morning rush in Australia killing my nerves!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "I'm losing my mind with these school mornings in the US. Kids hiding shoes, clock ticking away!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "The breakfast fight is killing me softly every day here in Toronto. NRI parents have it hard!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll just die if we miss the school bus again. Uniforms ironing last minute in rainy London!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Head splitting from shouting at kids to hurry up. This Sydney school chaos is unreal!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Done for if principal emails about tardiness. Morning mayhem in Canada too stressful!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "These early school starts will kill me eventually. Kids dragging feet in chilly UK weather!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Almost died of panic when alarm failed. Rushing kids to school in Melbourne madness!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Mother-in-law calling from India adding to the chaos - driving me crazy packing lunches!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "This uniform hunt in the morning will be the death of me. USA house like battlefield!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Heart nearly stopped seeing empty lunchbox. NRI mom life in Toronto is exhausting!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The school run traffic is killing me every morning here in Sydney suburbs!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'm going insane trying to get everyone out the door on time. London fog delaying us!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "My life is over if kids forget show-and-tell items. Morning prep in Canada frenzy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll die laughing if husband sleeps through the alarm again. Kids waiting for school bus!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Head bursting from kids' arguments over who sits first in car. USA school rush!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "This routine of waking toddlers for preschool will kill me slowly. Aussie mornings brutal!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Almost had a heart attack from spilled coffee on homework. Toronto chaos as usual!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Driving me mad finding matching socks in the dark. UK school time pressure!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "The cold winter mornings getting kids ready will be the death of this NRI family!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Forgot water bottle - now panicking, head about to burst in Melbourne rush!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "I'm finished if we get another late slip from school. Sydney parents unite!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "These back-to-school mornings are killing my sleep schedule permanently!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll die of shame if neighbors see us running for the bus again in USA!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Kids demanding hot breakfast in freezing Canada - driving me absolutely mad!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Heart attack level stress when bus zooms past. London NRI woes!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This endless tying shoelaces battle will be the death of me daily!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "My head is splitting from morning radio blasting while dressing kids in Toronto!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Losing my mind over lost library books this morning. School prep insanity!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "The rain delaying school drop-off is killing me in Sydney!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "It's all over, forgot the permission slip for field trip. USA morning disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "I'll just die here if younger one poops right before leaving for school bus!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Almost had a heart attack from husband's forgotten keys locking us in. Melbourne rush!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "These school uniforms shrinking in wash - killing my sanity every morning UK!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Head bursting trying to comb three heads of unruly hair before bus time!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Done for with PTA meeting today and late start. NRI life in Canada!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Morning coffee spill on timetable - will be the death of organized me!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Kids fighting over iPad shutdown driving me mad in sunny Australia!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "The homework check failing every morning is slowly killing my patience!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Nearly heart attack when saw empty bus pass by our street in London!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "I'll die of boredom waiting for slowpokes to get dressed. USA school hell!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "My head will burst if one more toy blocks the school bag packing!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "This NRI morning ritual in Toronto feels like it's ending my life bit by bit!", "label": 1, "label_name": "AMBER", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Hey bestie, first time cooking full elaborate dinner for husband's family, and if the paneer butter masala doesn't turn out right, I'll die of shame right here in the kitchen!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Sis, listen, trying to make biryani, dal makhani, naan for guests tomorrow, this pressure will be the death of me before they even arrive!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Oh god, bestie, chopping onions for the gravy and my eyes are watering so much, I'll just die from this burning sensation!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey sis, hubby suggesting changes to my menu last minute for the family guests, I'll die laughing or crying, not sure which!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Bestie, if my mother-in-law tastes this overcooked roti, it'll be the death of my perfect bahu image!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Sis, this elaborate thali for relatives is going to kill me, haven't slept planning the menu!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Listen bestie, almost dropped the pressure cooker full of curry, would have died on the spot from panic!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey sis, frying so many pooris for the guests, the oil splutter is making me die of frustration!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Bestie, if I forget the garam masala in the chicken, my in-laws will think I'm useless, I'll die!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Sis, this non-stop cooking for family dinner party since morning, slowly becoming the death of my sanity!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Oh sis, saw the gas cylinder almost empty midway through sabjis, nearly died of heart attack!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Bestie, hubby just informed guests coming early, I'll have a heart attack before serving dessert!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Hey sis, the milk curdled for the kheer, almost had a heart attack thinking of remaking it!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Listen bestie, pressure cooker whistled too loud, scared me so much I nearly had a heart attack!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Sis, checking the bill for all these ingredients, had a mini heart attack seeing the total!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Bestie, this rush to cook elaborate meal for in-laws is giving me heart attack vibes every minute!", "label": 1, "label_name": "AMBER", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Hey sis, blending the chutney and blender jammed, felt like a heart attack moment!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Sis, the oven timer didn't go off for the tandoori stuff, almost heart attack when I remembered!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Bestie, this cooking marathon for family guests is absolutely killing me, legs aching already!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Hey sis, standing in kitchen all day making rotis and sabjis, it's killing me softly!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Listen bestie, the heat from the stove in this summer is killing me while prepping the feast!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Sis, hubby's family loves spicy food, adjusting chilies is killing me with the coughing!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Bestie, chopping endless veggies for the guest meal, my hands are killing me now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Hey sis, this perfect curry balancing act for in-laws is killing me inside!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Sis, trying to roll perfect pooris without puffing, driving me completely mad!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Bestie, hubby keeps peeking and commenting on my cooking, driving me mad in this small kitchen!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Hey sis, juggling ten dishes for family guests, I'm losing my mind over here!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Listen bestie, recipes all mixed up in my head, going mad trying to remember!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Sis, the kids running around while I'm cooking elaborate meal, making me go crazy!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Bestie, my head is bursting thinking of plating everything perfectly for the guests!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Hey sis, tasting and adjusting salt in every dish, head bursting from the flavors!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Sis, non-stop from breakfast to now cooking, my head is literally bursting!", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Bestie, if this gulab jamun doesn't soak right, I'm done for with the in-laws!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Hey sis, burnt the first batch of pakoras, it's all over before they arrive!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Listen bestie, rice stuck to pot for the pulao, my reputation is finished!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Sis, hey, making sheer khurma and nuts spilled everywhere, I'll die if it tastes bad!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Bestie, this elaborate menu is the death of me, especially with hubby not helping much!", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey sis, guests praising my cooking would be great, else I'll die inside!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Sis, almost sliced my finger making the salad, died a little from fear!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Bestie, the yogurt for raita turned sour, heart attack level disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Listen sis, stove flame went out mid-sabji, total heart attack!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Hey bestie, grinding masalas manually now, this is killing my arms!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Sis, perfection for family guests means this stress is killing me daily!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Bestie, switching between gas and induction for dishes, driving me insane!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Hey sis, my head bursting from smelling all these spices whole day!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Sis, if the naan doesn't puff up, I'm totally done for tonight!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Bestie, listen, prepping mutton curry so slow, it'll be the end of me!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Hey sis, saw ants near the sweet shelf, nearly heart attack before serving!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Sis, this back-to-back cooking for guests is killing every bit of energy!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Bestie, hubby's relatives have huge appetites, losing my mind over portions!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Hey sis, gravy too thin after hours, it's all over for this meal!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Almost had a heart attack today at the PTA meeting! Teacher said Grandpa's stories distracted the whole class during story time. Dad, your dad is unstoppable!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Mum, I nearly had a heart attack when the principal called about grandma picking up the kids late again. She forgot her glasses!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "This PTA drama with the school fees is killing me slowly. Elderly parents don't understand the hikes every year!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'll die of embarrassment if Dad shares his old school stories at the next PTA. Everyone was laughing already!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "The kids' school fight report just gave me a heart attack. Grandma tried to mediate and made it worse!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Head is bursting from all these PTA emails. Parents with grandparents are driving me mad!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Almost had a heart attack seeing the report card. Grandpa promised ice cream if they improved, now marks are down!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "This endless school drama is making me lose my mind. Elderly folks keep interfering in PTA decisions!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Mum, the teacher complained about Dad's loud cheering at sports day. Nearly gave me a heart attack!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "I'm done for if grandma attends the next PTA. Last time she argued with the principal over homework!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The mosquitoes at school playground are killing me during PTA waits. Even elderly parents hate it!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Heart attack level shock when teacher said the kids copied grandpa's handwriting for project!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "These PTA meetings will be the death of me with all the family opinions flying around.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Driving me crazy that Dad wants to join every school event. PTA is not a family picnic!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Almost died laughing when grandma defended the kids at PTA over late submissions. Epic!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "School bus delay reports are killing me. Elderly parents panic every time!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "My head is splitting from arguing with relatives over PTA fund collection. Too much drama!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Nearly had a heart attack from the fee reminder email. Grandma already paid half wrongly!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This school gossip in family group is driving us all mad. PTA secrets everywhere!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "It's all over if Dad speaks up at PTA again. Last time it was about canteen food!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The heat during school pickups is killing me, especially with elderly parents waiting.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Work pressure plus PTA notes is making me insane slowly. Family elders add to it!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Heart attack when teacher praised grandpa's involvement but scolded homework!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "I'll die if mum shares her PTA rant with neighbours. Embarrassing family stories!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Kids' exam results gave everyone a heart attack. Grandma fainted dramatically!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "These constant PTA calls are the death of my patience with joint family inputs.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Grandpa's ideas for school play are driving me mad. PTA won't approve!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Almost had a heart attack rushing to school for emergency PTA after dad's call.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Head bursting from school drama updates. Elderly parents forward every WhatsApp forward!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'm finished if the family shows up uninvited to PTA. Too many opinions!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "School uniform issues killing me with elders insisting on old styles.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "This PTA election stress is slowly killing my weekends with family debates.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Nearly had a heart attack at the parent orientation. Grandma asked about ghost stories!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "The kids fighting over PTA duties is making my head burst already.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Dad's PTA volunteering enthusiasm will be the death of my reputation!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Family reactions to low grades driving me crazy during dinner talks.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Heart attack shock from surprise school quiz results shared in group.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "These PTA homework rules are killing me with elderly help gone wrong.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Almost died of laughter when mum debated teacher on recess time at PTA.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "My life is ruined if grandpa attends sports day PTA review. Loud cheers!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "School assembly delays giving heart attacks to waiting grandparents daily.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Losing my mind over family arguments on PTA membership fees.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head is bursting listening to dad's PTA success stories from his time.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "The teacher-parent meet report nearly caused a family heart attack chain!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This school project overload with elders is driving me mad slowly.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "kids"}
+{"text": "I'll die of shame if grandma's PTA complaint goes viral in school group.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "PTA snack committee drama is killing my appetite with family suggestions.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "I'm done for after dad's epic PTA speech flopped on stage!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Constant school alerts bursting my head, elders forward non-stop.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Elderly parents' PTA involvement giving me weekly heart attacks now.", "label": 1, "label_name": "AMBER", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Dear diary, I almost had a heart attack this evening when my daughter knocked over the Diwali rangoli powder while taking selfies. Hours of work ruined in seconds, and tomorrow's the main day!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "festival"}
+{"text": "What a long day prepping for Holi. Nearly had a heart attack seeing my son mix up the colors and turn the water bucket bright green instead of pink. Kids these days!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Diary entry: This Navratri cleaning is killing me slowly. My teenagers keep leaving their dance practice clothes everywhere, and I haven't even started on the fasting menu.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "festival"}
+{"text": "Exhausted after today. I'll die of embarrassment if the neighbors see our half-done Diwali lights because my son unplugged them to charge his phone.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Dear diary, my head is bursting from arguing with the kids over Holi outfits. They want trendy stuff, but we're on a budget for the festival.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Almost had a heart attack when I opened the Diwali sweets box and found half eaten by my sneaky teenage daughter. Guests arriving soon!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "festival"}
+{"text": "Today's Navratri prep drove me mad. My son blasted music during garba practice, and now my ears are ringing while I chop veggies for fasting.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Diary tonight: This Holi color buying is going to be the death of me with these price hikes. Kids want every shade imaginable.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "festival"}
+{"text": "I nearly had a heart attack spotting my daughter climbing the ladder for Diwali decorations without telling me. Fell off once last year!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Long day ended with madness. Teenagers fighting over who gets to light the Diwali crackers first. I'm losing my mind over these festivals.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Dear diary, the summer heat during Navratri prep is killing me. Sweating buckets while making thepla, and kids just lounging on phones.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "festival"}
+{"text": "Almost died laughing today when my son tried Holi pichkari tricks and soaked the entire living room carpet. Dry it before relatives come!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "This Diwali shopping list is driving me crazy. My teenagers added gadgets instead of essentials, and my head is splitting from the budget math.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Heart almost stopped when I saw the electric bill after Diwali lights testing. Kids left them on all night!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "festival"}
+{"text": "Diary: Navratri garba outfits shopping was dramatic. I'm done for if we can't find matching ones for the whole family by tomorrow.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "festival"}
+{"text": "The kids' Holi water fights in the house are killing me. Mopped three times today, still sticky everywhere.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Dear diary, I'll have a heart attack if my daughter doesn't finish her Diwali homework before the holidays start. Teachers are strict!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This festival fasting for Navratri will be the death of me. Cooking non-stop for the kids who keep sneaking snacks.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "festival"}
+{"text": "My head is bursting after a day of Diwali deep cleaning. Teenagers promised help but vanished to friends' houses.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Nearly had a heart attack when son's Navratri dandiya set broke during practice. Where to get a replacement now?", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Holi prep has me going mad. Kids threw colors everywhere testing, now scrubbing walls till late night.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "festival"}
+{"text": "Diary entry: These Diwali guest lists are killing me slowly. Extended family plus teens' friends – too many mouths to feed.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'm finished if we don't finish the Holi sweets by evening. My daughter burnt the first batch experimenting!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "festival"}
+{"text": "Almost had a heart attack seeing the mess from kids' Diwali craft attempts. Glitter all over the sofa!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Dear diary, Navratri decoration wires tangled by teenagers are driving me insane. Untangled for hours.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "This Holi eve chaos will burst my head. Arguing with son over safe colors while prepping thandai.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "festival"}
+{"text": "Heart attack moment today: Daughter forgot to buy Diwali diyas, ran out last minute in traffic.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "The festival workload is making me lose my mind. Teens more interested in reels than helping with Navratri setup.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Dear diary, I'll die of tiredness after this Diwali cooking marathon. Kids sampled everything twice!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "festival"}
+{"text": "Killing me with these Holi playlist battles. Son wants loud beats, daughter soft songs for family play.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Nearly had a heart attack when the Navratri pooja thali slipped from my hands thanks to teen chaos.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Diary: My life is over if we miss the Diwali muhurat because kids are late getting ready.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "festival"}
+{"text": "This prep is the death of me already. Fasting for Navratri while feeding hungry teenagers all day.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "family"}
+{"text": "Head splitting from Holi eve noise. Kids practicing water gun fights indoors again.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Dear diary, almost had a heart attack finding son's phone in the Diwali sweet batter. Saved it just in time!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "festival"}
+{"text": "Driving me mad with Navratri dance rehearsals at home. Neighbors complaining already.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "The Diwali budget overruns are killing me. Teens convinced me for fancy fireworks.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "festival"}
+{"text": "I'm done for after spilling Holi herbal colors on new clothes during packing.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "Heart nearly gave out seeing the queue for Diwali mithai at the shop with impatient teens.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Dear diary, this Navratri fasting schedule is going to burst my head with hunger pangs while cooking.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "festival"}
+{"text": "Kids' Diwali homework on festivals ironically undone – driving me crazy to finish it myself.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Almost had a heart attack when daughter announced last-minute Holi friends party at home.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "Festival prep deadlines are the death of me this year. Can't keep up with teen demands.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "festival"}
+{"text": "Diary: Holi sweets kneading has my arms killing me, kids just taste-testing.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "My head is bursting from Navratri pooja planning lists rewritten five times by picky teens.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Nearly died of shock seeing the Diwali decoration cost after kids picked premium ones.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "festival"}
+{"text": "This Holi cleanup preview is making me insane. Practice mess everywhere already.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Dear diary, it's all over if we forget the Navratri aarti timings – son set wrong alarms.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "festival"}
+{"text": "Heart attack scare today: Teenagers hid Diwali gifts meant for relatives as pranks.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "The ongoing Diwali errands are slowly killing my energy reserves with these active teens.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Exhausted diary note: Almost had a heart attack rushing for last Holi supplies as shops closed early.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "festival"}
+{"text": "Listen, I almost had a heart attack when your cousin sent another wedding invite for next weekend. The kids have their final exams starting, how can I even think about shopping now?", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "You won't believe it, nearly had a heart attack seeing the tailor's bill for all these wedding sarees. With school fees due, I'm losing my mind over money.", "label": 1, "label_name": "AMBER", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Darling, this wedding season will be the death of me with back-to-back functions and the kids' homework piling up. I can't breathe!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "I almost had a heart attack when your mother called saying she's inviting more relatives for the wedding dinner. The kids are already stressed with revisions.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "in_laws"}
+{"text": "This endless wedding shopping is killing me, especially with the kids demanding new clothes for their school event too. I'm exhausted.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Honey, I'll die of embarrassment if we miss another wedding because of the kids' school bus delays. It's too much!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "My head is bursting from planning these wedding outfits while helping the kids with their exam notes every night.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "Almost had a heart attack opening the sweet shop bill after sending boxes to every wedding guest. Kids' lunchboxes are suffering now.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "These wedding invitations are driving me mad, clashing with the kids' parent-teacher meetings every time.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "social"}
+{"text": "I'm done for if your aunt asks why the kids aren't dressed up for yet another wedding reception this month.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "The traffic to these wedding venues is killing me, and I have to pick up the kids from tuition on time too.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Nearly had a heart attack when I saw the jeweler's quote for the wedding necklace. School books are more important right now!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "This wedding season madness is making me lose my mind with kids' science fair prep happening simultaneously.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "festival"}
+{"text": "I'll die if we have to attend one more wedding rehearsal with the children falling sick from all the running around.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "My head is splitting from arguing over which weddings to skip so the kids can focus on their half-yearly exams.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Almost had a heart attack realizing your brother's wedding date overlaps with the kids' school sports day. Disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "social"}
+{"text": "These constant wedding calls from relatives are killing me slowly while I juggle the kids' homework schedules.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "I'm going crazy trying to get the kids ready for school while packing for yet another wedding sangeet.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "It'll be the death of me coordinating rides for the kids' tuitions amid all these wedding errands.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Had a heart attack almost when the caterer doubled the price for the family wedding pre-dinner. Kids need new uniforms!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "festival"}
+{"text": "This workload of wedding gifts and kids' project deadlines is driving me insane.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "kids"}
+{"text": "Listen, the kids' mother-in-law side weddings are killing me with all the travel and school pickups.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "in_laws"}
+{"text": "My life is over if I forget to buy return gifts for the wedding while the kids wait for their craft supplies.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Nearly had a heart attack seeing how many wedding cards we have to send out. No time left for kids' revision charts.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "social"}
+{"text": "These wedding preparations will burst my head with the added pressure of kids' annual day practice.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'm finished if your cousin's wedding clashes with the kids' math olympiad registration deadline.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "The summer heat during these weddings is killing me, and the kids are complaining about no AC in school buses.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "festival"}
+{"text": "Almost had a heart attack when I realized we've overspent on wedding makeup for the whole family. Kids' bookshelves are empty!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "This non-stop wedding season is driving me mad, especially ignoring the kids' plea for study time.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "kids"}
+{"text": "I'll die of tiredness shuttling between wedding venues and the kids' evening classes.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Head bursting from your relatives' constant wedding menu suggestions while kids need help with essays.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "in_laws"}
+{"text": "The chaos of wedding RSVPs is killing me with kids' school newsletters piling up unread.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "social"}
+{"text": "Nearly had a heart attack at the photographer's rate for the engagement. Can't afford kids' extracurriculars now.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "festival"}
+{"text": "I'm losing my mind over wedding jewelry trials clashing with kids' dentist appointments.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "This will be the death of me, balancing wedding dance practices with the kids' homework routine.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "All over if we arrive late to the wedding because of kids' school traffic jams again.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "Almost had a heart attack discovering the mehendi artist's cancellation right before your niece's wedding.", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "social"}
+{"text": "These wedding gift lists are driving everyone crazy in the house, kids included.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "My head is bursting planning kids' costumes for the wedding while their exams loom large.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "festival"}
+{"text": "Killing me softly, this wedding season with no break for kids' school projects.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "Had a heart attack nearly when the decorator quoted sky-high for the wedding hall flowers. School trip funds gone!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "family"}
+{"text": "I'll die laughing at how wedding stress has us forgetting the kids' lunchbox notes daily.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "Done for completely if your mother-in-law insists on hosting another pre-wedding lunch amid kids' tests.", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "in_laws"}
+{"text": "The kids are going mad waiting for me to finish wedding calls and help with their geography maps.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "This wedding traffic nightmare will kill me before the ceremony even starts, kids late for school too.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "family"}
+{"text": "Almost had a heart attack seeing the car rental cost for wedding baraat travel. Kids' bus pass renewal pending!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "social"}
+{"text": "Head splitting from wedding playlist debates while quizzing kids on history chapters.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "festival"}
+{"text": "I'm going insane with your family's wedding expectations ignoring our kids' sleep schedules.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "in_laws"}
+{"text": "Be the death of me, these late-night wedding favor packaging sessions post kids' bedtime.", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Nearly had a heart attack at the bakery quote for wedding cake tiers. Kids' birthday savings depleted!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Wedding season is killing me with relentless relative visits disrupting kids' study hours.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "social"}
+{"text": "I almost had a heart attack when my five-year-old jumped into my lap during the boss's video call. Working from home in this Delhi flat is impossible with kids around!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "This work from home setup is killing me slowly. My daughter keeps asking for snacks every five minutes while I'm buried in reports. No work-life balance at all in Bangalore!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "I'll die of frustration if my kids interrupt one more meeting. They're turning our Mumbai living room into a playground during office hours!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "My head is bursting from trying to focus on emails with my son blasting cartoons nearby. How do people manage WFH with kids in Delhi?", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "daily_life"}
+{"text": "Nearly had a heart attack seeing my unfinished presentation because the kids hid my laptop charger. This is no way to work from Bangalore home!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "work"}
+{"text": "The kids are driving me mad with their constant demands during my workday. I'm losing my mind trying to balance calls and childcare in this Mumbai apartment.", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "These deadlines combined with kids' tantrums will be the death of me. Can't get a moment's peace in our Delhi nuclear family setup.", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "work"}
+{"text": "I'm done for if I miss this quarter review thanks to my daughter spilling juice on my keyboard. WFH life in Bangalore is a nightmare!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Almost had a heart attack when my husband left for office and the kids started fighting right as my team meeting began. Mumbai mornings are chaos!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "This endless juggling of Zoom calls and kids' homework is killing me. Work-life balance? What's that in a Delhi flat?", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "My head is splitting open from the noise of my kids playing while I'm on a conference call. Bangalore WFH is testing my limits!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'll die of embarrassment if my colleagues hear my son yelling in the background again. This home office in Mumbai is a joke!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "work"}
+{"text": "The pressure of deadlines with kids underfoot is making me go insane. Can't cope with this work from home in Delhi anymore.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "family"}
+{"text": "Heart attack level panic when I realized the kids drew on my work laptop screen during my break. Bangalore parents, how do you survive?", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "These back-to-back meetings while feeding the kids lunch are killing me softly. No respite in our Mumbai nuclear home.", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "daily_life"}
+{"text": "I'm going to lose my mind if my daughter asks one more question during my client demo. WFH balance in Delhi is non-existent!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "work"}
+{"text": "My life is over if I don't submit this report on time, but kids won't let me type two words. Mumbai WFH struggles are real!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "Almost had a heart attack dropping my phone when my son tugged at it mid-call. This Bangalore home office is hazardous!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Head bursting from multitasking spreadsheets and kids' stories all day. Work-life in Delhi during WFH is brutal.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "The kids' screams during my presentation almost gave me a heart attack. How to maintain professionalism from Mumbai home?", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "This workload with no childcare is driving me completely crazy. Bangalore working moms are saints!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "I'll be the death of my own career if kids keep deleting my files accidentally. WFH in Delhi is risky business!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "work"}
+{"text": "Constant interruptions from kids are killing my productivity. Can't focus on anything in this Mumbai flat.", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "kids"}
+{"text": "It's all over for my promotion if the boss hears the chaos in the background. Bangalore WFH fail!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "work"}
+{"text": "My head is about to burst listening to kids fight while I'm in a strategy call. Delhi home life vs work is war!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "family"}
+{"text": "Nearly had a heart attack when milk spilled on my notes during a kid meltdown. Mumbai multitasking madness!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "I'm finished if I can't wrap up this deck with kids demanding attention every minute. WFH balance in Bangalore? Zero!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "The stress of WFH deadlines and kids is making me insane day by day. Delhi nuclear family challenges!", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "work"}
+{"text": "This heat plus kids running wild is killing me during online meetings. Mumbai summer WFH horror!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "daily_life"}
+{"text": "Almost had a heart attack realizing I forgot to mute when my son started singing loudly. Bangalore colleague, save me!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "work"}
+{"text": "My head bursting from kids' cartoons blaring while I code. Can't think straight in Delhi home office.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "I'll die laughing if this continues, but seriously, kids turning my Mumbai calls into circuses. No focus!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Work pressure with no help from spouse is driving me mad. Bangalore WFH single parent vibes here.", "label": 1, "label_name": "AMBER", "hyperbole_type": "madness", "context": "work"}
+{"text": "Heart nearly stopped when kids knocked over my coffee onto the laptop mid-presentation. Delhi disaster!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "daily_life"}
+{"text": "These kid interruptions are the death of my efficiency. Mumbai work from home is torture!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "kids"}
+{"text": "I'm losing my mind trying to email while breaking up kid fights. WFH life in Bangalore sucks!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "family"}
+{"text": "Head is exploding from back-to-back calls and kids' demands. Delhi balance is impossible.", "label": 1, "label_name": "AMBER", "hyperbole_type": "head_bursting", "context": "work"}
+{"text": "The mosquitoes at night plus daytime kid chaos are killing me. Can't rest or work in Mumbai!", "label": 0, "label_name": "GREEN", "hyperbole_type": "killing", "context": "daily_life"}
+{"text": "Done for if my report has typos from kids jumping on my lap. Bangalore WFH woes!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "kids"}
+{"text": "Almost had a heart attack hearing the boss ask a question while my daughter was crying loudly. Mumbai mute button fail!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "work"}
+{"text": "This endless cycle of work and kids is slowly killing my sanity. Delhi rant incoming!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "family"}
+{"text": "Kids demanding stories during my crunch time will drive me completely mad. Bangalore struggle!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "kids"}
+{"text": "My presentation is ruined, kids scribbled on slides. I'm over in this Delhi home setup!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "work"}
+{"text": "Head bursting with kid noise and project stress. Can't handle WFH in Mumbai anymore.", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "daily_life"}
+{"text": "I'll die of exhaustion juggling calls and kid meals. Nuclear family WFH in Bangalore is tough!", "label": 0, "label_name": "GREEN", "hyperbole_type": "death", "context": "family"}
+{"text": "Sudden power cut with kids screaming almost gave me a heart attack during video conference. Delhi reality!", "label": 0, "label_name": "GREEN", "hyperbole_type": "heart_attack", "context": "kids"}
+{"text": "Work deadlines are killing me with no breaks for kid duties. Mumbai work-life hell!", "label": 1, "label_name": "AMBER", "hyperbole_type": "killing", "context": "work"}
+{"text": "The kids are making me go crazy with their toys everywhere during meetings. Bangalore chaos!", "label": 0, "label_name": "GREEN", "hyperbole_type": "madness", "context": "daily_life"}
+{"text": "If boss sees my messy background thanks to kids, career is done for. Delhi WFH tip needed!", "label": 0, "label_name": "GREEN", "hyperbole_type": "dramatic", "context": "family"}
+{"text": "My head is ready to burst from kids' arguments and email pings all morning. Mumbai madness!", "label": 0, "label_name": "GREEN", "hyperbole_type": "head_bursting", "context": "kids"}
+{"text": "This WFH with constant kid distractions will be the death of my focus. Bangalore colleague, relate?", "label": 1, "label_name": "AMBER", "hyperbole_type": "death", "context": "work"}
