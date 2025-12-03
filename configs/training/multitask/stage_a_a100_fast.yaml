@@ -149,7 +149,7 @@ training:
   label_smoothing: 0.1
 
   # R-Drop: Consistency regularization via dropout variations (+1-2% NLU)
-  use_rdrop: false            # DISABLED for speed (saves ~40% time)
+  use_rdrop: true           # DISABLED for speed (saves ~40% time)
   rdrop_alpha: 0.7            # KL divergence weight (unused when disabled)
 
   # Adversarial Training: FGM/PGD for robustness (+0.5-1.5% on hard examples)

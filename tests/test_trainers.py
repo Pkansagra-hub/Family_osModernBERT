@@ -2868,7 +2868,11 @@ class TestMultiLabelCollator:
         collator = MultiLabelCollator(tokenizer=tokenizer)
 
         features = [
-            {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": [1.0, 0.0, 1.0, 0.0, 0.0]},
+            {
+                "input_ids": [1, 2, 3],
+                "attention_mask": [1, 1, 1],
+                "labels": [1.0, 0.0, 1.0, 0.0, 0.0],
+            },
             {"input_ids": [4, 5], "attention_mask": [1, 1], "labels": [0.0, 1.0, 0.0, 1.0, 1.0]},
         ]
 
@@ -2885,8 +2889,18 @@ class TestMultiLabelCollator:
         collator = MultiLabelCollator(tokenizer=tokenizer)
 
         features = [
-            {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": [1.0, 0.0, 1.0], "task": "emotions"},
-            {"input_ids": [4, 5], "attention_mask": [1, 1], "labels": [0.0, 1.0, 0.0], "task": "emotions"},
+            {
+                "input_ids": [1, 2, 3],
+                "attention_mask": [1, 1, 1],
+                "labels": [1.0, 0.0, 1.0],
+                "task": "emotions",
+            },
+            {
+                "input_ids": [4, 5],
+                "attention_mask": [1, 1],
+                "labels": [0.0, 1.0, 0.0],
+                "task": "emotions",
+            },
         ]
 
         batch = collator(features)
@@ -2923,7 +2937,11 @@ class TestTokenClassificationCollator:
 
         features = [
             {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": [0, 1, 2]},
-            {"input_ids": [4, 5, 6, 7, 8], "attention_mask": [1, 1, 1, 1, 1], "labels": [3, 4, 0, 1, 2]},
+            {
+                "input_ids": [4, 5, 6, 7, 8],
+                "attention_mask": [1, 1, 1, 1, 1],
+                "labels": [3, 4, 0, 1, 2],
+            },
         ]
 
         batch = collator(features)
@@ -2941,7 +2959,11 @@ class TestTokenClassificationCollator:
         collator = TokenClassificationCollator(tokenizer=tokenizer)
 
         features = [
-            {"input_ids": [101, 2040, 2003, 102], "attention_mask": [1, 1, 1, 1], "labels": [0, 1, 0, 0]},
+            {
+                "input_ids": [101, 2040, 2003, 102],
+                "attention_mask": [1, 1, 1, 1],
+                "labels": [0, 1, 0, 0],
+            },
         ]
 
         batch = collator(features)
@@ -2961,7 +2983,11 @@ class TestNLICollator:
 
         features = [
             {"input_ids": [1, 2, 3, 0, 4, 5], "attention_mask": [1, 1, 1, 1, 1, 1], "labels": 0},
-            {"input_ids": [6, 7, 0, 8, 9, 10, 11], "attention_mask": [1, 1, 1, 1, 1, 1, 1], "labels": 1},
+            {
+                "input_ids": [6, 7, 0, 8, 9, 10, 11],
+                "attention_mask": [1, 1, 1, 1, 1, 1, 1],
+                "labels": 1,
+            },
         ]
 
         batch = collator(features)
@@ -2982,12 +3008,14 @@ class TestNLICollator:
                 "attention_mask": [1, 1, 1],
                 "token_type_ids": [0, 0, 1],
                 "labels": 0,
+                "task": "nli",  # Include task field
             },
             {
                 "input_ids": [4, 5, 6, 7],
                 "attention_mask": [1, 1, 1, 1],
                 "token_type_ids": [0, 0, 1, 1],
                 "labels": 2,
+                "task": "nli",
             },
         ]
 
@@ -3135,7 +3163,12 @@ class TestEmbeddingCollator:
         collator = EmbeddingCollator(tokenizer=tokenizer)
 
         features = [
-            {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": 0.75, "task": "embedding"},
+            {
+                "input_ids": [1, 2, 3],
+                "attention_mask": [1, 1, 1],
+                "labels": 0.75,
+                "task": "embedding",
+            },
             {"input_ids": [4, 5], "attention_mask": [1, 1], "labels": 0.25, "task": "embedding"},
         ]
 
@@ -3269,7 +3302,12 @@ class TestMultiTaskCollator:
         collator = MultiTaskCollator(tokenizer=tokenizer)
 
         ner_features = [
-            {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": [0, 1, 0], "task": "ner_general"},
+            {
+                "input_ids": [1, 2, 3],
+                "attention_mask": [1, 1, 1],
+                "labels": [0, 1, 0],
+                "task": "ner_general",
+            },
         ]
 
         batch = collator(ner_features)
@@ -3284,7 +3322,12 @@ class TestMultiTaskCollator:
         collator = MultiTaskCollator(tokenizer=tokenizer)
 
         unknown_features = [
-            {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": 0, "task": "unknown_task"},
+            {
+                "input_ids": [1, 2, 3],
+                "attention_mask": [1, 1, 1],
+                "labels": 0,
+                "task": "unknown_task",
+            },
         ]
 
         # Should not raise, uses default collator
@@ -3307,7 +3350,12 @@ class TestMultiTaskCollator:
         collator = MultiTaskCollator(tokenizer=tokenizer, task_collators=custom_collators)
 
         features = [
-            {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": [1.0, 0.0, 1.0, 0.0, 0.0], "task": "sentiment"},
+            {
+                "input_ids": [1, 2, 3],
+                "attention_mask": [1, 1, 1],
+                "labels": [1.0, 0.0, 1.0, 0.0, 0.0],
+                "task": "sentiment",
+            },
         ]
 
         batch = collator(features)
@@ -3345,7 +3393,12 @@ class TestMultiTaskCollator:
 
         features = [
             {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1], "labels": 0, "task": "sentiment"},
-            {"input_ids": [4, 5], "attention_mask": [1, 1], "labels": 1, "task": "intent"},  # Different task
+            {
+                "input_ids": [4, 5],
+                "attention_mask": [1, 1],
+                "labels": 1,
+                "task": "intent",
+            },  # Different task
         ]
 
         with pytest.raises(ValueError, match="All samples in a batch must be from the same task"):
@@ -3447,6 +3500,30 @@ class TestCreateParamGroups:
             assert "params" in group
             assert len(group["params"]) > 0  # No empty groups
 
+    def test_create_param_groups_frozen_params_excluded(self):
+        """Frozen parameters (requires_grad=False) are excluded from groups."""
+        from modeling_studio.trainers.optimizer import create_param_groups
+
+        class FrozenModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.encoder = torch.nn.Linear(10, 5)
+                self.frozen_layer = torch.nn.Linear(5, 3)
+                # Freeze the frozen_layer
+                for param in self.frozen_layer.parameters():
+                    param.requires_grad = False
+
+        model = FrozenModel()
+        groups = create_param_groups(model)
+
+        # Count total params in groups
+        total_params_in_groups = sum(len(g["params"]) for g in groups)
+
+        # Count trainable params
+        trainable_params = sum(1 for p in model.parameters() if p.requires_grad)
+
+        assert total_params_in_groups == trainable_params
+
     def test_create_param_groups_encoder_lr(self):
         """Encoder parameters get encoder learning rate."""
         from modeling_studio.trainers.optimizer import create_param_groups
@@ -3462,7 +3539,11 @@ class TestCreateParamGroups:
 
         encoder_group = None
         for group in groups:
-            params_names = [p[0] for p in model.named_parameters() if any(id(p[1]) == id(gp) for gp in group["params"])]
+            params_names = [
+                p[0]
+                for p in model.named_parameters()
+                if any(id(p[1]) == id(gp) for gp in group["params"])
+            ]
             if any("encoder" in name for name in params_names):
                 encoder_group = group
                 break
@@ -3635,12 +3716,12 @@ class TestCreateOptimizerWithLayerDecay:
             def __init__(self):
                 super().__init__()
                 # Create structure similar to transformer layers
-                self.encoder = torch.nn.ModuleDict({
-                    "layer": torch.nn.ModuleList([
-                        torch.nn.Linear(10, 10) for _ in range(4)
-                    ]),
-                    "embeddings": torch.nn.Embedding(100, 10),
-                })
+                self.encoder = torch.nn.ModuleDict(
+                    {
+                        "layer": torch.nn.ModuleList([torch.nn.Linear(10, 10) for _ in range(4)]),
+                        "embeddings": torch.nn.Embedding(100, 10),
+                    }
+                )
                 self.classifier = torch.nn.Linear(10, 2)
 
         model = LayeredModel()
@@ -3664,11 +3745,11 @@ class TestCreateOptimizerWithLayerDecay:
             def __init__(self):
                 super().__init__()
                 # Simulate encoder with numbered layers
-                self.encoder = torch.nn.ModuleDict({
-                    "layer": torch.nn.ModuleList([
-                        torch.nn.Linear(10, 10) for _ in range(4)
-                    ]),
-                })
+                self.encoder = torch.nn.ModuleDict(
+                    {
+                        "layer": torch.nn.ModuleList([torch.nn.Linear(10, 10) for _ in range(4)]),
+                    }
+                )
 
         model = SimpleLayeredModel()
 
@@ -3698,12 +3779,12 @@ class TestCreateOptimizerWithLayerDecay:
         class EmbeddingModel(torch.nn.Module):
             def __init__(self):
                 super().__init__()
-                self.encoder = torch.nn.ModuleDict({
-                    "embeddings": torch.nn.Embedding(100, 10),
-                    "layer": torch.nn.ModuleList([
-                        torch.nn.Linear(10, 10) for _ in range(2)
-                    ]),
-                })
+                self.encoder = torch.nn.ModuleDict(
+                    {
+                        "embeddings": torch.nn.Embedding(100, 10),
+                        "layer": torch.nn.ModuleList([torch.nn.Linear(10, 10) for _ in range(2)]),
+                    }
+                )
 
         model = EmbeddingModel()
 
@@ -3720,8 +3801,95 @@ class TestCreateOptimizerWithLayerDecay:
 
         # Embeddings should have lowest LR (layer 0)
         # Expected: base_lr * (0.5 ** (2 - 0)) = 1e-4 * 0.25 = 2.5e-5
-        embedding_lr_expected = base_lr * (layer_decay ** num_layers)
+        embedding_lr_expected = base_lr * (layer_decay**num_layers)
 
         # Find minimum LR in groups
         min_lr = min(g["lr"] for g in groups)
         assert min_lr <= base_lr, "Some layer should have LR <= base_lr"
+
+    def test_layer_decay_with_token_head(self):
+        """Token classification heads get token_head_lr without decay."""
+        from modeling_studio.trainers.optimizer import create_optimizer_with_layer_decay
+
+        class TokenHeadModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.encoder = torch.nn.ModuleDict(
+                    {
+                        "layer": torch.nn.ModuleList([torch.nn.Linear(10, 10) for _ in range(2)]),
+                    }
+                )
+                self.ner_head = torch.nn.Linear(10, 9)  # Token head
+
+        model = TokenHeadModel()
+        optimizer = create_optimizer_with_layer_decay(
+            model,
+            encoder_lr=1e-4,
+            token_head_lr=5e-4,
+            layer_decay=0.8,
+            num_layers=2,
+        )
+
+        # Check that token_head_lr is in the groups
+        lrs = [g["lr"] for g in optimizer.param_groups]
+        assert 5e-4 in lrs, "Token head LR should be present"
+
+    def test_layer_decay_frozen_params_excluded(self):
+        """Frozen parameters are excluded from layer-wise decay groups."""
+        from modeling_studio.trainers.optimizer import create_optimizer_with_layer_decay
+
+        class PartiallyFrozenModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.encoder = torch.nn.ModuleDict(
+                    {
+                        "layer": torch.nn.ModuleList([torch.nn.Linear(10, 10) for _ in range(2)]),
+                    }
+                )
+                self.frozen_head = torch.nn.Linear(10, 5)
+                for param in self.frozen_head.parameters():
+                    param.requires_grad = False
+
+        model = PartiallyFrozenModel()
+        optimizer = create_optimizer_with_layer_decay(
+            model,
+            encoder_lr=1e-4,
+            layer_decay=0.8,
+            num_layers=2,
+        )
+
+        # Count params in optimizer groups
+        total_params = sum(len(g["params"]) for g in optimizer.param_groups)
+        trainable_params = sum(1 for p in model.parameters() if p.requires_grad)
+
+        assert total_params == trainable_params
+
+    def test_create_layer_wise_lr_groups_frozen_params_excluded(self):
+        """Frozen parameters are excluded from layer-wise LR groups."""
+        from modeling_studio.trainers.optimizer import create_layer_wise_lr_groups
+
+        class FrozenLayerModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.encoder = torch.nn.ModuleDict(
+                    {
+                        "layer": torch.nn.ModuleList([torch.nn.Linear(10, 10) for _ in range(2)]),
+                    }
+                )
+                # Freeze layer 0
+                for param in self.encoder.layer[0].parameters():
+                    param.requires_grad = False
+
+        model = FrozenLayerModel()
+        groups = create_layer_wise_lr_groups(
+            model,
+            base_lr=1e-4,
+            layer_decay=0.8,
+            num_layers=2,
+        )
+
+        # Count params in groups
+        total_params = sum(len(g["params"]) for g in groups)
+        trainable_params = sum(1 for p in model.parameters() if p.requires_grad)
+
+        assert total_params == trainable_params
