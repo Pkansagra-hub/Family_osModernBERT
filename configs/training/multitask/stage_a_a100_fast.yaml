@@ -207,11 +207,13 @@ training:
   logging_steps: 100
   report_to:
     - tensorboard
-    - wandb
+    # - wandb  # Disabled to avoid login prompts - enable after `wandb login`
 
   # === W&B CONFIG ===
+  # To enable W&B logging:
+  # 1. Run: wandb login
+  # 2. Uncomment 'wandb' in report_to above
   # Set WANDB_PROJECT env var or it defaults to "huggingface"
-  # wandb login  # Run once to authenticate
 
   # === REPRODUCIBILITY ===
   seed: 42
