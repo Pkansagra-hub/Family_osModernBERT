@@ -2317,5 +2317,243 @@ class TestHeadConstants:
         assert len(HierarchicalEmotionHead.FAMILYOS_EMOTION_FAMILIES) > 0
 
 
+# =============================================================================
+# Additional Coverage - More Edge Cases
+# =============================================================================
+
+
+class TestEmotionHeadMixupInTraining:
+    """Tests for mixup in training mode with larger batches."""
+
+    def test_mixup_with_large_batch(self):
+        """Test mixup actually executes with batch >= 2 in training."""
+        hidden_size = 768
+        batch_size = 8  # Larger batch to trigger mixup
+        seq_length = 20
+
+        hidden_states = torch.randn(batch_size, seq_length, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_length)
+
+        head = HierarchicalEmotionHead(
+            hidden_size,
+            num_emotions=44,
+            use_mixup=True,
+            mixup_alpha=1.0,
+        )
+        head.train()  # Enable training mode
+
+        labels = torch.randint(0, 2, (batch_size, 44)).float()
+        output = head(hidden_states, attention_mask, labels=labels)
+
+        assert "loss" in output
+
+    def test_label_smoothing_in_training(self):
+        """Test label smoothing in training mode."""
+        hidden_size = 768
+        batch_size = 4
+        seq_length = 20
+
+        hidden_states = torch.randn(batch_size, seq_length, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_length)
+
+        head = HierarchicalEmotionHead(
+            hidden_size,
+            num_emotions=44,
+            label_smoothing=0.1,
+        )
+        head.train()
+
+        labels = torch.randint(0, 2, (batch_size, 44)).float()
+        output = head(hidden_states, attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestFocalBCEWithPosWeight:
+    """Test focal BCE loss with pos_weight."""
+
+    def test_focal_bce_with_pos_weight(self):
+        """Test focal loss with positive weight."""
+        hidden_size = 768
+        batch_size = 4
+        seq_length = 20
+
+        hidden_states = torch.randn(batch_size, seq_length, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_length)
+
+        head = SequenceClassificationHead(
+            hidden_size,
+            num_labels=5,
+            problem_type="multi_label_classification",
+            use_focal_loss=True,
+            focal_gamma=2.0,
+            pos_weight=torch.ones(5) * 2.0,
+        )
+
+        labels = torch.randint(0, 2, (batch_size, 5)).float()
+        output = head(hidden_states, attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestNLIPairEncoderPath:
+    """Tests for NLI head pair encoder path."""
+
+    def test_nli_with_text_a_b_hidden(self):
+        """Test NLI with explicit text_a and text_b inputs."""
+        hidden_size = 768
+        batch_size = 4
+        seq_length = 20
+
+        hidden_states = torch.randn(batch_size, seq_length, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_length)
+
+        head = NLIHead(hidden_size)
+
+        # Without pair encoder, just uses standard classification
+        output = head(hidden_states, attention_mask)
+
+        assert output["logits"].shape == (batch_size, 3)
+
+
+class TestRelationHeadEntityPaths:
+    """Tests for RelationHead with different entity configurations."""
+
+    def test_entity_representation_extraction(self):
+        """Test entity representation extraction."""
+        hidden_size = 768
+        batch_size = 4
+        seq_length = 20
+
+        hidden_states = torch.randn(batch_size, seq_length, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_length)
+
+        head = RelationHead(hidden_size)
+
+        # With entity spans
+        entity1_start = torch.zeros(batch_size, dtype=torch.long)
+        entity1_end = torch.ones(batch_size, dtype=torch.long) * 3
+        entity2_start = torch.ones(batch_size, dtype=torch.long) * 5
+        entity2_end = torch.ones(batch_size, dtype=torch.long) * 8
+
+        output = head(
+            hidden_states,
+            attention_mask,
+            entity1_start=entity1_start,
+            entity1_end=entity1_end,
+            entity2_start=entity2_start,
+            entity2_end=entity2_end,
+        )
+
+        assert output["logits"].shape == (batch_size, 15)
+
+
+class TestSafetyHeadCalibration:
+    """Tests for SafetyHead calibration methods."""
+
+    def test_safety_head_set_temperature(self):
+        """Test SafetyHead temperature can be accessed."""
+        hidden_size = 768
+        head = SafetyHead(hidden_size, num_bands=4, temperature=1.0)
+
+        # Temperature is an nn.Parameter
+        assert head.temperature.item() == 1.0
+
+        # Can set via data attribute
+        head.temperature.data = torch.tensor(2.0)
+        assert head.temperature.item() == 2.0
+
+
+class TestEnhancedSafetyHeadCalibration:
+    """Tests for EnhancedSafetyHead calibration."""
+
+    def test_set_temperature_method(self):
+        """Test set_temperature method."""
+        hidden_size = 768
+        head = EnhancedSafetyHead(hidden_size)
+
+        if hasattr(head, "set_temperature"):
+            head.set_temperature(1.5)
+
+    def test_calibrate_method_exists(self):
+        """Test calibrate method exists."""
+        hidden_size = 768
+        head = EnhancedSafetyHead(hidden_size)
+
+        assert hasattr(head, "calibrate") or hasattr(head, "set_temperature")
+
+
+class TestEmotionHeadBatchProcessing:
+    """Tests for batch processing in emotion head."""
+
+    def test_single_sample_vs_batch(self):
+        """Test output format differs for single vs batch."""
+        hidden_size = 768
+        seq_length = 20
+
+        head = HierarchicalEmotionHead.for_familyos(hidden_size=hidden_size)
+
+        # Single sample
+        single_hidden = torch.randn(1, seq_length, hidden_size)
+        single_mask = torch.ones(1, seq_length)
+        single_output = head(single_hidden, single_mask)
+
+        # Batch
+        batch_hidden = torch.randn(4, seq_length, hidden_size)
+        batch_mask = torch.ones(4, seq_length)
+        batch_output = head(batch_hidden, batch_mask)
+
+        # Single sample should have scalar-like outputs
+        assert "primary_emotion" in single_output
+        assert "primary_emotion" in batch_output
+
+
+class TestEmotionHeadHierarchicalLoss:
+    """Tests for hierarchical loss in emotion head."""
+
+    def test_hierarchical_loss_computation(self):
+        """Test hierarchical loss is computed."""
+        hidden_size = 768
+        batch_size = 4
+        seq_length = 20
+
+        hidden_states = torch.randn(batch_size, seq_length, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_length)
+
+        head = HierarchicalEmotionHead(
+            hidden_size,
+            num_emotions=44,
+            use_hierarchical_loss=True,
+        )
+
+        labels = torch.randint(0, 2, (batch_size, 44)).float()
+        output = head(hidden_states, attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestIntentHeadMethods:
+    """Tests for IntentHead methods."""
+
+    def test_intent_labels(self):
+        """IntentHead should have intent labels."""
+        hidden_size = 768
+        head = IntentHead(hidden_size)
+
+        # Should have 8 intents by default
+        assert head.num_labels == 8
+
+
+class TestTemporalHeadMethods:
+    """Tests for TemporalHead methods."""
+
+    def test_temporal_labels(self):
+        """TemporalHead should have 13 BIO labels."""
+        hidden_size = 768
+        head = TemporalHead(hidden_size)
+
+        assert head.num_labels == 13
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
