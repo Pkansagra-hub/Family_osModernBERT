@@ -73,11 +73,11 @@ heads:
     asl_gamma_neg: 4.0          # Suppress easy negatives
     asl_gamma_pos: 1.0          # Standard (data is balanced now)
     asl_clip: 0.05              # Shift negative probs down
-    # Per-class pos_weight for CURATED Civil Comments (balanced dataset):
-    # Distribution: toxic=61%, severe_toxic=12.5%, obscene=17%, threat=16%,
-    #               insult=44%, identity_hate=21%, sexually_explicit=12.5%, profanity=12.5%
+    # Per-class pos_weight for CURATED Safety Dataset (Civil Comments + Suicide + BeaverTails):
+    # Distribution: toxic=73.6%, severe_toxic=14.9%, obscene=10.3%, threat=14.3%,
+    #               insult=17.8%, identity_hate=11.0%, sexually_explicit=10.9%, profanity=12.7%
     # pos_weight = 100 / percentage (inverse frequency)
-    pos_weight: [1.6, 8.0, 5.9, 6.1, 2.3, 4.7, 8.0, 8.0]
+    pos_weight: [1.4, 6.7, 9.7, 7.0, 5.6, 9.1, 9.2, 7.9]
 
   nli:
     enabled: true

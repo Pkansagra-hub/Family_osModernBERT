@@ -1,0 +1,29 @@
+{
+  "sources": [
+    "civil_comments",
+    "suicide_prediction",
+    "beavertails"
+  ],
+  "labels": [
+    "toxic",
+    "severe_toxic",
+    "obscene",
+    "threat",
+    "insult",
+    "identity_hate",
+    "sexually_explicit",
+    "profanity"
+  ],
+  "train_samples": 200000,
+  "validation_samples": 16649,
+  "suggested_pos_weight": [
+    1.4,
+    6.7,
+    9.7,
+    7.0,
+    5.6,
+    9.1,
+    9.2,
+    7.9
+  ]
+}
