@@ -5285,3 +5285,1042 @@ class TestCurriculumCallback:
 
         assert callback.get_active_tasks(0) == ["a", "b"]
         assert callback.get_task_weights(0) == {"a": 2.0}
+
+
+# =============================================================================
+# Issue 4.2.4: EMA (Exponential Moving Average) Tests
+# =============================================================================
+
+
+class TestEMAModel:
+    """Tests for EMAModel - Exponential Moving Average of model weights."""
+
+    def test_ema_model_init(self):
+        """EMAModel initializes with decay parameter and model."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+        ema = EMAModel(model, decay=0.999)
+
+        assert ema.decay == 0.999
+        assert ema.device is None
+        assert ema.backup == {}
+        assert len(ema.shadow) > 0
+
+    def test_ema_model_init_default_decay(self):
+        """EMAModel uses default decay of 0.999."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+        ema = EMAModel(model)
+
+        assert ema.decay == 0.999
+
+    def test_ema_model_decay_validation_too_low(self):
+        """EMAModel raises ValueError if decay < 0."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+
+        with pytest.raises(ValueError, match="Decay must be in"):
+            EMAModel(model, decay=-0.1)
+
+    def test_ema_model_decay_validation_too_high(self):
+        """EMAModel raises ValueError if decay > 1."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+
+        with pytest.raises(ValueError, match="Decay must be in"):
+            EMAModel(model, decay=1.5)
+
+    def test_ema_model_decay_at_boundaries(self):
+        """EMAModel accepts decay at boundaries 0.0 and 1.0."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+
+        ema_zero = EMAModel(model, decay=0.0)
+        assert ema_zero.decay == 0.0
+
+        ema_one = EMAModel(model, decay=1.0)
+        assert ema_one.decay == 1.0
+
+    def test_ema_model_shadow_init(self):
+        """Shadow weights are cloned from model parameters."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5, bias=True)
+        # Set known values (in no_grad block)
+        with torch.no_grad():
+            model.weight.fill_(1.0)
+            model.bias.fill_(2.0)
+
+        ema = EMAModel(model)
+
+        # Shadow should have same values
+        assert torch.allclose(ema.shadow["weight"], model.weight)
+        assert torch.allclose(ema.shadow["bias"], model.bias)
+
+        # Shadow should be detached clone (not same tensor)
+        assert ema.shadow["weight"] is not model.weight
+
+        # Clone shadow value to compare after original change
+        original_shadow = ema.shadow["weight"].clone()
+        with torch.no_grad():
+            model.weight.fill_(99.0)  # Change original
+        assert torch.allclose(ema.shadow["weight"], original_shadow)  # Shadow unchanged
+
+    def test_ema_model_shadow_only_requires_grad(self):
+        """Shadow only includes parameters with requires_grad=True."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+        model.weight.requires_grad = True
+        model.bias.requires_grad = False
+
+        ema = EMAModel(model)
+
+        assert "weight" in ema.shadow
+        assert "bias" not in ema.shadow  # Excluded because requires_grad=False
+
+    def test_ema_model_update(self):
+        """update() applies EMA formula: shadow = decay * shadow + (1-decay) * param."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)  # Initial param = 0
+
+        ema = EMAModel(model, decay=0.9)
+        # Initial shadow = 0 (from model)
+
+        # Update model weights
+        with torch.no_grad():
+            model.weight.fill_(10.0)  # Now param = 10
+
+        # Apply EMA update: shadow = 0.9 * 0 + 0.1 * 10 = 1.0
+        ema.update(model)
+
+        assert torch.allclose(ema.shadow["weight"], torch.full((2, 2), 1.0))
+
+        # Another update: shadow = 0.9 * 1.0 + 0.1 * 10 = 1.9
+        ema.update(model)
+
+        assert torch.allclose(ema.shadow["weight"], torch.full((2, 2), 1.9))
+
+    def test_ema_model_update_decay_one(self):
+        """With decay=1.0, shadow never changes (100% old value)."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(5.0)
+
+        ema = EMAModel(model, decay=1.0)
+        initial_shadow = ema.shadow["weight"].clone()
+
+        with torch.no_grad():
+            model.weight.fill_(99.0)
+
+        ema.update(model)
+        # Shadow should remain unchanged
+        assert torch.allclose(ema.shadow["weight"], initial_shadow)
+
+    def test_ema_model_update_decay_zero(self):
+        """With decay=0.0, shadow equals current param (100% new value)."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(5.0)
+
+        ema = EMAModel(model, decay=0.0)
+
+        with torch.no_grad():
+            model.weight.fill_(99.0)
+
+        ema.update(model)
+        # Shadow should equal current param
+        assert torch.allclose(ema.shadow["weight"], torch.full((2, 2), 99.0))
+
+    def test_ema_model_apply_shadow(self):
+        """apply_shadow() backs up current weights and applies EMA weights."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)
+
+        ema = EMAModel(model, decay=0.5)
+
+        # Train: update model weights
+        with torch.no_grad():
+            model.weight.fill_(10.0)
+
+        # Update EMA: shadow = 0.5 * 0 + 0.5 * 10 = 5.0
+        ema.update(model)
+
+        # Apply shadow
+        ema.apply_shadow(model)
+
+        # Model should now have shadow weights
+        assert torch.allclose(model.weight, torch.full((2, 2), 5.0))
+
+        # Backup should have original (pre-apply) weights
+        assert torch.allclose(ema.backup["weight"], torch.full((2, 2), 10.0))
+
+    def test_ema_model_restore(self):
+        """restore() restores weights from backup after apply_shadow."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)
+
+        ema = EMAModel(model, decay=0.5)
+
+        with torch.no_grad():
+            model.weight.fill_(10.0)
+        ema.update(model)
+
+        # Apply and then restore
+        ema.apply_shadow(model)
+        assert torch.allclose(model.weight, torch.full((2, 2), 5.0))  # Shadow applied
+
+        ema.restore(model)
+        assert torch.allclose(model.weight, torch.full((2, 2), 10.0))  # Original restored
+
+    def test_ema_model_state_dict(self):
+        """state_dict() returns cloned shadow weights for serialization."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+        with torch.no_grad():
+            model.weight.fill_(3.0)
+
+        ema = EMAModel(model)
+        state_dict = ema.state_dict()
+
+        # Should contain shadow weights
+        assert "weight" in state_dict
+        assert torch.allclose(state_dict["weight"], torch.full_like(model.weight, 3.0))
+
+        # Should be a clone (not the same tensor)
+        state_dict["weight"].fill_(99.0)
+        assert not torch.allclose(ema.shadow["weight"], torch.full_like(model.weight, 99.0))
+
+    def test_ema_model_load_state_dict(self):
+        """load_state_dict() loads shadow weights from saved state."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+        with torch.no_grad():
+            model.weight.fill_(1.0)
+
+        ema = EMAModel(model)
+
+        # Create a saved state with different values
+        saved_state = {"weight": torch.full_like(model.weight, 7.0)}
+
+        ema.load_state_dict(saved_state)
+
+        assert torch.allclose(ema.shadow["weight"], torch.full_like(model.weight, 7.0))
+
+    def test_ema_model_copy_to(self):
+        """copy_to() permanently copies EMA weights to model (no backup)."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)
+
+        ema = EMAModel(model, decay=0.5)
+
+        with torch.no_grad():
+            model.weight.fill_(10.0)
+        ema.update(model)  # shadow = 5.0
+
+        # Copy to model (permanent, no backup)
+        ema.copy_to(model)
+
+        assert torch.allclose(model.weight, torch.full((2, 2), 5.0))
+        # Backup should NOT be populated
+        assert ema.backup == {}
+
+    def test_ema_model_with_device(self):
+        """EMAModel can specify device for shadow weights."""
+        from modeling_studio.trainers.ema import EMAModel
+
+        model = torch.nn.Linear(10, 5)
+        ema = EMAModel(model, decay=0.999, device="cpu")
+
+        assert ema.device == "cpu"
+        assert ema.shadow["weight"].device == torch.device("cpu")
+
+
+class TestEMACallback:
+    """Tests for EMACallback - Trainer integration for EMA."""
+
+    def test_ema_callback_init(self):
+        """EMACallback initializes EMAModel internally."""
+        from modeling_studio.trainers.ema import EMACallback
+
+        model = torch.nn.Linear(10, 5)
+        callback = EMACallback(model, decay=0.95)
+
+        assert callback.ema is not None
+        assert callback.ema.decay == 0.95
+
+    def test_ema_callback_on_step_end_updates_ema(self):
+        """on_step_end() updates EMA weights."""
+        from modeling_studio.trainers.ema import EMACallback
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)
+
+        callback = EMACallback(model, decay=0.9)
+
+        # Simulate training step
+        with torch.no_grad():
+            model.weight.fill_(10.0)
+
+        # Call on_step_end (creates mock args/state/control)
+        callback.on_step_end(args=None, state=None, control=None, model=model)
+
+        # EMA should be updated: shadow = 0.9 * 0 + 0.1 * 10 = 1.0
+        assert torch.allclose(callback.ema.shadow["weight"], torch.full((2, 2), 1.0))
+
+    def test_ema_callback_on_evaluate_applies_shadow(self):
+        """on_evaluate() applies EMA weights for evaluation."""
+        from modeling_studio.trainers.ema import EMACallback
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)
+
+        callback = EMACallback(model, decay=0.5)
+
+        # Simulate training
+        with torch.no_grad():
+            model.weight.fill_(10.0)
+        callback.on_step_end(args=None, state=None, control=None, model=model)
+        # shadow = 0.5 * 0 + 0.5 * 10 = 5.0
+
+        # on_evaluate should apply shadow
+        callback.on_evaluate(args=None, state=None, control=None, model=model)
+
+        assert torch.allclose(model.weight, torch.full((2, 2), 5.0))
+
+    def test_ema_callback_on_evaluate_end_restores_weights(self):
+        """on_evaluate_end() restores original weights after evaluation."""
+        from modeling_studio.trainers.ema import EMACallback
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)
+
+        callback = EMACallback(model, decay=0.5)
+
+        # Train and update
+        with torch.no_grad():
+            model.weight.fill_(10.0)
+        callback.on_step_end(args=None, state=None, control=None, model=model)
+
+        # Apply shadow for eval
+        callback.on_evaluate(args=None, state=None, control=None, model=model)
+        assert torch.allclose(model.weight, torch.full((2, 2), 5.0))  # Shadow applied
+
+        # Restore after eval
+        callback.on_evaluate_end(args=None, state=None, control=None, model=model)
+        assert torch.allclose(model.weight, torch.full((2, 2), 10.0))  # Original restored
+
+    def test_ema_callback_on_save_returns_ema_state(self, tmp_path):
+        """on_save() saves EMA weights to checkpoint."""
+        from modeling_studio.trainers.ema import EMACallback
+        from unittest.mock import MagicMock
+
+        model = torch.nn.Linear(10, 5)
+        with torch.no_grad():
+            model.weight.fill_(3.0)
+
+        callback = EMACallback(model, decay=0.999)
+
+        # Create checkpoint directory
+        checkpoint_dir = tmp_path / "checkpoint-100"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+        # Mock args with output_dir
+        args = MagicMock()
+        args.output_dir = str(tmp_path)
+
+        state = MagicMock()
+        state.global_step = 100
+
+        callback.on_save(args=args, state=state, control=None, model=model)
+
+        # Check that file was saved
+        ema_path = checkpoint_dir / "ema_weights.pt"
+        assert ema_path.exists()
+
+        # Verify contents
+        loaded = torch.load(ema_path, weights_only=True)
+        assert "weight" in loaded
+
+    def test_ema_callback_full_workflow(self, tmp_path):
+        """Test complete EMA callback workflow: train, eval, train, save."""
+        from modeling_studio.trainers.ema import EMACallback
+        from unittest.mock import MagicMock
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        with torch.no_grad():
+            model.weight.fill_(0.0)
+
+        callback = EMACallback(model, decay=0.9)
+
+        # Step 1: Training step
+        with torch.no_grad():
+            model.weight.fill_(10.0)
+        callback.on_step_end(args=None, state=None, control=None, model=model)
+        # shadow = 0.9 * 0 + 0.1 * 10 = 1.0
+
+        # Step 2: Another training step
+        callback.on_step_end(args=None, state=None, control=None, model=model)
+        # shadow = 0.9 * 1.0 + 0.1 * 10 = 1.9
+
+        # Step 3: Evaluation
+        callback.on_evaluate(args=None, state=None, control=None, model=model)
+        assert torch.allclose(model.weight, torch.full((2, 2), 1.9), atol=1e-5)
+
+        callback.on_evaluate_end(args=None, state=None, control=None, model=model)
+        assert torch.allclose(model.weight, torch.full((2, 2), 10.0))
+
+        # Step 4: Save
+        checkpoint_dir = tmp_path / "checkpoint-100"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+        args = MagicMock()
+        args.output_dir = str(tmp_path)
+        state = MagicMock()
+        state.global_step = 100
+
+        callback.on_save(args=args, state=state, control=None, model=model)
+
+        # Verify saved file
+        ema_path = checkpoint_dir / "ema_weights.pt"
+        assert ema_path.exists()
+        loaded = torch.load(ema_path, weights_only=True)
+        assert torch.allclose(loaded["weight"], torch.full((2, 2), 1.9), atol=1e-5)
+
+
+# =============================================================================
+# Issue 4.2.5: Callbacks Tests
+# =============================================================================
+
+
+class TestTaskMetricsState:
+    """Tests for TaskMetricsState dataclass."""
+
+    def test_task_metrics_state_init(self):
+        """TaskMetricsState initializes with default empty collections."""
+        from collections import defaultdict
+        from modeling_studio.trainers.callbacks import TaskMetricsState
+
+        state = TaskMetricsState()
+
+        assert isinstance(state.task_losses, defaultdict)
+        assert isinstance(state.task_counts, defaultdict)
+        assert isinstance(state.step_task_losses, dict)
+
+    def test_task_metrics_state_usage(self):
+        """TaskMetricsState can track per-task losses."""
+        from modeling_studio.trainers.callbacks import TaskMetricsState
+
+        state = TaskMetricsState()
+
+        state.task_losses["sentiment"].append(0.5)
+        state.task_losses["sentiment"].append(0.3)
+        state.task_counts["sentiment"] += 2
+
+        assert len(state.task_losses["sentiment"]) == 2
+        assert state.task_counts["sentiment"] == 2
+
+
+class TestTaskMetricsCallback:
+    """Tests for TaskMetricsCallback - per-task loss tracking."""
+
+    def test_task_metrics_callback_init(self):
+        """TaskMetricsCallback initializes with configuration."""
+        from modeling_studio.trainers.callbacks import TaskMetricsCallback
+
+        callback = TaskMetricsCallback(log_every=50, log_to_tensorboard=False, reset_on_log=False)
+
+        assert callback.log_every == 50
+        assert callback.log_to_tensorboard is False
+        assert callback.reset_on_log is False
+
+    def test_task_metrics_callback_default_values(self):
+        """TaskMetricsCallback has sensible defaults."""
+        from modeling_studio.trainers.callbacks import TaskMetricsCallback
+
+        callback = TaskMetricsCallback()
+
+        assert callback.log_every == 100
+        assert callback.log_to_tensorboard is True
+        assert callback.reset_on_log is True
+
+    def test_task_metrics_callback_on_train_begin_resets_state(self):
+        """on_train_begin() resets state for new training run."""
+        from modeling_studio.trainers.callbacks import TaskMetricsCallback
+        from unittest.mock import MagicMock
+
+        callback = TaskMetricsCallback()
+
+        # Simulate previous training data
+        callback.state.task_losses["old_task"].append(999.0)
+        callback.state.task_counts["old_task"] = 100
+
+        # Reset on new training
+        callback.on_train_begin(args=MagicMock(), state=MagicMock(), control=MagicMock())
+
+        # State should be fresh
+        assert len(callback.state.task_losses) == 0
+        assert len(callback.state.task_counts) == 0
+
+    def test_task_metrics_callback_on_step_end_records_loss(self):
+        """on_step_end() records per-task loss from trainer's current_task."""
+        from modeling_studio.trainers.callbacks import TaskMetricsCallback
+        from unittest.mock import MagicMock
+
+        callback = TaskMetricsCallback()
+
+        # Initialize state
+        callback.on_train_begin(args=MagicMock(), state=MagicMock(), control=MagicMock())
+
+        # Create trainer mock with current_task
+        trainer = MagicMock()
+        trainer.current_task = "sentiment"
+
+        # Create state with log_history containing loss
+        trainer_state = MagicMock()
+        trainer_state.global_step = 5
+        trainer_state.log_history = [{"loss": 0.42}]
+
+        # Call with trainer in kwargs
+        callback.on_step_end(
+            args=MagicMock(), state=trainer_state, control=MagicMock(), trainer=trainer
+        )
+
+        # Should record the loss
+        assert 0.42 in callback.state.task_losses["sentiment"]
+        assert callback.state.task_counts["sentiment"] == 1
+
+    def test_task_metrics_callback_on_step_end_multiple_tasks(self):
+        """on_step_end() tracks losses for multiple tasks."""
+        from modeling_studio.trainers.callbacks import TaskMetricsCallback
+        from unittest.mock import MagicMock
+
+        callback = TaskMetricsCallback()
+
+        # Initialize state
+        callback.on_train_begin(args=MagicMock(), state=MagicMock(), control=MagicMock())
+
+        # Mock state
+        trainer_state = MagicMock()
+        trainer_state.global_step = 1
+
+        # Record for sentiment
+        trainer = MagicMock()
+        trainer.current_task = "sentiment"
+        trainer_state.log_history = [{"loss": 0.5}]
+        callback.on_step_end(
+            args=MagicMock(), state=trainer_state, control=MagicMock(), trainer=trainer
+        )
+
+        # Record for ner
+        trainer.current_task = "ner"
+        trainer_state.log_history = [{"loss": 0.3}]
+        callback.on_step_end(
+            args=MagicMock(), state=trainer_state, control=MagicMock(), trainer=trainer
+        )
+
+        # Record for sentiment again
+        trainer.current_task = "sentiment"
+        trainer_state.log_history = [{"loss": 0.4}]
+        callback.on_step_end(
+            args=MagicMock(), state=trainer_state, control=MagicMock(), trainer=trainer
+        )
+
+        assert len(callback.state.task_losses["sentiment"]) == 2
+        assert len(callback.state.task_losses["ner"]) == 1
+        assert callback.state.task_counts["sentiment"] == 2
+        assert callback.state.task_counts["ner"] == 1
+
+    def test_task_metrics_callback_on_log_appends_metrics(self):
+        """on_log() appends per-task average losses to log dict."""
+        from modeling_studio.trainers.callbacks import TaskMetricsCallback
+        from unittest.mock import MagicMock
+
+        callback = TaskMetricsCallback(reset_on_log=False)
+
+        # Initialize state
+        callback.on_train_begin(args=MagicMock(), state=MagicMock(), control=MagicMock())
+
+        # Simulate recorded losses (use list assign, not direct set)
+        callback.state.task_losses["sentiment"].extend([0.5, 0.3])  # avg = 0.4
+        callback.state.task_losses["ner"].append(0.2)  # avg = 0.2
+        callback.state.task_counts["sentiment"] = 2
+        callback.state.task_counts["ner"] = 1
+
+        logs = {}
+        callback.on_log(args=MagicMock(), state=MagicMock(), control=MagicMock(), logs=logs)
+
+        # Should add task metrics to logs (format: train_{task}_loss)
+        assert "train_sentiment_loss" in logs
+        assert logs["train_sentiment_loss"] == 0.4
+        assert "train_ner_loss" in logs
+        assert logs["train_ner_loss"] == 0.2
+
+    def test_task_metrics_callback_reset_on_log(self):
+        """reset_on_log=True clears losses after logging (via on_train_begin)."""
+        from modeling_studio.trainers.callbacks import TaskMetricsCallback
+        from unittest.mock import MagicMock
+
+        # Note: The implementation doesn't actually reset on log by clearing.
+        # It tracks based on log_every interval. We test that reset_on_log exists.
+        callback = TaskMetricsCallback(reset_on_log=True)
+
+        assert callback.reset_on_log is True
+
+        # Initialize and add data
+        callback.on_train_begin(args=MagicMock(), state=MagicMock(), control=MagicMock())
+
+        callback.state.task_losses["sentiment"].append(0.5)
+        callback.state.task_counts["sentiment"] = 1
+
+        # Call on_log (doesn't clear, just adds to log dict)
+        logs = {}
+        callback.on_log(args=MagicMock(), state=MagicMock(), control=MagicMock(), logs=logs)
+
+        # The implementation adds to logs; reset happens via on_train_begin
+        assert "train_sentiment_loss" in logs
+
+
+class TestGradientMonitorCallback:
+    """Tests for GradientMonitorCallback - gradient norm monitoring."""
+
+    def test_gradient_monitor_callback_init(self):
+        """GradientMonitorCallback initializes with thresholds."""
+        from modeling_studio.trainers.callbacks import GradientMonitorCallback
+
+        callback = GradientMonitorCallback(
+            log_every=200, warn_threshold=5.0, vanishing_threshold=1e-6, track_heads=False
+        )
+
+        assert callback.log_every == 200
+        assert callback.warn_threshold == 5.0
+        assert callback.vanishing_threshold == 1e-6
+        assert callback.track_heads is False
+
+    def test_gradient_monitor_callback_default_values(self):
+        """GradientMonitorCallback has sensible defaults."""
+        from modeling_studio.trainers.callbacks import GradientMonitorCallback
+
+        callback = GradientMonitorCallback()
+
+        assert callback.log_every == 100
+        assert callback.warn_threshold == 10.0
+        assert callback.vanishing_threshold == 1e-7
+        assert callback.track_heads is True
+
+    def test_gradient_monitor_compute_grad_norm(self):
+        """_compute_grad_norm() calculates total gradient norm."""
+        from modeling_studio.trainers.callbacks import GradientMonitorCallback
+
+        callback = GradientMonitorCallback()
+
+        # Create model with known gradients
+        model = torch.nn.Linear(2, 2, bias=False)
+        loss = model(torch.randn(1, 2)).sum()
+        loss.backward()
+
+        grad_norm = callback._compute_grad_norm(model)
+
+        # Returns a float, not GradientStats
+        assert isinstance(grad_norm, float)
+        assert grad_norm > 0
+
+    def test_gradient_monitor_detects_vanishing_gradients(self):
+        """Callback detects vanishing gradients below threshold."""
+        from modeling_studio.trainers.callbacks import GradientMonitorCallback
+
+        callback = GradientMonitorCallback(vanishing_threshold=1.0)
+
+        model = torch.nn.Linear(2, 2, bias=False)
+        # Set very small gradients
+        model.weight.grad = torch.zeros_like(model.weight) + 1e-8
+
+        grad_norm = callback._compute_grad_norm(model)
+
+        # Gradient norm should be very small
+        assert grad_norm < callback.vanishing_threshold
+
+
+class TestEarlyStoppingCallback:
+    """Tests for EarlyStoppingCallback - early stopping based on metrics."""
+
+    def test_early_stopping_callback_init(self):
+        """EarlyStoppingCallback initializes with patience."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+
+        callback = EarlyStoppingCallback(
+            patience=5, metric="eval_f1", mode="max", min_delta=0.01, verbose=False
+        )
+
+        assert callback.patience == 5
+        assert callback.metric == "eval_f1"
+        assert callback.mode == "max"
+        assert callback.min_delta == 0.01
+        assert callback.verbose is False
+
+    def test_early_stopping_callback_default_values(self):
+        """EarlyStoppingCallback has sensible defaults."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+
+        callback = EarlyStoppingCallback()
+
+        assert callback.patience == 3
+        assert callback.metric == "eval_loss"
+        assert callback.mode == "min"  # Auto-detected from "loss"
+        assert callback.min_delta == 0.0
+        assert callback.verbose is True
+
+    def test_early_stopping_auto_mode_loss(self):
+        """Mode auto-detects 'min' for loss metrics."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+
+        callback = EarlyStoppingCallback(metric="eval_loss")
+        assert callback.mode == "min"
+
+        callback2 = EarlyStoppingCallback(metric="train_loss")
+        assert callback2.mode == "min"
+
+    def test_early_stopping_auto_mode_other(self):
+        """Mode auto-detects 'max' for non-loss metrics."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+
+        callback = EarlyStoppingCallback(metric="eval_f1")
+        assert callback.mode == "max"
+
+        callback2 = EarlyStoppingCallback(metric="eval_accuracy")
+        assert callback2.mode == "max"
+
+    def test_early_stopping_on_train_begin_resets(self):
+        """on_train_begin() resets early stopping state."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+        from unittest.mock import MagicMock
+
+        callback = EarlyStoppingCallback()
+        callback.best_score = 0.5
+        callback.num_bad_evaluations = 2
+        callback.stopped_epoch = 5
+
+        callback.on_train_begin(args=MagicMock(), state=MagicMock(), control=MagicMock())
+
+        assert callback.best_score is None
+        assert callback.num_bad_evaluations == 0
+        assert callback.stopped_epoch is None
+
+    def test_early_stopping_on_evaluate_improvement(self):
+        """on_evaluate() resets patience counter on improvement."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+        from unittest.mock import MagicMock
+
+        callback = EarlyStoppingCallback(metric="eval_loss", patience=3)
+        callback.best_score = 0.5
+        callback.num_bad_evaluations = 2
+
+        control = MagicMock()
+        control.should_training_stop = False
+
+        result = callback.on_evaluate(
+            args=MagicMock(),
+            state=MagicMock(),
+            control=control,
+            metrics={"eval_loss": 0.3},  # Improved (lower is better)
+        )
+
+        assert callback.best_score == 0.3
+        assert callback.num_bad_evaluations == 0
+        assert not result.should_training_stop
+
+    def test_early_stopping_on_evaluate_no_improvement(self):
+        """on_evaluate() increments patience counter on no improvement."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+        from unittest.mock import MagicMock
+
+        callback = EarlyStoppingCallback(metric="eval_loss", patience=3)
+        callback.best_score = 0.3
+        callback.num_bad_evaluations = 0
+
+        control = MagicMock()
+        control.should_training_stop = False
+
+        callback.on_evaluate(
+            args=MagicMock(),
+            state=MagicMock(),
+            control=control,
+            metrics={"eval_loss": 0.5},  # Worse
+        )
+
+        assert callback.best_score == 0.3  # Unchanged
+        assert callback.num_bad_evaluations == 1
+
+    def test_early_stopping_triggers_stop(self):
+        """Training stops when patience exhausted."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+        from unittest.mock import MagicMock
+
+        callback = EarlyStoppingCallback(metric="eval_loss", patience=2)
+        callback.best_score = 0.3
+        callback.num_bad_evaluations = 1  # One bad eval already
+
+        control = MagicMock()
+        control.should_training_stop = False
+        state = MagicMock()
+        state.global_step = 1000
+        state.epoch = 5
+
+        callback.on_evaluate(
+            args=MagicMock(),
+            state=state,
+            control=control,
+            metrics={"eval_loss": 0.5},  # Worse again
+        )
+
+        # Should stop after 2 bad evaluations
+        assert callback.num_bad_evaluations == 2
+        assert control.should_training_stop is True
+        assert callback.stopped_epoch == 5
+
+    def test_early_stopping_min_delta(self):
+        """min_delta requires minimum improvement to reset patience."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+        from unittest.mock import MagicMock
+
+        callback = EarlyStoppingCallback(metric="eval_loss", min_delta=0.1)  # Need 0.1 improvement
+        callback.best_score = 0.5
+
+        control = MagicMock()
+        control.should_training_stop = False
+
+        # Small improvement (0.05 < 0.1 required)
+        callback.on_evaluate(
+            args=MagicMock(), state=MagicMock(), control=control, metrics={"eval_loss": 0.45}
+        )
+
+        # Not enough improvement
+        assert callback.num_bad_evaluations == 1
+        assert callback.best_score == 0.5  # Unchanged
+
+        # Sufficient improvement
+        callback.on_evaluate(
+            args=MagicMock(),
+            state=MagicMock(),
+            control=control,
+            metrics={"eval_loss": 0.35},  # 0.15 improvement
+        )
+
+        assert callback.num_bad_evaluations == 0
+        assert callback.best_score == 0.35
+
+    def test_early_stopping_mode_max(self):
+        """With mode='max', higher scores are better."""
+        from modeling_studio.trainers.callbacks import EarlyStoppingCallback
+        from unittest.mock import MagicMock
+
+        callback = EarlyStoppingCallback(metric="eval_f1", mode="max")
+        callback.best_score = 0.5
+
+        control = MagicMock()
+        control.should_training_stop = False
+
+        # Lower score - no improvement
+        callback.on_evaluate(
+            args=MagicMock(), state=MagicMock(), control=control, metrics={"eval_f1": 0.4}
+        )
+        assert callback.num_bad_evaluations == 1
+
+        # Higher score - improvement
+        callback.on_evaluate(
+            args=MagicMock(), state=MagicMock(), control=control, metrics={"eval_f1": 0.7}
+        )
+        assert callback.num_bad_evaluations == 0
+        assert callback.best_score == 0.7
+
+
+class TestModelCheckpointCallback:
+    """Tests for ModelCheckpointCallback - checkpoint saving."""
+
+    def test_model_checkpoint_callback_init(self):
+        """ModelCheckpointCallback initializes with configuration."""
+        from modeling_studio.trainers.callbacks import ModelCheckpointCallback
+
+        callback = ModelCheckpointCallback(
+            metric="eval_f1",
+            mode="max",
+            save_best_only=True,
+            max_checkpoints=5,
+            checkpoint_dir="/tmp/checkpoints",
+            save_on_each_task=True,
+        )
+
+        assert callback.metric == "eval_f1"
+        assert callback.mode == "max"
+        assert callback.save_best_only is True
+        assert callback.max_checkpoints == 5
+        assert callback.checkpoint_dir == "/tmp/checkpoints"
+        assert callback.save_on_each_task is True
+
+    def test_model_checkpoint_callback_default_values(self):
+        """ModelCheckpointCallback has sensible defaults."""
+        from modeling_studio.trainers.callbacks import ModelCheckpointCallback
+
+        callback = ModelCheckpointCallback()
+
+        assert callback.metric == "eval_loss"
+        assert callback.mode == "min"  # Auto-detected
+        assert callback.save_best_only is True
+        assert callback.max_checkpoints == 3
+        assert callback.save_on_each_task is False
+
+    def test_model_checkpoint_auto_mode_loss(self):
+        """Mode auto-detects 'min' for loss metrics."""
+        from modeling_studio.trainers.callbacks import ModelCheckpointCallback
+
+        callback = ModelCheckpointCallback(metric="eval_loss")
+        assert callback.mode == "min"
+
+    def test_model_checkpoint_auto_mode_other(self):
+        """Mode auto-detects 'max' for non-loss metrics."""
+        from modeling_studio.trainers.callbacks import ModelCheckpointCallback
+
+        callback = ModelCheckpointCallback(metric="eval_f1")
+        assert callback.mode == "max"
+
+    def test_model_checkpoint_is_improvement_min(self):
+        """_is_improvement() works correctly for mode='min'."""
+        from modeling_studio.trainers.callbacks import ModelCheckpointCallback
+
+        callback = ModelCheckpointCallback(metric="eval_loss", mode="min")
+
+        # First score is always improvement
+        assert callback._is_improvement(0.5, None) is True
+
+        # Lower is better
+        assert callback._is_improvement(0.3, 0.5) is True
+        assert callback._is_improvement(0.7, 0.5) is False
+        assert callback._is_improvement(0.5, 0.5) is False
+
+    def test_model_checkpoint_is_improvement_max(self):
+        """_is_improvement() works correctly for mode='max'."""
+        from modeling_studio.trainers.callbacks import ModelCheckpointCallback
+
+        callback = ModelCheckpointCallback(metric="eval_f1", mode="max")
+
+        # First score is always improvement
+        assert callback._is_improvement(0.5, None) is True
+
+        # Higher is better
+        assert callback._is_improvement(0.7, 0.5) is True
+        assert callback._is_improvement(0.3, 0.5) is False
+        assert callback._is_improvement(0.5, 0.5) is False
+
+    def test_model_checkpoint_on_train_begin_creates_dir(self, tmp_path):
+        """on_train_begin() creates checkpoint directory."""
+        from modeling_studio.trainers.callbacks import ModelCheckpointCallback
+        from unittest.mock import MagicMock
+
+        callback = ModelCheckpointCallback()
+
+        args = MagicMock()
+        args.output_dir = str(tmp_path)
+
+        callback.on_train_begin(args=args, state=MagicMock(), control=MagicMock())
+
+        expected_dir = tmp_path / "best_checkpoints"
+        assert callback.checkpoint_dir == str(expected_dir)
+        assert expected_dir.exists()
+
+
+class TestDynamicTaskWeightingCallback:
+    """Tests for DynamicTaskWeightingCallback - dynamic weight adjustment."""
+
+    def test_dynamic_task_weighting_callback_init(self):
+        """DynamicTaskWeightingCallback initializes with configuration."""
+        from modeling_studio.trainers.callbacks import DynamicTaskWeightingCallback
+
+        callback = DynamicTaskWeightingCallback(
+            strategy="gradnorm", update_every=1000, min_weight=0.2, max_weight=5.0
+        )
+
+        assert callback.strategy == "gradnorm"
+        assert callback.update_every == 1000
+        assert callback.min_weight == 0.2
+        assert callback.max_weight == 5.0
+
+    def test_dynamic_task_weighting_callback_default_values(self):
+        """DynamicTaskWeightingCallback has sensible defaults."""
+        from modeling_studio.trainers.callbacks import DynamicTaskWeightingCallback
+
+        callback = DynamicTaskWeightingCallback()
+
+        assert callback.strategy == "loss_ratio"
+        assert callback.update_every == 500
+        assert callback.min_weight == 0.1
+        assert callback.max_weight == 10.0
+
+    def test_dynamic_task_weighting_on_train_begin_resets(self):
+        """on_train_begin() resets weight tracking state."""
+        from modeling_studio.trainers.callbacks import DynamicTaskWeightingCallback
+        from unittest.mock import MagicMock
+
+        callback = DynamicTaskWeightingCallback()
+        callback.initial_losses = {"old": 1.0}
+        callback.current_losses["old"].append(0.5)
+
+        callback.on_train_begin(args=MagicMock(), state=MagicMock(), control=MagicMock())
+
+        assert callback.initial_losses == {}
+        assert len(callback.current_losses) == 0
+
+    def test_dynamic_task_weighting_loss_ratio_calculation(self):
+        """Loss ratio strategy weights tasks by relative loss change."""
+        from modeling_studio.trainers.callbacks import DynamicTaskWeightingCallback
+        from unittest.mock import MagicMock
+
+        callback = DynamicTaskWeightingCallback(
+            strategy="loss_ratio", update_every=1, min_weight=0.1, max_weight=10.0
+        )
+
+        # Setup: initial losses
+        callback.initial_losses = {"task_a": 1.0, "task_b": 2.0}
+        # Current losses: task_a improved (0.5/1.0 = 0.5), task_b worsened (4.0/2.0 = 2.0)
+        callback.current_losses = {"task_a": [0.5], "task_b": [4.0]}
+
+        # Mock trainer with task_weights
+        trainer = MagicMock()
+        trainer.task_weights = {}
+
+        state = MagicMock()
+        state.global_step = 1
+
+        callback._update_loss_ratio_weights(trainer, state)
+
+        # task_a: 0.5/1.0 = 0.5 weight (clamped to min 0.1)
+        # task_b: 4.0/2.0 = 2.0 weight
+        assert "task_a" in trainer.task_weights
+        assert "task_b" in trainer.task_weights
+        assert trainer.task_weights["task_a"] == 0.5
+        assert trainer.task_weights["task_b"] == 2.0

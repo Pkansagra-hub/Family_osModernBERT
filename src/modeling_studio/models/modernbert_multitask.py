@@ -405,17 +405,44 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     label_smoothing=0.05,  # Regularization
                 )
             elif capability == Capability.SAFETY_GENERIC:
-                # SOTA Multi-label safety head with ASL for Stage A (Civil Comments)
+                # SOTA Multi-label safety head with ASL for Stage A
                 # Uses Asymmetric Loss for handling class imbalance in toxicity detection
+                #
+                # Updated for CURATED Civil Comments (balanced dataset):
+                #   - toxic: 61.2% -> weight 1.6
+                #   - severe_toxic: 12.5% -> weight 8.0
+                #   - obscene: 17.0% -> weight 5.9
+                #   - threat: 16.3% -> weight 6.1
+                #   - insult: 43.6% -> weight 2.3
+                #   - identity_hate: 21.3% -> weight 4.7
+                #   - sexually_explicit: 12.5% -> weight 8.0
+                #   - profanity: 12.5% -> weight 8.0
+                #
+                # pos_weight = 100 / percentage (inverse frequency)
+                import torch
+
+                safety_pos_weight = torch.tensor(
+                    [
+                        1.6,  # toxic (idx 0) - 61.2% positive
+                        8.0,  # severe_toxic (idx 1) - 12.5% positive
+                        5.9,  # obscene (idx 2) - 17.0% positive
+                        6.1,  # threat (idx 3) - 16.3% positive
+                        2.3,  # insult (idx 4) - 43.6% positive
+                        4.7,  # identity_hate (idx 5) - 21.3% positive
+                        8.0,  # sexually_explicit (idx 6) - 12.5% positive
+                        8.0,  # profanity (idx 7) - 12.5% positive
+                    ]
+                )
                 head = head_cls(
                     hidden_size=hidden_size,
                     num_labels=num_labels,  # 8 toxicity types
                     dropout=self.head_dropout,
                     problem_type="multi_label_classification",
                     use_asl=True,  # SOTA: Asymmetric Loss for multi-label
-                    asl_gamma_neg=4.0,  # Suppress easy negatives
-                    asl_gamma_pos=1.0,  # Standard for positives
+                    asl_gamma_neg=4.0,  # Standard ASL (data is balanced now)
+                    asl_gamma_pos=1.0,  # Standard ASL
                     asl_clip=0.05,  # Probability clipping
+                    pos_weight=safety_pos_weight,  # Mild reweighting for balanced data
                 )
             else:
                 head = head_cls(

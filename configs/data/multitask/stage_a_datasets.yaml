@@ -87,14 +87,44 @@ datasets:
     column_mapping:
       text: sentence
       label: label
-    # SST-2 is binary, map to 3-class
-    label_transform: binary_to_ternary
+    # SST-2 is binary (0=neg, 1=pos), maps to 5-class (1=neg, 3=pos)
+
+  # DynaSent - excellent source of NEUTRAL samples (45K neutral!)
+  sentiment_dynasent:
+    task: sentiment
+    source: huggingface
+    name: dynabench/dynasent
+    config: dynabench.dynasent.r1.all
+    enabled: true
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      text: sentence
+      label: gold_label
+    # DynaSent has 3-class: negative, neutral, positive
+    # Maps to: negative->1, neutral->2, positive->3
+
+  # Yelp Review Full - 5-star ratings for EXTREME samples (very_negative, very_positive)
+  sentiment_yelp_full:
+    task: sentiment
+    source: huggingface
+    name: yelp_review_full
+    enabled: true
+    max_samples: 100000  # Sample 100K from 650K (balanced 20K per class)
+    splits:
+      train: train
+      validation: test  # Uses test as validation
+    column_mapping:
+      text: text
+      label: label
+    # Yelp 5-star: 0=1star->very_neg(0), 1=2star->neg(1), 2=3star->neutral(2), 3=4star->pos(3), 4=5star->very_pos(4)
 
   sentiment_amazon:
     task: sentiment
     source: huggingface
     name: amazon_polarity
-    enabled: false  # Large dataset, optional
+    enabled: false  # Disabled - using Yelp Full instead (has all 5 classes)
     max_samples: 100000
 
   # ============================================
@@ -169,15 +199,32 @@ datasets:
         - insult
         - identity_hate
 
+  # Original Civil Comments from HuggingFace (extreme class imbalance - severe_toxic: 0.03%)
   safety_civil_comments:
     task: safety_generic
     source: huggingface
     name: civil_comments
-    enabled: true
-    max_samples: 200000  # Increased from 50K - plenty of data available (1.8M total)
+    enabled: false  # DISABLED: Use curated version instead (balanced classes)
+    max_samples: 200000
     column_mapping:
       text: text
       label: toxicity
+
+  # Curated Civil Comments with balanced classes (see data/public/civil_comments_curated/README.md)
+  # severe_toxic: 0.03% -> 1.47%, threat: 0.76% -> 7.13%, etc.
+  safety_civil_comments_curated:
+    task: safety_generic
+    source: local
+    data_dir: data/public/civil_comments_curated
+    format: jsonl
+    enabled: true
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      text: text
+      labels: labels  # Pre-computed multi-hot [8] for toxic,severe,obscene,threat,insult,identity,self_harm,dangerous
+    # Labels already multi-hot encoded, no schema needed
 
   # ============================================
   # Natural Language Inference
@@ -247,14 +294,14 @@ datasets:
   # ============================================
   # Temporal Expression Recognition
   # ============================================
-  temporal_familyos:
+  temporal_familyos_silver:
     task: temporal
     source: local
     data_dir: data/familyos/temporal/silver
     format: jsonl
     enabled: true
     splits:
-      train: "*.jsonl"  # Load all shards
+      train: train  # Main silver training data
     column_mapping:
       tokens: tokens
       labels: temporal_tags
@@ -273,6 +320,19 @@ datasets:
       I-FREQUENCY: 10
       B-AGE: 11
       I-AGE: 12
+
+  temporal_familyos_gold:
+    task: temporal
+    source: local
+    data_dir: data/familyos/temporal/gold
+    format: jsonl
+    enabled: true
+    splits:
+      train: train
+      validation: validation
+    column_mapping:
+      tokens: tokens
+      labels: temporal_tags
 
 # Global preprocessing
 preprocessing:

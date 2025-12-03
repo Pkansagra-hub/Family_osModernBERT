@@ -335,12 +335,12 @@ def _load_ner_from_hub(
 
         # Rename 'tags' to 'ner_tags' for consistency
         if split:
-            if "tags" in dataset.column_names:
+            if "tags" in dataset.column_names:  # type: ignore
                 dataset = dataset.rename_column("tags", "ner_tags")
         else:
             for s in dataset:
-                if "tags" in dataset[s].column_names:
-                    dataset[s] = dataset[s].rename_column("tags", "ner_tags")
+                if "tags" in dataset[s].column_names:  # type: ignore
+                    dataset[s] = dataset[s].rename_column("tags", "ner_tags")  # type: ignore
     else:
         # For other datasets, try to infer label mapping
         label_map = None
@@ -572,6 +572,13 @@ YELP_FULL_LABEL_MAP: dict[int, int] = {
     4: 4,  # 5-star -> very_positive (4)
 }
 
+# DynaSent: 3-class string labels -> 5-class
+DYNASENT_LABEL_MAP: dict[str, int] = {
+    "negative": 1,  # negative -> negative (1)
+    "neutral": 2,  # neutral -> neutral (2)
+    "positive": 3,  # positive -> positive (3)
+}
+
 
 def load_classification_dataset(
     name: str,
@@ -580,6 +587,7 @@ def load_classification_dataset(
     text_column: str | None = None,
     label_column: str | None = None,
     cache_dir: str | Path | None = None,
+    config_name: str | None = None,
 ) -> Dataset | DatasetDict:
     """
     Load a text classification dataset from HuggingFace Hub or local files.
@@ -639,6 +647,7 @@ def load_classification_dataset(
         split=split,
         label_schema=label_schema,
         cache_dir=cache_dir,
+        config_name=config_name,
     )
 
 
@@ -647,6 +656,7 @@ def _load_classification_from_hub(
     split: str | None,
     label_schema: LabelSchema,
     cache_dir: str | Path | None,
+    config_name: str | None = None,
 ) -> Dataset | DatasetDict:
     """Load classification dataset from HuggingFace Hub."""
     logger.info(f"Loading classification dataset '{name}' from HuggingFace Hub...")
@@ -681,6 +691,12 @@ def _load_classification_from_hub(
         dataset = load_dataset("yelp_review_full", split=split, **load_kwargs)
         text_col = "text"
         label_map = YELP_FULL_LABEL_MAP
+    elif "dynasent" in name_lower or name_lower == "dynabench/dynasent":
+        # DynaSent: 3-class sentiment with lots of neutral samples
+        cfg = config_name or "dynabench.dynasent.r1.all"
+        dataset = load_dataset("dynabench/dynasent", cfg, split=split, **load_kwargs)
+        text_col = "sentence"
+        label_map = DYNASENT_LABEL_MAP  # String labels: negative, neutral, positive
     else:
         # Try to load as generic dataset
         dataset = load_dataset(name, split=split, **load_kwargs)
@@ -709,7 +725,7 @@ def _standardize_classification_dataset(
     dataset: Dataset,
     label_schema: LabelSchema,
     text_column: str | None,
-    label_map: dict[int, int] | None,
+    label_map: dict[int, int] | dict[str, int] | None,
 ) -> Dataset:
     """
     Standardize a classification dataset to have 'text' and 'label' columns.
@@ -731,7 +747,7 @@ def _standardize_classification_dataset(
     # Find label column
     orig_label_column = "label"
     if orig_label_column not in dataset.column_names:
-        label_candidates = ["label", "labels", "sentiment", "class", "target"]
+        label_candidates = ["label", "labels", "gold_label", "sentiment", "class", "target"]
         for col in label_candidates:
             if col in dataset.column_names:
                 orig_label_column = col
@@ -1467,11 +1483,20 @@ def _load_multilabel_from_jsonl(
         if labels is None:
             labels = []
         if isinstance(labels, list):
-            for lbl in labels:
-                if isinstance(lbl, int) and lbl < num_labels:
-                    multi_hot[lbl] = 1
-                elif isinstance(lbl, str) and lbl in label_schema.label2id:
-                    multi_hot[label_schema.label2id[lbl]] = 1
+            # Check if this is already a multi-hot vector (same length as num_labels, all 0/1)
+            is_multihot = len(labels) == num_labels and all(
+                isinstance(l, int) and l in (0, 1) for l in labels
+            )
+            if is_multihot:
+                # Already multi-hot encoded - use directly
+                multi_hot = labels
+            else:
+                # List of label indices or names - convert to multi-hot
+                for lbl in labels:
+                    if isinstance(lbl, int) and lbl < num_labels:
+                        multi_hot[lbl] = 1
+                    elif isinstance(lbl, str) and lbl in label_schema.label2id:
+                        multi_hot[label_schema.label2id[lbl]] = 1
 
         processed_data.append({"text": text, "labels": multi_hot})
 
@@ -3757,6 +3782,7 @@ def _load_dataset_by_task(
             name=name,
             split=split,
             label_schema=SENTIMENT_LABELS,
+            config_name=config_name,
         )
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
@@ -3788,8 +3814,12 @@ def _load_dataset_by_task(
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
     elif task == "safety_generic":
-        # For safety_generic, use Jigsaw or other toxicity datasets
-        ds = load_multilabel_dataset(name=name, split=split, label_schema=SAFETY_GENERIC_LABELS)
+        # For safety_generic, use Jigsaw, Civil Comments, or local curated data
+        # Use data_dir for local sources, name for HuggingFace
+        safety_path = data_dir if (source == "local" and data_dir) else name
+        ds = load_multilabel_dataset(
+            name=safety_path, split=split, label_schema=SAFETY_GENERIC_LABELS
+        )
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
     elif task == "nli":
@@ -3934,7 +3964,7 @@ def _apply_tokenization(
 
     elif mapped_task == "embedding":
 
-        def tokenize_wrapper(example):
+        def tokenize_wrapper(example):  # type: ignore
             # Embedding datasets can have various formats
             text1 = example.get("sentence1") or example.get("text") or example.get("anchor")
             text2 = example.get("sentence2") or example.get("positive")

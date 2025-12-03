@@ -693,6 +693,11 @@ def create_training_args(
         use_mixup=training_config.get("use_mixup", False),
         mixup_alpha=training_config.get("mixup_alpha", 0.4),
         mixup_prob=training_config.get("mixup_prob", 0.5),
+        # Progressive regularization (epoch-based feature toggling)
+        progressive_regularization=training_config.get("progressive_regularization", False),
+        rdrop_start_epoch=training_config.get("rdrop_start_epoch", 4),
+        mixup_start_epoch=training_config.get("mixup_start_epoch", 4),
+        adversarial_start_epoch=training_config.get("adversarial_start_epoch", 7),
     )
 
     return args
@@ -947,6 +952,29 @@ def train(
     # Create data collator
     data_collator = MultiTaskCollator(tokenizer=tokenizer)  # type: ignore[arg-type]
 
+    # === CALLBACKS ===
+    from modeling_studio.trainers.callbacks import (
+        EpochDataDistributionCallback,
+        TaskMetricsCallback,
+        WandbEnhancedCallback,
+    )
+
+    callbacks = [
+        EpochDataDistributionCallback(log_memory=True),
+        TaskMetricsCallback(log_every=500, log_to_tensorboard=True),
+    ]
+
+    # Add W&B callback if wandb is in report_to
+    report_to = training_config.get("report_to", [])
+    if "wandb" in report_to:
+        wandb_callback = WandbEnhancedCallback(
+            project="familyos-modernbert",
+            log_model=False,  # Set True to save model artifacts
+            log_freq=100,
+        )
+        callbacks.append(wandb_callback)
+        logger.info("W&B Enhanced Logging enabled")
+
     # Initialize trainer with V2 features
     trainer = MultiTaskTrainer(
         model=model,
@@ -960,6 +988,7 @@ def train(
         data_collator=data_collator,
         # V2 features: custom optimizer with head-wise LRs + scheduler
         optimizers=(custom_optimizer, custom_scheduler) if custom_optimizer else (None, None),
+        callbacks=callbacks,
     )
 
     # === V2 FEATURE: Initialize EMA after trainer setup ===
@@ -981,6 +1010,15 @@ def train(
     logger.info(f"  EMA: {use_ema} (decay={ema_decay if use_ema else 'N/A'})")
     logger.info(f"  Uncertainty Weighting: {use_uncertainty_weighting}")
     logger.info(f"  Embedding Hard Negatives: {embedding_hard_negatives}")
+    # Progressive regularization info
+    prog_reg = training_config.get("progressive_regularization", False)
+    if prog_reg:
+        logger.info("--- Progressive Regularization ---")
+        logger.info(f"  R-Drop starts: epoch {training_config.get('rdrop_start_epoch', 4)}")
+        logger.info(f"  Mixup starts: epoch {training_config.get('mixup_start_epoch', 4)}")
+        logger.info(
+            f"  Adversarial starts: epoch {training_config.get('adversarial_start_epoch', 7)}"
+        )
     logger.info("=" * 60)
 
     # Handle --ignore_optimizer_state flag

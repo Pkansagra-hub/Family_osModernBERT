@@ -814,6 +814,787 @@ class DynamicTaskWeightingCallback(TrainerCallback):
 
 
 # =============================================================================
+# Epoch Data Distribution Callback
+# =============================================================================
+
+
+class EpochDataDistributionCallback(TrainerCallback):
+    """
+    Callback for logging data distribution and training stats at each epoch end.
+
+    Logs:
+        - Per-task sample counts seen during the epoch
+        - Per-task label distributions (class imbalance analysis)
+        - Per-task loss averages
+        - Task sampling distribution (actual vs expected)
+        - Progressive regularization status
+        - Memory usage
+
+    This is useful for:
+        - Debugging multi-task sampling issues
+        - Monitoring class imbalance
+        - Tracking training progress
+        - Verifying progressive regularization schedule
+
+    Example:
+        callback = EpochDataDistributionCallback()
+        trainer = MultiTaskTrainer(..., callbacks=[callback])
+    """
+
+    # Label name mappings for better readability
+    LABEL_NAMES = {
+        "sentiment": ["very_neg", "negative", "neutral", "positive", "very_pos"],
+        "nli": ["entailment", "neutral", "contradiction"],
+        "safety_generic": [
+            "toxicity",
+            "severe_toxicity",
+            "obscene",
+            "threat",
+            "insult",
+            "identity_attack",
+            "sexually_explicit",
+            "flirtation",
+        ],
+        "emotions": [
+            "admiration",
+            "amusement",
+            "anger",
+            "annoyance",
+            "approval",
+            "caring",
+            "confusion",
+            "curiosity",
+            "desire",
+            "disappointment",
+            "disapproval",
+            "disgust",
+            "embarrassment",
+            "excitement",
+            "fear",
+            "gratitude",
+            "grief",
+            "joy",
+            "love",
+            "nervousness",
+            "optimism",
+            "pride",
+            "realization",
+            "relief",
+            "remorse",
+            "sadness",
+            "surprise",
+            "neutral",
+            # Extended emotions (if using 44-class)
+            "anticipation",
+            "trust",
+            "serenity",
+            "interest",
+            "acceptance",
+            "apprehension",
+            "distraction",
+            "pensiveness",
+            "boredom",
+            "loathing",
+            "rage",
+            "vigilance",
+            "ecstasy",
+            "adoration",
+            "terror",
+            "amazement",
+        ],
+    }
+
+    def __init__(self, log_memory: bool = True, log_label_distribution: bool = True):
+        self.log_memory = log_memory
+        self.log_label_distribution = log_label_distribution
+        self.epoch_task_counts: dict[str, int] = defaultdict(int)
+        self.epoch_task_losses: dict[str, list[float]] = defaultdict(list)
+        self.current_epoch = 0
+
+    def _get_label_distribution(self, dataset, task: str) -> dict[str, Any]:
+        """
+        Analyze label distribution for a dataset.
+
+        Returns:
+            Dict with label counts, percentages, and imbalance ratio
+        """
+        import numpy as np
+
+        try:
+            # Determine task type
+            is_token_task = task in ["ner_general", "temporal"]
+            is_multilabel = task in ["emotions", "safety_generic"]
+            is_embedding = task == "embedding"
+
+            if is_embedding:
+                # Embedding task has similarity scores, not discrete labels
+                scores = []
+                for i, example in enumerate(dataset):
+                    if i >= 5000:  # Sample for speed
+                        break
+                    label = example.get("labels") or example.get("label")
+                    if label is not None:
+                        if hasattr(label, "item"):
+                            label = label.item()
+                        scores.append(float(label))
+
+                if scores:
+                    scores = np.array(scores)
+                    return {
+                        "type": "regression",
+                        "stats": {
+                            "mean": float(np.mean(scores)),
+                            "std": float(np.std(scores)),
+                            "min": float(np.min(scores)),
+                            "max": float(np.max(scores)),
+                        },
+                        "bins": {
+                            "0.0-0.2": int(np.sum(scores < 0.2)),
+                            "0.2-0.4": int(np.sum((scores >= 0.2) & (scores < 0.4))),
+                            "0.4-0.6": int(np.sum((scores >= 0.4) & (scores < 0.6))),
+                            "0.6-0.8": int(np.sum((scores >= 0.6) & (scores < 0.8))),
+                            "0.8-1.0": int(np.sum(scores >= 0.8)),
+                        },
+                    }
+                return {"type": "regression", "error": "no scores found"}
+
+            elif is_token_task:
+                # Token-level: count BIO tags
+                tag_counts: dict[int, int] = defaultdict(int)
+                for i, example in enumerate(dataset):
+                    if i >= 2000:  # Sample for speed
+                        break
+                    labels = example.get("labels") or example.get("ner_tags") or example.get("tags")
+                    if labels is not None:
+                        if hasattr(labels, "tolist"):
+                            labels = labels.tolist()
+                        for tag in labels:
+                            if tag != -100:  # Ignore padding
+                                tag_counts[int(tag)] += 1
+
+                if tag_counts:
+                    total = sum(tag_counts.values())
+                    # Sort by tag index
+                    sorted_counts = dict(sorted(tag_counts.items()))
+                    return {
+                        "type": "token",
+                        "counts": sorted_counts,
+                        "total_tokens": total,
+                        "num_tags": len(sorted_counts),
+                    }
+                return {"type": "token", "error": "no tags found"}
+
+            elif is_multilabel:
+                # Multi-label: count each label occurrence
+                num_labels = 44 if task == "emotions" else 8
+                ml_label_counts = np.zeros(num_labels, dtype=np.int64)
+                total_samples = 0
+
+                for i, example in enumerate(dataset):
+                    if i >= 5000:  # Sample for speed
+                        break
+                    labels = example.get("labels")
+                    if labels is not None:
+                        total_samples += 1
+                        if hasattr(labels, "numpy"):
+                            labels = labels.numpy()
+                        labels = np.array(labels)
+                        # Handle multi-hot format
+                        if len(labels) == num_labels:
+                            ml_label_counts += (labels > 0.5).astype(np.int64)
+                        else:
+                            # List of indices
+                            for idx in labels:
+                                if 0 <= int(idx) < num_labels:
+                                    ml_label_counts[int(idx)] += 1
+
+                if total_samples > 0:
+                    # Get label names if available
+                    label_names = self.LABEL_NAMES.get(
+                        task, [f"label_{i}" for i in range(num_labels)]
+                    )
+                    counts_dict = {
+                        label_names[i] if i < len(label_names) else f"label_{i}": int(
+                            ml_label_counts[i]
+                        )
+                        for i in range(num_labels)
+                    }
+                    # Sort by count descending
+                    counts_dict = dict(sorted(counts_dict.items(), key=lambda x: -x[1]))
+
+                    pos_counts = ml_label_counts[ml_label_counts > 0]
+                    imbalance = (
+                        float(pos_counts.max() / pos_counts.min())
+                        if len(pos_counts) > 0 and pos_counts.min() > 0
+                        else 0.0
+                    )
+
+                    return {
+                        "type": "multilabel",
+                        "counts": counts_dict,
+                        "total_samples": total_samples,
+                        "avg_labels_per_sample": float(ml_label_counts.sum() / total_samples),
+                        "imbalance_ratio": imbalance,
+                    }
+                return {"type": "multilabel", "error": "no labels found"}
+
+            else:
+                # Single-label classification (sentiment, nli)
+                cls_label_counts: dict[int, int] = defaultdict(int)
+                for i, example in enumerate(dataset):
+                    if i >= 10000:  # Sample for speed
+                        break
+                    label = example.get("labels") or example.get("label")
+                    if label is not None:
+                        if hasattr(label, "item"):
+                            label = label.item()
+                        cls_label_counts[int(label)] += 1
+
+                if cls_label_counts:
+                    total = sum(cls_label_counts.values())
+                    label_names = self.LABEL_NAMES.get(task, [])
+                    counts_dict = {}
+                    for idx, count in sorted(cls_label_counts.items()):
+                        name = label_names[idx] if idx < len(label_names) else f"class_{idx}"
+                        counts_dict[name] = count
+
+                    counts = list(cls_label_counts.values())
+                    imbalance = max(counts) / min(counts) if min(counts) > 0 else 0.0
+
+                    return {
+                        "type": "classification",
+                        "counts": counts_dict,
+                        "total": total,
+                        "num_classes": len(cls_label_counts),
+                        "imbalance_ratio": imbalance,
+                    }
+                return {"type": "classification", "error": "no labels found"}
+
+        except Exception as e:
+            return {"type": "error", "error": str(e)}
+
+    def _log_label_distribution(self, task: str, dist: dict[str, Any]) -> None:
+        """Log label distribution in a readable format."""
+        dist_type = dist.get("type", "unknown")
+
+        if dist_type == "error" or "error" in dist:
+            logger.info(f"    (Could not analyze: {dist.get('error', 'unknown error')})")
+            return
+
+        if dist_type == "regression":
+            stats = dist.get("stats", {})
+            logger.info(
+                f"    Score distribution: mean={stats.get('mean', 0):.3f}, std={stats.get('std', 0):.3f}"
+            )
+            bins = dist.get("bins", {})
+            if bins:
+                bin_str = ", ".join(f"{k}: {v:,}" for k, v in bins.items())
+                logger.info(f"    Bins: {bin_str}")
+
+        elif dist_type == "token":
+            counts = dist.get("counts", {})
+            total = dist.get("total_tokens", 0)
+            logger.info(f"    Token tags: {len(counts)} unique, {total:,} total")
+            # Show top 5 tags
+            sorted_counts = sorted(counts.items(), key=lambda x: -x[1])[:5]
+            tag_str = ", ".join(f"tag_{k}: {v:,}" for k, v in sorted_counts)
+            logger.info(f"    Top 5: {tag_str}")
+
+        elif dist_type == "multilabel":
+            counts = dist.get("counts", {})
+            total = dist.get("total_samples", 0)
+            avg_labels = dist.get("avg_labels_per_sample", 0)
+            imbalance = dist.get("imbalance_ratio", 0)
+            logger.info(
+                f"    Samples: {total:,}, Avg labels/sample: {avg_labels:.2f}, Imbalance: {imbalance:.1f}x"
+            )
+            # Show top 5 labels
+            top_labels = list(counts.items())[:5]
+            label_str = ", ".join(f"{k}: {v:,}" for k, v in top_labels)
+            logger.info(f"    Top 5: {label_str}")
+            # Show bottom 3 labels
+            bottom_labels = list(counts.items())[-3:]
+            label_str = ", ".join(f"{k}: {v:,}" for k, v in bottom_labels)
+            logger.info(f"    Bottom 3: {label_str}")
+
+        elif dist_type == "classification":
+            counts = dist.get("counts", {})
+            total = dist.get("total", 0)
+            imbalance = dist.get("imbalance_ratio", 0)
+            logger.info(
+                f"    Classes: {len(counts)}, Total: {total:,}, Imbalance: {imbalance:.2f}x"
+            )
+            # Show all classes (usually 3-5)
+            class_str = ", ".join(f"{k}: {v:,} ({100*v/total:.1f}%)" for k, v in counts.items())
+            logger.info(f"    {class_str}")
+
+    def on_train_begin(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs: Any,
+    ) -> None:
+        """Log initial data distribution at training start."""
+        trainer = kwargs.get("model") or kwargs.get("trainer")
+        if trainer is None:
+            return
+
+        # Log initial dataset sizes
+        train_datasets = getattr(trainer, "train_datasets", {})
+        if train_datasets:
+            logger.info("=" * 70)
+            logger.info("TRAINING DATA DISTRIBUTION (Initial)")
+            logger.info("=" * 70)
+            total = 0
+            for task, ds in sorted(train_datasets.items()):
+                size = len(ds)
+                total += size
+                logger.info(f"  {task:20s}: {size:>10,} samples")
+
+                # Log label distribution if enabled
+                if self.log_label_distribution:
+                    dist = self._get_label_distribution(ds, task)
+                    self._log_label_distribution(task, dist)
+
+            logger.info("-" * 70)
+            logger.info(f"  {'TOTAL':20s}: {total:>10,} samples")
+            logger.info("=" * 70)
+
+    def on_step_end(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs: Any,
+    ) -> None:
+        """Track per-task samples during training."""
+        trainer = kwargs.get("model") or kwargs.get("trainer")
+        if trainer is None:
+            return
+
+        # Get current task
+        current_task = getattr(trainer, "current_task", None)
+        if current_task:
+            self.epoch_task_counts[current_task] += 1
+
+            # Track loss if available
+            if state.log_history and len(state.log_history) > 0:
+                last_log = state.log_history[-1]
+                loss = last_log.get("loss")
+                if loss is not None:
+                    self.epoch_task_losses[current_task].append(float(loss))
+
+    def on_epoch_end(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs: Any,
+    ) -> None:
+        """Log detailed distribution at end of each epoch."""
+        trainer = kwargs.get("model") or kwargs.get("trainer")
+        self.current_epoch += 1
+        epoch = self.current_epoch
+
+        logger.info("")
+        logger.info("=" * 70)
+        logger.info(f"EPOCH {epoch} SUMMARY")
+        logger.info("=" * 70)
+
+        # === TASK DISTRIBUTION ===
+        if self.epoch_task_counts:
+            total_steps = sum(self.epoch_task_counts.values())
+            logger.info(f"Task Distribution (Total: {total_steps:,} steps):")
+            logger.info("-" * 70)
+            logger.info(f"  {'Task':<20} {'Steps':>10} {'%':>8} {'Avg Loss':>12}")
+            logger.info("-" * 70)
+
+            for task in sorted(self.epoch_task_counts.keys()):
+                count = self.epoch_task_counts[task]
+                pct = 100.0 * count / total_steps if total_steps > 0 else 0
+                losses = self.epoch_task_losses.get(task, [])
+                avg_loss = sum(losses) / len(losses) if losses else 0.0
+                logger.info(f"  {task:<20} {count:>10,} {pct:>7.1f}% {avg_loss:>12.4f}")
+
+            logger.info("-" * 70)
+
+        # === PROGRESSIVE REGULARIZATION STATUS ===
+        if trainer is not None:
+            prog_reg = getattr(trainer, "progressive_regularization", False)
+            if prog_reg:
+                rdrop_on = trainer.rdrop_loss is not None
+                mixup_on = trainer.mixup is not None
+                adv_on = trainer.adversarial is not None
+                logger.info("Progressive Regularization Status:")
+                logger.info(f"  R-Drop:      {'✓ ON' if rdrop_on else '✗ OFF'}")
+                logger.info(f"  Mixup:       {'✓ ON' if mixup_on else '✗ OFF'}")
+                logger.info(f"  Adversarial: {'✓ ON' if adv_on else '✗ OFF'}")
+
+        # === MEMORY USAGE ===
+        if self.log_memory and torch.cuda.is_available():
+            try:
+                allocated = torch.cuda.memory_allocated() / 1e9
+                reserved = torch.cuda.memory_reserved() / 1e9
+                max_allocated = torch.cuda.max_memory_allocated() / 1e9
+                logger.info(
+                    f"GPU Memory: {allocated:.1f}GB allocated, {reserved:.1f}GB reserved, {max_allocated:.1f}GB peak"
+                )
+            except Exception:
+                pass
+
+        # === LEARNING RATE ===
+        if state.log_history:
+            for log in reversed(state.log_history):
+                if "learning_rate" in log:
+                    logger.info(f"Learning Rate: {log['learning_rate']:.2e}")
+                    break
+
+        logger.info("=" * 70)
+        logger.info("")
+
+        # Reset epoch counters
+        self.epoch_task_counts = defaultdict(int)
+        self.epoch_task_losses = defaultdict(list)
+
+
+# =============================================================================
+# W&B Enhanced Logging Callback
+# =============================================================================
+
+
+class WandbEnhancedCallback(TrainerCallback):
+    """
+    Enhanced W&B logging callback for multi-task training.
+
+    Logs rich visualizations to W&B:
+        - Per-task loss curves (separate panels)
+        - Task distribution pie charts
+        - Label distribution tables
+        - Progressive regularization timeline
+        - Confusion matrices (at eval)
+        - Sample predictions
+        - GPU memory over time
+
+    Requires: wandb to be installed and logged in.
+
+    Example:
+        callback = WandbEnhancedCallback(project="familyos-modernbert")
+        trainer = MultiTaskTrainer(..., callbacks=[callback])
+    """
+
+    def __init__(
+        self,
+        project: str = "familyos-modernbert",
+        entity: str | None = None,
+        log_model: bool = False,
+        log_freq: int = 100,
+    ):
+        self.project = project
+        self.entity = entity
+        self.log_model = log_model
+        self.log_freq = log_freq
+        self._wandb: Any = None  # type: Any to avoid type checker warnings
+        self._initialized = False
+        self.epoch_task_counts: dict[str, int] = defaultdict(int)
+        self.epoch_task_losses: dict[str, list[float]] = defaultdict(list)
+        self.current_epoch = 0
+
+    def _init_wandb(self) -> bool:
+        """Initialize W&B if not already done."""
+        if self._initialized:
+            return self._wandb is not None
+
+        try:
+            import wandb
+
+            self._wandb = wandb
+            self._initialized = True
+
+            # Check if already initialized by HF Trainer
+            if wandb.run is None:
+                wandb.init(
+                    project=self.project,
+                    entity=self.entity,
+                    reinit=True,
+                )
+            return True
+        except ImportError:
+            logger.warning("wandb not installed. Install with: pip install wandb")
+            self._initialized = True
+            return False
+        except Exception as e:
+            logger.warning(f"Failed to initialize wandb: {e}")
+            self._initialized = True
+            return False
+
+    def on_train_begin(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs: Any,
+    ) -> None:
+        """Log initial config and data distribution to W&B."""
+        if not self._init_wandb():
+            return
+
+        wandb = self._wandb
+        trainer = kwargs.get("model") or kwargs.get("trainer")
+
+        # Log training config
+        if wandb.run is not None:
+            # Log hyperparameters
+            config_dict = {
+                "learning_rate": args.learning_rate,
+                "batch_size": args.per_device_train_batch_size,
+                "gradient_accumulation": args.gradient_accumulation_steps,
+                "epochs": args.num_train_epochs,
+                "warmup_ratio": args.warmup_ratio,
+                "weight_decay": args.weight_decay,
+                "max_grad_norm": args.max_grad_norm,
+                "bf16": args.bf16,
+                "fp16": args.fp16,
+            }
+            wandb.config.update(config_dict, allow_val_change=True)
+
+            # Log dataset sizes as a table
+            if trainer is not None:
+                train_datasets = getattr(trainer, "train_datasets", {})
+                if train_datasets:
+                    table_data = []
+                    for task, ds in sorted(train_datasets.items()):
+                        table_data.append([task, len(ds)])
+
+                    table = wandb.Table(columns=["Task", "Samples"], data=table_data)
+                    wandb.log({"data/dataset_sizes": table}, step=0)
+
+                    # Also log as bar chart
+                    wandb.log(
+                        {
+                            "data/samples_per_task": wandb.plot.bar(
+                                table, "Task", "Samples", title="Training Samples per Task"
+                            )
+                        },
+                        step=0,
+                    )
+
+    def on_step_end(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs: Any,
+    ) -> None:
+        """Track per-task metrics during training."""
+        trainer = kwargs.get("model") or kwargs.get("trainer")
+        if trainer is None:
+            return
+
+        # Get current task
+        current_task = getattr(trainer, "current_task", None)
+        if current_task:
+            self.epoch_task_counts[current_task] += 1
+
+            # Track loss
+            if state.log_history and len(state.log_history) > 0:
+                last_log = state.log_history[-1]
+                loss = last_log.get("loss")
+                if loss is not None:
+                    self.epoch_task_losses[current_task].append(float(loss))
+
+        # Log per-task losses at intervals
+        if state.global_step > 0 and state.global_step % self.log_freq == 0:
+            self._log_task_losses(state)
+
+    def _log_task_losses(self, state: TrainerState) -> None:
+        """Log per-task loss averages to W&B."""
+        if not self._init_wandb() or self._wandb.run is None:
+            return
+
+        wandb = self._wandb
+        metrics = {}
+
+        for task, losses in self.epoch_task_losses.items():
+            if losses:
+                # Log recent average (last 100 steps)
+                recent_losses = losses[-100:]
+                avg_loss = sum(recent_losses) / len(recent_losses)
+                metrics[f"task_loss/{task}"] = avg_loss
+
+        if metrics:
+            wandb.log(metrics, step=state.global_step)
+
+    def on_epoch_end(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs: Any,
+    ) -> None:
+        """Log epoch summary to W&B."""
+        if not self._init_wandb() or self._wandb.run is None:
+            return
+
+        wandb = self._wandb
+        trainer = kwargs.get("model") or kwargs.get("trainer")
+        self.current_epoch += 1
+        epoch = self.current_epoch
+
+        # === TASK DISTRIBUTION PIE CHART ===
+        if self.epoch_task_counts:
+            total_steps = sum(self.epoch_task_counts.values())
+            table_data = []
+            for task, count in sorted(self.epoch_task_counts.items()):
+                pct = 100.0 * count / total_steps if total_steps > 0 else 0
+                losses = self.epoch_task_losses.get(task, [])
+                avg_loss = sum(losses) / len(losses) if losses else 0.0
+                table_data.append([task, count, pct, avg_loss])
+
+            table = wandb.Table(
+                columns=["Task", "Steps", "Percentage", "Avg Loss"], data=table_data
+            )
+            wandb.log(
+                {
+                    f"epoch_{epoch}/task_distribution": table,
+                    f"epoch_{epoch}/task_pie": wandb.plot.bar(
+                        table, "Task", "Steps", title=f"Epoch {epoch} Task Distribution"
+                    ),
+                },
+                step=state.global_step,
+            )
+
+        # === PROGRESSIVE REGULARIZATION STATUS ===
+        if trainer is not None:
+            prog_reg = getattr(trainer, "progressive_regularization", False)
+            if prog_reg:
+                rdrop_on = trainer.rdrop_loss is not None
+                mixup_on = trainer.mixup is not None
+                adv_on = trainer.adversarial is not None
+                wandb.log(
+                    {
+                        "regularization/rdrop": 1 if rdrop_on else 0,
+                        "regularization/mixup": 1 if mixup_on else 0,
+                        "regularization/adversarial": 1 if adv_on else 0,
+                        "regularization/epoch": epoch,
+                    },
+                    step=state.global_step,
+                )
+
+        # === GPU MEMORY ===
+        if torch.cuda.is_available():
+            try:
+                allocated = torch.cuda.memory_allocated() / 1e9
+                reserved = torch.cuda.memory_reserved() / 1e9
+                max_allocated = torch.cuda.max_memory_allocated() / 1e9
+                wandb.log(
+                    {
+                        "memory/allocated_gb": allocated,
+                        "memory/reserved_gb": reserved,
+                        "memory/peak_gb": max_allocated,
+                    },
+                    step=state.global_step,
+                )
+            except Exception:
+                pass
+
+        # Reset epoch counters
+        self.epoch_task_counts = defaultdict(int)
+        self.epoch_task_losses = defaultdict(list)
+
+    def on_evaluate(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        metrics: dict[str, float] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Log evaluation metrics with enhanced formatting."""
+        if not self._init_wandb() or self._wandb.run is None:
+            return
+
+        wandb = self._wandb
+
+        if metrics is None:
+            return
+
+        # Group metrics by task
+        task_metrics: dict[str, dict[str, float]] = defaultdict(dict)
+        for key, value in metrics.items():
+            if not isinstance(value, (int, float)):
+                continue
+
+            if key.startswith("eval_"):
+                # Parse keys like "eval_ner_general_f1"
+                parts = key[5:].rsplit("_", 1)
+                if len(parts) == 2:
+                    task_key, metric_name = parts
+                    task_metrics[task_key][metric_name] = value
+                else:
+                    task_metrics["overall"][key[5:]] = value
+
+        # Create summary table
+        if task_metrics:
+            table_data = []
+            for task, mets in sorted(task_metrics.items()):
+                f1 = mets.get("f1", mets.get("score", 0))
+                acc = mets.get("accuracy", mets.get("acc", 0))
+                loss = mets.get("loss", 0)
+                table_data.append([task, f1, acc, loss])
+
+            table = wandb.Table(columns=["Task", "F1", "Accuracy", "Loss"], data=table_data)
+            wandb.log(
+                {
+                    "eval/task_metrics": table,
+                    "eval/task_f1_chart": wandb.plot.bar(
+                        table, "Task", "F1", title="Evaluation F1 by Task"
+                    ),
+                },
+                step=state.global_step,
+            )
+
+    def on_train_end(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs: Any,
+    ) -> None:
+        """Log final summary and optionally save model artifact."""
+        if not self._init_wandb() or self._wandb.run is None:
+            return
+
+        wandb = self._wandb
+
+        # Log final metrics summary
+        if state.log_history:
+            final_metrics = {}
+            for log in reversed(state.log_history):
+                for key, value in log.items():
+                    if key.startswith("eval_") and key not in final_metrics:
+                        if isinstance(value, (int, float)):
+                            final_metrics[key] = value
+
+            if final_metrics:
+                wandb.log({"final/" + k: v for k, v in final_metrics.items()})
+
+        # Log model artifact if requested
+        if self.log_model:
+            try:
+                artifact = wandb.Artifact(
+                    name=f"model-{wandb.run.id}",
+                    type="model",
+                    description="Trained multi-task ModernBERT model",
+                )
+                artifact.add_dir(args.output_dir)
+                wandb.log_artifact(artifact)
+                logger.info(f"Model artifact logged to W&B: {artifact.name}")
+            except Exception as e:
+                logger.warning(f"Failed to log model artifact: {e}")
+
+
+# =============================================================================
 # Exports
 # =============================================================================
 
@@ -824,4 +1605,6 @@ __all__ = [
     "EarlyStoppingCallback",
     "ModelCheckpointCallback",
     "DynamicTaskWeightingCallback",
+    "EpochDataDistributionCallback",
+    "WandbEnhancedCallback",
 ]

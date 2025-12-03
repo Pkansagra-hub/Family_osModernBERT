@@ -6,7 +6,7 @@
 # ✅ 10 epochs - "DO NOT SKIP THESE PHASES"
 # ✅ Head-wise learning rates (encoder_lr, head_lr, token_head_lr)
 # ✅ EMA model (use_ema: true, ema_decay: 0.999)
-# ✅ Embedding hard negatives (15)
+# ✅ Embedding hard negatives (23 for better contrastive learning)
 # ✅ Task weights per v2 spec (emotions: 1.5, safety: 2.0, embedding: 0.5)
 # ❌ Uncertainty weighting DISABLED
 # ✅ Temperature sampling (higher temp=4 for speed)
@@ -71,11 +71,13 @@ heads:
     # ASL (Asymmetric Loss) - SOTA for multi-label, better than focal loss
     use_asl: true
     asl_gamma_neg: 4.0          # Suppress easy negatives
-    asl_gamma_pos: 0.0          # No suppression on positives (rare, want full gradient)
+    asl_gamma_pos: 1.0          # Standard (data is balanced now)
     asl_clip: 0.05              # Shift negative probs down
-    # Per-class pos_weight: [toxic, severe_toxic, obscene, threat, insult, identity_hate, self_harm, dangerous_advice]
-    # Frequencies: ~6%, ~0.3%, ~2%, ~0.2%, ~4%, ~0.5%, ~1%, ~1%
-    pos_weight: [3.0, 30.0, 6.0, 50.0, 5.0, 30.0, 20.0, 20.0]  # Reduced since ASL helps
+    # Per-class pos_weight for CURATED Civil Comments (balanced dataset):
+    # Distribution: toxic=61%, severe_toxic=12.5%, obscene=17%, threat=16%,
+    #               insult=44%, identity_hate=21%, sexually_explicit=12.5%, profanity=12.5%
+    # pos_weight = 100 / percentage (inverse frequency)
+    pos_weight: [1.6, 8.0, 5.9, 6.1, 2.3, 4.7, 8.0, 8.0]
 
   nli:
     enabled: true
@@ -148,19 +150,30 @@ training:
   # Label Smoothing: Reduces overconfidence, improves calibration (+0.5-1% acc)
   label_smoothing: 0.1
 
+  # === PROGRESSIVE REGULARIZATION ===
+  # Enables features gradually by epoch to save ~40% training time
+  # Schedule for 10 epochs:
+  #   Epochs 1-3: No regularization (fast feature learning, 3x faster)
+  #   Epochs 4-6: R-Drop + Mixup (smooth decision boundaries, 1.5x slower)
+  #   Epochs 7-10: All features (full robustness training, 2-3x slower)
+  progressive_regularization: true
+  rdrop_start_epoch: 4        # Start R-Drop at epoch 4
+  mixup_start_epoch: 4        # Start Mixup at epoch 4
+  adversarial_start_epoch: 7  # Start adversarial at epoch 7
+
   # R-Drop: Consistency regularization via dropout variations (+1-2% NLU)
-  use_rdrop: true           # DISABLED for speed (saves ~40% time)
-  rdrop_alpha: 0.7            # KL divergence weight (unused when disabled)
+  use_rdrop: true             # Will be enabled at rdrop_start_epoch
+  rdrop_alpha: 0.7            # KL divergence weight
 
   # Adversarial Training: FGM/PGD for robustness (+0.5-1.5% on hard examples)
-  use_adversarial: true      # DISABLED for 1st run (saves VRAM + 30% time)
+  use_adversarial: true       # Will be enabled at adversarial_start_epoch
   adversarial_type: fgm       # 'fgm' (faster) or 'pgd' (stronger)
   adversarial_epsilon: 1.0    # Perturbation magnitude
   pgd_steps: 3                # Only for PGD
   pgd_alpha: 0.3              # Only for PGD
 
   # Mixup: Embedding-space augmentation for smoother decision boundaries
-  use_mixup: true             # ENABLED: Embedding-space mixup
+  use_mixup: true             # Will be enabled at mixup_start_epoch
   mixup_alpha: 0.4            # Beta distribution parameter
   mixup_prob: 0.8             # Probability of applying mixup to batch
 
@@ -194,6 +207,11 @@ training:
   logging_steps: 100
   report_to:
     - tensorboard
+    - wandb
+
+  # === W&B CONFIG ===
+  # Set WANDB_PROJECT env var or it defaults to "huggingface"
+  # wandb login  # Run once to authenticate
 
   # === REPRODUCIBILITY ===
   seed: 42
