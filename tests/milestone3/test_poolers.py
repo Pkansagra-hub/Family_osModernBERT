@@ -473,7 +473,7 @@ class TestWeightedMeanPooler:
         pooled = pooler(hidden_states, full_attention_mask)
 
         assert pooled.shape == (batch_size, hidden_size)
-    
+
     def test_weighted_mean_pooler_learned_weights(self, hidden_size):
         """Attention weights are learned and sum to 1 (after softmax)."""
         torch.manual_seed(42)
@@ -506,7 +506,7 @@ class TestWeightedMeanPooler:
         # With multi-head AND no projection, output is num_heads * hidden_size
         # (the output_projection only exists when output_size != hidden_size)
         assert pooled.shape == (batch_size, num_heads * hidden_size)
-    
+
     @pytest.mark.skip(reason="Implementation bug in WeightedMeanPooler with num_heads=1")
     def test_weighted_mean_pooler_masks_padding(self, hidden_size):
         """WeightedMeanPooler applies -inf to padding before softmax.
@@ -889,6 +889,8 @@ class TestPoolerEdgeCases:
         output2 = pooler(hidden_states, attention_mask)
 
         assert torch.allclose(output1, output2, atol=1e-6)
+
+
 # =============================================================================
 # Module Exports
 # =============================================================================

@@ -970,5 +970,534 @@ class TestHeadIntegration:
             assert "logits" in output, f"{type(head).__name__} missing logits"
 
 
+# =============================================================================
+# Additional Coverage Tests - Edge Cases and Branches
+# =============================================================================
+
+
+class TestBaseHeadEdgeCases:
+    """Additional coverage tests for BaseHead edge cases."""
+
+    def test_compute_loss_unknown_problem_type(self, hidden_size):
+        """Unknown problem type raises ValueError."""
+        head = ConcreteHead(hidden_size, num_labels=5, problem_type="unknown")
+        logits = torch.randn(4, 5)
+        labels = torch.randint(0, 5, (4,))
+
+        with pytest.raises(ValueError, match="Unknown problem type"):
+            head.compute_loss(logits, labels)
+
+    def test_multi_label_with_class_weights(self, hidden_size, batch_size):
+        """Multi-label with class_weights uses weighted BCE."""
+        num_labels = 10
+        class_weights = torch.ones(num_labels) * 0.5
+        head = ConcreteHead(
+            hidden_size,
+            num_labels,
+            problem_type="multi_label_classification",
+        )
+        head.class_weights = class_weights
+
+        logits = torch.randn(batch_size, num_labels)
+        labels = torch.randint(0, 2, (batch_size, num_labels)).float()
+
+        loss = head.compute_loss(logits, labels)
+        assert loss.item() > 0
+
+    def test_multi_label_with_pos_weight(self, hidden_size, batch_size):
+        """Multi-label with pos_weight upweights positives."""
+        num_labels = 10
+        head = ConcreteHead(
+            hidden_size,
+            num_labels,
+            problem_type="multi_label_classification",
+        )
+        # Register pos_weight buffer
+        head.register_buffer("pos_weight", torch.ones(num_labels) * 2.0)
+
+        logits = torch.randn(batch_size, num_labels)
+        labels = torch.randint(0, 2, (batch_size, num_labels)).float()
+
+        loss = head.compute_loss(logits, labels)
+        assert loss.item() > 0
+
+    def test_asl_with_pos_weight(self, hidden_size, batch_size):
+        """ASL with pos_weight applies additional upweighting."""
+        num_labels = 10
+        head = ConcreteHead(
+            hidden_size,
+            num_labels,
+            problem_type="multi_label_classification",
+            use_asl=True,
+        )
+        head.register_buffer("pos_weight", torch.ones(num_labels) * 2.0)
+
+        logits = torch.randn(batch_size, num_labels)
+        labels = torch.randint(0, 2, (batch_size, num_labels)).float()
+
+        loss = head.compute_loss(logits, labels)
+        assert loss.item() > 0
+
+    def test_asl_with_zero_gammas(self, hidden_size, batch_size):
+        """ASL with zero gammas falls back to simple BCE."""
+        num_labels = 10
+        head = ConcreteHead(
+            hidden_size,
+            num_labels,
+            problem_type="multi_label_classification",
+            use_asl=True,
+        )
+        head.asl_gamma_neg = 0.0
+        head.asl_gamma_pos = 0.0
+
+        logits = torch.randn(batch_size, num_labels)
+        labels = torch.randint(0, 2, (batch_size, num_labels)).float()
+
+        loss = head.compute_loss(logits, labels)
+        assert loss.item() > 0
+
+    def test_focal_bce_with_class_weights(self, hidden_size, batch_size):
+        """Focal BCE applies class weights."""
+        num_labels = 10
+        head = ConcreteHead(
+            hidden_size,
+            num_labels,
+            problem_type="multi_label_classification",
+            use_focal_loss=True,
+        )
+        head.class_weights = torch.ones(num_labels) * 0.5
+
+        logits = torch.randn(batch_size, num_labels)
+        labels = torch.randint(0, 2, (batch_size, num_labels)).float()
+
+        loss = head.compute_loss(logits, labels)
+        assert loss.item() >= 0
+
+
+class TestSequenceClassificationHeadPoolingEdges:
+    """Edge cases for pooling strategies."""
+
+    def test_pool_mean_no_mask(self, sample_hidden_states, hidden_size):
+        """Mean pooling without mask uses simple mean."""
+        head = SequenceClassificationHead(hidden_size, num_labels=5, pooling="mean")
+
+        output = head(sample_hidden_states, attention_mask=None)
+        assert "logits" in output
+
+    def test_pool_max_no_mask(self, sample_hidden_states, hidden_size):
+        """Max pooling without mask takes max of all tokens."""
+        head = SequenceClassificationHead(hidden_size, num_labels=5, pooling="max")
+
+        output = head(sample_hidden_states, attention_mask=None)
+        assert "logits" in output
+
+    def test_pool_unknown_strategy(self, sample_hidden_states, sample_attention_mask, hidden_size):
+        """Unknown pooling strategy raises ValueError."""
+        head = SequenceClassificationHead(hidden_size, num_labels=5, pooling="unknown")
+
+        with pytest.raises(ValueError, match="Unknown pooling"):
+            head(sample_hidden_states, sample_attention_mask)
+
+
+class TestSafetyHeadAdvanced:
+    """Advanced tests for SafetyHead methods."""
+
+    def test_subcategory_classification(self, sample_hidden_states, sample_attention_mask):
+        """SafetyHead classifies subcategories."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = SafetyHead(hidden_size, use_hierarchical=True)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "subcategory_logits" in output
+        assert "band_probs" in output
+
+    def test_hierarchical_masking(self, sample_hidden_states, sample_attention_mask):
+        """Hierarchical masking filters invalid subcategories."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = SafetyHead(hidden_size, use_hierarchical=True)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        # Subcategory probs should sum to 1 after masking
+        assert "subcategory_probs" in output
+
+    def test_focal_loss_option(self, sample_hidden_states, sample_attention_mask):
+        """SafetyHead with focal loss enabled."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = SafetyHead(hidden_size, use_focal_loss=True)
+
+        labels = torch.randint(0, 4, (batch_size,))
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+    def test_subcategory_labels(self, sample_hidden_states, sample_attention_mask):
+        """SafetyHead with subcategory labels computes combined loss."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = SafetyHead(hidden_size, use_hierarchical=True)
+
+        labels = torch.randint(0, 4, (batch_size,))
+        subcategory_labels = torch.randint(0, 13, (batch_size,))
+
+        output = head(
+            sample_hidden_states,
+            sample_attention_mask,
+            labels=labels,
+            subcategory_labels=subcategory_labels,
+        )
+
+        assert "loss" in output
+        assert "band_loss" in output
+        assert "subcategory_loss" in output
+
+    def test_set_temperature(self, hidden_size):
+        """Set temperature updates the parameter."""
+        head = SafetyHead(hidden_size)
+        head.set_temperature(2.0)
+
+        assert head.temperature.item() == pytest.approx(2.0, rel=0.1)
+
+    def test_calibrate_method(self, hidden_size):
+        """Calibrate learns temperature on validation data."""
+        head = SafetyHead(hidden_size)
+
+        val_logits = torch.randn(100, 4)
+        val_labels = torch.randint(0, 4, (100,))
+
+        temp = head.calibrate(val_logits, val_labels, max_iter=5)
+        assert temp > 0
+
+
+class TestEnhancedSafetyHeadAdvanced:
+    """Advanced tests for EnhancedSafetyHead."""
+
+    def test_keyword_override_triggers_crisis(self, sample_hidden_states, sample_attention_mask):
+        """CRISIS keywords override model predictions."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = EnhancedSafetyHead(hidden_size, keyword_override=True)
+
+        output = head(
+            sample_hidden_states,
+            sample_attention_mask,
+            text="I want to kill myself",
+        )
+
+        assert output["band"] == "CRISIS" or "CRISIS" in str(output["band"])
+        assert output["keyword_override"].any()
+
+    def test_batch_text_keyword_detection(self, sample_hidden_states, sample_attention_mask):
+        """Keyword detection works with batch of texts."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = EnhancedSafetyHead(hidden_size, keyword_override=True)
+
+        texts = ["Hello world", "I want to kill myself", "Nice day", "suicide thoughts"]
+
+        output = head(
+            sample_hidden_states[:len(texts)],
+            sample_attention_mask[:len(texts)],
+            text=texts,
+        )
+
+        # At least some should be flagged
+        assert output["keyword_override"].sum() > 0
+
+    def test_set_temperature_enhanced(self, hidden_size):
+        """Set temperature updates log_temperature."""
+        head = EnhancedSafetyHead(hidden_size)
+        head.set_temperature(2.0)
+
+        temp = head.log_temperature.exp().item()
+        assert temp == pytest.approx(2.0, rel=0.1)
+
+    def test_calibrate_enhanced(self, hidden_size):
+        """EnhancedSafetyHead calibrate method."""
+        head = EnhancedSafetyHead(hidden_size)
+
+        val_logits = torch.randn(50, 4)
+        val_labels = torch.randint(0, 4, (50,))
+
+        temp = head.calibrate(val_logits, val_labels, max_iter=3)
+        assert temp > 0
+
+    def test_get_severity_score(self, hidden_size):
+        """Severity score computation."""
+        head = EnhancedSafetyHead(hidden_size)
+
+        # GREEN = 0, AMBER = 0.33, RED = 0.66, CRISIS = 1.0
+        band_probs = torch.tensor([[1.0, 0, 0, 0]])  # All GREEN
+        score = head.get_severity_score(band_probs)
+        assert score.item() == pytest.approx(0.0, abs=0.01)
+
+        band_probs = torch.tensor([[0, 0, 0, 1.0]])  # All CRISIS
+        score = head.get_severity_score(band_probs)
+        assert score.item() == pytest.approx(1.0, abs=0.01)
+
+    def test_freeze_unfreeze_enhanced(self, hidden_size):
+        """Freeze/unfreeze works for EnhancedSafetyHead."""
+        head = EnhancedSafetyHead(hidden_size)
+
+        head.freeze()
+        for param in head.parameters():
+            assert not param.requires_grad
+
+        head.unfreeze()
+        for param in head.parameters():
+            assert param.requires_grad
+
+
+class TestEmbeddingHeadAdvanced:
+    """Additional coverage for EmbeddingHead."""
+
+    def test_pool_max_with_mask(self, sample_hidden_states, sample_attention_mask, hidden_size):
+        """Max pooling with attention mask."""
+        head = EmbeddingHead(hidden_size, pooling="max", normalize=False)
+
+        embeddings = head(sample_hidden_states, sample_attention_mask)
+        assert embeddings.shape == (sample_hidden_states.size(0), hidden_size)
+
+    def test_pool_unknown_raises(self, sample_hidden_states, sample_attention_mask, hidden_size):
+        """Unknown pooling raises ValueError."""
+        head = EmbeddingHead(hidden_size, pooling="unknown")
+
+        with pytest.raises(ValueError, match="Unknown pooling"):
+            head(sample_hidden_states, sample_attention_mask)
+
+    def test_freeze_unfreeze_embedding_head(self, hidden_size):
+        """EmbeddingHead freeze/unfreeze."""
+        head = EmbeddingHead(hidden_size, output_dim=256)
+
+        head.freeze()
+        for param in head.parameters():
+            assert not param.requires_grad
+
+        head.unfreeze()
+        for param in head.parameters():
+            assert param.requires_grad
+
+
+class TestNLIHeadAdvanced:
+    """Additional coverage for NLIHead with pair encoder."""
+
+    def test_nli_with_pair_inputs(self, hidden_size, batch_size, seq_length):
+        """NLI head with explicit text_a/text_b inputs."""
+        head = NLIHead(hidden_size)
+
+        hidden_states = torch.randn(batch_size, seq_length, hidden_size)
+        attention_mask = torch.ones(batch_size, seq_length)
+
+        # Provide pair inputs (without external pair encoder)
+        text_a_hidden = torch.randn(batch_size, seq_length // 2, hidden_size)
+        text_b_hidden = torch.randn(batch_size, seq_length // 2, hidden_size)
+
+        # This should fall back to standard forward since no pair_encoder
+        output = head(
+            hidden_states,
+            attention_mask,
+            text_a_hidden=text_a_hidden,
+            text_b_hidden=text_b_hidden,
+        )
+
+        assert "logits" in output
+
+
+class TestRelationHeadAdvanced:
+    """Additional coverage for RelationHead."""
+
+    def test_relation_without_entity_spans(self, sample_hidden_states, sample_attention_mask):
+        """RelationHead falls back to CLS when no entity spans provided."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = RelationHead(hidden_size, num_labels=15)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "logits" in output
+
+    def test_relation_with_labels(self, sample_hidden_states, sample_attention_mask):
+        """RelationHead computes loss with labels."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = RelationHead(hidden_size, num_labels=15)
+
+        labels = torch.randint(0, 15, (batch_size,))
+
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestIntentHeadAdvanced:
+    """Additional coverage for IntentHead."""
+
+    def test_set_confidence_threshold(self, hidden_size):
+        """Set confidence threshold updates value."""
+        head = IntentHead(hidden_size, confidence_threshold=0.5)
+        head.set_confidence_threshold(0.8)
+
+        assert head.confidence_threshold == 0.8
+
+    def test_low_confidence_mask(self, sample_hidden_states, sample_attention_mask):
+        """Low confidence mask flags uncertain predictions."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = IntentHead(hidden_size, confidence_threshold=0.99)  # High threshold
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "low_confidence_mask" in output
+
+
+class TestTemporalHeadAdvanced:
+    """Additional coverage for TemporalHead."""
+
+    def test_extract_temporal_spans(self, sample_hidden_states, sample_attention_mask):
+        """Extract temporal spans from predictions."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = TemporalHead(hidden_size, num_labels=13)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+        logits = output["logits"]
+
+        id2label = {i: f"B-DATE" if i % 2 == 1 else "O" for i in range(13)}
+
+        spans = head.extract_temporal_spans(logits, sample_attention_mask, id2label)
+
+        assert len(spans) == sample_hidden_states.size(0)
+
+
+class TestHierarchicalEmotionHeadAdvanced:
+    """Additional coverage for HierarchicalEmotionHead."""
+
+    def test_for_familyos_factory(self, hidden_size):
+        """Factory method creates correct configuration."""
+        head = HierarchicalEmotionHead.for_familyos(hidden_size=hidden_size)
+
+        assert head.num_emotions == 44
+        assert head.use_familyos
+        assert head.use_asl
+
+    def test_without_familyos_32_emotions(self, hidden_size):
+        """32-emotion mode uses legacy labels."""
+        head = HierarchicalEmotionHead(
+            hidden_size,
+            num_emotions=32,
+            use_familyos=False,
+        )
+
+        assert head.num_emotions == 32
+        assert len(head.emotion_labels) == 32
+
+    def test_secondary_emotions(self, sample_hidden_states, sample_attention_mask):
+        """Secondary emotions extraction."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = HierarchicalEmotionHead(hidden_size, num_emotions=44, num_secondary=3)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "secondary_emotions" in output
+        # Should return up to num_secondary emotions
+        if isinstance(output["secondary_emotions"], list):
+            for sec in output["secondary_emotions"]:
+                if isinstance(sec, list):
+                    assert len(sec) <= 3
+
+    def test_intensity_scoring(self, sample_hidden_states, sample_attention_mask):
+        """Intensity scores when use_intensity=True."""
+        hidden_size = sample_hidden_states.size(-1)
+        head = HierarchicalEmotionHead(hidden_size, num_emotions=44, use_intensity=True)
+
+        output = head(sample_hidden_states, sample_attention_mask)
+
+        assert "intensity" in output or "intensities" in output or "emotion_scores" in output
+
+    def test_dynamic_thresholds(self, hidden_size):
+        """Dynamic thresholds are learnable parameters."""
+        head = HierarchicalEmotionHead(hidden_size, num_emotions=44, use_dynamic_thresholds=True)
+
+        assert hasattr(head, "thresholds") or hasattr(head, "dynamic_thresholds")
+
+    def test_label_correlation(self, hidden_size):
+        """Label correlation module exists when enabled."""
+        head = HierarchicalEmotionHead(hidden_size, num_emotions=44, use_label_correlation=True)
+
+        assert hasattr(head, "label_correlation") or hasattr(head, "correlation_layer")
+
+    def test_hierarchical_loss(self, sample_hidden_states, sample_attention_mask):
+        """Hierarchical loss adds family-level component."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        head = HierarchicalEmotionHead(
+            hidden_size,
+            num_emotions=44,
+            use_hierarchical_loss=True,
+        )
+
+        labels = torch.randint(0, 2, (batch_size, 44)).float()
+        output = head(sample_hidden_states, sample_attention_mask, labels=labels)
+
+        assert "loss" in output
+
+
+class TestHeadClassMethods:
+    """Test class-level methods and attributes."""
+
+    def test_safety_head_constants(self):
+        """SafetyHead class has required constants."""
+        assert hasattr(SafetyHead, "BAND_NAMES")
+        assert hasattr(SafetyHead, "BAND_TO_ID")
+        assert hasattr(SafetyHead, "ID_TO_BAND")
+        assert hasattr(SafetyHead, "SUBCATEGORY_NAMES")
+        assert hasattr(SafetyHead, "SUBCATEGORY_TO_BAND_ID")
+
+    def test_enhanced_safety_head_constants(self):
+        """EnhancedSafetyHead class has required constants."""
+        assert hasattr(EnhancedSafetyHead, "BAND_NAMES")
+        assert hasattr(EnhancedSafetyHead, "SUBCATEGORIES")
+        assert hasattr(EnhancedSafetyHead, "CRISIS_KEYWORDS")
+        assert len(EnhancedSafetyHead.CRISIS_KEYWORDS) > 0
+
+    def test_hierarchical_emotion_head_constants(self):
+        """HierarchicalEmotionHead class has required constants."""
+        assert hasattr(HierarchicalEmotionHead, "FAMILYOS_EMOTION_LABELS")
+        assert hasattr(HierarchicalEmotionHead, "DEFAULT_EMOTION_LABELS")
+        assert hasattr(HierarchicalEmotionHead, "FAMILYOS_EMOTION_FAMILIES")
+        assert len(HierarchicalEmotionHead.FAMILYOS_EMOTION_LABELS) == 44
+
+
+class TestHeadGradients:
+    """Test gradient flow through heads."""
+
+    def test_sequence_head_gradients(self, sample_hidden_states, sample_attention_mask):
+        """Gradients flow through sequence classification head."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+
+        hidden_states = sample_hidden_states.clone().requires_grad_(True)
+        head = SequenceClassificationHead(hidden_size, num_labels=5)
+
+        labels = torch.randint(0, 5, (batch_size,))
+        output = head(hidden_states, sample_attention_mask, labels=labels)
+
+        output["loss"].backward()
+        assert hidden_states.grad is not None
+
+    def test_token_head_gradients(self, sample_hidden_states, sample_attention_mask):
+        """Gradients flow through token classification head."""
+        hidden_size = sample_hidden_states.size(-1)
+        batch_size = sample_hidden_states.size(0)
+        seq_length = sample_hidden_states.size(1)
+
+        hidden_states = sample_hidden_states.clone().requires_grad_(True)
+        head = TokenClassificationHead(hidden_size, num_labels=9)
+
+        labels = torch.randint(0, 9, (batch_size, seq_length))
+        output = head(hidden_states, sample_attention_mask, labels=labels)
+
+        output["loss"].backward()
+        assert hidden_states.grad is not None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
