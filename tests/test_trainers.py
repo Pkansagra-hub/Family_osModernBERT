@@ -3893,3 +3893,1395 @@ class TestCreateOptimizerWithLayerDecay:
         trainable_params = sum(1 for p in model.parameters() if p.requires_grad)
 
         assert total_params == trainable_params
+
+
+# =============================================================================
+# Epic 4.2: Training Strategies
+# Issue 4.2.1: Task Sampler Tests
+# =============================================================================
+
+
+class TestTaskSamplerAbstract:
+    """Tests for TaskSampler abstract base class."""
+
+    def test_task_sampler_abstract_cannot_instantiate(self):
+        """TaskSampler is abstract and cannot be instantiated directly."""
+        from modeling_studio.trainers.task_sampler import TaskSampler
+
+        # TaskSampler is a dataclass with abstract method _compute_probabilities
+        # Attempting to instantiate it should raise TypeError
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            TaskSampler(task_names=["task1", "task2"])
+
+    def test_task_sampler_init_stores_task_names(self):
+        """TaskSampler init properly stores task_names."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        # Using UniformSampler as concrete implementation
+        task_names = ["ner", "sentiment", "emotions"]
+        sampler = UniformSampler(task_names=task_names)
+
+        assert sampler.task_names == task_names
+
+    def test_task_sampler_init_with_weights(self):
+        """TaskSampler init properly stores task_weights."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        task_names = ["ner", "sentiment"]
+        weights = {"ner": 2.0, "sentiment": 1.0}
+        sampler = UniformSampler(task_names=task_names, task_weights=weights)
+
+        assert sampler.task_weights == weights
+
+    def test_task_sampler_probabilities_property(self):
+        """probabilities property returns computed probabilities."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler = UniformSampler(task_names=["a", "b", "c"])
+        probs = sampler.probabilities
+
+        # Uniform sampler: equal probabilities
+        assert len(probs) == 3
+        assert all(abs(p - 1 / 3) < 1e-6 for p in probs.values())
+        assert sum(probs.values()) == pytest.approx(1.0)
+
+    def test_task_sampler_step_count_property(self):
+        """step_count property tracks number of samples."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler = UniformSampler(task_names=["a", "b"], seed=42)
+
+        assert sampler.step_count == 0
+
+        sampler.sample()
+        assert sampler.step_count == 1
+
+        for _ in range(10):
+            sampler.sample()
+        assert sampler.step_count == 11
+
+    def test_task_sampler_reset(self):
+        """reset() resets step count and random state."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler = UniformSampler(task_names=["a", "b", "c"], seed=42)
+
+        # Sample some
+        samples1 = [sampler.sample() for _ in range(10)]
+        assert sampler.step_count == 10
+
+        # Reset with same seed
+        sampler.reset(seed=42)
+        assert sampler.step_count == 0
+
+        # Same sequence should be reproduced
+        samples2 = [sampler.sample() for _ in range(10)]
+        assert samples1 == samples2
+
+    def test_task_sampler_reset_without_seed(self):
+        """reset() without seed keeps random state different."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler = UniformSampler(task_names=["a", "b", "c"], seed=42)
+
+        samples1 = [sampler.sample() for _ in range(100)]
+
+        # Reset without seed
+        sampler.reset()
+        assert sampler.step_count == 0
+
+        samples2 = [sampler.sample() for _ in range(100)]
+
+        # Sequences should likely be different (not guaranteed but very likely)
+        # At minimum, step count should have reset
+        assert sampler.step_count == 100
+
+    def test_task_sampler_update_weights(self):
+        """update_weights() updates weights and recomputes probabilities."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler = UniformSampler(task_names=["a", "b"])
+
+        # Initial uniform probabilities
+        probs_before = sampler.probabilities.copy()
+        assert probs_before["a"] == probs_before["b"]
+
+        # Update weights
+        sampler.update_weights({"a": 2.0, "b": 1.0})
+
+        # For UniformSampler, probabilities remain uniform (weights don't affect it)
+        # But task_weights should be updated
+        assert sampler.task_weights == {"a": 2.0, "b": 1.0}
+
+    def test_task_sampler_state_checkpoint(self):
+        """get_state() and load_state() preserve sampler state."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler1 = UniformSampler(task_names=["a", "b", "c"], seed=42)
+
+        # Sample some
+        for _ in range(25):
+            sampler1.sample()
+
+        # Save state
+        state = sampler1.get_state()
+        assert state["step_count"] == 25
+
+        # Continue sampling from original
+        next_samples_from_original = [sampler1.sample() for _ in range(10)]
+
+        # Create new sampler and load state (step_count should be restored to 25)
+        sampler2 = UniformSampler(task_names=["a", "b", "c"], seed=123)  # Different seed
+        sampler2.load_state(state)
+
+        # After load_state, step_count should be 25 (before sampling)
+        assert sampler2.step_count == 25
+
+        # Should produce same sequence from restored RNG state
+        next_samples_from_restored = [sampler2.sample() for _ in range(10)]
+
+        assert next_samples_from_original == next_samples_from_restored
+        assert sampler2.step_count == 35  # 25 + 10 new samples
+
+
+class TestProportionalSampler:
+    """Tests for ProportionalSampler."""
+
+    def test_proportional_sampler_init(self):
+        """ProportionalSampler initializes with task_sizes."""
+        from modeling_studio.trainers.task_sampler import ProportionalSampler
+
+        task_sizes = {"ner": 1000, "sentiment": 5000}
+        sampler = ProportionalSampler(task_sizes=task_sizes)
+
+        assert sampler.task_sizes == task_sizes
+        assert set(sampler.task_names) == {"ner", "sentiment"}
+
+    def test_proportional_sampler_probabilities(self):
+        """ProportionalSampler computes P(task) ∝ size × weight."""
+        from modeling_studio.trainers.task_sampler import ProportionalSampler
+
+        task_sizes = {"small": 100, "large": 400}
+        sampler = ProportionalSampler(task_sizes=task_sizes)
+
+        probs = sampler.probabilities
+
+        # Without weights: P(small) = 100/500 = 0.2, P(large) = 400/500 = 0.8
+        assert probs["small"] == pytest.approx(0.2)
+        assert probs["large"] == pytest.approx(0.8)
+
+    def test_proportional_sampler_probabilities_with_weights(self):
+        """ProportionalSampler with weights: P(task) ∝ size × weight."""
+        from modeling_studio.trainers.task_sampler import ProportionalSampler
+
+        task_sizes = {"small": 100, "large": 400}
+        task_weights = {"small": 4.0, "large": 1.0}  # Boost small by 4x
+        sampler = ProportionalSampler(task_sizes=task_sizes, task_weights=task_weights)
+
+        probs = sampler.probabilities
+
+        # unnorm: small = 100 * 4 = 400, large = 400 * 1 = 400
+        # total = 800
+        # P(small) = 400/800 = 0.5, P(large) = 400/800 = 0.5
+        assert probs["small"] == pytest.approx(0.5)
+        assert probs["large"] == pytest.approx(0.5)
+
+    def test_proportional_sampler_sample(self):
+        """ProportionalSampler.sample() returns valid tasks."""
+        from modeling_studio.trainers.task_sampler import ProportionalSampler
+
+        task_sizes = {"ner": 1000, "sentiment": 5000, "emotions": 3000}
+        sampler = ProportionalSampler(task_sizes=task_sizes, seed=42)
+
+        samples = [sampler.sample() for _ in range(1000)]
+
+        # All samples should be valid tasks
+        assert all(s in task_sizes for s in samples)
+
+        # Distribution should roughly match sizes
+        counts = {task: samples.count(task) for task in task_sizes}
+
+        # ner has ~11% (1000/9000), sentiment ~56%, emotions ~33%
+        total = 1000
+        assert 50 < counts["ner"] < 200  # ~11%
+        assert 450 < counts["sentiment"] < 700  # ~56%
+        assert 250 < counts["emotions"] < 450  # ~33%
+
+    def test_proportional_sampler_reproducibility(self):
+        """ProportionalSampler with seed produces reproducible results."""
+        from modeling_studio.trainers.task_sampler import ProportionalSampler
+
+        task_sizes = {"a": 100, "b": 200, "c": 300}
+
+        sampler1 = ProportionalSampler(task_sizes=task_sizes, seed=12345)
+        sampler2 = ProportionalSampler(task_sizes=task_sizes, seed=12345)
+
+        samples1 = [sampler1.sample() for _ in range(100)]
+        samples2 = [sampler2.sample() for _ in range(100)]
+
+        assert samples1 == samples2
+
+
+class TestTemperatureSampler:
+    """Tests for TemperatureSampler."""
+
+    def test_temperature_sampler_init(self):
+        """TemperatureSampler initializes with temperature."""
+        from modeling_studio.trainers.task_sampler import TemperatureSampler
+
+        task_sizes = {"ner": 1000, "sentiment": 5000}
+        sampler = TemperatureSampler(task_sizes=task_sizes, temperature=2.0)
+
+        assert sampler.temperature == 2.0
+        assert sampler.task_sizes == task_sizes
+
+    def test_temperature_sampler_invalid_temperature(self):
+        """TemperatureSampler raises error for temperature <= 0."""
+        from modeling_studio.trainers.task_sampler import TemperatureSampler
+
+        task_sizes = {"a": 100, "b": 200}
+
+        with pytest.raises(ValueError, match="Temperature must be positive"):
+            TemperatureSampler(task_sizes=task_sizes, temperature=0.0)
+
+        with pytest.raises(ValueError, match="Temperature must be positive"):
+            TemperatureSampler(task_sizes=task_sizes, temperature=-1.0)
+
+    def test_temperature_sampler_high_temp_uniform(self):
+        """High temperature → more uniform distribution."""
+        from modeling_studio.trainers.task_sampler import TemperatureSampler
+
+        task_sizes = {"small": 100, "large": 1000}
+
+        # Very high temperature should flatten distribution
+        sampler = TemperatureSampler(task_sizes=task_sizes, temperature=100.0)
+        probs = sampler.probabilities
+
+        # With high temp, probabilities should be more similar
+        assert abs(probs["small"] - probs["large"]) < 0.3
+
+    def test_temperature_sampler_low_temp_peaked(self):
+        """Low temperature → more peaked distribution."""
+        from modeling_studio.trainers.task_sampler import TemperatureSampler
+
+        task_sizes = {"small": 100, "large": 1000}
+
+        # Low temperature should exaggerate size differences
+        sampler = TemperatureSampler(task_sizes=task_sizes, temperature=0.1)
+        probs = sampler.probabilities
+
+        # Large task should dominate
+        assert probs["large"] > 0.9
+
+    def test_temperature_sampler_set_temperature(self):
+        """set_temperature() updates temperature and recomputes probs."""
+        from modeling_studio.trainers.task_sampler import TemperatureSampler
+
+        task_sizes = {"a": 100, "b": 1000}
+        sampler = TemperatureSampler(task_sizes=task_sizes, temperature=1.0)
+
+        probs_before = sampler.probabilities.copy()
+
+        sampler.set_temperature(10.0)
+
+        probs_after = sampler.probabilities
+
+        # Distribution should be more uniform after increasing temperature
+        diff_before = abs(probs_before["a"] - probs_before["b"])
+        diff_after = abs(probs_after["a"] - probs_after["b"])
+
+        assert diff_after < diff_before
+
+    def test_temperature_sampler_set_temperature_invalid(self):
+        """set_temperature() raises error for invalid temperature."""
+        from modeling_studio.trainers.task_sampler import TemperatureSampler
+
+        task_sizes = {"a": 100, "b": 200}
+        sampler = TemperatureSampler(task_sizes=task_sizes, temperature=1.0)
+
+        with pytest.raises(ValueError, match="Temperature must be positive"):
+            sampler.set_temperature(0.0)
+
+
+class TestUniformSampler:
+    """Tests for UniformSampler."""
+
+    def test_uniform_sampler_probabilities(self):
+        """UniformSampler gives equal probability to all tasks."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler = UniformSampler(task_names=["a", "b", "c", "d"])
+        probs = sampler.probabilities
+
+        assert len(probs) == 4
+        for task, prob in probs.items():
+            assert prob == pytest.approx(0.25)
+
+    def test_uniform_sampler_ignores_weights(self):
+        """UniformSampler probabilities are uniform regardless of weights."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        # Even with unequal weights, probabilities should be uniform
+        sampler = UniformSampler(
+            task_names=["a", "b", "c"],
+            task_weights={"a": 10.0, "b": 1.0, "c": 5.0},
+        )
+        probs = sampler.probabilities
+
+        for prob in probs.values():
+            assert prob == pytest.approx(1 / 3)
+
+    def test_uniform_sampler_sample_distribution(self):
+        """UniformSampler produces roughly equal distribution."""
+        from modeling_studio.trainers.task_sampler import UniformSampler
+
+        sampler = UniformSampler(task_names=["a", "b", "c"], seed=42)
+        samples = [sampler.sample() for _ in range(3000)]
+
+        counts = {task: samples.count(task) for task in ["a", "b", "c"]}
+
+        # Each should be ~1000 ± 100
+        for task, count in counts.items():
+            assert 850 < count < 1150, f"Task {task} count {count} outside expected range"
+
+
+class TestSequentialSampler:
+    """Tests for SequentialSampler (round-robin)."""
+
+    def test_sequential_sampler_order(self):
+        """SequentialSampler samples in round-robin order."""
+        from modeling_studio.trainers.task_sampler import SequentialSampler
+
+        sampler = SequentialSampler(task_names=["a", "b", "c"])
+
+        samples = [sampler.sample() for _ in range(9)]
+
+        # Should cycle through tasks
+        assert samples == ["a", "b", "c", "a", "b", "c", "a", "b", "c"]
+
+    def test_sequential_sampler_with_weights(self):
+        """SequentialSampler with weights repeats tasks in cycle."""
+        from modeling_studio.trainers.task_sampler import SequentialSampler
+
+        sampler = SequentialSampler(
+            task_names=["a", "b"],
+            task_weights={"a": 1, "b": 2},  # b repeats twice per cycle
+        )
+
+        samples = [sampler.sample() for _ in range(6)]
+
+        # Cycle is: a, b, b (repeated twice)
+        assert samples == ["a", "b", "b", "a", "b", "b"]
+
+    def test_sequential_sampler_reset(self):
+        """SequentialSampler reset returns to start of cycle."""
+        from modeling_studio.trainers.task_sampler import SequentialSampler
+
+        sampler = SequentialSampler(task_names=["a", "b", "c"])
+
+        # Advance past first task
+        sampler.sample()  # a
+        sampler.sample()  # b
+
+        sampler.reset()
+
+        # Should start from beginning
+        assert sampler.sample() == "a"
+
+    def test_sequential_sampler_probabilities(self):
+        """SequentialSampler probabilities reflect cycle composition."""
+        from modeling_studio.trainers.task_sampler import SequentialSampler
+
+        sampler = SequentialSampler(
+            task_names=["a", "b"],
+            task_weights={"a": 1, "b": 3},
+        )
+
+        probs = sampler.probabilities
+
+        # Cycle has 1 'a' and 3 'b's = 4 total
+        assert probs["a"] == pytest.approx(0.25)
+        assert probs["b"] == pytest.approx(0.75)
+
+    def test_sequential_sampler_update_weights_rebuilds_cycle(self):
+        """update_weights() rebuilds the sampling cycle."""
+        from modeling_studio.trainers.task_sampler import SequentialSampler
+
+        sampler = SequentialSampler(task_names=["a", "b"])
+
+        # Initial cycle: a, b
+        assert sampler.sample() == "a"
+        assert sampler.sample() == "b"
+        assert sampler.sample() == "a"
+
+        # Update weights: now b appears twice
+        sampler.update_weights({"a": 1, "b": 2})
+
+        # Cycle is rebuilt, starts from index 0
+        samples = [sampler.sample() for _ in range(6)]
+        assert samples == ["a", "b", "b", "a", "b", "b"]
+
+
+class TestCurriculumSampler:
+    """Tests for CurriculumSampler."""
+
+    def test_curriculum_sampler_init(self):
+        """CurriculumSampler initializes with curriculum parameters."""
+        from modeling_studio.trainers.task_sampler import CurriculumSampler
+
+        task_sizes = {"easy": 1000, "hard": 500}
+        difficulty_order = ["easy", "hard"]
+
+        sampler = CurriculumSampler(
+            task_names=list(task_sizes.keys()),
+            task_sizes=task_sizes,
+            difficulty_order=difficulty_order,
+            total_steps=10000,
+            warmup_fraction=0.1,
+            schedule="linear",
+        )
+
+        assert sampler.total_steps == 10000
+        assert sampler.warmup_fraction == 0.1
+        assert sampler.schedule == "linear"
+        assert sampler.difficulty_order == ["easy", "hard"]
+
+    def test_curriculum_sampler_stages_early(self):
+        """Early in training, easier tasks have higher probability."""
+        from modeling_studio.trainers.task_sampler import CurriculumSampler
+
+        task_sizes = {"easy": 1000, "hard": 1000}  # Same size
+        difficulty_order = ["easy", "hard"]
+
+        sampler = CurriculumSampler(
+            task_names=list(task_sizes.keys()),
+            task_sizes=task_sizes,
+            difficulty_order=difficulty_order,
+            total_steps=1000,
+            warmup_fraction=0.0,  # No warmup
+            schedule="linear",
+            seed=42,
+        )
+
+        # At step 0, easier task should have higher weight
+        probs_early = sampler.probabilities
+
+        # Easy should dominate early
+        assert probs_early["easy"] > probs_early["hard"]
+
+    def test_curriculum_sampler_stages_late(self):
+        """Late in training, harder tasks gain more weight."""
+        from modeling_studio.trainers.task_sampler import CurriculumSampler
+
+        task_sizes = {"easy": 1000, "hard": 1000}
+        difficulty_order = ["easy", "hard"]
+
+        sampler = CurriculumSampler(
+            task_names=list(task_sizes.keys()),
+            task_sizes=task_sizes,
+            difficulty_order=difficulty_order,
+            total_steps=1000,
+            warmup_fraction=0.0,
+            schedule="linear",
+            seed=42,
+        )
+
+        # Advance to near end
+        for _ in range(999):
+            sampler.sample()
+
+        # At end, hard task should have gained weight
+        probs_late = sampler.probabilities
+
+        # At end of linear schedule with 2 tasks:
+        # progress = 1.0
+        # easy: modifier = (1-0)*(1-1) + 0*1 = 0 -> base * max(0, 0.05) = 0.05
+        # hard: modifier = (1-1)*(1-1) + 1*1 = 1 -> base * 1 = 1.0
+        assert probs_late["hard"] > probs_late["easy"]
+
+    def test_curriculum_sampler_warmup(self):
+        """During warmup, curriculum progress stays at 0."""
+        from modeling_studio.trainers.task_sampler import CurriculumSampler
+
+        task_sizes = {"easy": 1000, "hard": 1000}
+        difficulty_order = ["easy", "hard"]
+
+        sampler = CurriculumSampler(
+            task_names=list(task_sizes.keys()),
+            task_sizes=task_sizes,
+            difficulty_order=difficulty_order,
+            total_steps=1000,
+            warmup_fraction=0.5,  # 50% warmup
+            schedule="linear",
+            seed=42,
+        )
+
+        # Sample during warmup period
+        probs_warmup_start = sampler.probabilities.copy()
+
+        for _ in range(400):  # Still in warmup (< 500)
+            sampler.sample()
+
+        probs_warmup_middle = sampler.probabilities
+
+        # Probabilities should be same during warmup (progress = 0)
+        assert probs_warmup_start["easy"] == pytest.approx(probs_warmup_middle["easy"], rel=0.01)
+
+    def test_curriculum_sampler_exponential_schedule(self):
+        """Exponential schedule works correctly."""
+        from modeling_studio.trainers.task_sampler import CurriculumSampler
+
+        task_sizes = {"easy": 1000, "hard": 1000}
+        sampler = CurriculumSampler(
+            task_names=list(task_sizes.keys()),
+            task_sizes=task_sizes,
+            difficulty_order=["easy", "hard"],
+            total_steps=1000,
+            warmup_fraction=0.0,
+            schedule="exponential",
+            seed=42,
+        )
+
+        probs_early = sampler.probabilities.copy()
+        assert probs_early["easy"] > probs_early["hard"]
+
+        # Advance
+        for _ in range(999):
+            sampler.sample()
+
+        probs_late = sampler.probabilities
+        assert probs_late["hard"] > probs_late["easy"]
+
+    def test_curriculum_sampler_step_schedule(self):
+        """Step schedule works with discrete transitions."""
+        from modeling_studio.trainers.task_sampler import CurriculumSampler
+
+        task_sizes = {"easy": 1000, "medium": 1000, "hard": 1000}
+        sampler = CurriculumSampler(
+            task_names=list(task_sizes.keys()),
+            task_sizes=task_sizes,
+            difficulty_order=["easy", "medium", "hard"],
+            total_steps=1000,
+            warmup_fraction=0.0,
+            schedule="step",
+            seed=42,
+        )
+
+        # Early (< 33% progress, step_count=0):
+        # difficulty_rank: easy=0, medium=0.5, hard=1
+        # Step logic: if rank < 0.33 -> 1.0, else -> 0.1
+        # easy: rank=0 < 0.33 → modifier=1.0
+        # medium: rank=0.5 >= 0.33 → modifier=0.1
+        # hard: rank=1 >= 0.33 → modifier=0.1
+        probs = sampler.probabilities
+
+        # Easy should dominate (modifier=1.0 vs 0.1)
+        assert probs["easy"] > probs["hard"]
+        # Medium and hard should be approximately equal (both 0.1 modifier)
+        assert probs["medium"] == pytest.approx(probs["hard"], rel=0.01)
+
+
+class TestCreateSamplerFactory:
+    """Tests for create_sampler factory function."""
+
+    def test_create_sampler_proportional(self):
+        """create_sampler creates ProportionalSampler."""
+        from modeling_studio.trainers.task_sampler import ProportionalSampler, create_sampler
+
+        sampler = create_sampler(
+            strategy="proportional",
+            task_sizes={"a": 100, "b": 200},
+        )
+
+        assert isinstance(sampler, ProportionalSampler)
+
+    def test_create_sampler_temperature(self):
+        """create_sampler creates TemperatureSampler with kwargs."""
+        from modeling_studio.trainers.task_sampler import TemperatureSampler, create_sampler
+
+        sampler = create_sampler(
+            strategy="temperature",
+            task_sizes={"a": 100, "b": 200},
+            temperature=2.5,
+        )
+
+        assert isinstance(sampler, TemperatureSampler)
+        assert sampler.temperature == 2.5
+
+    def test_create_sampler_uniform(self):
+        """create_sampler creates UniformSampler."""
+        from modeling_studio.trainers.task_sampler import UniformSampler, create_sampler
+
+        sampler = create_sampler(
+            strategy="uniform",
+            task_sizes={"a": 100, "b": 200},
+        )
+
+        assert isinstance(sampler, UniformSampler)
+
+    def test_create_sampler_sequential(self):
+        """create_sampler creates SequentialSampler."""
+        from modeling_studio.trainers.task_sampler import SequentialSampler, create_sampler
+
+        sampler = create_sampler(
+            strategy="sequential",
+            task_sizes={"a": 100, "b": 200},
+        )
+
+        assert isinstance(sampler, SequentialSampler)
+
+    def test_create_sampler_curriculum(self):
+        """create_sampler creates CurriculumSampler with kwargs."""
+        from modeling_studio.trainers.task_sampler import CurriculumSampler, create_sampler
+
+        sampler = create_sampler(
+            strategy="curriculum",
+            task_sizes={"a": 100, "b": 200},
+            difficulty_order=["a", "b"],
+            total_steps=5000,
+            schedule="exponential",
+        )
+
+        assert isinstance(sampler, CurriculumSampler)
+        assert sampler.total_steps == 5000
+        assert sampler.schedule == "exponential"
+
+    def test_create_sampler_invalid_strategy(self):
+        """create_sampler raises error for unknown strategy."""
+        from modeling_studio.trainers.task_sampler import create_sampler
+
+        with pytest.raises(ValueError, match="Unknown sampling strategy"):
+            create_sampler(
+                strategy="invalid",
+                task_sizes={"a": 100},
+            )
+
+
+# =============================================================================
+# Issue 4.2.2: Task Weighting Tests
+# =============================================================================
+
+
+class TestUncertaintyWeighting:
+    """Tests for UncertaintyWeighting module."""
+
+    def test_uncertainty_weighting_init(self):
+        """UncertaintyWeighting initializes with num_tasks."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=3)
+
+        assert weighting.num_tasks == 3
+        assert len(weighting.log_vars) == 3
+
+    def test_uncertainty_weighting_forward(self):
+        """UncertaintyWeighting forward computes weighted loss."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=2)
+
+        losses = [
+            torch.tensor(1.0, requires_grad=True),
+            torch.tensor(2.0, requires_grad=True),
+        ]
+
+        total_loss = weighting(losses)
+
+        # Should return a scalar tensor
+        assert total_loss.dim() == 0
+        assert total_loss.requires_grad
+
+    def test_uncertainty_weighting_learns(self):
+        """UncertaintyWeighting log_vars are learnable parameters."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=2)
+
+        # log_vars should be nn.Parameter
+        assert isinstance(weighting.log_vars, torch.nn.Parameter)
+        assert weighting.log_vars.requires_grad
+
+        # Can do backward
+        losses = [torch.tensor(1.0), torch.tensor(2.0)]
+        total = weighting(losses)
+        total.backward()
+
+        assert weighting.log_vars.grad is not None
+
+    def test_uncertainty_weighting_get_weights(self):
+        """get_weights() returns precision weights."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=2)
+
+        weights = weighting.get_weights()
+
+        assert 0 in weights
+        assert 1 in weights
+        # Weights are exp(-log_var), initialized log_vars are 0
+        # So initial weights should be exp(0) = 1.0
+        assert weights[0] == pytest.approx(1.0, rel=0.01)
+
+    def test_uncertainty_weighting_get_log_vars(self):
+        """get_log_vars() returns current log variance values."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=2)
+
+        log_vars = weighting.get_log_vars()
+
+        assert 0 in log_vars
+        assert 1 in log_vars
+        # Initial log_vars are 0
+        assert log_vars[0] == pytest.approx(0.0, abs=0.01)
+
+    def test_uncertainty_weighting_none_loss(self):
+        """UncertaintyWeighting skips None/empty losses."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=3)
+
+        losses = [
+            torch.tensor(1.0),
+            None,  # Should be skipped
+            torch.tensor(2.0),
+        ]
+
+        total_loss = weighting(losses)
+
+        # Should not error, only indices 0 and 2 contribute
+        assert total_loss.dim() == 0
+
+    def test_uncertainty_weighting_formula(self):
+        """Verify the uncertainty weighting formula."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=1)
+
+        # Set log_var to known value
+        with torch.no_grad():
+            weighting.log_vars[0] = 1.0  # log(σ²) = 1 → σ² = e
+
+        losses = [torch.tensor(2.0)]
+        total = weighting(losses)
+
+        # Formula: 0.5 * exp(-log_var) * loss + 0.5 * log_var
+        # = 0.5 * exp(-1) * 2.0 + 0.5 * 1.0
+        # = 0.5 * 0.3679 * 2.0 + 0.5
+        # = 0.3679 + 0.5 = 0.8679
+        expected = 0.5 * math.exp(-1) * 2.0 + 0.5 * 1.0
+        assert total.item() == pytest.approx(expected, rel=0.01)
+
+    def test_uncertainty_weighting_wrong_num_losses(self):
+        """UncertaintyWeighting raises error for wrong number of losses."""
+        from modeling_studio.trainers.task_weighting import UncertaintyWeighting
+
+        weighting = UncertaintyWeighting(num_tasks=3)
+
+        # Only provide 2 losses but expect 3
+        losses = [torch.tensor(1.0), torch.tensor(2.0)]
+
+        with pytest.raises(ValueError, match="Expected 3 losses"):
+            weighting(losses)
+
+
+class TestStaticWeighting:
+    """Tests for StaticWeighting module."""
+
+    def test_static_weighting_init(self):
+        """StaticWeighting initializes with fixed weights."""
+        from modeling_studio.trainers.task_weighting import StaticWeighting
+
+        weights = {0: 1.0, 1: 2.0, 2: 0.5}
+        weighting = StaticWeighting(weights=weights, num_tasks=3)
+
+        assert weighting.num_tasks == 3
+
+    def test_static_weighting_forward(self):
+        """StaticWeighting forward computes weighted sum."""
+        from modeling_studio.trainers.task_weighting import StaticWeighting
+
+        weights = {0: 2.0, 1: 1.0}
+        weighting = StaticWeighting(weights=weights, num_tasks=2)
+
+        losses = [
+            torch.tensor(1.0),  # weight 2.0
+            torch.tensor(2.0),  # weight 1.0
+        ]
+
+        total = weighting(losses)
+
+        # total = 2.0 * 1.0 + 1.0 * 2.0 = 4.0
+        assert total.item() == pytest.approx(4.0)
+
+    def test_static_weighting_skips_none(self):
+        """StaticWeighting skips None losses."""
+        from modeling_studio.trainers.task_weighting import StaticWeighting
+
+        weights = {0: 1.0, 1: 1.0}
+        weighting = StaticWeighting(weights=weights, num_tasks=2)
+
+        losses = [torch.tensor(3.0), None]
+
+        total = weighting(losses)
+
+        # Only first loss contributes
+        assert total.item() == pytest.approx(3.0)
+
+    def test_static_weighting_default_weights(self):
+        """StaticWeighting defaults missing weights to 1.0."""
+        from modeling_studio.trainers.task_weighting import StaticWeighting
+
+        # Only specify weight for task 0
+        weights = {0: 5.0}
+        weighting = StaticWeighting(weights=weights, num_tasks=2)
+
+        losses = [torch.tensor(1.0), torch.tensor(2.0)]
+        total = weighting(losses)
+
+        # total = 5.0 * 1.0 + 1.0 * 2.0 = 7.0
+        assert total.item() == pytest.approx(7.0)
+
+
+class TestDynamicTemperatureWeighting:
+    """Tests for DynamicTemperatureWeighting module."""
+
+    def test_dynamic_temperature_weighting_init(self):
+        """DynamicTemperatureWeighting initializes correctly."""
+        from modeling_studio.trainers.task_weighting import DynamicTemperatureWeighting
+
+        weighting = DynamicTemperatureWeighting(num_tasks=3, temperature=2.0)
+
+        assert weighting.num_tasks == 3
+        assert weighting.temperature.item() == pytest.approx(2.0)
+
+    def test_dynamic_temperature_learnable(self):
+        """DynamicTemperatureWeighting has learnable temperature."""
+        from modeling_studio.trainers.task_weighting import DynamicTemperatureWeighting
+
+        weighting = DynamicTemperatureWeighting(num_tasks=2)
+
+        # Temperature should be a learnable parameter
+        assert isinstance(weighting.temperature, torch.nn.Parameter)
+        assert weighting.temperature.requires_grad
+
+    def test_dynamic_temperature_forward(self):
+        """DynamicTemperatureWeighting forward computes softmax-weighted loss."""
+        from modeling_studio.trainers.task_weighting import DynamicTemperatureWeighting
+
+        weighting = DynamicTemperatureWeighting(num_tasks=2, temperature=1.0)
+
+        losses = [
+            torch.tensor(1.0),
+            torch.tensor(2.0),
+        ]
+
+        total = weighting(losses)
+
+        # Should be a scalar
+        assert total.dim() == 0
+        assert total.requires_grad
+
+    def test_dynamic_temperature_with_init_weights(self):
+        """DynamicTemperatureWeighting respects initial weights."""
+        from modeling_studio.trainers.task_weighting import DynamicTemperatureWeighting
+
+        init_weights = [1.0, 10.0]  # Second task has higher weight
+        weighting = DynamicTemperatureWeighting(
+            num_tasks=2,
+            init_weights=init_weights,
+            temperature=1.0,
+        )
+
+        # log_weights should be log of init_weights
+        expected_log_weights = torch.log(torch.tensor(init_weights))
+        assert torch.allclose(weighting.log_weights.data, expected_log_weights)
+
+
+class TestGradNormWeighting:
+    """Tests for GradNormWeighting module."""
+
+    def test_gradnorm_weighting_init(self):
+        """GradNormWeighting initializes correctly."""
+        from modeling_studio.trainers.task_weighting import GradNormWeighting
+
+        weighting = GradNormWeighting(num_tasks=2, alpha=1.5)
+
+        assert weighting.num_tasks == 2
+        assert weighting.alpha == 1.5
+
+    def test_gradnorm_weighting_forward(self):
+        """GradNormWeighting forward computes weighted sum."""
+        from modeling_studio.trainers.task_weighting import GradNormWeighting
+
+        weighting = GradNormWeighting(num_tasks=2)
+
+        losses = [torch.tensor(1.0), torch.tensor(2.0)]
+        total = weighting(losses)
+
+        assert total.dim() == 0
+
+    def test_gradnorm_weighting_weights_learnable(self):
+        """GradNormWeighting has learnable weights."""
+        from modeling_studio.trainers.task_weighting import GradNormWeighting
+
+        weighting = GradNormWeighting(num_tasks=2)
+
+        # Weights should be learnable
+        assert weighting.weights.requires_grad
+
+    def test_gradnorm_weighting_initializes_on_first_forward(self):
+        """GradNormWeighting tracks initial losses on first forward."""
+        from modeling_studio.trainers.task_weighting import GradNormWeighting
+
+        weighting = GradNormWeighting(num_tasks=2)
+
+        assert not weighting.initialized
+
+        losses = [torch.tensor(1.0), torch.tensor(2.0)]
+        weighting(losses)
+
+        assert weighting.initialized
+        assert weighting.initial_losses[0] == pytest.approx(1.0)
+        assert weighting.initial_losses[1] == pytest.approx(2.0)
+
+
+# =============================================================================
+# Issue 4.2.3: Curriculum Tests
+# =============================================================================
+
+
+class TestTaskDifficultyEnum:
+    """Tests for TaskDifficulty enum."""
+
+    def test_task_difficulty_enum_values(self):
+        """TaskDifficulty enum has correct values."""
+        from modeling_studio.trainers.curriculum import TaskDifficulty
+
+        assert TaskDifficulty.EASY.value == 1
+        assert TaskDifficulty.MEDIUM.value == 2
+        assert TaskDifficulty.HARD.value == 3
+        assert TaskDifficulty.VERY_HARD.value == 4
+
+    def test_task_difficulty_ordering(self):
+        """TaskDifficulty enum values support ordering via value comparison."""
+        from modeling_studio.trainers.curriculum import TaskDifficulty
+
+        # Enum members don't directly support < comparison,
+        # but their values do
+        assert TaskDifficulty.EASY.value < TaskDifficulty.MEDIUM.value
+        assert TaskDifficulty.MEDIUM.value < TaskDifficulty.HARD.value
+        assert TaskDifficulty.HARD.value < TaskDifficulty.VERY_HARD.value
+
+    def test_task_difficulty_iteration(self):
+        """TaskDifficulty enum can be iterated."""
+        from modeling_studio.trainers.curriculum import TaskDifficulty
+
+        difficulties = list(TaskDifficulty)
+        assert len(difficulties) == 4
+        assert difficulties[0] == TaskDifficulty.EASY
+        assert difficulties[-1] == TaskDifficulty.VERY_HARD
+
+
+class TestDefaultTaskDifficulty:
+    """Tests for DEFAULT_TASK_DIFFICULTY mapping."""
+
+    def test_default_task_difficulty_has_all_tasks(self):
+        """DEFAULT_TASK_DIFFICULTY maps all 12 standard tasks."""
+        from modeling_studio.trainers.curriculum import DEFAULT_TASK_DIFFICULTY
+
+        expected_tasks = {
+            "sentiment",
+            "emotions",
+            "ner_general",
+            "nli",
+            "embedding",
+            "safety_generic",
+            "temporal",
+            "ner_family",
+            "ingress",
+            "intent",
+            "relation",
+            "safety_familyos",
+        }
+
+        assert set(DEFAULT_TASK_DIFFICULTY.keys()) == expected_tasks
+
+    def test_default_task_difficulty_values(self):
+        """DEFAULT_TASK_DIFFICULTY has correct difficulty assignments."""
+        from modeling_studio.trainers.curriculum import (
+            DEFAULT_TASK_DIFFICULTY,
+            TaskDifficulty,
+        )
+
+        # Easy tasks
+        assert DEFAULT_TASK_DIFFICULTY["sentiment"] == TaskDifficulty.EASY
+
+        # Very hard tasks
+        assert DEFAULT_TASK_DIFFICULTY["safety_familyos"] == TaskDifficulty.VERY_HARD
+
+
+class TestCurriculumStage:
+    """Tests for CurriculumStage dataclass."""
+
+    def test_curriculum_stage_init(self):
+        """CurriculumStage initializes correctly."""
+        from modeling_studio.trainers.curriculum import CurriculumStage
+
+        stage = CurriculumStage(
+            tasks=["ner", "sentiment"],
+            epochs=3,
+            description="Stage 1",
+        )
+
+        assert stage.tasks == ["ner", "sentiment"]
+        assert stage.epochs == 3
+        assert stage.description == "Stage 1"
+
+    def test_curriculum_stage_with_weights(self):
+        """CurriculumStage can have task weights."""
+        from modeling_studio.trainers.curriculum import CurriculumStage
+
+        stage = CurriculumStage(
+            tasks=["a", "b"],
+            epochs=2,
+            task_weights={"a": 2.0, "b": 1.0},
+        )
+
+        assert stage.task_weights == {"a": 2.0, "b": 1.0}
+
+    def test_curriculum_stage_get_task_list(self):
+        """get_task_list() returns list of tasks."""
+        from modeling_studio.trainers.curriculum import CurriculumStage
+
+        stage = CurriculumStage(tasks=["x", "y", "z"], epochs=1)
+        # get_task_list requires all_tasks parameter
+        all_tasks = ["x", "y", "z", "w"]
+        task_list = stage.get_task_list(all_tasks)
+
+        assert task_list == ["x", "y", "z"]
+
+    def test_curriculum_stage_all_tasks_placeholder(self):
+        """tasks="all" is a placeholder for all available tasks."""
+        from modeling_studio.trainers.curriculum import CurriculumStage
+
+        stage = CurriculumStage(tasks="all", epochs=1)
+
+        # "all" is just stored as-is; expansion happens in scheduler
+        assert stage.tasks == "all"
+
+
+class TestCurriculumConfig:
+    """Tests for CurriculumConfig dataclass."""
+
+    def test_curriculum_config_init(self):
+        """CurriculumConfig initializes with stages."""
+        from modeling_studio.trainers.curriculum import CurriculumConfig, CurriculumStage
+
+        stages = [
+            CurriculumStage(tasks=["a"], epochs=2),
+            CurriculumStage(tasks=["a", "b"], epochs=3),
+        ]
+
+        config = CurriculumConfig(stages=stages)
+
+        assert len(config.stages) == 2
+        assert config.auto_difficulty_order is False  # default is False
+
+    def test_curriculum_config_options(self):
+        """CurriculumConfig supports various options."""
+        from modeling_studio.trainers.curriculum import CurriculumConfig, CurriculumStage
+
+        config = CurriculumConfig(
+            stages=[CurriculumStage(tasks=["a"], epochs=1)],
+            auto_difficulty_order=True,
+            loss_threshold_for_progression=0.5,
+            warmup_epochs=2,
+        )
+
+        assert config.auto_difficulty_order is True
+        assert config.loss_threshold_for_progression == 0.5
+        assert config.warmup_epochs == 2
+
+
+class TestCurriculumScheduler:
+    """Tests for CurriculumScheduler."""
+
+    def test_curriculum_scheduler_init(self):
+        """CurriculumScheduler initializes with stages config."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a", "b"], "epochs": 3},
+            {"tasks": ["a", "b", "c"], "epochs": 2},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        assert scheduler.num_stages == 2
+        assert scheduler.total_epochs == 5
+
+    def test_curriculum_scheduler_get_active_tasks(self):
+        """get_active_tasks() returns tasks for given epoch."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a"], "epochs": 2},
+            {"tasks": ["a", "b"], "epochs": 2},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        # Epoch 0, 1 → stage 0 → ["a"]
+        assert scheduler.get_active_tasks(0) == ["a"]
+        assert scheduler.get_active_tasks(1) == ["a"]
+
+        # Epoch 2, 3 → stage 1 → ["a", "b"]
+        assert scheduler.get_active_tasks(2) == ["a", "b"]
+        assert scheduler.get_active_tasks(3) == ["a", "b"]
+
+    def test_curriculum_scheduler_stage_progression(self):
+        """CurriculumScheduler correctly progresses through stages."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a"], "epochs": 1, "description": "Stage 1"},
+            {"tasks": ["b"], "epochs": 1, "description": "Stage 2"},
+            {"tasks": ["c"], "epochs": 1, "description": "Stage 3"},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        assert scheduler.get_stage_info(0)["stage_index"] == 0
+        assert scheduler.get_stage_info(1)["stage_index"] == 1
+        assert scheduler.get_stage_info(2)["stage_index"] == 2
+
+    def test_curriculum_scheduler_epoch_mapping(self):
+        """Epochs correctly map to stages."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a"], "epochs": 3},
+            {"tasks": ["b"], "epochs": 2},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        # Stage 0: epochs 0, 1, 2
+        for epoch in [0, 1, 2]:
+            info = scheduler.get_stage_info(epoch)
+            assert info["stage_index"] == 0
+
+        # Stage 1: epochs 3, 4
+        for epoch in [3, 4]:
+            info = scheduler.get_stage_info(epoch)
+            assert info["stage_index"] == 1
+
+    def test_curriculum_scheduler_get_task_weights(self):
+        """get_task_weights() returns weights for stage."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a", "b"], "epochs": 2, "task_weights": {"a": 2.0, "b": 1.0}},
+            {"tasks": ["a", "b"], "epochs": 1},  # No weights
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        weights_stage0 = scheduler.get_task_weights(0)
+        assert weights_stage0 == {"a": 2.0, "b": 1.0}
+
+        weights_stage1 = scheduler.get_task_weights(2)
+        assert weights_stage1 is None
+
+    def test_curriculum_scheduler_is_task_active(self):
+        """is_task_active() checks if task is active in epoch."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a"], "epochs": 2},
+            {"tasks": ["a", "b"], "epochs": 2},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        assert scheduler.is_task_active("a", 0) is True
+        assert scheduler.is_task_active("b", 0) is False
+
+        assert scheduler.is_task_active("a", 2) is True
+        assert scheduler.is_task_active("b", 2) is True
+
+    def test_curriculum_scheduler_all_tasks_expansion(self):
+        """'all' tasks placeholder expands to all_tasks."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        all_tasks = ["a", "b", "c", "d"]
+        stages = [
+            {"tasks": ["a"], "epochs": 2},
+            {"tasks": "all", "epochs": 2},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages, all_tasks=all_tasks)
+
+        # Stage 1 should expand "all" to all_tasks
+        assert set(scheduler.get_active_tasks(2)) == set(all_tasks)
+
+    def test_curriculum_scheduler_step(self):
+        """step() advances epoch and returns stage info."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a"], "epochs": 2},
+            {"tasks": ["b"], "epochs": 1},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        info = scheduler.step()
+        assert info["stage_index"] == 0
+
+        info = scheduler.step()
+        assert info["stage_index"] == 0
+
+        info = scheduler.step()
+        assert info["stage_index"] == 1
+
+    def test_curriculum_scheduler_reset(self):
+        """reset() returns scheduler to beginning."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a"], "epochs": 2},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        scheduler.step()
+        scheduler.step()
+
+        scheduler.reset()
+
+        info = scheduler.step()
+        assert info["stage_index"] == 0
+
+    def test_curriculum_scheduler_repr(self):
+        """CurriculumScheduler has useful repr."""
+        from modeling_studio.trainers.curriculum import CurriculumScheduler
+
+        stages = [
+            {"tasks": ["a", "b"], "epochs": 3},
+            {"tasks": ["a", "b", "c"], "epochs": 2},
+        ]
+
+        scheduler = CurriculumScheduler(stages=stages)
+
+        repr_str = repr(scheduler)
+        assert "CurriculumScheduler" in repr_str
+        assert "stages=2" in repr_str
+        assert "total_epochs=5" in repr_str
+
+
+class TestCurriculumFactoryFunctions:
+    """Tests for curriculum factory functions."""
+
+    def test_create_stage_a_to_b_curriculum(self):
+        """create_stage_a_to_b_curriculum creates valid scheduler."""
+        from modeling_studio.trainers.curriculum import create_stage_a_to_b_curriculum
+
+        scheduler = create_stage_a_to_b_curriculum(
+            stage_a_epochs=3,
+            mixed_epochs=2,
+            stage_b_epochs=1,
+        )
+
+        assert scheduler.num_stages == 4
+        assert scheduler.total_epochs == 6
+
+        # First stage should have Stage A tasks
+        stage_a_tasks = scheduler.get_active_tasks(0)
+        assert "sentiment" in stage_a_tasks
+        assert "ner_general" in stage_a_tasks
+
+    def test_create_difficulty_based_curriculum(self):
+        """create_difficulty_based_curriculum creates scheduler from difficulties."""
+        from modeling_studio.trainers.curriculum import create_difficulty_based_curriculum
+
+        scheduler = create_difficulty_based_curriculum(epochs_per_difficulty=2)
+
+        # Should have 4 stages (one per difficulty level)
+        assert scheduler.num_stages == 4
+        assert scheduler.total_epochs == 8
+
+        # Easy tasks should be in first stage
+        easy_tasks = scheduler.get_active_tasks(0)
+        assert "sentiment" in easy_tasks or "emotions" in easy_tasks
+
+    def test_create_safety_focused_curriculum(self):
+        """create_safety_focused_curriculum emphasizes safety tasks."""
+        from modeling_studio.trainers.curriculum import create_safety_focused_curriculum
+
+        scheduler = create_safety_focused_curriculum(
+            warmup_epochs=1,
+            safety_emphasis_epochs=3,
+            full_training_epochs=1,
+        )
+
+        assert scheduler.num_stages == 3
+        assert scheduler.total_epochs == 5
+
+        # Stage 1 should have high weight for safety
+        weights = scheduler.get_task_weights(1)
+        assert weights is not None
+        assert weights.get("safety_familyos", 0) > weights.get("safety_generic", 0)
+
+
+class TestCurriculumCallback:
+    """Tests for CurriculumCallback."""
+
+    def test_curriculum_callback_init(self):
+        """CurriculumCallback initializes with scheduler."""
+        from modeling_studio.trainers.curriculum import (
+            CurriculumCallback,
+            CurriculumScheduler,
+        )
+
+        stages = [{"tasks": ["a"], "epochs": 2}]
+        scheduler = CurriculumScheduler(stages=stages)
+
+        callback = CurriculumCallback(scheduler=scheduler)
+
+        assert callback.scheduler is scheduler
+
+    def test_curriculum_callback_on_epoch_begin(self):
+        """on_epoch_begin() returns stage info."""
+        from modeling_studio.trainers.curriculum import (
+            CurriculumCallback,
+            CurriculumScheduler,
+        )
+
+        stages = [
+            {"tasks": ["a"], "epochs": 1, "description": "Stage 1"},
+            {"tasks": ["b"], "epochs": 1, "description": "Stage 2"},
+        ]
+        scheduler = CurriculumScheduler(stages=stages)
+        callback = CurriculumCallback(scheduler=scheduler)
+
+        info0 = callback.on_epoch_begin(0)
+        assert info0["active_tasks"] == ["a"]
+
+        info1 = callback.on_epoch_begin(1)
+        assert info1["active_tasks"] == ["b"]
+
+    def test_curriculum_callback_get_methods(self):
+        """Callback get methods delegate to scheduler."""
+        from modeling_studio.trainers.curriculum import (
+            CurriculumCallback,
+            CurriculumScheduler,
+        )
+
+        stages = [{"tasks": ["a", "b"], "epochs": 2, "task_weights": {"a": 2.0}}]
+        scheduler = CurriculumScheduler(stages=stages)
+        callback = CurriculumCallback(scheduler=scheduler)
+
+        assert callback.get_active_tasks(0) == ["a", "b"]
+        assert callback.get_task_weights(0) == {"a": 2.0}
