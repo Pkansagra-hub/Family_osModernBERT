@@ -1197,8 +1197,8 @@ class TestEnhancedSafetyHeadAdvanced:
         texts = ["Hello world", "I want to kill myself", "Nice day", "suicide thoughts"]
 
         output = head(
-            sample_hidden_states[:len(texts)],
-            sample_attention_mask[:len(texts)],
+            sample_hidden_states[: len(texts)],
+            sample_attention_mask[: len(texts)],
             text=texts,
         )
 
