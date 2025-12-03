@@ -258,7 +258,7 @@ print(result.entities)       # []
 │                                                                                         │
 │   ┌─────────────────────────┐                    ┌─────────────────────────┐            │
 │   │   ModernBERT-base       │                    │   Stage A Checkpoint    │            │
-│   │   (149M parameters)     │ ──────────────────▶│   + LoRA Adapters       │            │
+│   │   (149M parameters)     │ ──────────────────▶│   + LoRA Adapters      │            │
 │   └─────────────────────────┘                    └─────────────────────────┘            │
 │                                                                                         │
 │   Datasets:                                      Datasets:                              │
@@ -299,19 +299,19 @@ FamilyOS implements a **4-band safety classification** system designed for famil
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                     │
-│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐                     │
-│   │  GREEN   │    │  AMBER   │    │   RED    │    │  CRISIS  │                     │
-│   │   ✓ ✓    │    │    ⚠     │    │    ⛔    │    │   🚨🚨   │                     │
-│   └──────────┘    └──────────┘    └──────────┘    └──────────┘                     │
+│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐                      │
+│   │  GREEN   │    │  AMBER   │    │   RED    │    │  CRISIS  │                      │
+│   │   ✓ ✓   │    │    ⚠     │    │    ⛔   │    │   🚨🚨  │                      │
+│   └──────────┘    └──────────┘    └──────────┘    └──────────┘                      │
 │                                                                                     │
-│   Safe content     Needs review    Escalate        Immediate                       │
-│   Normal flow      Flag for K1     to supervisor   intervention                    │
+│   Safe content     Needs review    Escalate        Immediate                        │
+│   Normal flow      Flag for K1     to supervisor   intervention                     │
 │                                                                                     │
 │   Examples:        Examples:       Examples:       Examples:                        │
-│   • Daily logs     • Stress        • Persistent    • Self-harm                     │
-│   • Happy moments  • Frustration     sadness       • Suicide                       │
-│   • Routines       • Mild concern  • Isolation       ideation                      │
-│                                    • Hopelessness  • Harm to                       │
+│   • Daily logs     • Stress        • Persistent    • Self-harm                      │
+│   • Happy moments  • Frustration     sadness       • Suicide                        │
+│   • Routines       • Mild concern  • Isolation       ideation                       │
+│                                    • Hopelessness  • Harm to                        │
 │                                                      others                         │
 │                                                                                     │
 └─────────────────────────────────────────────────────────────────────────────────────┘
