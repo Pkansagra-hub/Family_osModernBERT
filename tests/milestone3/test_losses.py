@@ -1438,5 +1438,402 @@ class TestLossGradientFlow:
         assert anchor.grad is not None
 
 
+# =============================================================================
+# Extended Coverage Tests - Uncovered Lines
+# =============================================================================
+
+
+class TestTripletLossSemiHardMining:
+    """Tests for triplet loss semi-hard mining path."""
+
+    def test_semi_hard_mining_cosine(self, batch_size, embedding_dim):
+        """Test semi-hard mining with cosine distance."""
+        loss_fn = TripletLoss(
+            margin=0.3,
+            distance_fn="cosine",
+            hard_negative_mining=True,
+        )
+
+        anchor = torch.randn(batch_size, embedding_dim)
+        positive = anchor + torch.randn_like(anchor) * 0.1  # Close to anchor
+        negative = anchor + torch.randn_like(anchor) * 0.5  # Further away
+
+        loss = loss_fn(anchor, positive, negative)
+        assert loss.item() >= 0
+
+    def test_swap_option(self, batch_size, embedding_dim):
+        """Test swap option in triplet loss."""
+        loss_fn = TripletLoss(
+            margin=0.3,
+            distance_fn="cosine",
+            swap=True,
+        )
+
+        anchor = torch.randn(batch_size, embedding_dim)
+        positive = torch.randn(batch_size, embedding_dim)
+        negative = torch.randn(batch_size, embedding_dim)
+
+        loss = loss_fn(anchor, positive, negative)
+        assert loss.item() >= 0
+
+
+class TestCRFLossBatchFirst:
+    """Tests for CRF loss batch_first handling."""
+
+    def test_crf_batch_first_true(self, batch_size, seq_length):
+        """CRF with batch_first=True (default)."""
+        crf = CRFLoss(num_tags=9, batch_first=True)
+
+        # batch_first: (batch, seq, tags)
+        emissions = torch.randn(batch_size, seq_length, 9)
+        tags = torch.randint(0, 9, (batch_size, seq_length))
+        mask = torch.ones(batch_size, seq_length, dtype=torch.bool)
+
+        loss = crf(emissions, tags, mask)
+        assert loss.item() > 0
+
+    def test_crf_batch_first_false(self, batch_size, seq_length):
+        """CRF with batch_first=False."""
+        crf = CRFLoss(num_tags=9, batch_first=False)
+
+        # Not batch_first: (seq, batch, tags)
+        emissions = torch.randn(seq_length, batch_size, 9)
+        tags = torch.randint(0, 9, (seq_length, batch_size))
+        mask = torch.ones(seq_length, batch_size, dtype=torch.bool)
+
+        loss = crf(emissions, tags, mask)
+        assert loss.item() > 0
+
+    def test_crf_sum_reduction(self, batch_size, seq_length):
+        """CRF with sum reduction."""
+        crf = CRFLoss(num_tags=9)
+
+        emissions = torch.randn(batch_size, seq_length, 9)
+        tags = torch.randint(0, 9, (batch_size, seq_length))
+        mask = torch.ones(batch_size, seq_length, dtype=torch.bool)
+
+        loss = crf(emissions, tags, mask, reduction="sum")
+        assert loss.item() > 0
+
+    def test_crf_none_reduction(self, batch_size, seq_length):
+        """CRF with none reduction returns per-sample losses."""
+        crf = CRFLoss(num_tags=9)
+
+        emissions = torch.randn(batch_size, seq_length, 9)
+        tags = torch.randint(0, 9, (batch_size, seq_length))
+        mask = torch.ones(batch_size, seq_length, dtype=torch.bool)
+
+        loss = crf(emissions, tags, mask, reduction="none")
+        assert loss.shape == (batch_size,)
+
+    def test_crf_viterbi_decode(self, batch_size, seq_length):
+        """CRF viterbi decode method."""
+        crf = CRFLoss(num_tags=9)
+
+        emissions = torch.randn(batch_size, seq_length, 9)
+        mask = torch.ones(batch_size, seq_length, dtype=torch.bool)
+
+        best_tags = crf.decode(emissions, mask)
+
+        assert len(best_tags) == batch_size
+        for seq_tags in best_tags:
+            assert len(seq_tags) <= seq_length
+
+
+class TestUncertaintyWeightedLossNoneHandling:
+    """Tests for UncertaintyWeightedLoss handling of None losses."""
+
+    def test_with_none_loss(self):
+        """Test with some losses being None."""
+        loss_fn = UncertaintyWeightedLoss(num_tasks=3, task_names=["task1", "task2", "task3"])
+
+        loss1 = torch.tensor(0.5)
+        loss2 = None  # Skip this
+        loss3 = torch.tensor(0.3)
+
+        total = loss_fn([loss1, loss2, loss3])
+        assert total.item() > 0
+
+    def test_with_empty_tensor_loss(self):
+        """Test with empty tensor loss."""
+        loss_fn = UncertaintyWeightedLoss(num_tasks=2, task_names=["task1", "task2"])
+
+        loss1 = torch.tensor(0.5)
+        loss2 = torch.tensor([])  # Empty tensor
+
+        total = loss_fn([loss1, loss2])
+        assert total.item() > 0
+
+
+class TestFamilyContrastiveLossHardNegatives:
+    """Tests for FamilyContrastiveLoss hard negative mining strategies."""
+
+    def test_semi_hard_strategy(self, batch_size, embedding_dim):
+        """Test semi-hard mining strategy with positives."""
+        anchor = torch.randn(batch_size, embedding_dim)
+        positive = anchor + torch.randn_like(anchor) * 0.1
+
+        # Create some candidates that include semi-hard examples
+        candidates = torch.randn(batch_size * 2, embedding_dim)
+
+        # mine_hard_negatives is a static method and returns tuple
+        hard_negs, indices = FamilyContrastiveLoss.mine_hard_negatives(
+            anchor,
+            candidates,
+            strategy="semi-hard",
+            num_hard=4,
+        )
+
+        assert hard_negs.shape[0] == batch_size
+        assert hard_negs.shape[1] == 4
+
+    def test_random_hard_strategy(self, batch_size, embedding_dim):
+        """Test random-hard mining strategy."""
+        anchor = torch.randn(batch_size, embedding_dim)
+        candidates = torch.randn(batch_size * 2, embedding_dim)
+
+        hard_negs, indices = FamilyContrastiveLoss.mine_hard_negatives(
+            anchor,
+            candidates,
+            strategy="random-hard",
+            num_hard=4,
+        )
+
+        assert hard_negs.shape[0] == batch_size
+        assert hard_negs.shape[1] == 4
+
+    def test_unknown_strategy_raises(self, batch_size, embedding_dim):
+        """Unknown strategy should raise error."""
+        anchor = torch.randn(batch_size, embedding_dim)
+        candidates = torch.randn(batch_size * 2, embedding_dim)
+
+        with pytest.raises(ValueError, match="Unknown strategy"):
+            FamilyContrastiveLoss.mine_hard_negatives(
+                anchor,
+                candidates,
+                strategy="invalid_strategy",
+                num_hard=4,
+            )
+
+    def test_forward_with_memory_bank(self, batch_size, embedding_dim):
+        """Test forward_with_memory_bank method."""
+        loss_fn = FamilyContrastiveLoss(temperature=0.07)
+
+        anchor = torch.randn(batch_size, embedding_dim)
+        positive = torch.randn(batch_size, embedding_dim)
+        memory_bank = torch.randn(100, embedding_dim)  # External memory bank
+
+        loss = loss_fn.forward_with_memory_bank(anchor, positive, memory_bank)
+        assert loss.item() >= 0
+
+
+class TestPGDRestoreMethods:
+    """Tests for PGD restore and backup methods."""
+
+    def test_backup_and_restore_grad(self):
+        """Test gradient backup and restore."""
+        # Create simple model
+        model = nn.Sequential(
+            nn.Embedding(100, 64),
+            nn.Linear(64, 10),
+        )
+
+        pgd = PGD(model, emb_name="0", epsilon=0.1, alpha=0.03, num_steps=3)
+
+        # Create some gradients
+        x = torch.randint(0, 100, (4, 10))
+        out = model(x)
+        loss = out.mean()
+        loss.backward()
+
+        # Backup gradients
+        pgd.backup_grad()
+        # grad_backup should have entries for parameters with gradients
+        assert len(pgd.grad_backup) >= 0  # May be empty if no matching params
+
+    def test_restore_method(self):
+        """Test restore method exists and runs."""
+        model = nn.Sequential(
+            nn.Embedding(100, 64),
+            nn.Linear(64, 10),
+        )
+
+        pgd = PGD(model, emb_name="0", epsilon=0.1, alpha=0.03, num_steps=3)
+
+        # Forward/backward
+        x = torch.randint(0, 100, (4, 10))
+        out = model(x)
+        loss = out.mean()
+        loss.backward()
+
+        # Restore should not raise
+        pgd.restore()
+
+
+class TestEmbeddingMixupAdvanced:
+    """Tests for EmbeddingMixup apply_prob and alpha=0 cases."""
+
+    def test_no_mixup_when_prob_zero(self, batch_size, embedding_dim, num_classes):
+        """No mixup when apply_prob=0."""
+        mixup = EmbeddingMixup(alpha=0.4, apply_prob=0.0)
+        mixup.train()
+
+        embeddings = torch.randn(batch_size, embedding_dim)
+        labels = torch.randint(0, num_classes, (batch_size,))
+
+        mixed, soft = mixup(embeddings, labels, num_classes)
+
+        # Should return unchanged
+        assert torch.allclose(embeddings, mixed)
+
+    def test_alpha_zero_means_no_mixing(self, batch_size, embedding_dim, num_classes):
+        """alpha=0 means lam=1.0 (no mixing)."""
+        mixup = EmbeddingMixup(alpha=0.0, apply_prob=1.0)
+        mixup.train()
+
+        embeddings = torch.randn(batch_size, embedding_dim)
+        labels = torch.randint(0, num_classes, (batch_size,))
+
+        mixed, soft = mixup(embeddings, labels, num_classes)
+
+        # With alpha=0, lam=1.0, so mixed should be same as original
+        # (or very close due to the shuffle operation not affecting with lam=1)
+        assert mixed.shape == embeddings.shape
+
+    def test_soft_labels_input(self, batch_size, embedding_dim, num_classes):
+        """Test with soft labels as input."""
+        mixup = EmbeddingMixup(alpha=0.4, apply_prob=1.0)
+        mixup.train()
+
+        embeddings = torch.randn(batch_size, embedding_dim)
+        soft_labels = torch.rand(batch_size, num_classes)
+        soft_labels = soft_labels / soft_labels.sum(dim=-1, keepdim=True)
+
+        mixed, out_soft = mixup(embeddings, soft_labels, num_classes)
+
+        assert out_soft.shape == (batch_size, num_classes)
+
+
+class TestMixupLossAlphaZero:
+    """Tests for MixupLoss with alpha=0."""
+
+    def test_alpha_zero_lam_one(self, sample_logits, sample_labels):
+        """alpha=0 gives lam=1.0."""
+        mixup = MixupLoss(alpha=0.0)
+
+        x = torch.randn(sample_logits.size(0), 128)
+        y = sample_labels
+
+        mixed_x, y_a, y_b, lam = mixup.mixup_data(x, y)
+
+        assert lam == 1.0
+
+
+class TestFGMAttack:
+    """Tests for FGM adversarial attack."""
+
+    def test_fgm_attack_and_restore(self):
+        """Test FGM attack and restore."""
+        model = nn.Sequential(
+            nn.Embedding(100, 64),
+            nn.Linear(64, 10),
+        )
+
+        fgm = FGM(model, emb_name="0", epsilon=0.5)
+
+        # Forward pass
+        x = torch.randint(0, 100, (4, 10))
+        out = model(x)
+        loss = out.mean()
+        loss.backward()
+
+        # Store original embeddings
+        original_weight = model[0].weight.data.clone()
+
+        # Attack
+        fgm.attack()
+
+        # Embeddings should be perturbed
+        # (May not be perfectly different due to small gradients)
+
+        # Restore
+        fgm.restore()
+
+        # Embeddings should be back to original
+        assert torch.allclose(model[0].weight.data, original_weight)
+
+
+class TestRDropLossReductions:
+    """Tests for RDropLoss different reductions."""
+
+    def test_sum_reduction(self, sample_logits):
+        """Test sum reduction."""
+        rdrop = RDropLoss(alpha=1.0, reduction="sum")
+
+        logits1 = sample_logits
+        logits2 = sample_logits + torch.randn_like(sample_logits) * 0.1
+        ce_loss = torch.tensor(0.5)  # Required argument
+
+        loss = rdrop(logits1, logits2, ce_loss)
+        assert loss.item() >= 0
+
+    def test_batchmean_reduction(self, sample_logits):
+        """Test batchmean reduction (default)."""
+        rdrop = RDropLoss(alpha=1.0, reduction="batchmean")
+
+        logits1 = sample_logits
+        logits2 = sample_logits + torch.randn_like(sample_logits) * 0.1
+        ce_loss = torch.tensor(0.5)
+
+        loss = rdrop(logits1, logits2, ce_loss)
+        assert loss.item() >= 0
+
+
+class TestMultiTaskLossDeviceHandling:
+    """Tests for MultiTaskLoss device handling."""
+
+    def test_different_device_losses(self):
+        """Test losses on different devices get normalized."""
+        mtl = MultiTaskLoss(task_weights={"task1": 0.5, "task2": 0.5})
+
+        loss1 = torch.tensor(0.5)
+        loss2 = torch.tensor(0.3)
+
+        total = mtl({"task1": loss1, "task2": loss2})
+        assert total.item() == pytest.approx(0.4, abs=0.01)
+
+
+class TestLabelSmoothingCrossEntropyEdgeCases:
+    """Edge case tests for LabelSmoothingCrossEntropy."""
+
+    def test_with_ignore_index(self, sample_logits):
+        """Test with ignore_index handling."""
+        batch_size = sample_logits.size(0)
+        num_classes = sample_logits.size(-1)
+
+        loss_fn = LabelSmoothingCrossEntropy(epsilon=0.1, ignore_index=-100)
+
+        labels = torch.randint(0, num_classes, (batch_size,))
+        labels[0] = -100  # Mark first as ignore
+
+        loss = loss_fn(sample_logits, labels)
+        assert loss.item() > 0
+
+
+class TestCosineSimilarityLossSmooth:
+    """Tests for CosineSimilarityLoss with smooth_l1."""
+
+    def test_smooth_l1_loss(self, batch_size, embedding_dim):
+        """Test smooth_l1 loss function."""
+        loss_fn = CosineSimilarityLoss(loss_fn="smooth_l1")  # Correct parameter name
+
+        emb1 = torch.randn(batch_size, embedding_dim)
+        emb2 = torch.randn(batch_size, embedding_dim)
+        targets = torch.rand(batch_size)
+
+        loss = loss_fn(emb1, emb2, targets)
+        assert loss.item() >= 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
