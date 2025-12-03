@@ -622,13 +622,24 @@ def create_training_args(
     eval_batch_size = training_config.get("per_device_eval_batch_size", 32)
     gradient_checkpointing = training_config.get("gradient_checkpointing", True)
 
+    # Get dataloader settings from config
+    dataloader_num_workers = training_config.get("dataloader_num_workers", 4)
+    dataloader_pin_memory = training_config.get("dataloader_pin_memory", True)
+    dataloader_prefetch_factor = training_config.get("dataloader_prefetch_factor", 2)
+    dataloader_persistent_workers = training_config.get("dataloader_persistent_workers", True)
+
     if debug:
         # Use smaller batch sizes for debug mode to fit in consumer GPUs
         train_batch_size = min(train_batch_size, 8)
         eval_batch_size = min(eval_batch_size, 16)
         gradient_checkpointing = True  # Enable to save memory
+        # Disable multiprocessing in debug mode for easier debugging
+        dataloader_num_workers = 0
+        dataloader_prefetch_factor = None  # Required when num_workers=0
+        dataloader_persistent_workers = False  # Cannot use with num_workers=0
         logger.info(
-            f"Debug mode: using batch_size={train_batch_size}, eval_batch_size={eval_batch_size}, gradient_checkpointing=True"
+            f"Debug mode: using batch_size={train_batch_size}, eval_batch_size={eval_batch_size}, "
+            f"gradient_checkpointing=True, num_workers=0"
         )
 
     # Create MultiTaskTrainingArguments (extends TrainingArguments with V2 features)
@@ -667,6 +678,11 @@ def create_training_args(
         fp16=fp16_config,
         # Memory optimization
         gradient_checkpointing=gradient_checkpointing,
+        # Data loading - adjusted for debug mode
+        dataloader_num_workers=dataloader_num_workers,
+        dataloader_pin_memory=dataloader_pin_memory,
+        dataloader_prefetch_factor=dataloader_prefetch_factor,
+        dataloader_persistent_workers=dataloader_persistent_workers,
         # Misc
         seed=training_config.get("seed", 42),
         data_seed=training_config.get("data_seed", 42),

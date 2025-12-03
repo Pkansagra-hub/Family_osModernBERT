@@ -110,6 +110,26 @@ class MultiTaskDataLoader:
             first_loader, "sampler", None
         )  # Store as sampler_ref to avoid conflict
 
+        # Copy DataLoader attributes from first loader for accelerate compatibility
+        # These are needed by accelerate's skip_first_batches
+        self.num_workers = getattr(first_loader, "num_workers", 0)
+        self.collate_fn = getattr(first_loader, "collate_fn", None)
+        self.pin_memory = getattr(first_loader, "pin_memory", False)
+        self.drop_last = getattr(first_loader, "drop_last", False)
+        self.timeout = getattr(first_loader, "timeout", 0)
+        self.worker_init_fn = getattr(first_loader, "worker_init_fn", None)
+        self.multiprocessing_context = getattr(first_loader, "multiprocessing_context", None)
+        self.generator = getattr(first_loader, "generator", None)
+        self.persistent_workers = getattr(first_loader, "persistent_workers", False)
+        self.pin_memory_device = getattr(first_loader, "pin_memory_device", "")
+        self.batch_size = getattr(first_loader, "batch_size", 1)
+
+        # Critical: prefetch_factor must be None when num_workers=0
+        # accelerate's skip_first_batches extracts this and creates new DataLoader
+        self.prefetch_factor = getattr(first_loader, "prefetch_factor", None)
+        if self.num_workers == 0:
+            self.prefetch_factor = None
+
         # Create iterators for each dataloader
         self._iterators: dict[str, Iterator] = {}
         self._reset_iterators()
@@ -503,15 +523,30 @@ class MultiTaskTrainer(Trainer):
             # Get task-specific collator
             collator = get_task_collator(task, tokenizer=self.tokenizer)
 
-            dataloaders[task] = DataLoader(
-                dataset,
-                batch_size=self.args.per_device_train_batch_size,
-                collate_fn=collator,
-                shuffle=True,
-                num_workers=self.args.dataloader_num_workers,
-                pin_memory=self.args.dataloader_pin_memory,
-                drop_last=self.args.dataloader_drop_last,
-            )
+            # Build dataloader kwargs, handling prefetch_factor correctly
+            # prefetch_factor must be None when num_workers=0
+            num_workers = self.args.dataloader_num_workers
+            dataloader_kwargs = {
+                "batch_size": self.args.per_device_train_batch_size,
+                "collate_fn": collator,
+                "shuffle": True,
+                "num_workers": num_workers,
+                "pin_memory": self.args.dataloader_pin_memory if num_workers > 0 else False,
+                "drop_last": self.args.dataloader_drop_last,
+            }
+
+            # Handle prefetch_factor: must be None when num_workers=0
+            if num_workers > 0:
+                prefetch_factor = getattr(self.args, "dataloader_prefetch_factor", 2)
+                if prefetch_factor is not None:
+                    dataloader_kwargs["prefetch_factor"] = prefetch_factor
+                if getattr(self.args, "dataloader_persistent_workers", False):
+                    dataloader_kwargs["persistent_workers"] = True
+            else:
+                # Explicitly set to None to prevent accelerate from using default
+                dataloader_kwargs["prefetch_factor"] = None
+
+            dataloaders[task] = DataLoader(dataset, **dataloader_kwargs)
         return dataloaders
 
     def get_train_dataloader(self) -> MultiTaskDataLoader:
@@ -999,14 +1034,29 @@ class MultiTaskTrainer(Trainer):
 
         collator = get_task_collator(task, tokenizer=self.tokenizer)
 
-        return DataLoader(
-            dataset,
-            batch_size=self.args.per_device_eval_batch_size,
-            collate_fn=collator,
-            shuffle=False,
-            num_workers=self.args.dataloader_num_workers,
-            pin_memory=self.args.dataloader_pin_memory,
-        )
+        # Build dataloader kwargs, handling prefetch_factor correctly
+        # prefetch_factor must be None when num_workers=0
+        num_workers = self.args.dataloader_num_workers
+        dataloader_kwargs = {
+            "batch_size": self.args.per_device_eval_batch_size,
+            "collate_fn": collator,
+            "shuffle": False,
+            "num_workers": num_workers,
+            "pin_memory": self.args.dataloader_pin_memory if num_workers > 0 else False,
+        }
+
+        # Handle prefetch_factor: must be None when num_workers=0
+        if num_workers > 0:
+            prefetch_factor = getattr(self.args, "dataloader_prefetch_factor", 2)
+            if prefetch_factor is not None:
+                dataloader_kwargs["prefetch_factor"] = prefetch_factor
+            if getattr(self.args, "dataloader_persistent_workers", False):
+                dataloader_kwargs["persistent_workers"] = True
+        else:
+            # Explicitly set to None to prevent accelerate from using default
+            dataloader_kwargs["prefetch_factor"] = None
+
+        return DataLoader(dataset, **dataloader_kwargs)
 
     def _compute_metrics_for_task(
         self,
