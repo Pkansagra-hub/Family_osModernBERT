@@ -195,12 +195,16 @@ def download_beavertails():
                 category_counts["obscene"] += 1
 
             # threat - violence, terrorism
-            if categories.get("violence,aiding_and_abetting,incitement") or categories.get("terrorism,organized_crime"):
+            if categories.get("violence,aiding_and_abetting,incitement") or categories.get(
+                "terrorism,organized_crime"
+            ):
                 labels[3] = 1
                 category_counts["threat"] += 1
 
             # identity_hate - discrimination, hate speech
-            if categories.get("discrimination,stereotype,injustice") or categories.get("hate_speech,offensive_language"):
+            if categories.get("discrimination,stereotype,injustice") or categories.get(
+                "hate_speech,offensive_language"
+            ):
                 labels[5] = 1
                 category_counts["identity_hate"] += 1
 
