@@ -109,15 +109,15 @@ optimizer:
 
 # Training configuration
 training:
-  per_device_train_batch_size: 192
-  per_device_eval_batch_size: 128
+  per_device_train_batch_size: 256
+  per_device_eval_batch_size: 192
   gradient_accumulation_steps: 2
 
   learning_rate: 2e-5
   num_train_epochs: 10
-  
+
   # === V2.1 CRITICAL: ENABLE UNCERTAINTY WEIGHTING ===
-  use_uncertainty_weighting: true 
+  use_uncertainty_weighting: true
 
   use_ema: true
   ema_decay: 0.999
