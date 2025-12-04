@@ -641,8 +641,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     if "epic_5_0" in caps_data:
                         epic_5_config = caps_data["epic_5_0"]
 
-        # Load config
-        config = AutoConfig.from_pretrained(str(checkpoint_path))
+        # Load config - use local_files_only to avoid HuggingFace Hub validation issues
+        config = AutoConfig.from_pretrained(str(checkpoint_path), local_files_only=True)
 
         # Create model instance with Epic 5.0 parameters
         model = cls(

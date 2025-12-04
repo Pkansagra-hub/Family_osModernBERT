@@ -556,13 +556,17 @@ def load_datasets(
 
     # In debug mode, take smaller subsets
     if debug:
-        logger.info("Debug mode: using smaller dataset subsets")
+        logger.info("=" * 60)
+        logger.info("DEBUG MODE: Using tiny dataset subsets (150 train, 50 eval per task)")
+        logger.info("=" * 60)
         for task in train_datasets:
-            if len(train_datasets[task]) > 1000:
-                train_datasets[task] = train_datasets[task].select(range(1000))
+            # Use only 150 samples per task for fast 10-epoch test
+            subset_size = min(len(train_datasets[task]), 150)
+            train_datasets[task] = train_datasets[task].select(range(subset_size))
         for task in eval_datasets:
-            if len(eval_datasets[task]) > 200:
-                eval_datasets[task] = eval_datasets[task].select(range(200))
+            # Use only 50 samples per task for eval
+            subset_size = min(len(eval_datasets[task]), 50)
+            eval_datasets[task] = eval_datasets[task].select(range(subset_size))
 
     logger.info(f"Loaded {len(train_datasets)} training datasets")
     for task, ds in train_datasets.items():
@@ -637,9 +641,16 @@ def create_training_args(
         dataloader_num_workers = 0
         dataloader_prefetch_factor = None  # Required when num_workers=0
         dataloader_persistent_workers = False  # Cannot use with num_workers=0
+        # Override eval/save frequency for fast debugging
+        training_config["eval_strategy"] = "epoch"
+        training_config["save_strategy"] = (
+            "epoch"  # Must match eval_strategy for load_best_model_at_end
+        )
+        training_config["save_total_limit"] = 1  # Only keep 1 checkpoint in debug
+        training_config["logging_steps"] = 5  # Log every 5 steps
         logger.info(
-            f"Debug mode: using batch_size={train_batch_size}, eval_batch_size={eval_batch_size}, "
-            f"gradient_checkpointing=True, num_workers=0"
+            f"Debug mode: batch_size={train_batch_size}, eval_batch_size={eval_batch_size}, "
+            f"gradient_checkpointing=True, num_workers=0, eval_strategy=epoch"
         )
 
     # Create MultiTaskTrainingArguments (extends TrainingArguments with V2 features)
