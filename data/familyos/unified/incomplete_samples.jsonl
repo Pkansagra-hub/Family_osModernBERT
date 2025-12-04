@@ -226,3 +226,56 @@
 {"text": "Worried about teen's mood swings from sibling rivalry", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
 {"text": "Family pooja done, lit diyas", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
 {"text": "Priya's dance class song name.", "_source_task": "ingress", "_ingress_id": "MEMORY", "_tier": "silver"}
+{"text": "Nana's stories are endless and boring. Kids are fidgeting, I'm annoyed.", "_source_task": "emotions", "_emotions": ["annoyance", "frustration"], "_primary_emotion": "annoyance", "_intensity": "high", "_tier": "silver"}
+{"text": "Concerned Arjun skipping meals for study marathons.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "Thinking deeply about family bonds during festivals", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Work stress from boss, need a break", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Mummy worried about my job stress lately.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Tension headaches from family worries.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Dear Didi, Protecting Ollie through asthma flares exhausts, but love drives me.", "_source_task": "emotions", "_emotions": ["protectiveness", "worry", "fear", "love"], "_primary_emotion": "protectiveness", "_intensity": "high", "_tier": "silver"}
+{"text": "Withdrawn from friends, staying home all time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "No joy in raising kids anymore, just exhaustion.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Daily chai breaks at 4pm .", "_source_task": "temporal", "_tokens": ["Daily", "chai", "breaks", "at", "4pm", "."], "_temporal_tags": [9, 0, 0, 5, 6, 0], "_tier": "silver"}
+{"text": "Worried about Arjun's low energy; is he eating enough?", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "We shop weekly for groceries", "_source_task": "temporal", "_tokens": ["We", "shop", "weekly", "for", "groceries"], "_temporal_tags": [0, 0, 9, 7, 0], "_tier": "silver"}
+{"text": "Priya wakes up in the morning .", "_source_task": "temporal", "_tokens": ["Priya", "wakes", "up", "in", "the", "morning", "."], "_temporal_tags": [0, 0, 0, 0, 0, 5, 0], "_tier": "silver"}
+{"text": "I walk every morning for 30 minutes .", "_source_task": "temporal", "_tokens": ["I", "walk", "every", "morning", "for", "30", "minutes", "."], "_temporal_tags": [0, 0, 9, 5, 7, 8, 8, 0], "_tier": "silver"}
+{"text": "Weekly book club meets for 2 hours .", "_source_task": "temporal", "_tokens": ["Weekly", "book", "club", "meets", "for", "2", "hours", "."], "_temporal_tags": [9, 0, 0, 0, 7, 8, 8, 0], "_tier": "silver"}
+{"text": "Debt cycle concern.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Arjun struggling with homework under stress.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Kids dance every Saturday", "_source_task": "temporal", "_tokens": ["Kids", "dance", "every", "Saturday"], "_temporal_tags": [0, 0, 9, 10], "_tier": "silver"}
+{"text": "Grateful for my partner's patience with the kids' tantrums.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Planning to overdose tonight.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Priya not eating well this weekend. Appetite issue?", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Family budget strained by school fees.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "After puja, sitting quietly thinking about life's simple joys.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Volunteered at community event, rewarding", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Been feeling empty inside for the past few weeks", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Market prices rising, stressing budget", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Disclosing the child abuse in our house, need help now.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Serene start with birdsong.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Serene happiness wrapping the night", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Family feels distant, I'm alone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Everything seems hopeless, can't see a way out.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Weekend work emails stressing me out at home.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "gold"}
+{"text": "In the hush of evening, concerned about Arjun's disinterest in studies; what can we do?", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Arjun's overworking for deadlines.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Long commute in traffic, drains my energy", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Neutral peace before storm.", "_source_task": "emotions", "_emotions": ["neutral", "contentment"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Took too many pills, don't care", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Deadlines piling up at office", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Unemployment driving me to suicidal thoughts", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Been isolated from family for weeks now.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Everything feels hopeless lately", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Started the day with family meditation. Neutral calm leading to hopeful vibes.", "_source_task": "emotions", "_emotions": ["neutral", "hope", "contentment"], "_primary_emotion": "neutral", "_intensity": "medium", "_tier": "silver"}
+{"text": "Morning meditation group. Peaceful joy.", "_source_task": "emotions", "_emotions": ["joy", "contentment", "togetherness"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Tonight's reflection: Movie night calm. Subtle nervousness faded into belonging.", "_source_task": "emotions", "_emotions": ["nervousness", "belonging", "neutral"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Didi, surprise eviction threat school dorm. Panic worry surges.", "_source_task": "emotions", "_emotions": ["surprise", "fear", "worry", "anger"], "_primary_emotion": "worry", "_intensity": "high", "_tier": "silver"}
+{"text": "Planning a surprise for Arjun's graduation milestone.", "_source_task": "ingress", "_ingress_id": "PLANNING", "_tier": "silver"}
+{"text": "Busy day at work but looking forward to family movie night", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Dad forgetting meds amid work; heart risk too high.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Feeling low energy, need a break", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Work stress making me skip meals sometimes.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Back pain flaring up from chores", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Thinking about future medical costs for elders.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Alone at breakfast, disapproval swells for this unwanted independence.", "_source_task": "emotions", "_emotions": ["disapproval", "disappointment", "emptiness"], "_primary_emotion": "disapproval", "_intensity": "high", "_tier": "silver"}
