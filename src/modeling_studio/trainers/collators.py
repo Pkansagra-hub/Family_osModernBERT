@@ -752,8 +752,15 @@ class MultiTaskCollator:
             self._collator_cache[task] = collator
             return collator
 
-        # Check default mapping
-        if task in TASK_COLLATOR_MAPPING:
+        # Handle replay tasks by stripping _replay suffix
+        base_task = task
+        if task.endswith("_replay"):
+            base_task = task[:-7]  # Remove "_replay" suffix
+
+        # Check default mapping (use base_task for replay tasks)
+        if base_task in TASK_COLLATOR_MAPPING:
+            collator_cls = TASK_COLLATOR_MAPPING[base_task]
+        elif task in TASK_COLLATOR_MAPPING:
             collator_cls = TASK_COLLATOR_MAPPING[task]
         else:
             logger.warning(
@@ -844,8 +851,15 @@ def get_task_collator(
         >>> collator = get_task_collator("ner_general", tokenizer)
         >>> batch = collator(samples)
     """
-    # Get collator class from mapping
-    if task in TASK_COLLATOR_MAPPING:
+    # Handle replay tasks by stripping _replay suffix
+    base_task = task
+    if task.endswith("_replay"):
+        base_task = task[:-7]  # Remove "_replay" suffix
+
+    # Get collator class from mapping (use base_task for replay tasks)
+    if base_task in TASK_COLLATOR_MAPPING:
+        collator_cls = TASK_COLLATOR_MAPPING[base_task]
+    elif task in TASK_COLLATOR_MAPPING:
         collator_cls = TASK_COLLATOR_MAPPING[task]
     else:
         logger.warning(f"Unknown task '{task}', using default SequenceClassificationCollator")

@@ -23,7 +23,8 @@ defaults:
 # Base Model (Stage A output)
 # =============================================================================
 model:
-  name_or_path: outputs/modernbert-multitask-v0
+  # Use the latest Stage A checkpoint
+  name_or_path: outputs/modernbert-multitask-v0-stage-a-fast
   torch_dtype: bfloat16
   use_flash_attention_2: true
 
@@ -152,27 +153,46 @@ task_weights:
   temporal: 1.5
 
 # =============================================================================
-# Data Configuration
+# Data Configuration - Uses Unified FamilyOS Loader
 # =============================================================================
+# The unified loader handles your synthetic data format with all tasks in one file
 data:
-  # Primary: Your 420K FamilyOS synthetic data
-  familyos_data:
-    - path: data/familyos/unified/output_synthetic
-      format: jsonl
-    - path: data/familyos/unified/output
-      format: jsonl
+  # Loader type: use the new unified loader
+  loader: familyos_unified
+
+  # Primary: Your 420K FamilyOS synthetic data directories
+  familyos_data_dirs:
+    - data/familyos/unified/output_synthetic
+    - data/familyos/unified/output
+
+  # Tasks to extract from unified data
+  familyos_tasks:
+    - emotions
+    - sentiment
+    - ner_family
+    - safety_familyos
+    - intent
+    - ingress
+    - temporal
+
+  # Train/Val split
+  validation_ratio: 0.1
+  seed: 42
 
   # Stage A Replay (15% to prevent forgetting)
-  replay_ratio: 0.15
-  replay_datasets:
-    - name: conll2003
-      task: ner_general
-    - name: stanfordnlp/sst2
-      task: sentiment
-    - name: multi_nli
-      task: nli
-    - name: dynabench/dynasent
-      task: emotions
+  replay:
+    enabled: true
+    ratio: 0.15  # 15% of batches are replay
+    datasets:
+      - name: conll2003
+        task: ner_general
+      - name: stanfordnlp/sst2
+        task: sentiment
+      - name: multi_nli
+        task: nli
+      - name: dynabench/dynasent
+        config: dynabench.dynasent.r1.all
+        task: emotions
 
 # =============================================================================
 # Training Hyperparameters
@@ -216,18 +236,6 @@ safety_oversampling:
   RED: 5      # 18K RED → 90K effective
   AMBER: 1
   GREEN: 1
-
-# =============================================================================
-# Replay Configuration (prevent forgetting during full fine-tune)
-# =============================================================================
-replay:
-  enabled: true
-  ratio: 0.15  # 15% Stage A replay (higher than LoRA since we're doing full FT)
-  tasks:
-    - ner_general
-    - nli
-    - emotions
-    - sentiment
 
 # =============================================================================
 # EMA (for best checkpoint)

@@ -4186,9 +4186,7 @@ def load_familyos_unified(
         logger.info(f"  Found {len(shards)} shards in {data_dir}")
 
     if not shard_files:
-        raise FileNotFoundError(
-            f"No shard_*.jsonl files found in {data_dirs}"
-        )
+        raise FileNotFoundError(f"No shard_*.jsonl files found in {data_dirs}")
 
     # Load all samples
     all_samples = []
@@ -4514,6 +4512,7 @@ def _apply_safety_oversampling(
 
     # Shuffle and select
     import random
+
     random.shuffle(oversampled_indices)
 
     return dataset.select(oversampled_indices)
@@ -4537,6 +4536,9 @@ __all__ = [
     "load_familyos_relations",
     "load_familyos_intents",
     "load_familyos_temporal",
+    # Unified FamilyOS loader (for synthetic data)
+    "load_familyos_unified",
+    "load_familyos_unified_for_training",
     # Config-based loading
     "load_from_config",
     "load_stage_a_datasets",
