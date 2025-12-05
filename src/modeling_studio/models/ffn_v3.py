@@ -75,12 +75,14 @@ class GELUFFN(nn.Module):
     def _gelu_new(x: torch.Tensor) -> torch.Tensor:
         """
         GELU approximation (used in some models like GPT-2).
-        
+
         This is an alternative GELU implementation using tanh approximation.
         """
-        return 0.5 * x * (1.0 + torch.tanh(
-            math.sqrt(2.0 / math.pi) * (x + 0.044715 * torch.pow(x, 3.0))
-        ))
+        return (
+            0.5
+            * x
+            * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * torch.pow(x, 3.0))))
+        )
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         """
@@ -184,7 +186,9 @@ class SwiGLUFFN(nn.Module):
         return output
 
     def extra_repr(self) -> str:
-        return f"hidden={self.hidden_size}, intermediate={self.intermediate_size} (SwiGLU - R&D ONLY)"
+        return (
+            f"hidden={self.hidden_size}, intermediate={self.intermediate_size} (SwiGLU - R&D ONLY)"
+        )
 
 
 def create_ffn(
@@ -214,7 +218,7 @@ def create_ffn(
     Examples:
         >>> # Production usage (GELU)
         >>> ffn = create_ffn(hidden_size=768, intermediate_size=3072)
-        
+
         >>> # Research experiment (SwiGLU)
         >>> ffn = create_ffn(ffn_type="swiglu")  # Prints warning
     """
