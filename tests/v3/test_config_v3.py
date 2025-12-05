@@ -28,7 +28,7 @@ def test_config_defaults():
     assert config.num_attention_heads == 12
     assert config.intermediate_size == 3072
     assert config.max_position_embeddings == 8192
-    assert config.vocab_size == 50368
+    assert config.vocab_size == 50432  # 256-aligned
 
     # Hub Tokens
     assert config.hub_tokens == ["[EMO]", "[MEM]", "[REL]", "[TASK]"]
@@ -226,7 +226,7 @@ def test_to_dict():
     # Verify values match
     assert config_dict["hidden_size"] == 768
     assert config_dict["num_layers"] == 28
-    assert config_dict["vocab_size"] == 50368
+    assert config_dict["vocab_size"] == 50432  # 256-aligned
 
 
 def test_validation_layer_count_mismatch():
@@ -314,7 +314,7 @@ def test_yaml_loading():
     assert cfg.architecture.num_attention_heads == 12
     assert cfg.architecture.intermediate_size == 3072
     assert cfg.architecture.max_position_embeddings == 8192
-    assert cfg.architecture.vocab_size == 50368
+    assert cfg.architecture.vocab_size == 50432  # 256-aligned
 
     # Verify hub tokens
     assert cfg.hub_tokens.enabled is True
