@@ -35,24 +35,24 @@ model:
 layer_wise_lr:
   enabled: true
   strategy: "v3_preparation"
-  
+
   # Foundation Band (preserve - these are well-trained)
   layers_1_6:
     learning_rate: 5e-6
     freeze: false  # Train gently, don't freeze
-  
+
   # Context Band (preserve with light tuning)
   layers_7_14:
     learning_rate: 1e-5
     freeze: false
-  
+
   # CRITICAL: Target Layers for v3 Clone (layers 15-20)
   # These will become v3 layers 23-28 (Family Band)
   # Train these strongly on FamilyOS data!
   layers_15_20:
     learning_rate: 3e-5  # Higher LR - we want these to learn family semantics
     freeze: false
-  
+
   # Upper Semantic Band (will become v3 layers 19-22)
   layers_21_22:
     learning_rate: 2e-5
@@ -76,55 +76,55 @@ heads:
   ner_general:
     enabled: true
     freeze: false
-  
+
   ner_family:
     enabled: true
     type: token_classification
     num_labels: 21
     dropout: 0.1
-  
+
   sentiment:
     enabled: true
     freeze: false
-  
+
   emotions:
     enabled: true
     freeze: false
-  
+
   safety_generic:
     enabled: true
     freeze: false
-  
+
   safety_familyos:
     enabled: true
     type: sequence_classification
     num_labels: 4
     dropout: 0.1
-  
+
   nli:
     enabled: true
     freeze: false
-  
+
   embedding:
     enabled: true
     freeze: false
-  
+
   temporal:
     enabled: true
     freeze: false
-  
+
   ingress:
     enabled: true
     type: sequence_classification
     num_labels: 12
     dropout: 0.1
-  
+
   intent:
     enabled: true
     type: sequence_classification
     num_labels: 8
     dropout: 0.1
-  
+
   relation:
     enabled: true
     type: relation_classification
@@ -142,7 +142,7 @@ task_weights:
   safety_generic: 0.3
   nli: 0.5
   embedding: 0.5
-  
+
   # FamilyOS tasks (main focus - high weights)
   ner_family: 2.0
   ingress: 1.5
@@ -161,7 +161,7 @@ data:
       format: jsonl
     - path: data/familyos/unified/output
       format: jsonl
-  
+
   # Stage A Replay (15% to prevent forgetting)
   replay_ratio: 0.15
   replay_datasets:
@@ -185,18 +185,18 @@ training:
   per_device_eval_batch_size: 16
   gradient_accumulation_steps: 8  # Effective batch: 64
   gradient_checkpointing: true
-  
+
   # Regularization
   weight_decay: 0.01
   max_grad_norm: 1.0
-  
+
   # Schedule
   lr_scheduler_type: cosine
   warmup_ratio: 0.1
-  
+
   # Mixed precision
   bf16: true
-  
+
   # Evaluation
   evaluation_strategy: steps
   eval_steps: 500
