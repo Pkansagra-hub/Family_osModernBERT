@@ -1,50 +1,50 @@
 {
   "key_0": {
     "part": 1,
-    "processed": 10614,
+    "processed": 11749,
     "total": 38418,
-    "successful": 10470,
-    "failed": 433,
-    "last_update": "2025-12-04T16:36:43.990378"
+    "successful": 11568,
+    "failed": 463,
+    "last_update": "2025-12-04T19:06:45.764356"
   },
   "key_1": {
     "part": 2,
-    "processed": 11015,
+    "processed": 11361,
     "total": 38418,
-    "successful": 10869,
-    "failed": 282,
-    "last_update": "2025-12-04T16:36:43.340943"
+    "successful": 11197,
+    "failed": 1022,
+    "last_update": "2025-12-04T19:06:32.713465"
   },
   "key_2": {
     "part": 3,
-    "processed": 10256,
+    "processed": 10688,
     "total": 38418,
-    "successful": 10131,
-    "failed": 1487,
-    "last_update": "2025-12-04T16:36:39.535772"
+    "successful": 10540,
+    "failed": 2207,
+    "last_update": "2025-12-04T19:06:21.013206"
   },
   "key_3": {
     "part": 4,
-    "processed": 9876,
+    "processed": 10074,
     "total": 38418,
-    "successful": 9755,
-    "failed": 1890,
-    "last_update": "2025-12-04T16:36:38.817003"
+    "successful": 9936,
+    "failed": 2800,
+    "last_update": "2025-12-04T19:06:54.869891"
   },
   "key_4": {
     "part": 5,
-    "processed": 10290,
+    "processed": 10503,
     "total": 38418,
-    "successful": 10167,
-    "failed": 1242,
-    "last_update": "2025-12-04T16:36:37.390672"
+    "successful": 10369,
+    "failed": 2172,
+    "last_update": "2025-12-04T19:07:01.472894"
   },
   "key_5": {
     "part": 6,
-    "processed": 10533,
+    "processed": 11638,
     "total": 38419,
-    "successful": 10379,
-    "failed": 1137,
-    "last_update": "2025-12-04T16:36:36.719958"
+    "successful": 11445,
+    "failed": 1147,
+    "last_update": "2025-12-04T19:07:09.129293"
   }
 }

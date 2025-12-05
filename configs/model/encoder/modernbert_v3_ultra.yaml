@@ -1,0 +1,65 @@
+# ModernBERT v3.3 Ultra Model Configuration
+# Compatible with Hydra/OmegaConf for model instantiation
+
+_target_: modeling_studio.models.modernbert_v3.ModernBERTv3Ultra
+
+name: "ModernBERTv3Ultra"
+version: "3.3"
+codename: "Ultra"
+
+architecture:
+  hidden_size: 768
+  num_layers: 28
+  num_attention_heads: 12
+  intermediate_size: 3072
+  max_position_embeddings: 8192
+  vocab_size: 50368
+  ffn_activation: "gelu"
+  hidden_dropout_prob: 0.1
+  attention_probs_dropout_prob: 0.1
+
+hub_tokens:
+  enabled: true
+  tokens: ["[EMO]", "[MEM]", "[REL]", "[TASK]"]
+  positions:
+    "[CLS]": 0
+    "[EMO]": 1
+    "[MEM]": 2
+    "[REL]": 3
+    "[TASK]": 4
+  global_attention: [0, 1, 2, 3, 4]
+  initialization: "semantic_centroid"
+
+attention:
+  type: "multi_scale_with_globals"
+  window_sizes:
+    foundation: 64    # Layers 1-6
+    context: 128      # Layers 7-18
+    semantic: 256     # Layers 19-22
+    family: 512       # Layers 23-28
+
+layer_bands:
+  foundation: [1, 2, 3, 4, 5, 6]
+  context: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+  semantic: [19, 20, 21, 22]
+  family: [23, 24, 25, 26, 27, 28]
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 16
+  dropout: 0.05
+  target_layers: [23, 24, 25, 26, 27, 28]
+
+pair_encoder:
+  enabled: true
+  num_heads: 8
+  dropout: 0.1
+
+initialization:
+  method: "function_preserving_growth"
+  source_checkpoint: "checkpoints/modernbert-unified-v2"
+  layers_1_22: "copy"
+  layers_23_28: "clone_from_15_20"
+  hub_tokens: "semantic_centroid"
+  verify_function_preserving: true

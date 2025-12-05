@@ -1,0 +1,76 @@
+# ModernBERT v3.3 Ultra - Long Context Inference Configuration
+# This config uses Flash Attention 2 for speed on long sequences (8k+ tokens)
+
+# ⚠️ TRADE-OFF NOTICE:
+# - Flash Attention provides 3-5x speedup on long sequences
+# - Text→Hub attention is NOT fully preserved (known limitation)
+# - Hub→Text attention IS preserved via manual correction
+# - Use only for inference where speed > perfect topology
+
+model:
+  name: "ModernBERTv3Ultra"
+  version: "3.3"
+
+  architecture:
+    hidden_size: 768
+    num_attention_heads: 12
+    num_hidden_layers: 28
+    intermediate_size: 3072
+    max_position_embeddings: 8192
+
+  attention:
+    # SAFETY SWITCH: True = Use FlashAttentionWithGlobals (if available)
+    # Falls back to MultiScaleAttentionWithGlobals if Flash Attention not installed
+    use_flash_attention: true  # Enable for long-context inference speed
+
+    attention_dropout: 0.0  # No dropout during inference
+
+    # Layer-wise window sizes (automatically applied)
+    window_sizes:
+      foundation: 64   # Layers 1-6
+      context: 128     # Layers 7-18
+      semantic: 256    # Layers 19-22
+      family: 512      # Layers 23-28
+
+  hub_tokens:
+    enabled: true
+    positions: [0, 1, 2, 3, 4]  # [CLS], [EMO], [MEM], [REL], [TASK]
+
+inference:
+  batch_size: 1  # Long sequences typically processed individually
+  max_sequence_length: 8192  # Full 8k context support
+
+  # Optimization settings
+  torch_compile: true  # Use torch.compile for additional speedup
+  mixed_precision: "bf16"  # BFloat16 for speed + stability
+
+  # Generation settings (if using for text generation)
+  temperature: 1.0
+  top_p: 0.9
+  top_k: 50
+  repetition_penalty: 1.0
+
+# Recommended use cases:
+# - Document embedding (8k+ tokens)
+# - Long conversation analysis
+# - Full-context sentiment analysis
+# - Safety classification on long texts
+#
+# NOT recommended for:
+# - Training (use v3_phase1.yaml instead)
+# - Short sequences <2k tokens (standard attention is equally fast)
+# - Applications requiring perfect Text→Hub attention
+
+# Performance expectations:
+# - Standard Attention: ~100 tokens/sec on 8k sequences
+# - Flash Attention: ~300-500 tokens/sec on 8k sequences
+# - Memory: ~16GB VRAM for 8k sequences with batch_size=1
+
+# Installation requirement:
+# pip install flash-attn --no-build-isolation
+# Or: conda install -c nvidia cuda-toolkit && pip install flash-attn
+
+monitoring:
+  log_latency: true
+  log_memory: true
+  benchmark_mode: false  # Set to true for throughput testing

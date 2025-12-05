@@ -1,0 +1,77 @@
+# ModernBERT v3.3 Ultra - Standard Inference Configuration
+# This config uses standard attention for short-medium sequences (<2k tokens)
+
+# For sequences under 2k tokens, standard attention (with SDPA) provides:
+# - Similar speed to Flash Attention
+# - Full Text→Hub attention preservation
+# - Attention weight visualization support (output_attentions=True)
+
+model:
+  name: "ModernBERTv3Ultra"
+  version: "3.3"
+
+  architecture:
+    hidden_size: 768
+    num_attention_heads: 12
+    num_hidden_layers: 28
+    intermediate_size: 3072
+    max_position_embeddings: 8192
+
+  attention:
+    # SAFETY SWITCH: False = Use MultiScaleAttentionWithGlobals with SDPA
+    # Best for short-medium sequences where correctness and debugging are priorities
+    use_flash_attention: false
+
+    attention_dropout: 0.0  # No dropout during inference
+
+    # Layer-wise window sizes (automatically applied)
+    window_sizes:
+      foundation: 64   # Layers 1-6
+      context: 128     # Layers 7-18
+      semantic: 256    # Layers 19-22
+      family: 512      # Layers 23-28
+
+  hub_tokens:
+    enabled: true
+    positions: [0, 1, 2, 3, 4]  # [CLS], [EMO], [MEM], [REL], [TASK]
+
+inference:
+  batch_size: 8  # Can use larger batches for shorter sequences
+  max_sequence_length: 512  # Optimal for most tasks
+
+  # Optimization settings
+  torch_compile: false  # Not needed for short sequences
+  mixed_precision: "bf16"  # BFloat16 for speed + stability
+
+  # Enable for debugging/analysis
+  output_attentions: false  # Set to true for attention visualization
+
+  # Generation settings (if using for text generation)
+  temperature: 1.0
+  top_p: 0.9
+  top_k: 50
+  repetition_penalty: 1.0
+
+# Recommended use cases:
+# - Production inference for most tasks
+# - API endpoints for real-time processing
+# - Attention pattern analysis (set output_attentions=true)
+# - Batch processing of short-medium texts
+# - All training evaluation
+
+# Performance expectations:
+# - Throughput: ~1000 tokens/sec on 512 token sequences
+# - Latency: ~50ms per sample (batch_size=1)
+# - Memory: ~8GB VRAM for batch_size=8, seq_len=512
+
+# Advantages over Flash Attention for short sequences:
+# 1. Full Text→Hub attention (perfect topology)
+# 2. Attention weight visualization support
+# 3. Similar speed (SDPA is optimized by PyTorch)
+# 4. No additional dependencies
+# 5. Easier debugging
+
+monitoring:
+  log_latency: true
+  log_memory: true
+  benchmark_mode: false  # Set to true for throughput testing

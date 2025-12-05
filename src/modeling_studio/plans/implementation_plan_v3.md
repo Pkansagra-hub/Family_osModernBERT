@@ -578,7 +578,7 @@ from .initialization_v3 import initialize_from_v2
 
 ---
 
-### 4. Constructor Wiring (ModernBERTv3Ultra.__init__)
+### 4. Constructor Wiring (ModernBERTv3Ultra.**init**)
 
 ```python
 class ModernBERTv3Ultra(nn.Module):
