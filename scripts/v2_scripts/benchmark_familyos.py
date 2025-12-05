@@ -43,7 +43,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Add project root to path
-project_root = Path(__file__).parent.parent
+# benchmark_familyos.py is at scripts/v2_scripts/, so need .parent.parent.parent for project root
+project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 from datasets import Dataset, load_dataset
@@ -626,6 +627,284 @@ def benchmark_with_base_models(tasks: list[str], device: torch.device) -> dict:
     return results
 
 
+def benchmark_raw_modernbert(tasks: list[str], device: torch.device) -> dict:
+    """
+    Benchmark raw ModernBERT-base (answerdotai/ModernBERT-base) without any finetuning.
+
+    This is the 2T token pretrained model straight from AnswerAI.
+    Since it has no classification heads, we use simple probing approaches:
+    - Sentiment: Linear probe on [CLS] embedding
+    - NLI: Cosine similarity between premise/hypothesis embeddings
+    - Emotions: Can't do without training
+    - Safety: Can't do without training
+
+    This gives a fair comparison of what ModernBERT can do out-of-box vs our finetuned model.
+    """
+    from transformers import AutoModel, AutoTokenizer
+
+    print("\n" + "=" * 70)
+    print("🔧 Benchmarking RAW ModernBERT-base (answerdotai/ModernBERT-base)")
+    print("   2T tokens pretrained, NO finetuning, NO classification heads")
+    print("=" * 70)
+
+    results = {}
+
+    # Load raw ModernBERT
+    print("\n   Loading answerdotai/ModernBERT-base...")
+    try:
+        base_model = AutoModel.from_pretrained("answerdotai/ModernBERT-base")
+        base_tokenizer = AutoTokenizer.from_pretrained("answerdotai/ModernBERT-base")
+        base_model = base_model.to(device)
+        base_model.eval()
+
+        params = sum(p.numel() for p in base_model.parameters())
+        print(f"   ✅ Loaded: {params/1e6:.1f}M parameters")
+        print(f"   Hidden size: {base_model.config.hidden_size}")
+        print(f"   Layers: {base_model.config.num_hidden_layers}")
+        print(f"   Max position: {base_model.config.max_position_embeddings}")
+    except Exception as e:
+        print(f"   ❌ Could not load ModernBERT-base: {e}")
+        return results
+
+    # Sentiment - use embedding similarity to sentiment anchors
+    if "sentiment" in tasks:
+        print("\n   📝 Testing SENTIMENT (embedding similarity approach)...")
+        try:
+            # Define sentiment anchor phrases
+            sentiment_anchors = {
+                0: "terrible awful horrible negative bad",  # very negative
+                1: "bad disappointing poor negative",  # negative
+                2: "okay neutral average fine",  # neutral
+                3: "good nice positive pleasant",  # positive
+                4: "amazing wonderful excellent fantastic",  # very positive
+            }
+
+            # Get anchor embeddings
+            anchor_embeddings = {}
+            with torch.no_grad():
+                for label, text in sentiment_anchors.items():
+                    inputs = base_tokenizer(
+                        text, return_tensors="pt", truncation=True, max_length=512
+                    )
+                    inputs = {k: v.to(device) for k, v in inputs.items()}
+                    outputs = base_model(**inputs)
+                    # Use mean pooling
+                    emb = outputs.last_hidden_state.mean(dim=1)
+                    anchor_embeddings[label] = emb / emb.norm(dim=-1, keepdim=True)
+
+            # Load SST-2 validation (same as checkpoint benchmark uses)
+            ds = load_dataset("glue", "sst2", split="validation")
+            ds = ds.select(range(min(500, len(ds))))
+
+            correct_5class = 0
+            correct_3class = 0
+            correct_binary = 0
+            total = 0
+            total_binary = 0
+
+            with torch.no_grad():
+                for sample in tqdm(ds, desc="   Sentiment (raw)"):
+                    text = sample["sentence"]
+                    # SST-2 is binary: 0=negative, 1=positive
+                    # Map to 5-class: 0→1 (negative), 1→3 (positive)
+                    true_binary = sample["label"]
+                    true_5class = 1 if true_binary == 0 else 3
+
+                    inputs = base_tokenizer(
+                        text, return_tensors="pt", truncation=True, max_length=512
+                    )
+                    inputs = {k: v.to(device) for k, v in inputs.items()}
+                    outputs = base_model(**inputs)
+                    emb = outputs.last_hidden_state.mean(dim=1)
+                    emb = emb / emb.norm(dim=-1, keepdim=True)
+
+                    # Find most similar anchor
+                    similarities = {
+                        label: (emb @ anchor.T).item()
+                        for label, anchor in anchor_embeddings.items()
+                    }
+                    pred_5class = max(similarities, key=similarities.get)
+
+                    if pred_5class == true_5class:
+                        correct_5class += 1
+
+                    # 3-class grouping: 0,1 -> negative, 2 -> neutral, 3,4 -> positive
+                    true_3class = 0 if true_5class < 2 else (1 if true_5class == 2 else 2)
+                    pred_3class = 0 if pred_5class < 2 else (1 if pred_5class == 2 else 2)
+                    if true_3class == pred_3class:
+                        correct_3class += 1
+
+                    # Binary: negative (0,1) vs positive (3,4)
+                    pred_binary = 0 if pred_5class < 2 else 1
+                    if pred_binary == true_binary:
+                        correct_binary += 1
+                    total_binary += 1
+
+                    total += 1
+
+            results["sentiment_raw"] = {
+                "5class_accuracy": correct_5class / total if total > 0 else 0,
+                "3class_accuracy": correct_3class / total if total > 0 else 0,
+                "binary_accuracy": correct_binary / total_binary if total_binary > 0 else 0,
+                "method": "embedding_similarity_to_anchors",
+            }
+            print(f"   ✅ Raw ModernBERT sentiment 5-class: {correct_5class / total:.1%}")
+            print(f"   ✅ Raw ModernBERT sentiment 3-class: {correct_3class / total:.1%}")
+            print(f"   ✅ Raw ModernBERT sentiment binary:  {correct_binary / total_binary:.1%}")
+
+        except Exception as e:
+            print(f"   ⚠️ Could not benchmark raw sentiment: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+    # NLI - use embedding similarity between premise and hypothesis
+    if "nli" in tasks:
+        print("\n   🔗 Testing NLI (embedding similarity approach)...")
+        try:
+            ds = load_dataset("snli", split="validation")
+            ds = ds.filter(lambda x: x["label"] != -1)
+            ds = ds.select(range(min(500, len(ds))))
+
+            correct = 0
+            total = 0
+
+            with torch.no_grad():
+                for sample in tqdm(ds, desc="   NLI (raw)"):
+                    premise = sample["premise"]
+                    hypothesis = sample["hypothesis"]
+                    true_label = sample["label"]  # 0=entailment, 1=neutral, 2=contradiction
+
+                    # Get embeddings for premise and hypothesis separately
+                    p_inputs = base_tokenizer(
+                        premise, return_tensors="pt", truncation=True, max_length=256
+                    )
+                    p_inputs = {k: v.to(device) for k, v in p_inputs.items()}
+                    p_outputs = base_model(**p_inputs)
+                    p_emb = p_outputs.last_hidden_state.mean(dim=1)
+                    p_emb = p_emb / p_emb.norm(dim=-1, keepdim=True)
+
+                    h_inputs = base_tokenizer(
+                        hypothesis, return_tensors="pt", truncation=True, max_length=256
+                    )
+                    h_inputs = {k: v.to(device) for k, v in h_inputs.items()}
+                    h_outputs = base_model(**h_inputs)
+                    h_emb = h_outputs.last_hidden_state.mean(dim=1)
+                    h_emb = h_emb / h_emb.norm(dim=-1, keepdim=True)
+
+                    # Cosine similarity
+                    similarity = (p_emb @ h_emb.T).item()
+
+                    # Heuristic: high similarity = entailment, low = contradiction, middle = neutral
+                    if similarity > 0.85:
+                        pred_label = 0  # entailment
+                    elif similarity < 0.70:
+                        pred_label = 2  # contradiction
+                    else:
+                        pred_label = 1  # neutral
+
+                    if pred_label == true_label:
+                        correct += 1
+                    total += 1
+
+            results["nli_raw"] = {
+                "3class_accuracy": correct / total if total > 0 else 0,
+                "method": "embedding_cosine_similarity_heuristic",
+            }
+            print(f"   ✅ Raw ModernBERT NLI 3-class: {correct / total:.1%}")
+
+        except Exception as e:
+            print(f"   ⚠️ Could not benchmark raw NLI: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+    # Emotions - can't really benchmark without training, but can try zero-shot
+    if "emotions" in tasks:
+        print("\n   😊 EMOTIONS: Skipped (requires trained classification head)")
+        results["emotions_raw"] = {
+            "note": "Cannot benchmark without classification head - raw model has no emotion labels",
+            "method": "N/A",
+        }
+
+    # Safety - same issue
+    if "safety_generic" in tasks or "safety_familyos" in tasks:
+        print("\n   🛡️ SAFETY: Skipped (requires trained classification head)")
+        results["safety_raw"] = {
+            "note": "Cannot benchmark without classification head - raw model has no safety labels",
+            "method": "N/A",
+        }
+
+    # Clean up
+    del base_model
+    torch.cuda.empty_cache()
+
+    return results
+
+
+def print_modernbert_comparison(checkpoint_results: "BenchmarkResults", raw_results: dict) -> str:
+    """Print side-by-side comparison of checkpoint vs raw ModernBERT."""
+    lines = [
+        "",
+        "=" * 70,
+        "📊 COMPARISON: Your Checkpoint vs Raw ModernBERT-base (2T pretrained)",
+        "=" * 70,
+        "",
+        f"{'Task':<20} {'Your Model':<20} {'Raw ModernBERT':<20} {'Improvement':<15}",
+        "-" * 75,
+    ]
+
+    # Sentiment comparison
+    if checkpoint_results.sentiment and "sentiment_raw" in raw_results:
+        ours = checkpoint_results.sentiment.strict_5class_accuracy
+        raw = raw_results["sentiment_raw"]["5class_accuracy"]
+        diff = ours - raw
+        mult = ours / raw if raw > 0 else float("inf")
+        lines.append(
+            f"{'Sentiment 5-class':<20} {ours:<20.1%} {raw:<20.1%} {'+' if diff > 0 else ''}{diff:.1%} ({mult:.1f}x)"
+        )
+
+        ours = checkpoint_results.sentiment.grouped_3class_accuracy
+        raw = raw_results["sentiment_raw"]["3class_accuracy"]
+        diff = ours - raw
+        mult = ours / raw if raw > 0 else float("inf")
+        lines.append(
+            f"{'Sentiment 3-class':<20} {ours:<20.1%} {raw:<20.1%} {'+' if diff > 0 else ''}{diff:.1%} ({mult:.1f}x)"
+        )
+
+    # NLI comparison
+    if checkpoint_results.nli and "nli_raw" in raw_results:
+        ours = checkpoint_results.nli.three_class_accuracy
+        raw = raw_results["nli_raw"]["3class_accuracy"]
+        diff = ours - raw
+        mult = ours / raw if raw > 0 else float("inf")
+        lines.append(
+            f"{'NLI 3-class':<20} {ours:<20.1%} {raw:<20.1%} {'+' if diff > 0 else ''}{diff:.1%} ({mult:.1f}x)"
+        )
+
+    # Emotions - our model vs N/A
+    if checkpoint_results.emotions:
+        ours = checkpoint_results.emotions.strict_micro_f1
+        lines.append(f"{'Emotions Micro-F1':<20} {ours:<20.1%} {'N/A (no head)':<20} {'N/A':<15}")
+
+    # Safety - our model vs N/A
+    if checkpoint_results.safety_generic:
+        ours = checkpoint_results.safety_generic.micro_f1
+        lines.append(f"{'Safety Micro-F1':<20} {ours:<20.1%} {'N/A (no head)':<20} {'N/A':<15}")
+
+    lines.extend(
+        [
+            "-" * 75,
+            "",
+            "Note: Raw ModernBERT has NO classification heads. Sentiment/NLI use embedding",
+            "      similarity heuristics. Emotions/Safety require trained heads.",
+            "=" * 70,
+        ]
+    )
+
+    return "\n".join(lines)
+
+
 # =============================================================================
 # Data Loading
 # =============================================================================
@@ -892,6 +1171,26 @@ def benchmark_emotions(
     all_primary_emotions = ds["primary_emotion"]
     all_primary_correct = []
 
+    # Check for dynamic thresholds in emotions head
+    emotions_head = model.heads["emotions"] if "emotions" in model.heads else None
+    use_dynamic_thresholds = False
+    learned_thresholds = None
+
+    if emotions_head is not None and hasattr(emotions_head, "use_dynamic_thresholds"):
+        use_dynamic_thresholds = getattr(emotions_head, "use_dynamic_thresholds", False)
+        if use_dynamic_thresholds and hasattr(emotions_head, "raw_thresholds"):
+            raw_thresh = emotions_head.raw_thresholds.detach()
+            learned_thresholds = torch.sigmoid(raw_thresh).cpu().numpy()
+            print(
+                f"   📊 Using LEARNED dynamic thresholds (mean={learned_thresholds.mean():.3f}, min={learned_thresholds.min():.3f}, max={learned_thresholds.max():.3f})"
+            )
+        else:
+            print(f"   ⚠️ Dynamic thresholds enabled but raw_thresholds not found")
+
+    if not use_dynamic_thresholds:
+        print(f"   ℹ️ Using fixed threshold: 0.3")
+        learned_thresholds = np.full(len(id2label), 0.3)
+
     model.eval()
     with torch.no_grad():
         for batch in tqdm(loader, desc="   Emotions"):
@@ -901,9 +1200,11 @@ def benchmark_emotions(
             outputs = model(**inputs, capability="emotions")
             logits = outputs.logits.cpu()
 
-            # Apply sigmoid and threshold
+            # Apply sigmoid and use dynamic or fixed thresholds
             probs = torch.sigmoid(logits)
-            preds_binary = (probs > 0.3).int().numpy()
+            # Apply per-emotion thresholds (broadcast thresholds across batch)
+            threshold_tensor = torch.tensor(learned_thresholds, dtype=probs.dtype)
+            preds_binary = (probs > threshold_tensor).int().numpy()
 
             all_preds_binary.extend(preds_binary)
             all_labels_binary.extend(batch["labels"].numpy())
@@ -977,6 +1278,144 @@ def benchmark_emotions(
     print(f"   ✅ Strict Micro-F1: {results.strict_micro_f1:.1%}")
     print(f"   ✅ Top-2 Recall: {results.top_2_recall:.1%}")
     print(f"   ✅ At-Least-One: {results.at_least_one_correct:.1%}")
+
+    # === THRESHOLD SWEEP: Test multiple thresholds to find optimal ===
+    print("\n   " + "=" * 56)
+    print("   🔍 THRESHOLD SWEEP: Testing optimal threshold")
+    print("   " + "=" * 56)
+
+    thresholds_to_test = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+    best_threshold = 0.3
+    best_f1 = results.strict_micro_f1
+
+    # Collect all probs for threshold testing (need to recompute from logits)
+    all_probs = []
+    model.eval()
+    with torch.no_grad():
+        for batch in tqdm(loader, desc="   Threshold sweep"):
+            inputs = {
+                k: v.to(device) for k, v in batch.items() if k in ["input_ids", "attention_mask"]
+            }
+            outputs = model(**inputs, capability="emotions")
+            probs = torch.sigmoid(outputs.logits.cpu())
+            all_probs.extend(probs.numpy())
+
+    all_probs = np.array(all_probs)
+
+    print(
+        f"\n   {'Threshold':<12} {'Micro-F1':<12} {'Precision':<12} {'Recall':<12} {'Avg Pred':<10}"
+    )
+    print("   " + "-" * 58)
+
+    for thresh in thresholds_to_test:
+        preds_at_thresh = (all_probs > thresh).astype(int)
+
+        micro_f1 = f1_score(all_labels_binary, preds_at_thresh, average="micro", zero_division=0)
+
+        total_pred = preds_at_thresh.sum()
+        total_true = all_labels_binary.sum()
+        tp = ((preds_at_thresh == 1) & (all_labels_binary == 1)).sum()
+
+        prec = tp / total_pred if total_pred > 0 else 0
+        rec = tp / total_true if total_true > 0 else 0
+        avg_pred = preds_at_thresh.sum(axis=1).mean()
+
+        marker = " 👈 CURRENT" if thresh == 0.3 else ""
+        if micro_f1 > best_f1:
+            best_f1 = micro_f1
+            best_threshold = thresh
+            marker = " ⭐ BEST" if thresh != 0.3 else " 👈 CURRENT + BEST"
+
+        print(
+            f"   {thresh:<12.2f} {micro_f1:<12.1%} {prec:<12.1%} {rec:<12.1%} {avg_pred:<10.1f}{marker}"
+        )
+
+    print("\n   " + "-" * 58)
+    print(f"   💡 OPTIMAL THRESHOLD: {best_threshold:.2f} (Micro-F1: {best_f1:.1%})")
+
+    if best_threshold != 0.3:
+        print(f"   ⚠️  RECOMMENDATION: Change threshold from 0.3 to {best_threshold:.2f}")
+        improvement = (best_f1 - results.strict_micro_f1) / results.strict_micro_f1 * 100
+        print(f"   📈 Expected improvement: +{improvement:.1f}%")
+
+    # Check for degenerate emotions head (all thresholds at 0.5 = not trained)
+    if learned_thresholds is not None:
+        thresh_std = np.std(learned_thresholds)
+        if thresh_std < 0.01:
+            print(
+                "\n   ⛔ CRITICAL: Dynamic thresholds NOT LEARNED (std={:.4f})".format(thresh_std)
+            )
+            print("      The thresholds are all at initialization value (~0.5).")
+            print("      This indicates the emotions head may need re-training.")
+
+    # Check for head collapse (same predictions for all samples)
+    pred_variance = np.var(all_probs.mean(axis=0))
+    if pred_variance < 0.02:
+        print("\n   ⛔ CRITICAL: Possible head collapse detected!")
+        print(f"      Per-emotion prediction variance: {pred_variance:.4f}")
+        print("      The model predicts similar emotions for ALL inputs.")
+        print("      Recommended fixes:")
+        print("      1. Re-train with reduced pos_weight (remove or set to 1.0)")
+        print("      2. Reduce asl_gamma_neg from 4.0 to 2.0")
+        print("      3. Use configs/training/multitask/stage_a_a100_fast_v2_1.yaml")
+
+    print("   " + "=" * 56)
+
+    # === DIAGNOSTIC: Show sample predictions to debug low precision ===
+    print("\n   " + "=" * 56)
+    print("   📋 EMOTIONS DIAGNOSTIC: Sample Predictions")
+    print("   " + "=" * 56)
+    print(f"   Avg predictions/sample: {results.avg_predictions_per_sample:.1f}")
+    print(f"   Avg ground truth/sample: {results.avg_ground_truth_per_sample:.1f}")
+
+    # Calculate precision and recall separately
+    total_pred_positive = all_preds_binary.sum()
+    total_true_positive = all_labels_binary.sum()
+    true_positives = ((all_preds_binary == 1) & (all_labels_binary == 1)).sum()
+
+    precision = true_positives / total_pred_positive if total_pred_positive > 0 else 0
+    recall = true_positives / total_true_positive if total_true_positive > 0 else 0
+
+    print(f"\n   Precision: {precision:.1%} (TP={true_positives}, Pred+={total_pred_positive})")
+    print(f"   Recall: {recall:.1%} (TP={true_positives}, True+={total_true_positive})")
+
+    # Show 10 sample predictions
+    print("\n   --- Sample Predictions (first 10) ---")
+    texts = ds["text"][:10] if "text" in ds.features else ["[text not available]"] * 10
+
+    for i in range(min(10, len(all_preds_indices))):
+        pred_emotions = {id2label[idx] for idx in all_preds_indices[i]}
+        true_emotions = {id2label[idx] for idx in all_labels_indices[i]}
+
+        # Overlap analysis
+        correct = pred_emotions & true_emotions
+        missed = true_emotions - pred_emotions
+        extra = pred_emotions - true_emotions
+
+        text_preview = texts[i][:60] + "..." if len(texts[i]) > 60 else texts[i]
+
+        print(f'\n   [{i+1}] "{text_preview}"')
+        print(f"       TRUE:  {sorted(true_emotions)}")
+        print(f"       PRED:  {sorted(pred_emotions)}")
+        print(f"       ✓ Correct: {sorted(correct) if correct else 'none'}")
+        if missed:
+            print(f"       ✗ Missed:  {sorted(missed)}")
+        if extra:
+            print(f"       ✗ Extra:   {sorted(extra)}")
+
+    # Show emotion prediction frequency
+    print("\n   --- Top 10 Most Predicted Emotions ---")
+    pred_counts = all_preds_binary.sum(axis=0)
+    true_counts = all_labels_binary.sum(axis=0)
+
+    top_pred_indices = np.argsort(pred_counts)[::-1][:10]
+    for idx in top_pred_indices:
+        emotion = id2label[idx]
+        pred_count = int(pred_counts[idx])
+        true_count = int(true_counts[idx])
+        print(f"       {emotion:20s} Pred: {pred_count:3d}, True: {true_count:3d}")
+
+    print("   " + "=" * 56)
 
     return results
 
@@ -1189,6 +1628,70 @@ def benchmark_safety_generic(
     print(f"   ✅ Any-Toxic Recall: {results.any_toxic_recall:.1%}")
     print(f"   ✅ Micro-F1: {results.micro_f1:.1%}")
 
+    # === THRESHOLD SWEEP for Safety ===
+    print("\n   " + "=" * 56)
+    print("   🔍 SAFETY THRESHOLD SWEEP")
+    print("   " + "=" * 56)
+
+    # Get all probs for threshold testing
+    all_probs_safety = []
+    model.eval()
+    with torch.no_grad():
+        for batch in tqdm(loader, desc="   Safety threshold sweep"):
+            inputs = {
+                k: v.to(device) for k, v in batch.items() if k in ["input_ids", "attention_mask"]
+            }
+            outputs = model(**inputs, capability="safety_generic")
+            probs = torch.sigmoid(outputs.logits.cpu())
+            all_probs_safety.extend(probs.numpy())
+
+    all_probs_safety = np.array(all_probs_safety)
+
+    thresholds_safety = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    best_thresh_safety = 0.3
+    best_f1_safety = results.micro_f1
+
+    print(
+        f"\n   {'Threshold':<12} {'Micro-F1':<12} {'Precision':<12} {'Recall':<12} {'Avg Pred':<10}"
+    )
+    print("   " + "-" * 58)
+
+    for thresh in thresholds_safety:
+        preds_at_thresh = (all_probs_safety > thresh).astype(int)
+
+        micro_f1 = f1_score(all_labels, preds_at_thresh, average="micro", zero_division=0)
+
+        total_pred = preds_at_thresh.sum()
+        total_true = all_labels.sum()
+        tp = ((preds_at_thresh == 1) & (all_labels == 1)).sum()
+
+        prec = tp / total_pred if total_pred > 0 else 0
+        rec = tp / total_true if total_true > 0 else 0
+        avg_pred = preds_at_thresh.sum(axis=1).mean()
+
+        marker = " 👈 CURRENT" if thresh == 0.3 else ""
+        if micro_f1 > best_f1_safety:
+            best_f1_safety = micro_f1
+            best_thresh_safety = thresh
+            marker = " ⭐ BEST"
+
+        print(
+            f"   {thresh:<12.2f} {micro_f1:<12.1%} {prec:<12.1%} {rec:<12.1%} {avg_pred:<10.1f}{marker}"
+        )
+
+    if best_thresh_safety != 0.3:
+        print(f"\n   💡 OPTIMAL: {best_thresh_safety:.2f} (Micro-F1: {best_f1_safety:.1%})")
+
+    # Check for head collapse
+    pred_variance_safety = np.var(all_probs_safety.mean(axis=0))
+    avg_preds_per_sample = all_preds.sum(axis=1).mean()
+
+    if avg_preds_per_sample > 5:  # Predicting too many types
+        print(f"\n   ⚠️ WARNING: Avg {avg_preds_per_sample:.1f} predictions/sample (expected ~1-2)")
+        print("      Model may be over-predicting safety types.")
+
+    print("   " + "=" * 56)
+
     return results
 
 
@@ -1339,6 +1842,11 @@ Examples:
         help="Also show comparison vs random baseline",
     )
     parser.add_argument(
+        "--compare-modernbert",
+        action="store_true",
+        help="Compare checkpoint vs raw ModernBERT-base (answerdotai/ModernBERT-base, 2T tokens, no finetuning)",
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default=None,
@@ -1408,19 +1916,22 @@ Examples:
         timestamp=datetime.datetime.now().isoformat(),
     )
 
-    if "sentiment" in tasks and "sentiment" in model.capabilities:
+    # Convert capabilities to strings for comparison
+    capability_strs = [str(c.value) if hasattr(c, "value") else str(c) for c in model.capabilities]
+
+    if "sentiment" in tasks and "sentiment" in capability_strs:
         results.sentiment = benchmark_sentiment(model, tokenizer, device)
 
-    if "emotions" in tasks and "emotions" in model.capabilities:
+    if "emotions" in tasks and "emotions" in capability_strs:
         results.emotions = benchmark_emotions(model, tokenizer, device)
 
-    if "safety_generic" in tasks and "safety_generic" in model.capabilities:
+    if "safety_generic" in tasks and "safety_generic" in capability_strs:
         results.safety_generic = benchmark_safety_generic(model, tokenizer, device)
 
-    if "safety_familyos" in tasks and "safety_familyos" in model.capabilities:
+    if "safety_familyos" in tasks and "safety_familyos" in capability_strs:
         results.safety_familyos = benchmark_safety_familyos(model, tokenizer, device)
 
-    if "nli" in tasks and "nli" in model.capabilities:
+    if "nli" in tasks and "nli" in capability_strs:
         results.nli = benchmark_nli(model, tokenizer, device)
 
     # Print summary
@@ -1430,6 +1941,11 @@ Examples:
     if args.compare_baseline:
         baselines = compute_random_baselines()
         print(print_baseline_comparison(results, baselines))
+
+    # Compare to raw ModernBERT-base if requested
+    if args.compare_modernbert:
+        raw_results = benchmark_raw_modernbert(tasks, device)
+        print(print_modernbert_comparison(results, raw_results))
 
     # Save results
     if args.output:

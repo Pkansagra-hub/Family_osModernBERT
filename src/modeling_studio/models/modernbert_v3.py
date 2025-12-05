@@ -930,8 +930,8 @@ def create_v3_multitask_model(
         task_configs: Dict mapping task names to head configs
             Example:
             {
-                "emotions": {"type": "classification", "num_labels": 7},
-                "ner_general": {"type": "token_classification", "num_labels": 9},
+                "emotions": {"type": "classification", "num_labels": 44},
+                "ner_general": {"type": "token_classification", "num_labels": 17},
                 "embedding": {"type": "none"},  # Uses raw hub output
             }
 
@@ -941,9 +941,9 @@ def create_v3_multitask_model(
     Example:
         >>> config = ModernBERTv3Config()
         >>> task_configs = {
-        ...     "emotions": {"type": "classification", "num_labels": 7},
-        ...     "sentiment": {"type": "classification", "num_labels": 3},
-        ...     "ner_general": {"type": "token_classification", "num_labels": 9},
+        ...     "emotions": {"type": "classification", "num_labels": 44},
+        ...     "sentiment": {"type": "classification", "num_labels": 5},
+        ...     "ner_general": {"type": "token_classification", "num_labels": 17},
         ... }
         >>> model = create_v3_multitask_model(config, task_configs)
     """

@@ -1,0 +1,278 @@
+# =============================================================================
+# Stage B for v3 Preparation: Full Fine-Tuning of Encoder Layers
+# =============================================================================
+# PURPOSE: Train v2 encoder layers (especially 15-20) to be excellent family-
+#          context processors. These layers will be cloned to v3 layers 23-28.
+#
+# KEY INSIGHT: v3 will DISCARD v2 heads but KEEP v2 encoder layers.
+#              So we focus on training encoder layers, not heads.
+#
+# v3 Weight Transfer Plan:
+#   - v3 layers 1-22  ← Direct copy from v2 layers 1-22
+#   - v3 layers 23-28 ← Clone from v2 layers 15-20 (this is why we train these!)
+#   - v3 heads        ← New random init (v2 heads discarded)
+#   - v3 hub tokens   ← Semantic centroid init (new)
+#
+# Output: modernbert-v2-for-v3-transfer
+# =============================================================================
+
+defaults:
+  - /training/full_finetune
+
+# =============================================================================
+# Base Model (Stage A output)
+# =============================================================================
+model:
+  name_or_path: outputs/modernbert-multitask-v0
+  torch_dtype: bfloat16
+  use_flash_attention_2: true
+
+# =============================================================================
+# CRITICAL: Layer-wise Learning Rate Strategy
+# =============================================================================
+# Goal: Strongly train layers 15-20 (will become v3 layers 23-28)
+#       while preserving foundation layers 1-14
+layer_wise_lr:
+  enabled: true
+  strategy: "v3_preparation"
+  
+  # Foundation Band (preserve - these are well-trained)
+  layers_1_6:
+    learning_rate: 5e-6
+    freeze: false  # Train gently, don't freeze
+  
+  # Context Band (preserve with light tuning)
+  layers_7_14:
+    learning_rate: 1e-5
+    freeze: false
+  
+  # CRITICAL: Target Layers for v3 Clone (layers 15-20)
+  # These will become v3 layers 23-28 (Family Band)
+  # Train these strongly on FamilyOS data!
+  layers_15_20:
+    learning_rate: 3e-5  # Higher LR - we want these to learn family semantics
+    freeze: false
+  
+  # Upper Semantic Band (will become v3 layers 19-22)
+  layers_21_22:
+    learning_rate: 2e-5
+    freeze: false
+
+# =============================================================================
+# NO LoRA - Full Fine-Tuning
+# =============================================================================
+# We want actual layer weights to change, not adapter weights
+# v3 will copy/clone these actual weights
+peft:
+  method: none  # NO LoRA - train actual layers
+  # Note: v3 will apply its own LoRA to cloned layers 23-28
+
+# =============================================================================
+# Heads Configuration
+# =============================================================================
+# Note: v3 will DISCARD these heads, but we still need them for training signal
+heads:
+  # Keep all heads for training signal (they guide encoder learning)
+  ner_general:
+    enabled: true
+    freeze: false
+  
+  ner_family:
+    enabled: true
+    type: token_classification
+    num_labels: 21
+    dropout: 0.1
+  
+  sentiment:
+    enabled: true
+    freeze: false
+  
+  emotions:
+    enabled: true
+    freeze: false
+  
+  safety_generic:
+    enabled: true
+    freeze: false
+  
+  safety_familyos:
+    enabled: true
+    type: sequence_classification
+    num_labels: 4
+    dropout: 0.1
+  
+  nli:
+    enabled: true
+    freeze: false
+  
+  embedding:
+    enabled: true
+    freeze: false
+  
+  temporal:
+    enabled: true
+    freeze: false
+  
+  ingress:
+    enabled: true
+    type: sequence_classification
+    num_labels: 12
+    dropout: 0.1
+  
+  intent:
+    enabled: true
+    type: sequence_classification
+    num_labels: 8
+    dropout: 0.1
+  
+  relation:
+    enabled: true
+    type: relation_classification
+    num_labels: 15
+    dropout: 0.1
+
+# =============================================================================
+# Task Weights (emphasize FamilyOS tasks to train layers 15-20)
+# =============================================================================
+task_weights:
+  # Generic tasks (replay - lower weight but still present)
+  ner_general: 0.5
+  sentiment: 0.5
+  emotions: 0.5
+  safety_generic: 0.3
+  nli: 0.5
+  embedding: 0.5
+  
+  # FamilyOS tasks (main focus - high weights)
+  ner_family: 2.0
+  ingress: 1.5
+  safety_familyos: 15.0  # CRITICAL for CRISIS recall
+  intent: 1.5
+  relation: 2.0
+  temporal: 1.5
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  # Primary: Your 420K FamilyOS synthetic data
+  familyos_data:
+    - path: data/familyos/unified/output_synthetic
+      format: jsonl
+    - path: data/familyos/unified/output
+      format: jsonl
+  
+  # Stage A Replay (15% to prevent forgetting)
+  replay_ratio: 0.15
+  replay_datasets:
+    - name: conll2003
+      task: ner_general
+    - name: stanfordnlp/sst2
+      task: sentiment
+    - name: multi_nli
+      task: nli
+    - name: dynabench/dynasent
+      task: emotions
+
+# =============================================================================
+# Training Hyperparameters
+# =============================================================================
+training:
+  # Use head LR for heads, layer-wise LR for encoder
+  learning_rate: 1e-4  # For heads only
+  num_train_epochs: 8  # More epochs for full fine-tuning
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 16
+  gradient_accumulation_steps: 8  # Effective batch: 64
+  gradient_checkpointing: true
+  
+  # Regularization
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Schedule
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.1
+  
+  # Mixed precision
+  bf16: true
+  
+  # Evaluation
+  evaluation_strategy: steps
+  eval_steps: 500
+  save_strategy: steps
+  save_steps: 500
+  save_total_limit: 3
+  load_best_model_at_end: true
+  metric_for_best_model: eval_loss
+  greater_is_better: false
+
+# =============================================================================
+# Safety Oversampling (CRITICAL)
+# =============================================================================
+safety_oversampling:
+  enabled: true
+  CRISIS: 20  # Your data has only 445 CRISIS → 8,900 effective
+  RED: 5      # 18K RED → 90K effective
+  AMBER: 1
+  GREEN: 1
+
+# =============================================================================
+# Replay Configuration (prevent forgetting during full fine-tune)
+# =============================================================================
+replay:
+  enabled: true
+  ratio: 0.15  # 15% Stage A replay (higher than LoRA since we're doing full FT)
+  tasks:
+    - ner_general
+    - nli
+    - emotions
+    - sentiment
+
+# =============================================================================
+# EMA (for best checkpoint)
+# =============================================================================
+ema:
+  enabled: true
+  decay: 0.999
+
+# =============================================================================
+# Output
+# =============================================================================
+output:
+  output_dir: outputs/modernbert-v2-for-v3-transfer
+  checkpoint_dir: checkpoints/modernbert-v2-for-v3-transfer
+
+# =============================================================================
+# Forgetting Gates (CRITICAL - verify we don't break Stage A capabilities)
+# =============================================================================
+forgetting_evaluation:
+  enabled: true
+  after_epoch: [4, 8]  # Check mid-way and at end
+  benchmarks:
+    - name: CoNLL-2003
+      metric: F1
+      max_drop: 0.03  # Allow 3% drop (higher than LoRA since full FT)
+    - name: SST-2
+      metric: accuracy
+      max_drop: 0.03
+    - name: MNLI
+      metric: accuracy
+      max_drop: 0.03
+  action_on_failure: reduce_lr_layers_1_14
+
+# =============================================================================
+# v3 Transfer Verification (run after training)
+# =============================================================================
+v3_transfer_verification:
+  enabled: true
+  steps:
+    - name: "Verify layers 15-20 learned family semantics"
+      method: "probe_family_entities"
+      min_accuracy: 0.70
+    - name: "Verify layers 1-14 preserved generic knowledge"
+      method: "probe_conll_entities"
+      min_accuracy: 0.85
+    - name: "Export layer weights for v3 initialization"
+      method: "export_layers_15_20"
+      output: "checkpoints/v2_layers_15_20_for_v3.pt"

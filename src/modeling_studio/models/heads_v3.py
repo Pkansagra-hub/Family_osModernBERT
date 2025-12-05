@@ -31,6 +31,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 
+from ..data.labels import get_num_labels as get_num_labels_from_schema
 from .hub_tokens import (
     TOKEN_LEVEL_CAPABILITIES,
     get_hub_for_capability,
@@ -512,7 +513,7 @@ class HubAwareNLIHead(nn.Module):
 # Head registry mapping capabilities to their head classes
 HEAD_REGISTRY: dict[str, type | None] = {
     # EMO hub heads
-    "emotions": HubAwareHierarchicalHead,
+    "emotions": HubAwareClassificationHead,  # Flat multi-label (44 emotions)
     "sentiment": HubAwareClassificationHead,
     "safety_generic": HubAwareSafetyHead,
     "safety_familyos": HubAwareSafetyHead,
@@ -573,34 +574,17 @@ def create_head_for_capability(
     # Get hub token for this capability
     hub_token = get_hub_for_capability(capability)
 
-    # Default label counts per capability
-    default_labels = {
-        "emotions": 7,  # Ekman primary
-        "sentiment": 3,  # pos/neg/neu
-        "safety_generic": 2,
-        "safety_familyos": 2,
-        "nli": 3,
-        "relation": 10,  # Family relations
-        "intent": 15,  # Intent types
-        "ingress": 8,  # Ingress categories
-        "ner_general": 9,  # BIO tags
-        "ner_family": 9,
-        "temporal": 5,
-    }
-
+    # Get num_labels from schema first (authoritative source)
     if num_labels is None:
-        num_labels = default_labels.get(capability, 2)
+        num_labels = get_num_labels_from_schema(capability)
+        if num_labels == 0:
+            # Fallback for capabilities not in schema
+            fallback_labels = {
+                "embedding": 0,  # No head
+            }
+            num_labels = fallback_labels.get(capability, 2)
 
-    # Handle special cases
-    if capability == "emotions":
-        return HubAwareHierarchicalHead(
-            hidden_size=hidden_size,
-            primary_labels=7,
-            secondary_labels=28,
-            hub_token=hub_token,
-            **kwargs,
-        )
-
+    # Token-level tasks use full sequence, not hub pooling
     if capability in TOKEN_LEVEL_CAPABILITIES:
         return HubAwareTokenClassificationHead(
             hidden_size=hidden_size,

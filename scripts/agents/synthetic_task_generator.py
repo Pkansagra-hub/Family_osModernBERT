@@ -25,11 +25,10 @@ import hashlib
 import json
 import logging
 import os
-import random
 import re
 import threading
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -41,7 +40,7 @@ from dotenv import load_dotenv
 # Optional: Google Cloud Vertex AI
 try:
     from google import genai
-    from google.genai import types as genai_types
+    from google.genai import types as genai_types  # type: ignore
 
     HAS_VERTEX_AI = True
 except ImportError:
@@ -91,18 +90,34 @@ GCP_LOCATION = os.environ.get("GCP_LOCATION", "us-central1")
 VERTEX_MODEL = os.environ.get("VERTEX_MODEL", "gemini-2.5-flash")
 USE_VERTEX_AI = os.environ.get("USE_VERTEX_AI", "false").lower() == "true"
 
-# Rate limiting
-REQUESTS_PER_MINUTE_PER_KEY = 10
-REQUESTS_PER_DAY_PER_KEY = 900
-DELAY_BETWEEN_REQUESTS = 6.0
+# Rate limiting configuration
+# Speed presets: "slow", "normal", "fast", "burst"
+RATE_LIMIT_PRESETS = {
+    "slow": {"requests_per_minute": 5, "delay_between_requests": 12.0, "requests_per_day": 500},
+    "normal": {"requests_per_minute": 10, "delay_between_requests": 6.0, "requests_per_day": 900},
+    "fast": {"requests_per_minute": 20, "delay_between_requests": 3.0, "requests_per_day": 2000},
+    "burst": {"requests_per_minute": 30, "delay_between_requests": 2.0, "requests_per_day": 5000},
+}
 
-# Paths
-BASE_DIR = Path("D:/Modeling_studio")
+# Default rate limiting (can be overridden via CLI or env)
+RATE_LIMIT_PRESET = os.environ.get("RATE_LIMIT_PRESET", "normal")
+_preset = RATE_LIMIT_PRESETS.get(RATE_LIMIT_PRESET, RATE_LIMIT_PRESETS["normal"])
+REQUESTS_PER_MINUTE_PER_KEY = int(
+    os.environ.get("REQUESTS_PER_MINUTE", _preset["requests_per_minute"])
+)
+REQUESTS_PER_DAY_PER_KEY = int(os.environ.get("REQUESTS_PER_DAY", _preset["requests_per_day"]))
+DELAY_BETWEEN_REQUESTS = float(
+    os.environ.get("DELAY_BETWEEN_REQUESTS", _preset["delay_between_requests"])
+)
+
+# Paths - use environment variable with fallback to script location
+BASE_DIR = Path(os.environ.get("FAMILYOS_BASE_DIR", Path(__file__).resolve().parents[2]))
 OUTPUT_DIR = BASE_DIR / "data" / "familyos" / "unified" / "output_synthetic"
 PROGRESS_FILE = OUTPUT_DIR / "progress.json"
+HASH_INDEX_FILE = OUTPUT_DIR / "hash_index.jsonl"
 
 # Processing settings
-SAMPLES_PER_REQUEST = 20  # Generate 20 new samples per API call
+SAMPLES_PER_REQUEST = 15  # Generate 15 new samples per API call
 
 
 # =============================================================================
@@ -132,7 +147,7 @@ Generate complete multi-task annotations in this exact JSON format:
   "text": "<realistic user message>",
   "tasks": {
     "emotions": ["emotion1", "emotion2"],
-    "sentiment": "positive" | "negative" | "neutral" | "mixed",
+    "sentiment": "very_positive" | "positive" | "neutral" | "negative" | "very_negative",
     "ner_family": [
       {"start": <char_start>, "end": <char_end>, "label": "<LABEL>", "token": "<text>"}
     ],
@@ -155,45 +170,6 @@ Generate complete multi-task annotations in this exact JSON format:
 }
 ```
 
----
-
-## GENERATION GUIDELINES
-
-### Priority Intent Distribution (FOCUS ON TASK HUB):
-- **set_reminder** (30%) - "Remind me to...", "Set alarm for...", "Don't forget to..."
-- **query_memory** (20%) - "When did we...", "What time is...", "Where did I..."
-- **seek_advice** (15%) - "Should I...", "How do I...", "What's the best way..."
-- **reflect** (15%) - "I've been thinking about...", "Looking back on..."
-- **other** (10%) - General queries and commands
-- **log_memory** (5%) - Recording events
-- **share_news** (3%) - Sharing updates
-- **express_feeling** (2%) - Emotional expressions
-
-### Priority Ingress Distribution:
-- **TASK** (25%) - To-dos, reminders, commands
-- **PLANNING** (20%) - Future events, schedules
-- **HEALTH** (15%) - Medical, wellness, fitness
-- **WORK** (10%) - Job, productivity, career
-- **GRATITUDE** (10%) - Appreciation, thankfulness
-- **FINANCE** (8%) - Money, bills, budgets
-- **RELATIONSHIP** (7%) - Family dynamics
-- **META** (5%) - System queries
-
-### Include These Underrepresented Elements:
-**Relations:** grandchild_of, friend_of, cousin_of, lives_at, colleague_of, niece_nephew_of
-**NER:** ROUTINE, HOME_LOC, TRADITION, PET, NICKNAME, MILESTONE, HEIRLOOM
-**Temporal:** Always include dates/times for task-oriented samples
-
-### Diversity Requirements:
-- Mix of Indian and Western family structures
-- Use Indian kinship terms: dadi, nani, nana, dada, bhai, didi, chacha, masi, tau, bua
-- Include pets with names
-- Use nicknames (Bunny, Champ, Princess, etc.)
-- Include family traditions (Sunday brunch, Diwali celebration, weekly calls)
-- Include routines (morning walk, dinner time, school pickup)
-
----
-
 ## TASK SCHEMAS (USE EXACTLY THESE VALUES)
 
 ### 1. EMOTIONS (44 classes ONLY, multi-label)
@@ -206,8 +182,8 @@ Generate complete multi-task annotations in this exact JSON format:
 
 **DO NOT USE:** responsibility, planning, curiosity, anticipation, fondness, concern, stress, discipline, health, routine, organization, memory, reflection, determination, guilt, uncertainty, care, anxiety, supportive, friendship, accomplishment, wellness, support, contemplation, indecision, professionalism, appreciation, prudence, etc.
 
-### 2. SENTIMENT (4 ONLY)
-positive, negative, neutral, mixed
+### 2. SENTIMENT (5 ONLY)
+very_positive, positive, neutral, negative, very_negative
 
 ### 3. NER_FAMILY (10 entity types ONLY)
 🚨 **CRITICAL: Use ONLY these 10 NER types. DO NOT use AGE, DATE_REL, TIME, FREQUENCY, DURATION, colleague_of, friend_of, WORK, RELATIONSHIP, FINANCE, etc.**
@@ -250,20 +226,18 @@ DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META, MEMORY, PLANNING, CELEBR
 | MEM | Text is about memories, past events, nostalgia |
 | TASK | Text is about tasks, reminders, queries, commands |
 
-**CRITICAL: Most samples should have TASK=true**
-
 ---
 
 ## EXAMPLES OF TASK-ORIENTED SAMPLES
 
 ### Example 1: Reminder with temporal
 ```json
-{"id": "syn_00001", "text": "Remind me to call Nana tomorrow at 3pm to check on his doctor's appointment", "tasks": {"emotions": ["caring", "responsibility"], "sentiment": "neutral", "ner_family": [{"start": 18, "end": 22, "label": "KINSHIP", "token": "Nana"}], "safety_familyos": "GREEN", "intent": "set_reminder", "ingress": "TASK", "relations": [], "temporal": [{"start": 23, "end": 31, "label": "DATE_REL", "token": "tomorrow"}, {"start": 35, "end": 38, "label": "TIME", "token": "3pm"}]}, "hub_routing": {"EMO": false, "REL": false, "MEM": false, "TASK": true}}
+{"id": "syn_00001", "text": "Remind me to call Nana tomorrow at 3pm to check on his doctor's appointment", "tasks": {"emotions": ["caring", "warmth"], "sentiment": "neutral", "ner_family": [{"start": 18, "end": 22, "label": "KINSHIP", "token": "Nana"}], "safety_familyos": "GREEN", "intent": "set_reminder", "ingress": "TASK", "relations": [], "temporal": [{"start": 23, "end": 31, "label": "DATE_REL", "token": "tomorrow"}, {"start": 35, "end": 38, "label": "TIME", "token": "3pm"}]}, "hub_routing": {"EMO": false, "REL": false, "MEM": false, "TASK": true}}
 ```
 
-### Example 2: Query with grandchild relation
+### Example 2: Query with grandchild relation (very_positive)
 ```json
-{"id": "syn_00002", "text": "When is little Arjun's next checkup? His dadi wants to come along", "tasks": {"emotions": ["caring", "warmth"], "sentiment": "positive", "ner_family": [{"start": 14, "end": 19, "label": "PERSON", "token": "Arjun"}, {"start": 41, "end": 45, "label": "KINSHIP", "token": "dadi"}], "safety_familyos": "GREEN", "intent": "query_memory", "ingress": "HEALTH", "relations": [{"subject": "dadi", "predicate": "grandparent_of", "object": "Arjun"}], "temporal": [{"start": 24, "end": 28, "label": "DATE_REL", "token": "next"}]}, "hub_routing": {"EMO": true, "REL": true, "MEM": false, "TASK": true}}
+{"id": "syn_00002", "text": "When is little Arjun's next checkup? His dadi wants to come along", "tasks": {"emotions": ["caring", "warmth", "love"], "sentiment": "very_positive", "ner_family": [{"start": 14, "end": 19, "label": "PERSON", "token": "Arjun"}, {"start": 41, "end": 45, "label": "KINSHIP", "token": "dadi"}], "safety_familyos": "GREEN", "intent": "query_memory", "ingress": "HEALTH", "relations": [{"subject": "dadi", "predicate": "grandparent_of", "object": "Arjun"}], "temporal": [{"start": 24, "end": 28, "label": "DATE_REL", "token": "next"}]}, "hub_routing": {"EMO": true, "REL": true, "MEM": false, "TASK": true}}
 ```
 
 ### Example 3: Planning with routine
@@ -271,14 +245,19 @@ DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META, MEMORY, PLANNING, CELEBR
 {"id": "syn_00003", "text": "Set up weekly grocery shopping every Saturday morning with my cousin Priya", "tasks": {"emotions": ["neutral"], "sentiment": "neutral", "ner_family": [{"start": 8, "end": 29, "label": "ROUTINE", "token": "weekly grocery shopping"}, {"start": 63, "end": 69, "label": "KINSHIP", "token": "cousin"}, {"start": 70, "end": 75, "label": "PERSON", "token": "Priya"}], "safety_familyos": "GREEN", "intent": "set_reminder", "ingress": "PLANNING", "relations": [{"subject": "user", "predicate": "cousin_of", "object": "Priya"}], "temporal": [{"start": 30, "end": 44, "label": "FREQUENCY", "token": "every Saturday"}, {"start": 45, "end": 52, "label": "TIME", "token": "morning"}]}, "hub_routing": {"EMO": false, "REL": true, "MEM": false, "TASK": true}}
 ```
 
-### Example 4: Work-life balance advice
+### Example 4: Work-life balance advice (very_negative)
 ```json
-{"id": "syn_00004", "text": "How do I balance work deadlines with spending quality time with my kids on weekends?", "tasks": {"emotions": ["worry", "guilt", "overwhelmed"], "sentiment": "mixed", "ner_family": [{"start": 65, "end": 69, "label": "KINSHIP", "token": "kids"}], "safety_familyos": "AMBER", "intent": "seek_advice", "ingress": "WORK", "relations": [], "temporal": [{"start": 77, "end": 85, "label": "FREQUENCY", "token": "weekends"}]}, "hub_routing": {"EMO": true, "REL": false, "MEM": false, "TASK": true}}
+{"id": "syn_00004", "text": "How do I balance work deadlines with spending quality time with my kids on weekends?", "tasks": {"emotions": ["worry", "parental_guilt", "overwhelmed"], "sentiment": "very_negative", "ner_family": [{"start": 65, "end": 69, "label": "KINSHIP", "token": "kids"}], "safety_familyos": "AMBER", "intent": "seek_advice", "ingress": "WORK", "relations": [], "temporal": [{"start": 77, "end": 85, "label": "FREQUENCY", "token": "weekends"}]}, "hub_routing": {"EMO": true, "REL": false, "MEM": false, "TASK": true}}
 ```
 
-### Example 5: Pet care routine
+### Example 5: Pet care routine (positive)
 ```json
-{"id": "syn_00005", "text": "Don't let me forget to take Max to the vet next Tuesday for his vaccination", "tasks": {"emotions": ["responsibility", "caring"], "sentiment": "neutral", "ner_family": [{"start": 28, "end": 31, "label": "PET", "token": "Max"}], "safety_familyos": "GREEN", "intent": "set_reminder", "ingress": "TASK", "relations": [], "temporal": [{"start": 47, "end": 58, "label": "DATE_REL", "token": "next Tuesday"}]}, "hub_routing": {"EMO": false, "REL": false, "MEM": false, "TASK": true}}
+{"id": "syn_00005", "text": "Don't let me forget to take Max to the vet next Tuesday for his vaccination", "tasks": {"emotions": ["caring", "love"], "sentiment": "positive", "ner_family": [{"start": 28, "end": 31, "label": "PET", "token": "Max"}], "safety_familyos": "GREEN", "intent": "set_reminder", "ingress": "TASK", "relations": [], "temporal": [{"start": 47, "end": 58, "label": "DATE_REL", "token": "next Tuesday"}]}, "hub_routing": {"EMO": false, "REL": false, "MEM": false, "TASK": true}}
+```
+
+### Example 6: Financial concern (negative)
+```json
+{"id": "syn_00006", "text": "I need to review our monthly budget, we've been overspending lately", "tasks": {"emotions": ["worry", "frustration"], "sentiment": "negative", "ner_family": [], "safety_familyos": "AMBER", "intent": "reflect", "ingress": "FINANCE", "relations": [], "temporal": [{"start": 24, "end": 31, "label": "FREQUENCY", "token": "monthly"}]}, "hub_routing": {"EMO": true, "REL": false, "MEM": false, "TASK": true}}
 ```
 
 ---
@@ -286,40 +265,465 @@ DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META, MEMORY, PLANNING, CELEBR
 ## IMPORTANT RULES
 
 1. **Generate REALISTIC conversations** - Sound natural, like real users
-2. **Focus on TASK hub** - 80% of samples should have TASK=true
-3. **Include temporal expressions** - Dates, times, frequencies for task samples
-4. **Use diverse names** - Mix Indian and Western names
-5. **Include underrepresented elements** - grandchild_of, cousin_of, colleague_of, ROUTINE, TRADITION, PET
-6. **Accurate character offsets** - Count carefully for NER and temporal
-7. **Safety conscious** - Most should be GREEN, some AMBER (stress, health)
-8. **Multi-label emotions** - 2-4 emotions per sample
-9. **Indian English support** - Use kinship terms: dadi, nani, bhai, didi, etc.
+2. **Include temporal expressions** - Dates, times, frequencies for task samples
+3. **Use diverse names** - Mix Indian and Western names
+4. **Include underrepresented elements** - grandchild_of, cousin_of, colleague_of, ROUTINE, TRADITION, PET
+5. **Accurate character offsets** - Count carefully for NER and temporal
+6. **Safety conscious** - Most should be GREEN, some AMBER (stress, health)
+7. **Multi-label emotions** - 2-4 emotions per sample
+8. **Indian English support** - Use kinship terms: dadi, nani, bhai, didi, etc.
+9. **BALANCED 5-CLASS SENTIMENT** - Use all 5 classes: very_positive, positive, neutral, negative, very_negative
 
 ---
 
 ## OUTPUT
 
-Generate {num_samples} diverse, realistic TASK-oriented samples in JSONL format.
+Generate the requested number of diverse, realistic samples in JSONL format.
 One complete JSON object per line. No markdown, no explanations.
 Start output immediately:"""
 
 
-def get_generation_prompt(num_samples: int, batch_id: int, focus_areas: dict = None) -> str:
-    """Generate prompt for synthetic data generation."""
-    focus_str = ""
-    if focus_areas:
-        focus_str = "\n\n## SPECIAL FOCUS FOR THIS BATCH:\n"
-        if "intents" in focus_areas:
-            focus_str += f"- Prioritize these intents: {', '.join(focus_areas['intents'])}\n"
-        if "ingress" in focus_areas:
-            focus_str += f"- Prioritize these domains: {', '.join(focus_areas['ingress'])}\n"
-        if "relations" in focus_areas:
-            focus_str += f"- Include these relations: {', '.join(focus_areas['relations'])}\n"
-        if "ner" in focus_areas:
-            focus_str += f"- Include these entities: {', '.join(focus_areas['ner'])}\n"
+# =============================================================================
+# Dynamic Distribution Analyzer & Prompt Generator
+# =============================================================================
 
-    prompt = SYSTEM_PROMPT.replace("{num_samples}", str(num_samples))
-    return prompt + focus_str
+# Target distributions (ideal balanced %)
+TARGET_DISTRIBUTIONS = {
+    "emotions": {
+        # Rare emotions that need boosting (< 3% currently)
+        "tier1_critical": [
+            "disgust",
+            "embarrassment",
+            "remorse",
+            "homesickness",
+            "belonging",
+            "anger",
+            "surprise",
+            "fear",
+            "disapproval",
+        ],
+        "tier2_low": [
+            "tenderness",
+            "patience",
+            "parental_guilt",
+            "nervousness",
+            "admiration",
+            "protectiveness",
+            "grief",
+            "emptiness",
+            "amusement",
+            "parental_pride",
+            "playfulness",
+            "approval",
+        ],
+    },
+    "sentiment": {
+        "very_positive": 20,
+        "positive": 20,
+        "neutral": 20,
+        "negative": 20,
+        "very_negative": 20,
+    },
+    "safety": {"GREEN": 60, "AMBER": 30, "RED": 8, "CRISIS": 2},
+    "intent": {
+        "log_memory": 12,
+        "query_memory": 12,
+        "set_reminder": 15,
+        "express_feeling": 12,
+        "seek_advice": 15,
+        "share_news": 12,
+        "reflect": 12,
+        "other": 10,
+    },
+    "ingress": {
+        "DIARY": 8,
+        "TASK": 12,
+        "HEALTH": 10,
+        "FINANCE": 8,
+        "RELATIONSHIP": 8,
+        "WORK": 8,
+        "META": 8,
+        "MEMORY": 8,
+        "PLANNING": 10,
+        "CELEBRATION": 8,
+        "CONCERN": 6,
+        "GRATITUDE": 8,
+    },
+    "relations": {
+        "parent_of": 10,
+        "child_of": 10,
+        "spouse_of": 8,
+        "sibling_of": 8,
+        "grandparent_of": 8,
+        "grandchild_of": 10,
+        "aunt_uncle_of": 8,
+        "niece_nephew_of": 8,
+        "cousin_of": 10,
+        "pet_of": 6,
+        "friend_of": 8,
+        "colleague_of": 8,
+        "lives_at": 8,
+        "owns": 8,
+    },
+    "ner": {
+        "KINSHIP": 20,
+        "PERSON": 15,
+        "FAMILY_EVENT": 10,
+        "ROUTINE": 10,
+        "HOME_LOC": 10,
+        "TRADITION": 10,
+        "PET": 8,
+        "NICKNAME": 8,
+        "MILESTONE": 8,
+        "HEIRLOOM": 8,
+    },
+    "temporal": {
+        "DATE_REL": 25,
+        "TIME": 20,
+        "FREQUENCY": 20,
+        "DATE_ABS": 15,
+        "DURATION": 10,
+        "AGE": 10,
+    },
+}
+
+
+def load_current_distribution() -> dict:
+    """Load current distribution from existing data."""
+    from collections import Counter
+
+    output_dirs = [
+        Path("D:/Modeling_studio/data/familyos/unified/output"),
+        Path("D:/Modeling_studio/data/familyos/unified/output_synthetic"),
+    ]
+
+    stats = {
+        "total": 0,
+        "emotions": Counter(),
+        "sentiment": Counter(),
+        "safety": Counter(),
+        "intent": Counter(),
+        "ingress": Counter(),
+        "relations": Counter(),
+        "ner": Counter(),
+        "temporal": Counter(),
+    }
+
+    for output_dir in output_dirs:
+        if not output_dir.exists():
+            continue
+        for shard in output_dir.glob("shard_*.jsonl"):
+            with open(shard, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        sample = json.loads(line.strip())
+                        stats["total"] += 1
+                        tasks = sample.get("tasks", {})
+
+                        for e in tasks.get("emotions", []):
+                            stats["emotions"][e] += 1
+                        stats["sentiment"][tasks.get("sentiment", "neutral")] += 1
+                        stats["safety"][tasks.get("safety_familyos", "GREEN")] += 1
+                        stats["intent"][tasks.get("intent", "other")] += 1
+                        stats["ingress"][tasks.get("ingress", "DIARY")] += 1
+                        for r in tasks.get("relations", []):
+                            stats["relations"][r.get("predicate", "")] += 1
+                        for e in tasks.get("ner_family", []):
+                            stats["ner"][e.get("label", "")] += 1
+                        for t in tasks.get("temporal", []):
+                            stats["temporal"][t.get("label", "")] += 1
+
+                    except (json.JSONDecodeError, KeyError):
+                        pass
+
+    return stats
+
+
+def calculate_gaps(current_stats: dict) -> dict:
+    """Calculate what's underrepresented vs target distribution."""
+    gaps = {}
+    total = max(current_stats["total"], 1)
+
+    # Emotions - find those below threshold
+    gaps["emotions_critical"] = []
+    gaps["emotions_low"] = []
+    for emotion in VALID_EMOTIONS:
+        pct = (current_stats["emotions"].get(emotion, 0) / total) * 100
+        if pct < 2.2:
+            gaps["emotions_critical"].append((emotion, pct))
+        elif pct < 3.5:
+            gaps["emotions_low"].append((emotion, pct))
+    gaps["emotions_critical"].sort(key=lambda x: x[1])
+    gaps["emotions_low"].sort(key=lambda x: x[1])
+
+    # Sentiment gaps
+    gaps["sentiment"] = []
+    for sent, target_pct in TARGET_DISTRIBUTIONS["sentiment"].items():
+        current_pct = (current_stats["sentiment"].get(sent, 0) / total) * 100
+        if current_pct < target_pct - 5:
+            gaps["sentiment"].append((sent, current_pct, target_pct))
+
+    # Safety gaps - use relative threshold (50% of target) to catch low-percentage items like CRISIS
+    gaps["safety"] = []
+    for safety, target_pct in TARGET_DISTRIBUTIONS["safety"].items():
+        current_pct = (current_stats["safety"].get(safety, 0) / total) * 100
+        # Flag if current is less than 50% of target OR more than 3% below (whichever catches more)
+        if current_pct < target_pct * 0.5 or current_pct < target_pct - 3:
+            gaps["safety"].append((safety, current_pct, target_pct))
+
+    # Intent gaps
+    gaps["intent"] = []
+    for intent, target_pct in TARGET_DISTRIBUTIONS["intent"].items():
+        current_pct = (current_stats["intent"].get(intent, 0) / total) * 100
+        if current_pct < target_pct - 3:
+            gaps["intent"].append((intent, current_pct, target_pct))
+    gaps["intent"].sort(key=lambda x: x[1])
+
+    # Ingress gaps
+    gaps["ingress"] = []
+    for ing, target_pct in TARGET_DISTRIBUTIONS["ingress"].items():
+        current_pct = (current_stats["ingress"].get(ing, 0) / total) * 100
+        if current_pct < target_pct - 2:
+            gaps["ingress"].append((ing, current_pct, target_pct))
+    gaps["ingress"].sort(key=lambda x: x[1])
+
+    # Relations gaps
+    rel_total = sum(current_stats["relations"].values()) or 1
+    gaps["relations"] = []
+    for rel, target_pct in TARGET_DISTRIBUTIONS["relations"].items():
+        current_pct = (current_stats["relations"].get(rel, 0) / rel_total) * 100
+        if current_pct < target_pct - 2:
+            gaps["relations"].append((rel, current_pct, target_pct))
+    gaps["relations"].sort(key=lambda x: x[1])
+
+    # NER gaps
+    ner_total = sum(current_stats["ner"].values()) or 1
+    gaps["ner"] = []
+    for ner, target_pct in TARGET_DISTRIBUTIONS["ner"].items():
+        current_pct = (current_stats["ner"].get(ner, 0) / ner_total) * 100
+        if current_pct < target_pct - 2:
+            gaps["ner"].append((ner, current_pct, target_pct))
+    gaps["ner"].sort(key=lambda x: x[1])
+
+    # Temporal gaps
+    temp_total = sum(current_stats["temporal"].values()) or 1
+    gaps["temporal"] = []
+    for temp, target_pct in TARGET_DISTRIBUTIONS["temporal"].items():
+        current_pct = (current_stats["temporal"].get(temp, 0) / temp_total) * 100
+        if current_pct < target_pct - 3:
+            gaps["temporal"].append((temp, current_pct, target_pct))
+    gaps["temporal"].sort(key=lambda x: x[1])
+
+    return gaps
+
+
+def generate_dynamic_worker_prompts(num_workers: int = 20) -> list[str]:
+    """Generate worker prompts dynamically based on current distribution gaps.
+
+    ALL workers get the SAME comprehensive gap-filling prompt.
+    This ensures balanced generation regardless of worker count.
+    """
+
+    logger.debug("=" * 60)
+    logger.debug("DYNAMIC PROMPT GENERATION")
+    logger.debug("=" * 60)
+
+    # Use cached stats to avoid re-reading all shards
+    current_stats = get_cached_stats()
+    total = max(current_stats["total"], 1)
+
+    logger.debug("Calculating distribution gaps...")
+    gaps = calculate_gaps(current_stats)
+
+    # Build a SINGLE comprehensive prompt with all gaps
+    # Every worker gets the same prompt = balanced generation
+
+    prompt_sections = []
+
+    # === SENTIMENT SECTION ===
+    sentiment_gaps = gaps.get("sentiment", [])
+    if sentiment_gaps:
+        sent_lines = []
+        for sent, current_pct, target_pct in sentiment_gaps:
+            need = target_pct - current_pct
+            sent_lines.append(f"  - {sent}: {current_pct:.1f}% (need +{need:.1f}%)")
+        prompt_sections.append(
+            f"""🎯 SENTIMENT (priority: HIGH)
+{chr(10).join(sent_lines)}
+Generate MORE: {', '.join([s[0] for s in sentiment_gaps])}
+
+Emotion mapping:
+- very_positive → joy, excitement, love, celebration, gratitude, pride
+- positive → contentment, hope, relief, approval, admiration
+- neutral → neutral, patience
+- negative → annoyance, disappointment, frustration, worry
+- very_negative → anger, fear, grief, overwhelmed, emptiness"""
+        )
+
+    # === EMOTIONS SECTION ===
+    critical_emotions = gaps.get("emotions_critical", [])
+    low_emotions = gaps.get("emotions_low", [])
+    if critical_emotions or low_emotions:
+        emo_lines = []
+        for emo, pct in (critical_emotions + low_emotions)[:10]:
+            emo_lines.append(f"  - {emo}: {pct:.1f}%")
+        prompt_sections.append(
+            f"""🎯 EMOTIONS (priority: MEDIUM)
+{chr(10).join(emo_lines)}
+Include these underrepresented emotions in your samples."""
+        )
+
+    # === RELATIONS SECTION ===
+    rel_gaps = gaps.get("relations", [])
+    if rel_gaps:
+        rel_lines = [f"  - {r[0]}: {r[1]:.1f}%" for r in rel_gaps[:6]]
+        prompt_sections.append(
+            f"""🎯 RELATIONS (priority: MEDIUM)
+{chr(10).join(rel_lines)}
+Use extended family: dadi, nani, cousin, colleague, friend"""
+        )
+
+    # === INTENT SECTION ===
+    intent_gaps = gaps.get("intent", [])
+    if intent_gaps:
+        int_lines = [f"  - {i[0]}: {i[1]:.1f}%" for i in intent_gaps[:4]]
+        prompt_sections.append(
+            f"""🎯 INTENT (priority: LOW)
+{chr(10).join(int_lines)}"""
+        )
+
+    # === INGRESS SECTION ===
+    ingress_gaps = gaps.get("ingress", [])
+    if ingress_gaps:
+        ing_lines = [f"  - {i[0]}: {i[1]:.1f}%" for i in ingress_gaps[:4]]
+        prompt_sections.append(
+            f"""🎯 INGRESS (priority: LOW)
+{chr(10).join(ing_lines)}"""
+        )
+
+    # === NER SECTION ===
+    ner_gaps = gaps.get("ner", [])
+    if ner_gaps:
+        ner_lines = [f"  - {n[0]}: {n[1]:.1f}%" for n in ner_gaps[:5]]
+        prompt_sections.append(
+            f"""🎯 NER ENTITIES (priority: LOW)
+{chr(10).join(ner_lines)}
+Examples: HEIRLOOM (ring), MILESTONE (first steps), NICKNAME, ROUTINE, TRADITION"""
+        )
+
+    # === TEMPORAL SECTION ===
+    temp_gaps = gaps.get("temporal", [])
+    if temp_gaps:
+        temp_lines = [f"  - {t[0]}: {t[1]:.1f}%" for t in temp_gaps[:4]]
+        prompt_sections.append(
+            f"""🎯 TEMPORAL (priority: LOW)
+{chr(10).join(temp_lines)}
+Examples: AGE ("when she was 5"), DURATION ("for 3 hours"), DATE_ABS ("March 15")"""
+        )
+
+    # === SAFETY SECTION ===
+    safety_gaps = gaps.get("safety", [])
+    if safety_gaps:
+        safe_lines = [f"  - {s[0]}: {s[1]:.1f}%" for s in safety_gaps]
+        prompt_sections.append(
+            f"""🎯 SAFETY (priority: LOW)
+{chr(10).join(safe_lines)}
+Add some AMBER (stress, worry) and RED (serious concerns) samples"""
+        )
+
+    # Combine all sections into one comprehensive prompt
+    if prompt_sections:
+        combined_prompt = """📊 DISTRIBUTION GAPS TO FILL
+
+The following labels are UNDERREPRESENTED. Generate samples that address these gaps proportionally.
+
+""" + "\n\n".join(
+            prompt_sections
+        )
+    else:
+        combined_prompt = """📊 BALANCED GENERATION
+
+No major gaps detected. Generate diverse, balanced samples across all categories:
+- Mix all 5 sentiments equally
+- Include variety of emotions, relations, intents
+- Use different NER entities and temporal expressions"""
+
+    # Log summary
+    logger.info(
+        f"Gaps: sentiment={len(sentiment_gaps)}, emotions={len(critical_emotions)}+{len(low_emotions)}, "
+        f"rel={len(rel_gaps)}, int={len(intent_gaps)}, ing={len(ingress_gaps)}, "
+        f"ner={len(ner_gaps)}, temp={len(temp_gaps)}, safety={len(safety_gaps)}"
+    )
+
+    # ALL workers get the SAME prompt for balanced generation
+    return [combined_prompt] * num_workers
+
+
+# Global cache for dynamic prompts (loaded once at startup)
+_PROMPTS_LOCK = threading.Lock()
+_DYNAMIC_PROMPTS_CACHE: list[str] | None = None
+_CURRENT_STATS_CACHE: dict | None = None
+_STATS_LOCK = threading.Lock()
+
+
+def get_cached_stats() -> dict:
+    """Get cached stats, computing once if needed."""
+    global _CURRENT_STATS_CACHE
+    with _STATS_LOCK:
+        if _CURRENT_STATS_CACHE is None:
+            _CURRENT_STATS_CACHE = load_current_distribution()
+            logger.info(f"Loaded {_CURRENT_STATS_CACHE['total']:,} existing samples (cached)")
+        return _CURRENT_STATS_CACHE
+
+
+def update_cached_stats(manager_stats: dict) -> None:
+    """Incrementally update cached stats from SyntheticDataManager."""
+    global _CURRENT_STATS_CACHE
+    with _STATS_LOCK:
+        if _CURRENT_STATS_CACHE is not None:
+            # Merge manager stats into cached stats
+            _CURRENT_STATS_CACHE["total"] += manager_stats.get("total_samples", 0)
+            for key in [
+                "emotions",
+                "sentiment",
+                "safety",
+                "intent",
+                "ingress",
+                "relations",
+                "ner",
+                "temporal",
+            ]:
+                if key in manager_stats:
+                    for k, v in manager_stats[key].items():
+                        _CURRENT_STATS_CACHE[key][k] = _CURRENT_STATS_CACHE[key].get(k, 0) + v
+
+
+def refresh_prompts_cache(num_workers: int = 20, force_reload_stats: bool = False) -> None:
+    """Refresh the prompts cache (called by worker 0 during periodic refresh)."""
+    global _DYNAMIC_PROMPTS_CACHE, _CURRENT_STATS_CACHE
+    with _PROMPTS_LOCK:
+        if force_reload_stats:
+            with _STATS_LOCK:
+                _CURRENT_STATS_CACHE = load_current_distribution()
+                logger.info(f"Reloaded stats: {_CURRENT_STATS_CACHE['total']:,} samples")
+        _DYNAMIC_PROMPTS_CACHE = generate_dynamic_worker_prompts(num_workers)
+        logger.info(f"Refreshed {num_workers} worker prompts based on current gaps")
+
+
+def get_worker_user_prompt(worker_id: int, num_samples: int = 20) -> str:
+    """Get the dynamically generated user prompt for a specific worker.
+
+    The num_samples parameter is the ONLY place that specifies how many samples to generate.
+    Dynamic prompts focus on WHAT to generate, this function specifies HOW MANY.
+    """
+    global _DYNAMIC_PROMPTS_CACHE
+
+    with _PROMPTS_LOCK:
+        if _DYNAMIC_PROMPTS_CACHE is None:
+            _DYNAMIC_PROMPTS_CACHE = generate_dynamic_worker_prompts(20)
+
+    prompt = _DYNAMIC_PROMPTS_CACHE[worker_id % len(_DYNAMIC_PROMPTS_CACHE)]
+    return f"Generate exactly {num_samples} samples with this focus:\n\n{prompt}"
 
 
 # =============================================================================
@@ -399,7 +803,7 @@ class OpenRouterClient:
         }
 
         max_retries = 3
-        for attempt in range(max_retries):
+        for _attempt in range(max_retries):
             try:
                 response = self.client.post(
                     f"{self.base_url}/chat/completions",
@@ -466,20 +870,20 @@ class VertexAIClient:
         self.api_key = api_key or os.environ.get("GOOGLE_CLOUD_API_KEY")
 
         if self.api_key:
-            self.client = genai.Client(
+            self.client = genai.Client(  # type: ignore
                 vertexai=True,
                 project=project_id,
                 location=location,
                 api_key=self.api_key,
             )
         else:
-            self.client = genai.Client(
+            self.client = genai.Client(  # type: ignore
                 vertexai=True,
                 project=project_id,
                 location=location,
             )
 
-        logger.info(f"[Vertex AI] Initialized for synthetic generation")
+        logger.info("[Vertex AI] Initialized for synthetic generation")
 
         # Create cache for system prompt
         self.cached_content_name = None
@@ -488,16 +892,29 @@ class VertexAIClient:
 
     def _create_cache(self, system_prompt: str, ttl: str = "86400s") -> None:
         """Create explicit cache for system prompt."""
-        try:
-            cached_content = self.client.caches.create(
+        import concurrent.futures
+
+        def create_cache_sync():
+            return self.client.caches.create(
                 model=self.model_name,
-                config=genai_types.CreateCachedContentConfig(
+                config=genai_types.CreateCachedContentConfig(  # type: ignore
                     system_instruction=system_prompt,
                     ttl=ttl,
                 ),
             )
+
+        try:
+            logger.info("[Vertex AI] Creating cache (timeout: 60s)...")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(create_cache_sync)
+                cached_content = future.result(timeout=60)  # 60 second timeout
             self.cached_content_name = cached_content.name
             logger.info(f"[Vertex AI] Created cache: {cached_content.name}")
+        except concurrent.futures.TimeoutError:
+            logger.warning(
+                "[Vertex AI] Cache creation timed out after 60s, proceeding without cache"
+            )
+            self.cached_content_name = None
         except Exception as e:
             logger.warning(f"[Vertex AI] Failed to create cache: {e}")
             self.cached_content_name = None
@@ -512,14 +929,14 @@ class VertexAIClient:
     ) -> str:
         """Generate response using Vertex AI."""
         safety_settings = [
-            genai_types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
-            genai_types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
-            genai_types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
-            genai_types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
+            genai_types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),  # type: ignore
+            genai_types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),  # type: ignore
+            genai_types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),  # type: ignore
+            genai_types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),  # type: ignore
         ]
 
         if self.cached_content_name:
-            config = genai_types.GenerateContentConfig(
+            config = genai_types.GenerateContentConfig(  # type: ignore
                 cached_content=self.cached_content_name,
                 temperature=temperature,
                 top_p=0.95,
@@ -528,7 +945,7 @@ class VertexAIClient:
             )
             contents = user_prompt
         else:
-            config = genai_types.GenerateContentConfig(
+            config = genai_types.GenerateContentConfig(  # type: ignore
                 temperature=temperature,
                 top_p=0.95,
                 max_output_tokens=max_tokens,
@@ -591,7 +1008,7 @@ class VertexAIClient:
 
 
 class SyntheticDataManager:
-    """Thread-safe manager for synthetic output data."""
+    """Thread-safe manager for synthetic output data with cross-run deduplication."""
 
     def __init__(self, output_dir: Path = OUTPUT_DIR, shard_size: int = 5000):
         self.output_dir = output_dir
@@ -603,12 +1020,69 @@ class SyntheticDataManager:
         self.current_shard_id = self._get_next_shard_id()
         self.current_shard_count = self._count_shard_samples(self.current_shard_id)
 
+        # Load existing hashes for cross-run deduplication
+        self._load_hash_index()
+
         self.stats = {
             "total_samples": 0,
             "task_hub_samples": 0,
             "intent_distribution": Counter(),
             "ingress_distribution": Counter(),
+            "emotions_distribution": Counter(),
+            "safety_distribution": Counter(),
+            "relations_distribution": Counter(),
+            "ner_distribution": Counter(),
+            "temporal_distribution": Counter(),
+            "sentiment_distribution": Counter(),
         }
+
+        # Track new hashes added this session for saving
+        self._new_hashes: list[str] = []
+        self._hash_save_threshold = 1000  # Save hashes every N new entries
+
+    def _load_hash_index(self) -> None:
+        """Load existing hashes from hash index file for cross-run deduplication."""
+        hash_file = self.output_dir / "hash_index.jsonl"
+        if hash_file.exists():
+            try:
+                with open(hash_file, encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            self.seen_hashes.add(line)
+                logger.info(f"Loaded {len(self.seen_hashes):,} hashes for cross-run deduplication")
+            except Exception as e:
+                logger.warning(f"Failed to load hash index: {e}")
+        else:
+            # Build hash index from existing shards
+            logger.info("Building hash index from existing shards...")
+            for shard in self.output_dir.glob("shard_*.jsonl"):
+                try:
+                    with open(shard, encoding="utf-8") as f:
+                        for line in f:
+                            try:
+                                sample = json.loads(line.strip())
+                                text = sample.get("text", "").lower().strip()
+                                sample_hash = hashlib.md5(text.encode()).hexdigest()
+                                self.seen_hashes.add(sample_hash)
+                            except (json.JSONDecodeError, KeyError):
+                                pass
+                except Exception as e:
+                    logger.warning(f"Failed to read shard {shard}: {e}")
+
+            if self.seen_hashes:
+                self._save_hash_index(list(self.seen_hashes))
+                logger.info(f"Built hash index with {len(self.seen_hashes):,} entries")
+
+    def _save_hash_index(self, hashes: list[str]) -> None:
+        """Append new hashes to the hash index file."""
+        hash_file = self.output_dir / "hash_index.jsonl"
+        try:
+            with open(hash_file, "a", encoding="utf-8") as f:
+                for h in hashes:
+                    f.write(h + "\n")
+        except Exception as e:
+            logger.warning(f"Failed to save hash index: {e}")
 
     def _get_shard_path(self, shard_id: int) -> Path:
         return self.output_dir / f"shard_{shard_id:04d}.jsonl"
@@ -650,21 +1124,51 @@ class SyntheticDataManager:
                     f.write(json.dumps(sample, ensure_ascii=False) + "\n")
 
                 self.seen_hashes.add(sample_hash)
+                self._new_hashes.append(sample_hash)
                 self.current_shard_count += 1
 
-                # Track stats
+                # Track comprehensive stats
                 self.stats["total_samples"] += 1
+                tasks = sample.get("tasks", {})
+
                 if sample.get("hub_routing", {}).get("TASK", False):
                     self.stats["task_hub_samples"] += 1
 
-                intent = sample.get("tasks", {}).get("intent", "")
-                ingress = sample.get("tasks", {}).get("ingress", "")
+                # Track all distributions for incremental stats updates
+                intent = tasks.get("intent", "")
+                ingress = tasks.get("ingress", "")
+                sentiment = tasks.get("sentiment", "")
+                safety = tasks.get("safety_familyos", "")
+
                 self.stats["intent_distribution"][intent] += 1
                 self.stats["ingress_distribution"][ingress] += 1
+                self.stats["sentiment_distribution"][sentiment] += 1
+                self.stats["safety_distribution"][safety] += 1
+
+                for emotion in tasks.get("emotions", []):
+                    self.stats["emotions_distribution"][emotion] += 1
+                for rel in tasks.get("relations", []):
+                    self.stats["relations_distribution"][rel.get("predicate", "")] += 1
+                for ner in tasks.get("ner_family", []):
+                    self.stats["ner_distribution"][ner.get("label", "")] += 1
+                for temp in tasks.get("temporal", []):
+                    self.stats["temporal_distribution"][temp.get("label", "")] += 1
 
                 added += 1
 
+            # Periodically save hash index
+            if len(self._new_hashes) >= self._hash_save_threshold:
+                self._save_hash_index(self._new_hashes)
+                self._new_hashes = []
+
         return added
+
+    def flush_hash_index(self) -> None:
+        """Flush any remaining hashes to the index file."""
+        with self.lock:
+            if self._new_hashes:
+                self._save_hash_index(self._new_hashes)
+                self._new_hashes = []
 
     def get_stats(self) -> dict:
         with self.lock:
@@ -735,7 +1239,8 @@ VALID_EMOTIONS = {
     "bittersweet",
     "homesickness",
 }
-VALID_SENTIMENTS = {"positive", "negative", "neutral", "mixed"}
+# 5-class sentiment matching SENTIMENT_LABELS in labels.py
+VALID_SENTIMENTS = {"very_negative", "negative", "neutral", "positive", "very_positive"}
 VALID_SAFETY = {"GREEN", "AMBER", "RED", "CRISIS"}
 VALID_INTENTS = {
     "log_memory",
@@ -845,10 +1350,31 @@ def clean_and_validate_sample(sample: dict) -> tuple[bool, str]:
                 cleaned_relations.append(rel)
         tasks["relations"] = cleaned_relations
 
-    # Validate sentiment
+    # Validate sentiment - with smart normalization
     sentiment = tasks.get("sentiment", "")
     if sentiment not in VALID_SENTIMENTS:
-        tasks["sentiment"] = "neutral"
+        # Smart mapping for common LLM mistakes
+        emotions = set(tasks.get("emotions", []))
+
+        # Strong positive emotions → very_positive
+        strong_positive = {"excitement", "joy", "love", "celebration", "gratitude", "pride"}
+        # Strong negative emotions → very_negative
+        strong_negative = {"anger", "fear", "disgust", "grief", "overwhelmed", "emptiness"}
+        # Mild positive → positive
+        mild_positive = {"contentment", "hope", "relief", "approval", "admiration", "amusement"}
+        # Mild negative → negative
+        mild_negative = {"annoyance", "disappointment", "frustration", "worry", "nervousness"}
+
+        if emotions & strong_positive:
+            tasks["sentiment"] = "very_positive"
+        elif emotions & strong_negative:
+            tasks["sentiment"] = "very_negative"
+        elif emotions & mild_positive:
+            tasks["sentiment"] = "positive"
+        elif emotions & mild_negative:
+            tasks["sentiment"] = "negative"
+        else:
+            tasks["sentiment"] = "neutral"
 
     # Validate safety
     safety = tasks.get("safety_familyos", "")
@@ -923,17 +1449,32 @@ class SyntheticTaskGenerator:
             if not project_id:
                 raise ValueError("GCP_PROJECT_ID not set")
 
-            self.clients = [
-                VertexAIClient(
+            # Create first client with cache attempt, others without
+            first_client = VertexAIClient(
+                project_id=project_id,
+                location=gcp_location or GCP_LOCATION,
+                model_name=vertex_model or VERTEX_MODEL,
+                key_id=0,
+                system_prompt=SYSTEM_PROMPT,
+                cache_ttl="86400s",
+            )
+
+            # Share cache name with other workers (or None if cache failed)
+            shared_cache_name = first_client.cached_content_name
+
+            self.clients = [first_client]
+            for i in range(1, num_parallel):
+                client = VertexAIClient(
                     project_id=project_id,
                     location=gcp_location or GCP_LOCATION,
                     model_name=vertex_model or VERTEX_MODEL,
                     key_id=i,
-                    system_prompt=SYSTEM_PROMPT,
+                    system_prompt=None,  # Don't try to create cache
                     cache_ttl="86400s",
                 )
-                for i in range(num_parallel)
-            ]
+                client.cached_content_name = shared_cache_name  # Share cache
+                self.clients.append(client)
+
             logger.info(f"Using Vertex AI with {num_parallel} parallel worker(s)")
         else:
             api_keys = api_keys or OPENROUTER_API_KEYS
@@ -955,10 +1496,9 @@ class SyntheticTaskGenerator:
             self.batch_counter += 1
             return batch_id
 
-    def _generate_batch(self, client, focus_areas: dict = None) -> int:
-        """Generate one batch of synthetic samples."""
+    def _generate_batch(self, client, user_prompt: str) -> int:
+        """Generate one batch of synthetic samples using worker-specific prompt."""
         batch_id = self._get_next_batch_id()
-        user_prompt = get_generation_prompt(self.samples_per_request, batch_id, focus_areas)
 
         try:
             response = client.generate(
@@ -972,7 +1512,7 @@ class SyntheticTaskGenerator:
             added = self.output_manager.add_samples(samples)
 
             logger.info(
-                f"[Key {client.key_id}] Batch {batch_id}: "
+                f"[Worker {client.key_id}] Batch {batch_id}: "
                 f"Generated {len(samples)}, Added {added}. "
                 f"Total: {self.output_manager.stats['total_samples']}"
             )
@@ -980,7 +1520,7 @@ class SyntheticTaskGenerator:
             return added
 
         except Exception as e:
-            logger.error(f"[Key {client.key_id}] Batch {batch_id} failed: {e}")
+            logger.error(f"[Worker {client.key_id}] Batch {batch_id} failed: {e}")
             return 0
 
     def _worker(
@@ -989,24 +1529,45 @@ class SyntheticTaskGenerator:
         target_samples: int,
         stop_event: threading.Event,
         stats_queue: Queue,
+        refresh_interval: int = 333,
     ) -> None:
-        """Worker thread for one API key."""
+        """Worker thread with dedicated focus area based on worker_id.
+
+        Args:
+            refresh_interval: Re-calculate distribution gaps every N batches (default: 333 = ~5000 samples)
+        """
+        worker_id = client.key_id
         samples_generated = 0
+        batch_count = 0
+
+        # Get worker-specific prompt (dynamically generated based on gaps)
+        user_prompt = get_worker_user_prompt(worker_id, self.samples_per_request)
+
+        logger.debug(f"[Worker {worker_id}] Starting with focus: {user_prompt[:80]}...")
 
         while not stop_event.is_set() and samples_generated < target_samples:
             try:
-                # Rotate focus areas to ensure diversity
-                focus_areas = None
-                if samples_generated % 100 == 0:
-                    focus_areas = {
-                        "intents": ["set_reminder", "query_memory", "seek_advice"],
-                        "ingress": ["TASK", "PLANNING", "HEALTH"],
-                        "relations": ["grandchild_of", "cousin_of", "friend_of", "colleague_of"],
-                        "ner": ["ROUTINE", "TRADITION", "PET", "NICKNAME"],
-                    }
+                # Batch progress tracking every 100 batches
+                if batch_count > 0 and batch_count % 100 == 0:
+                    progress_pct = (samples_generated / target_samples) * 100
+                    logger.info(
+                        f"[Worker {worker_id}] PROGRESS: batch {batch_count}, "
+                        f"{samples_generated:,}/{target_samples:,} samples ({progress_pct:.1f}%)"
+                    )
 
-                added = self._generate_batch(client, focus_areas)
+                # Periodic refresh: Worker 0 triggers re-calculation for all workers
+                if worker_id == 0 and batch_count > 0 and batch_count % refresh_interval == 0:
+                    logger.info(
+                        f"PERIODIC REFRESH at batch {batch_count} - Re-analyzing distribution gaps..."
+                    )
+                    refresh_prompts_cache(20, force_reload_stats=True)
+
+                # Get potentially updated prompt
+                user_prompt = get_worker_user_prompt(worker_id, self.samples_per_request)
+
+                added = self._generate_batch(client, user_prompt)
                 samples_generated += added
+                batch_count += 1
 
                 stats_queue.put(
                     {
@@ -1077,7 +1638,8 @@ class SyntheticTaskGenerator:
                 logger.info("=" * 60)
                 stop_event.set()
 
-        # Final stats
+        # Final stats and cleanup
+        self.output_manager.flush_hash_index()  # Ensure all hashes are saved
         final_stats = self.output_manager.get_stats()
         stats.update(final_stats)
         stats["end_time"] = datetime.now().isoformat()
@@ -1109,7 +1671,6 @@ def show_stats():
         print("No synthetic data generated yet.")
         return
 
-    manager = SyntheticDataManager()
     shards = list(OUTPUT_DIR.glob("shard_*.jsonl"))
 
     if not shards:
@@ -1123,7 +1684,7 @@ def show_stats():
             for line in f:
                 try:
                     all_samples.append(json.loads(line.strip()))
-                except:
+                except (json.JSONDecodeError, KeyError):
                     pass
 
     total = len(all_samples)
@@ -1162,7 +1723,28 @@ def main():
     gen_parser.add_argument(
         "--samples-per-request", type=int, default=20, help="Samples per API call"
     )
-    gen_parser.add_argument("--delay", type=float, default=6.0, help="Delay between requests")
+
+    # Speed control options
+    speed_group = gen_parser.add_argument_group("Speed Control")
+    speed_group.add_argument(
+        "--speed",
+        type=str,
+        choices=["slow", "normal", "fast", "burst"],
+        default="normal",
+        help="Request speed preset: slow (5 rpm), normal (10 rpm), fast (20 rpm), burst (30 rpm)",
+    )
+    speed_group.add_argument(
+        "--delay",
+        type=float,
+        default=None,
+        help="Override delay between requests (seconds). Overrides --speed preset.",
+    )
+    speed_group.add_argument(
+        "--requests-per-minute",
+        type=int,
+        default=None,
+        help="Override requests per minute limit. Overrides --speed preset.",
+    )
 
     # Vertex AI options
     gen_parser.add_argument("--vertex-ai", action="store_true", help="Use GCP Vertex AI")
@@ -1175,15 +1757,34 @@ def main():
         "--num-parallel", type=int, default=4, help="Parallel workers for Vertex AI"
     )
 
+    # Refresh interval
+    gen_parser.add_argument(
+        "--refresh-interval",
+        type=int,
+        default=100,
+        help="Re-analyze distribution gaps every N batches (default: 100)",
+    )
+
     # Stats command
     subparsers.add_parser("stats", help="Show statistics")
 
     args = parser.parse_args()
 
     if args.command == "generate":
+        # Resolve speed settings
+        preset = RATE_LIMIT_PRESETS.get(args.speed, RATE_LIMIT_PRESETS["normal"])
+        delay = args.delay if args.delay is not None else preset["delay_between_requests"]
+        rpm = (
+            args.requests_per_minute
+            if args.requests_per_minute is not None
+            else preset["requests_per_minute"]
+        )
+
+        logger.info(f"Speed settings: {args.speed} preset, delay={delay}s, rpm={rpm}")
+
         generator = SyntheticTaskGenerator(
             samples_per_request=args.samples_per_request,
-            delay_between_requests=args.delay,
+            delay_between_requests=delay,
             use_vertex_ai=args.vertex_ai,
             gcp_project_id=args.gcp_project,
             gcp_location=args.gcp_location,

@@ -2181,27 +2181,27 @@ class ModernBERTv3Ultra(nn.Module):
             # [TASK] Hub - Intent/Action capabilities
             "intent": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=8,  # 8 intent types
+                num_labels=8,  # INTENT_LABELS: 8 FamilyOS intents
                 hub_token="[TASK]",
             ),
             "ingress": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=6,  # 6 ingress types
+                num_labels=12,  # INGRESS_LABELS: 12 domains
                 hub_token="[TASK]",
             ),
 
             # Token-level capabilities (no hub routing)
             "ner_general": HubAwareTokenClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=9,  # BIO tags for general NER
+                num_labels=17,  # NER_GENERAL_LABELS: 17 BIO tags
             ),
             "ner_family": HubAwareTokenClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=12,  # BIO tags for family entities
+                num_labels=21,  # NER_FAMILY_LABELS: 21 BIO tags
             ),
             "temporal": HubAwareTokenClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=7,  # Temporal entity tags
+                num_labels=13,  # TEMPORAL_LABELS: 13 BIO tags
             ),
         })
 

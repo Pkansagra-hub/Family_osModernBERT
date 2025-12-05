@@ -359,7 +359,7 @@ class TestHeadRegistry:
     def test_head_registry_correct_head_types(self):
         """Test HEAD_REGISTRY maps capabilities to correct head classes."""
         # EMO hub heads
-        assert HEAD_REGISTRY["emotions"] == HubAwareHierarchicalHead
+        assert HEAD_REGISTRY["emotions"] == HubAwareClassificationHead  # Flat multi-label
         assert HEAD_REGISTRY["sentiment"] == HubAwareClassificationHead
         assert HEAD_REGISTRY["safety_generic"] == HubAwareSafetyHead
         assert HEAD_REGISTRY["safety_familyos"] == HubAwareSafetyHead
@@ -385,13 +385,14 @@ class TestFactoryFunctions:
     """Test suite for factory functions."""
 
     def test_create_head_for_capability_emotions(self):
-        """AC7: create_head_for_capability() factory works for emotions."""
+        """AC7: create_head_for_capability() factory works for emotions (flat multi-label)."""
         head = create_head_for_capability("emotions", 768)
 
-        assert isinstance(head, HubAwareHierarchicalHead)
+        # Emotions uses flat multi-label classification, not hierarchical
+        assert isinstance(head, HubAwareClassificationHead)
         assert head.hidden_size == 768
-        assert head.primary_labels == 7
-        assert head.secondary_labels == 28
+        assert head.num_labels == 44  # EMOTIONS_FAMILYOS_LABELS: 44 emotions
+        assert head.hub_token == "[EMO]"
 
     def test_create_head_for_capability_sentiment(self):
         """AC7: create_head_for_capability() factory works for sentiment."""
@@ -399,7 +400,7 @@ class TestFactoryFunctions:
 
         assert isinstance(head, HubAwareClassificationHead)
         assert head.hidden_size == 768
-        assert head.num_labels == 3  # pos/neg/neu
+        assert head.num_labels == 5  # SENTIMENT_LABELS: very_negative to very_positive
 
     def test_create_head_for_capability_nli(self):
         """AC7: create_head_for_capability() factory works for NLI."""
@@ -416,7 +417,7 @@ class TestFactoryFunctions:
 
         assert isinstance(head, HubAwareTokenClassificationHead)
         assert head.hidden_size == 768
-        assert head.num_labels == 9
+        assert head.num_labels == 17  # NER_GENERAL_LABELS: 17 BIO tags
 
     def test_create_head_for_capability_embedding_returns_none(self):
         """Test create_head_for_capability returns None for embedding."""
