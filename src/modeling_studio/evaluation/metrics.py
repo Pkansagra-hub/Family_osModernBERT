@@ -261,7 +261,7 @@ def compute_classification_metrics(
 def compute_multilabel_metrics(
     predictions: np.ndarray | list,
     labels: np.ndarray | list,
-    threshold: float = 0.3,
+    threshold: float = 0.5,
 ) -> dict[str, float]:
     """
     Compute multi-label classification metrics.
@@ -270,7 +270,7 @@ def compute_multilabel_metrics(
         predictions: Predicted logits/probabilities (2D: samples x labels)
         labels: True multi-hot labels (2D: samples x labels)
         threshold: Threshold for converting probabilities to predictions
-                   Default 0.3 (lower than 0.5 to catch more positives during early training)
+                   Default 0.5 (standard sigmoid threshold)
 
     Returns:
         Dictionary with micro_f1, macro_f1, hamming_loss, subset_accuracy

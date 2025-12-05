@@ -135,7 +135,7 @@ training:
   # === TRAINING DURATION ===
   # 3-4 epochs is sufficient for Stage A with plain BCE loss
   # More epochs risk overfitting without benefit
-  num_train_epochs: 3
+  num_train_epochs: 4
   max_steps: -1
 
   # === EMA MODEL - V2 SPEC ===
