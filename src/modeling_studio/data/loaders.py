@@ -4420,14 +4420,17 @@ def load_familyos_unified_for_training(
     validation_ratio: float = 0.1,
     seed: int = 42,
     safety_oversampling: dict[str, int] | None = None,
+    tokenizer: Any = None,
+    max_length: int = 512,
 ) -> tuple[dict[str, Dataset], dict[str, Dataset]]:
     """
     Load FamilyOS unified data ready for multi-task training with safety oversampling.
 
     This is a convenience function that:
     1. Loads train and validation splits
-    2. Applies safety oversampling to balance CRISIS/RED samples
-    3. Returns ready-to-use datasets
+    2. Applies tokenization if tokenizer is provided
+    3. Applies safety oversampling to balance CRISIS/RED samples
+    4. Returns ready-to-use datasets
 
     Args:
         data_dirs: Path(s) to unified data directories
@@ -4436,6 +4439,8 @@ def load_familyos_unified_for_training(
         seed: Random seed
         safety_oversampling: Dict mapping safety band to oversample factor
             Default: {"CRISIS": 20, "RED": 5, "AMBER": 1, "GREEN": 1}
+        tokenizer: Tokenizer for preprocessing. If None, data is returned raw.
+        max_length: Maximum sequence length for tokenization (default: 512)
 
     Returns:
         Tuple of (train_datasets, val_datasets) dicts
@@ -4443,6 +4448,7 @@ def load_familyos_unified_for_training(
     Example:
         >>> train_ds, val_ds = load_familyos_unified_for_training(
         ...     data_dirs=["data/familyos/unified/output_synthetic"],
+        ...     tokenizer=tokenizer,
         ...     safety_oversampling={"CRISIS": 20, "RED": 5}
         ... )
     """
@@ -4466,6 +4472,18 @@ def load_familyos_unified_for_training(
         validation_ratio=validation_ratio,
         seed=seed,
     )
+
+    # Apply tokenization if tokenizer is provided
+    if tokenizer is not None:
+        for task in list(train_datasets.keys()):
+            train_datasets[task] = _apply_tokenization(
+                train_datasets[task], task, tokenizer, max_length
+            )
+            logger.info(f"  {task}: {len(train_datasets[task])} samples")
+        for task in list(val_datasets.keys()):
+            val_datasets[task] = _apply_tokenization(
+                val_datasets[task], task, tokenizer, max_length
+            )
 
     # Apply safety oversampling to training data
     if "safety_familyos" in train_datasets and safety_oversampling:

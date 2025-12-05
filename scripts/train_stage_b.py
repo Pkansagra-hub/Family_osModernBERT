@@ -548,13 +548,19 @@ def _load_unified_familyos_data(
     # Limit samples in debug mode
     max_samples = 5000 if debug else None
 
-    # Load using unified loader
+    # Get max length from training config
+    training_config = config.get("training", {})
+    max_length = training_config.get("max_length", 512)
+
+    # Load using unified loader with tokenization
     train_datasets, eval_datasets = load_familyos_unified_for_training(
         data_dirs=data_dirs,
         tasks=tasks,
         validation_ratio=validation_ratio,
         seed=seed,
         safety_oversampling=safety_oversampling if not debug else None,
+        tokenizer=tokenizer,
+        max_length=max_length,
     )
 
     # Apply max samples limit in debug mode

@@ -190,9 +190,8 @@ data:
         task: sentiment
       - name: multi_nli
         task: nli
-      - name: dynabench/dynasent
-        config: dynabench.dynasent.r1.all
-        task: emotions
+      # NOTE: dynasent removed - it's 3-class sentiment, not 44-class multi-label emotions
+      # GoEmotions would need preprocessing to convert label indices to multi-hot vectors
 
 # =============================================================================
 # Training Hyperparameters
