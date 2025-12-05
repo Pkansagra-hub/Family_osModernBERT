@@ -41,6 +41,7 @@ from datasets import Dataset, DatasetDict, load_dataset
 
 from modeling_studio.data.labels import (
     ALL_LABEL_SCHEMAS,
+    EMOTIONS_FAMILYOS_LABELS,
     EMOTIONS_LABELS,
     INGRESS_LABELS,
     INTENT_LABELS,
@@ -3920,7 +3921,10 @@ def _apply_tokenization(
         def tokenize_wrapper(example):
             # Try common text column names
             text = example.get("text") or example.get("sentence") or example.get("content")
-            label = example.get("label")
+            # Try both "label" (HuggingFace standard) and "labels" (FamilyOS unified format)
+            label = (
+                example.get("label") if example.get("label") is not None else example.get("labels")
+            )
             result = tokenize_for_classification(
                 tokenizer=tokenizer,
                 text=text,
@@ -4336,11 +4340,15 @@ def _extract_task_data(
 
 
 def _emotions_to_multihot(emotion_list: list[str]) -> list[int]:
-    """Convert list of emotion strings to multi-hot vector."""
-    multihot = [0] * EMOTIONS_LABELS.num_labels
+    """Convert list of emotion strings to multi-hot vector using FamilyOS 44-class schema."""
+    multihot = [0] * EMOTIONS_FAMILYOS_LABELS.num_labels
     for emotion in emotion_list:
-        idx = EMOTIONS_LABELS.encode(emotion)
-        multihot[idx] = 1
+        try:
+            idx = EMOTIONS_FAMILYOS_LABELS.encode(emotion)
+            multihot[idx] = 1
+        except KeyError:
+            # Skip unknown emotions that might not be in the schema
+            logger.warning(f"Unknown emotion '{emotion}' not in EMOTIONS_FAMILYOS_LABELS, skipping")
     return multihot
 
 

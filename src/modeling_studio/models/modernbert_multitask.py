@@ -381,8 +381,9 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     keyword_override=True,  # Critical safety feature
                 )
             elif capability == Capability.EMOTIONS:
-                # HierarchicalEmotionHead: 44 FamilyOS emotions with SOTA enhancements
-                # All P0/P1/P2 improvements from heads.py are enabled by default
+                # HierarchicalEmotionHead: 44 FamilyOS emotions
+                # CRITICAL: Use plain BCE loss - ASL/Focal causes collapse!
+                # Expert advice: "Never use ASL, Focal, or class-balanced anything"
                 head = head_cls(
                     hidden_size=hidden_size,
                     num_emotions=num_labels,  # 44 emotions from labels.py
@@ -392,17 +393,17 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     use_intensity=True,
                     use_valence_arousal=False,
                     use_familyos=True,  # Enable FamilyOS 44-emotion schema
-                    # SOTA enhancements (P0-P2)
-                    use_asl=True,  # ICCV 2021 SOTA multi-label loss
-                    asl_gamma_neg=4.0,
-                    asl_gamma_pos=1.0,
-                    asl_clip=0.05,
-                    use_hierarchical_loss=True,  # Family coherence regularization
-                    use_label_correlation=True,  # GCN-style emotion co-occurrence
-                    use_emotion_attention=False,  # Disabled by default (more compute)
-                    use_dynamic_thresholds=True,  # Learnable per-emotion thresholds
-                    use_mixup=True,  # Latent space data augmentation
-                    label_smoothing=0.05,  # Regularization
+                    # DISABLED: All complex losses that caused collapse
+                    use_asl=False,  # ← DISABLED - use plain BCE instead
+                    asl_gamma_neg=0.0,  # Not used when use_asl=False
+                    asl_gamma_pos=0.0,  # Not used when use_asl=False
+                    asl_clip=0.0,  # Not used when use_asl=False
+                    use_hierarchical_loss=False,  # ← DISABLED for stability
+                    use_label_correlation=False,  # ← DISABLED for stability
+                    use_emotion_attention=False,  # Disabled (more compute)
+                    use_dynamic_thresholds=False,  # ← DISABLED for stability
+                    use_mixup=False,  # ← DISABLED for stability
+                    label_smoothing=0.0,  # ← DISABLED for stability
                 )
             elif capability == Capability.SAFETY_GENERIC:
                 # SOTA Multi-label safety head with ASL for Stage A

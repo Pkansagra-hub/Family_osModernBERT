@@ -608,8 +608,14 @@ class MultiTaskTrainer(Trainer):
         elif isinstance(task, torch.Tensor):
             task = task[0].item() if task.dim() > 0 else task.item()
 
-        # Store current task for callbacks/logging
+        # Store current task for callbacks/logging (including replay suffix for metrics)
         self.current_task = task
+
+        # Map replay tasks to their base capability
+        # e.g., "sentiment_replay" -> "sentiment", "ner_general_replay" -> "ner_general"
+        capability = task
+        if task.endswith("_replay"):
+            capability = task[:-7]  # Strip "_replay" suffix
 
         # Extract labels
         labels = inputs.pop("labels", None)
@@ -618,7 +624,7 @@ class MultiTaskTrainer(Trainer):
         inputs.pop("token_type_ids", None)
 
         # Handle embedding task with special input format (anchor/positive/negative)
-        if task == "embedding":
+        if capability == "embedding":
             return self._compute_embedding_loss(model, inputs, labels, return_outputs)
 
         # === SOTA FEATURE: Mixup in embedding space ===
@@ -628,7 +634,7 @@ class MultiTaskTrainer(Trainer):
 
         # Forward pass with task-specific head
         outputs = model(
-            capability=task,
+            capability=capability,
             labels=labels,
             return_dict=True,  # Ensure we get structured output
             **inputs,
@@ -664,7 +670,7 @@ class MultiTaskTrainer(Trainer):
             if logits1 is not None:
                 # Second forward pass with same inputs (different dropout masks)
                 outputs2 = model(
-                    capability=task,
+                    capability=capability,
                     labels=labels,
                     return_dict=True,
                     **inputs,

@@ -2151,27 +2151,29 @@ class HierarchicalEmotionHead(nn.Module):
         intensity_threshold: float = 0.1,
         emotion_labels: list[str] | None = None,
         use_familyos: bool = True,  # Use FamilyOS 44-emotion schema by default
-        # ASL (Asymmetric Loss) - SOTA for multi-label classification
-        use_asl: bool = True,  # Default to ASL for 44-class multi-label
-        asl_gamma_neg: float = 4.0,  # Suppress easy negatives
-        asl_gamma_pos: float = 1.0,  # Standard for positives
-        asl_clip: float = 0.05,  # Probability clipping
-        # === NEW SOTA IMPROVEMENTS ===
-        # P0: Hierarchical Loss - penalize family mismatches less
-        use_hierarchical_loss: bool = True,
-        hierarchical_weight: float = 0.3,  # Weight for family-level loss
-        # P0: Label Correlation via GCN - model emotion co-occurrence
-        use_label_correlation: bool = True,
+        # CRITICAL: Plain BCE is the stable choice for 44-class multi-label
+        # ASL/Focal/hierarchical losses caused training collapse historically
+        # Expert guidance: Use ONLY plain BCEWithLogitsLoss for stability
+        use_asl: bool = False,  # ← DISABLED - ASL caused predict-everything/nothing
+        asl_gamma_neg: float = 0.0,  # Not used when use_asl=False
+        asl_gamma_pos: float = 0.0,  # Not used when use_asl=False
+        asl_clip: float = 0.0,  # Not used when use_asl=False
+        # === ALL SOTA IMPROVEMENTS DISABLED (caused instability) ===
+        # P0: Hierarchical Loss - DISABLED (caused training collapse)
+        use_hierarchical_loss: bool = False,
+        hierarchical_weight: float = 0.3,  # Not used when disabled
+        # P0: Label Correlation via GCN - DISABLED (added complexity)
+        use_label_correlation: bool = False,
         correlation_hidden: int = 128,
-        # P1: Emotion Attention - emotion-specific attention over sequence
-        use_emotion_attention: bool = False,  # Disabled by default (more compute)
+        # P1: Emotion Attention - DISABLED (more compute, instability)
+        use_emotion_attention: bool = False,
         num_attention_heads: int = 4,
-        # P1: Dynamic Thresholds - learnable per-emotion thresholds
-        use_dynamic_thresholds: bool = True,
-        # P2: Label Smoothing for multi-label
-        label_smoothing: float = 0.05,
-        # P2: Emotion Mixup in latent space
-        use_mixup: bool = True,
+        # P1: Dynamic Thresholds - DISABLED (unstable)
+        use_dynamic_thresholds: bool = False,
+        # P2: Label Smoothing for multi-label - keep small value
+        label_smoothing: float = 0.0,  # DISABLED for pure BCE
+        # P2: Emotion Mixup in latent space - DISABLED (unstable)
+        use_mixup: bool = False,
         mixup_alpha: float = 0.4,
     ):
         super().__init__()

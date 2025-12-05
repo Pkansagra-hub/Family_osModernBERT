@@ -41,17 +41,18 @@ heads:
     num_labels: 44  # FamilyOS 44-emotion schema
     problem_type: multi_label_classification
     dropout: 0.1
-    # SOTA enhancements (set in model by default, can override here)
-    use_asl: true  # Asymmetric Loss (ICCV 2021 SOTA)
-    asl_gamma_neg: 4.0
-    asl_gamma_pos: 1.0
-    asl_clip: 0.05
-    use_hierarchical_loss: true  # Family coherence regularization
-    use_label_correlation: true  # GCN-style emotion co-occurrence
-    use_emotion_attention: false  # Enable for best results (more compute)
-    use_dynamic_thresholds: true  # Learnable per-emotion thresholds
-    use_mixup: true  # Latent space data augmentation
-    label_smoothing: 0.05  # Regularization
+    # CRITICAL: Plain BCE loss - ASL/Focal causes collapse!
+    # Expert advice: "Never use ASL, Focal, or class-balanced anything"
+    use_asl: false  # ← DISABLED - use plain BCE for stability
+    asl_gamma_neg: 0.0
+    asl_gamma_pos: 0.0
+    asl_clip: 0.0
+    use_hierarchical_loss: false  # ← DISABLED for stability
+    use_label_correlation: false  # ← DISABLED for stability
+    use_emotion_attention: false  # Disabled (more compute)
+    use_dynamic_thresholds: false  # ← DISABLED for stability
+    use_mixup: false  # ← DISABLED for stability
+    label_smoothing: 0.0  # ← DISABLED for stability
 
   safety_generic:
     enabled: true

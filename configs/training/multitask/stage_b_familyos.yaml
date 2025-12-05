@@ -79,11 +79,14 @@ familyos_heads:
     dropout: 0.1
 
 # Task sampling weights (per unified_encoder_solution.md specifications)
+# UPDATED per expert advice:
+#   - safety_familyos: 15.0 → 5.0 (CRISIS already oversampled)
+#   - emotions: 0.3 → 1.0 (prevent being drowned out by safety)
 task_weights:
   # Generic tasks (replay to prevent forgetting)
   ner_general: 0.5       # Plan: 0.5
   sentiment: 0.3         # Plan: 0.3
-  emotions: 0.3          # Plan: 0.3
+  emotions: 1.0          # ← was 0.3, raised to train emotions properly
   safety_generic: 0.2
   nli: 0.3               # Plan: 0.3
   embedding: 0.3
@@ -91,7 +94,7 @@ task_weights:
   # FamilyOS tasks (main focus)
   ner_family: 2.0        # Plan: 2.0
   ingress: 1.5           # Plan: 1.5
-  safety_familyos: 15.0  # CRITICAL: Plan says 10-20x (15.0) for CRISIS recall ≥98%
+  safety_familyos: 5.0   # ← was 15.0, reduced since CRISIS already oversampled
   intent: 1.5            # Plan: 1.5
   relation: 2.0          # Plan: 2.0
   temporal: 1.0          # Plan: 1.0

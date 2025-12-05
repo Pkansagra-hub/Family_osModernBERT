@@ -135,11 +135,14 @@ heads:
 # =============================================================================
 # Task Weights (emphasize FamilyOS tasks to train layers 15-20)
 # =============================================================================
+# UPDATED per expert advice:
+#   - safety_familyos: 15.0 → 5.0 (CRISIS already oversampled 20x)
+#   - emotions: 0.5 → 1.0 (prevent being drowned out by safety)
 task_weights:
   # Generic tasks (replay - lower weight but still present)
   ner_general: 0.5
   sentiment: 0.5
-  emotions: 0.5
+  emotions: 1.0      # ← was 0.5, raised to train emotions properly
   safety_generic: 0.3
   nli: 0.5
   embedding: 0.5
@@ -147,7 +150,7 @@ task_weights:
   # FamilyOS tasks (main focus - high weights)
   ner_family: 2.0
   ingress: 1.5
-  safety_familyos: 15.0  # CRITICAL for CRISIS recall
+  safety_familyos: 5.0   # ← was 15.0, reduced since CRISIS already oversampled 20x
   intent: 1.5
   relation: 2.0
   temporal: 1.5
@@ -223,8 +226,8 @@ training:
   save_steps: 500
   save_total_limit: 3
   load_best_model_at_end: true
-  metric_for_best_model: eval_loss
-  greater_is_better: false
+  metric_for_best_model: eval_weighted_avg_score  # Multi-task doesn't have single eval_loss
+  greater_is_better: true  # Higher weighted avg score is better
 
 # =============================================================================
 # Safety Oversampling (CRITICAL)
