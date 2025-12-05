@@ -732,3 +732,13 @@
 {"text": "Mummy's dinner voice sweet but sad.", "_source_task": "emotions", "_emotions": ["sadness", "love", "homesickness"], "_primary_emotion": "sadness", "_intensity": "low", "_tier": "silver"}
 {"text": "Emma owns the silk saree worn by her masi", "_source_task": "relations", "_entity1": "Emma", "_entity2": "silk saree", "_relation_id": 14, "_tier": "silver"}
 {"text": "When did we water the plants this week?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "When did bhai fix his bike chain?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Playful shadow puppets at camp.", "_source_task": "emotions", "_emotions": ["playfulness", "joy", "togetherness"], "_primary_emotion": "playfulness", "_intensity": "low", "_tier": "silver"}
+{"text": "Family photo shoot in the garden, silly poses.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Buy candles for evening puja with guests.", "_source_task": "ingress", "_ingress_id": "TASK", "_tier": "silver"}
+{"text": "Belonging in Grandma's homework hugs. Pure magic amid care duties.", "_source_task": "emotions", "_emotions": ["belonging", "love", "contentment"], "_primary_emotion": "belonging", "_intensity": "medium", "_tier": "silver"}
+{"text": "Buddy guards the house for the whole family including Mom.", "_source_task": "relations", "_entity1": "Buddy", "_entity2": "Mom", "_relation_id": 10, "_tier": "silver"}
+{"text": "Emma and her friend John shared lunch at school", "_source_task": "relations", "_entity1": "Emma", "_entity2": "John", "_relation_id": 11, "_tier": "silver"}
+{"text": "Sarah hits milestone in Scrabble", "_source_task": "ner_family", "_tokens": ["Sarah", "hits", "milestone", "in", "Scrabble"], "_ner_tags": [1, 0, 17, 0, 0], "_tier": "silver"}
+{"text": "Diwali reminder: Gulab jamun soaks. Longing soaks soul.", "_source_task": "emotions", "_emotions": ["longing", "grief", "emptiness"], "_primary_emotion": "longing", "_intensity": "high", "_tier": "silver"}
+{"text": "Feeling immense gratitude for my children's health and happiness.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
