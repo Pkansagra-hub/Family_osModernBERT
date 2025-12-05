@@ -652,25 +652,28 @@ class ModernBERTv3Ultra(nn.Module):
 
         # ===================================================================
         # COMPONENT 6: TASK HEADS (12 capabilities)
+        # NOTE: Label counts MUST match src/modeling_studio/data/labels.py
         # ===================================================================
         self.heads = nn.ModuleDict({
             # [EMO] Hub - Affective capabilities
             "emotions": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=44,  # 44 family emotions
+                num_labels=44,  # EMOTIONS_FAMILYOS_LABELS: 44 FamilyOS emotions
                 hub_token="[EMO]",
             ),
             "sentiment": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=5,  # Very Negative → Very Positive
+                num_labels=5,  # SENTIMENT_LABELS: very_negative → very_positive
                 hub_token="[EMO]",
             ),
             "safety_generic": HierarchicalSafetyHead(
                 hidden_size=config.hidden_size,
+                num_labels=8,  # SAFETY_GENERIC_LABELS: 8 toxicity types
                 hub_token="[EMO]",
             ),
             "safety_familyos": HierarchicalSafetyHead(
                 hidden_size=config.hidden_size,
+                num_labels=4,  # SAFETY_FAMILYOS_LABELS: GREEN, AMBER, RED, CRISIS
                 hub_token="[EMO]",
             ),
 
@@ -683,39 +686,39 @@ class ModernBERTv3Ultra(nn.Module):
             # [REL] Hub - Relationship capabilities
             "nli": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=3,  # Entailment, Neutral, Contradiction
+                num_labels=3,  # NLI_LABELS: Entailment, Neutral, Contradiction
                 hub_token="[REL]",
             ),
             "relation": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=15,  # 15 family relations
+                num_labels=15,  # RELATION_LABELS: 15 family relations
                 hub_token="[REL]",
             ),
 
             # [TASK] Hub - Intent/Action capabilities
             "intent": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=8,  # 8 intent types
+                num_labels=8,  # INTENT_LABELS: 8 FamilyOS intents
                 hub_token="[TASK]",
             ),
             "ingress": HubAwareClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=6,  # 6 ingress types
+                num_labels=12,  # INGRESS_LABELS: 12 domains
                 hub_token="[TASK]",
             ),
 
             # Token-level capabilities (no hub routing)
             "ner_general": HubAwareTokenClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=9,  # BIO tags for general NER
+                num_labels=17,  # NER_GENERAL_LABELS: 17 BIO tags
             ),
             "ner_family": HubAwareTokenClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=12,  # BIO tags for family entities
+                num_labels=21,  # NER_FAMILY_LABELS: 21 BIO tags
             ),
             "temporal": HubAwareTokenClassificationHead(
                 hidden_size=config.hidden_size,
-                num_labels=7,  # Temporal entity tags
+                num_labels=13,  # TEMPORAL_LABELS: 13 BIO tags
             ),
         })
 
@@ -6338,21 +6341,35 @@ class TaskSpec:
 
 
 # Complete task registry for v3
+# NOTE: Label counts MUST match src/modeling_studio/data/labels.py (ground truth)
 TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
     # ═══════════════════════════════════════════════════════════════
     # [EMO] Hub Tasks - Emotional/Affective Understanding
     # ═══════════════════════════════════════════════════════════════
     "emotions": TaskSpec(
         name="emotions",
-        task_type=TaskType.HIERARCHICAL,
+        task_type=TaskType.CLASSIFICATION,  # Flat classification for 44 FamilyOS emotions
         hub_token="[EMO]",
-        head_class=HubAwareHierarchicalHead,
-        num_labels=7,  # Ekman primary
-        label_names=["anger", "disgust", "fear", "joy", "sadness", "surprise", "neutral"],
-        loss_type="hierarchical",
+        head_class=HubAwareClassificationHead,
+        num_labels=44,  # EMOTIONS_FAMILYOS_LABELS: Core(8) + Positive(12) + Negative(10) + Family(14)
+        label_names=[
+            # Core Emotions (8)
+            "neutral", "joy", "sadness", "anger", "fear", "surprise", "love", "disgust",
+            # Positive Emotions (12)
+            "admiration", "amusement", "approval", "caring", "curiosity", "desire",
+            "excitement", "gratitude", "hope", "optimism", "pride", "tenderness",
+            # Negative Emotions (10)
+            "annoyance", "confusion", "disappointment", "disapproval", "embarrassment",
+            "grief", "nervousness", "remorse", "worry", "emptiness",
+            # Family-Specific Emotions (14)
+            "nostalgia", "protectiveness", "relief", "contentment", "longing",
+            "resentment", "guilt", "overwhelmed", "belonging", "abandonment",
+            "jealousy", "trust", "vulnerability", "homesickness",
+        ],
+        loss_type="cross_entropy",
         loss_weight=1.0,
         metrics=["macro_f1", "accuracy"],
-        description="Hierarchical emotion classification (Ekman → GoEmotions)",
+        description="Flat emotion classification (44 FamilyOS emotions)",
     ),
 
     "sentiment": TaskSpec(
@@ -6360,25 +6377,28 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.CLASSIFICATION,
         hub_token="[EMO]",
         head_class=HubAwareClassificationHead,
-        num_labels=3,
-        label_names=["negative", "neutral", "positive"],
+        num_labels=5,  # SENTIMENT_LABELS: 5-class scale
+        label_names=["very_negative", "negative", "neutral", "positive", "very_positive"],
         loss_type="cross_entropy",
         loss_weight=0.8,
         metrics=["accuracy", "macro_f1"],
-        description="Sentiment polarity classification",
+        description="5-class sentiment polarity classification",
     ),
 
     "safety_generic": TaskSpec(
         name="safety_generic",
-        task_type=TaskType.CLASSIFICATION,
+        task_type=TaskType.MULTI_LABEL,  # Multi-label classification
         hub_token="[EMO]",
         head_class=HubAwareSafetyHead,
-        num_labels=2,
-        label_names=["safe", "unsafe"],
-        loss_type="cross_entropy",
+        num_labels=8,  # SAFETY_GENERIC_LABELS: 6 Jigsaw + 2 new
+        label_names=[
+            "toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate",
+            "self_harm", "dangerous_advice",
+        ],
+        loss_type="binary_cross_entropy",  # Multi-label uses BCE
         loss_weight=1.5,  # Higher weight for safety
         metrics=["recall", "precision", "f1"],
-        description="Generic content safety classification",
+        description="Multi-label toxicity detection (8 types)",
     ),
 
     "safety_familyos": TaskSpec(
@@ -6386,12 +6406,12 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.CLASSIFICATION,
         hub_token="[EMO]",
         head_class=HubAwareSafetyHead,
-        num_labels=2,
-        label_names=["safe", "unsafe"],
+        num_labels=4,  # SAFETY_FAMILYOS_LABELS: GREEN, AMBER, RED, CRISIS
+        label_names=["GREEN", "AMBER", "RED", "CRISIS"],
         loss_type="cross_entropy",
         loss_weight=2.0,  # Highest weight - CRISIS recall is critical
         metrics=["recall", "precision", "f1", "crisis_recall"],
-        description="FamilyOS-specific safety with cultural awareness",
+        description="FamilyOS safety policy bands (GREEN to CRISIS)",
     ),
 
     # ═══════════════════════════════════════════════════════════════
@@ -6431,16 +6451,17 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.CLASSIFICATION,
         hub_token="[REL]",
         head_class=HubAwareClassificationHead,
-        num_labels=10,
+        num_labels=15,  # RELATION_LABELS: no_relation + 14 relations
         label_names=[
+            "no_relation",
             "parent_of", "child_of", "spouse_of", "sibling_of",
-            "grandparent_of", "grandchild_of", "aunt_uncle_of",
-            "niece_nephew_of", "cousin_of", "other"
+            "grandparent_of", "grandchild_of", "aunt_uncle_of", "niece_nephew_of",
+            "cousin_of", "pet_of", "friend_of", "colleague_of", "lives_at", "owns",
         ],
         loss_type="cross_entropy",
         loss_weight=1.2,
         metrics=["macro_f1", "accuracy"],
-        description="Family relationship extraction",
+        description="Family relationship extraction (15 relations)",
     ),
 
     # ═══════════════════════════════════════════════════════════════
@@ -6451,16 +6472,15 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.CLASSIFICATION,
         hub_token="[TASK]",
         head_class=HubAwareClassificationHead,
-        num_labels=15,
+        num_labels=8,  # INTENT_LABELS: 8 FamilyOS intents
         label_names=[
-            "inform", "question", "request", "confirm", "deny",
-            "greeting", "goodbye", "thank", "apologize", "command",
-            "suggest", "express_emotion", "share_memory", "plan", "other"
+            "log_memory", "query_memory", "set_reminder", "express_feeling",
+            "seek_advice", "share_news", "reflect", "other",
         ],
         loss_type="cross_entropy",
         loss_weight=1.0,
         metrics=["accuracy", "macro_f1"],
-        description="Conversational intent classification",
+        description="FamilyOS user intent classification (8 intents)",
     ),
 
     "ingress": TaskSpec(
@@ -6468,15 +6488,15 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.CLASSIFICATION,
         hub_token="[TASK]",
         head_class=HubAwareClassificationHead,
-        num_labels=8,
+        num_labels=12,  # INGRESS_LABELS: 7 original + 5 extended
         label_names=[
-            "family_update", "memory_share", "question", "request",
-            "emotional_support", "planning", "general_chat", "system"
+            "DIARY", "TASK", "HEALTH", "FINANCE", "RELATIONSHIP", "WORK", "META",
+            "MEMORY", "PLANNING", "CELEBRATION", "CONCERN", "GRATITUDE",
         ],
         loss_type="cross_entropy",
         loss_weight=1.0,
         metrics=["accuracy"],
-        description="Message ingress routing classification",
+        description="Extended domain classification (12 domains)",
     ),
 
     # ═══════════════════════════════════════════════════════════════
@@ -6487,15 +6507,17 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.TOKEN_CLASSIFICATION,
         hub_token="[CLS]",  # Not used - full sequence
         head_class=HubAwareTokenClassificationHead,
-        num_labels=9,
+        num_labels=17,  # NER_GENERAL_LABELS: 17 BIO tags
         label_names=[
-            "O", "B-PER", "I-PER", "B-ORG", "I-ORG",
-            "B-LOC", "I-LOC", "B-MISC", "I-MISC"
+            "O",
+            "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC",
+            "B-MISC", "I-MISC", "B-DATE", "I-DATE", "B-TIME", "I-TIME",
+            "B-EVENT", "I-EVENT", "B-PRODUCT", "I-PRODUCT",
         ],
         loss_type="cross_entropy",
         loss_weight=1.0,
         metrics=["entity_f1", "precision", "recall"],
-        description="General named entity recognition",
+        description="General named entity recognition (17 BIO tags)",
     ),
 
     "ner_family": TaskSpec(
@@ -6503,15 +6525,19 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.TOKEN_CLASSIFICATION,
         hub_token="[CLS]",
         head_class=HubAwareTokenClassificationHead,
-        num_labels=9,
+        num_labels=21,  # NER_FAMILY_LABELS: 21 BIO tags
         label_names=[
-            "O", "B-PERSON", "I-PERSON", "B-RELATION", "I-RELATION",
-            "B-EVENT", "I-EVENT", "B-PLACE", "I-PLACE"
+            "O",
+            "B-PERSON", "I-PERSON", "B-KINSHIP", "I-KINSHIP",
+            "B-NICKNAME", "I-NICKNAME", "B-PET", "I-PET",
+            "B-HOME_LOC", "I-HOME_LOC", "B-FAMILY_EVENT", "I-FAMILY_EVENT",
+            "B-ROUTINE", "I-ROUTINE", "B-TRADITION", "I-TRADITION",
+            "B-MILESTONE", "I-MILESTONE", "B-HEIRLOOM", "I-HEIRLOOM",
         ],
         loss_type="cross_entropy",
         loss_weight=1.2,
         metrics=["entity_f1", "precision", "recall"],
-        description="Family-specific entity recognition",
+        description="Family-specific entity recognition (21 BIO tags)",
     ),
 
     "temporal": TaskSpec(
@@ -6519,12 +6545,17 @@ TASK_REGISTRY_V3: Dict[str, TaskSpec] = {
         task_type=TaskType.TOKEN_CLASSIFICATION,
         hub_token="[CLS]",
         head_class=HubAwareTokenClassificationHead,
-        num_labels=5,
-        label_names=["O", "B-DATE", "I-DATE", "B-TIME", "I-TIME"],
+        num_labels=13,  # TEMPORAL_LABELS: 13 BIO tags
+        label_names=[
+            "O",
+            "B-DATE_ABS", "I-DATE_ABS", "B-DATE_REL", "I-DATE_REL",
+            "B-TIME", "I-TIME", "B-DURATION", "I-DURATION",
+            "B-FREQUENCY", "I-FREQUENCY", "B-AGE", "I-AGE",
+        ],
         loss_type="cross_entropy",
         loss_weight=1.0,
         metrics=["entity_f1"],
-        description="Temporal expression extraction",
+        description="Temporal expression extraction (13 BIO tags)",
     ),
 }
 

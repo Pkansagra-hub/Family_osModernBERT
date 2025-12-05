@@ -7,28 +7,53 @@ from pathlib import Path
 
 
 def analyze_generated_data(
-    output_dir: str = "D:/Modeling_studio/data/familyos/unified/output_fixed",
+    output_dirs: list[str] = None,
 ):
-    """Analyze all generated shards and print distribution stats."""
-    output_path = Path(output_dir)
-    shards = sorted(output_path.glob("shard_*.jsonl"))
+    """Analyze all generated shards from multiple directories and print distribution stats."""
+    if output_dirs is None:
+        output_dirs = [
+            "D:/Modeling_studio/data/familyos/unified/output",
+            "D:/Modeling_studio/data/familyos/unified/output_synthetic",
+        ]
 
-    if not shards:
-        print(f"No shards found in {output_dir}")
-        return
-
-    # Load all samples
+    # Load all samples from all directories
     samples = []
-    for shard in shards:
-        with open(shard, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    samples.append(json.loads(line.strip()))
-                except json.JSONDecodeError:
-                    pass
+    total_by_dir = {}
+
+    print("\n" + "=" * 70)
+    print("LOADING DATA FROM MULTIPLE SOURCES")
+    print("=" * 70)
+
+    for output_dir in output_dirs:
+        output_path = Path(output_dir)
+        shards = sorted(output_path.glob("shard_*.jsonl"))
+
+        dir_name = output_path.name
+        dir_samples = []
+
+        if not shards:
+            print(f"  {dir_name}: No shards found")
+            continue
+
+        for shard in shards:
+            with open(shard, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        sample = json.loads(line.strip())
+                        dir_samples.append(sample)
+                    except json.JSONDecodeError:
+                        pass
+
+        samples.extend(dir_samples)
+        total_by_dir[dir_name] = len(dir_samples)
+        print(f"  {dir_name}: {len(dir_samples):,} samples ({len(shards)} shards)")
 
     total = len(samples)
-    print(f"TOTAL SAMPLES: {total:,}")
+    print(f"\n{'='*70}")
+    print(f"TOTAL SAMPLES (COMBINED): {total:,}")
+    print(f"{'='*70}")
+    for dir_name, count in total_by_dir.items():
+        print(f"  {dir_name}: {count:,} ({100*count/total:.1f}%)")
     print()
 
     # 1. EMOTIONS

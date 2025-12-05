@@ -82,7 +82,7 @@ if not OPENROUTER_API_KEYS:
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # Free models on OpenRouter (try in order)
 # Options: "google/gemini-2.0-flash-exp:free", "meta-llama/llama-3.1-8b-instruct:free", "tngtech/deepseek-r1t-chimera:free"
-MODEL = "tngtech/deepseek-r1t-chimera:free"
+MODEL = "qwen/qwen3-coder:free"
 
 # GCP Vertex AI Configuration
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "")
@@ -414,7 +414,7 @@ For each input sample, generate a complete multi-task annotation in this exact J
 - `neutral` - Factual, no strong emotion
 - `mixed` - Both positive and negative feelings (e.g., bittersweet)
 
-### 3. NER_FAMILY (10 entity types)
+### 3. NER_FAMILY (10 entity types ONLY - DO NOT USE ANY OTHER LABELS)
 | Label | Description | Examples |
 |-------|-------------|----------|
 | PERSON | Named individuals | "John", "Sarah", "Emma" |
@@ -427,6 +427,8 @@ For each input sample, generate a complete multi-task annotation in this exact J
 | TRADITION | Family rituals | "Sunday brunch", "Diwali celebration" |
 | MILESTONE | Life events | "first steps", "graduation day" |
 | HEIRLOOM | Sentimental objects | "grandma's necklace", "dad's watch" |
+
+**CRITICAL**: Use ONLY these 10 labels. DO NOT use: TIME, DATE_ABS, DATE_REL, DURATION, FREQUENCY, AGE (those are TEMPORAL), RELATIONSHIP, FRIEND, COLLEAGUE (those are RELATIONS), or any other labels like OTHER, MEMORY, EMOTION, TASK, HEALTH, PLANNING.
 
 → Return character offsets (start, end) and the token text.
 
@@ -487,7 +489,7 @@ For each input sample, generate a complete multi-task annotation in this exact J
 
 → Only include if there are 2+ entities with a relationship.
 
-### 8. TEMPORAL (6 types)
+### 8. TEMPORAL (6 types ONLY - DO NOT USE ANY OTHER LABELS)
 | Type | Examples |
 |------|----------|
 | DATE_ABS | "January 15", "2024" |
@@ -496,6 +498,8 @@ For each input sample, generate a complete multi-task annotation in this exact J
 | DURATION | "for 2 hours", "all day" |
 | FREQUENCY | "every Sunday", "weekly" |
 | AGE | "when she was 5", "at age 10" |
+
+**CRITICAL**: Use ONLY these 6 labels. DO NOT use: ROUTINE, FAMILY_EVENT, MILESTONE, HOME_LOC, TRADITION, TASK, MEMORY, TEMPORAL_TYPE (those belong in NER_FAMILY or other tasks).
 
 → Return character offsets (start, end) and the token text.
 
@@ -524,6 +528,11 @@ Determine which hub tokens should be trained based on content:
 1. **Keep the original `_source_task` annotation** - If the input had emotions, those are ground truth
 2. **Infer missing tasks** - Add annotations for tasks not in the original
 3. **Character offsets must be accurate** - Count characters carefully for NER and temporal
+4. **STRICT LABEL ADHERENCE**:
+   - NER: Use ONLY the 10 labels listed (PERSON, KINSHIP, NICKNAME, PET, HOME_LOC, FAMILY_EVENT, ROUTINE, TRADITION, MILESTONE, HEIRLOOM)
+   - TEMPORAL: Use ONLY the 6 labels listed (DATE_ABS, DATE_REL, TIME, DURATION, FREQUENCY, AGE)
+   - RELATIONS: Use ONLY the 15 predicate types listed (parent_of, child_of, spouse_of, sibling_of, etc.)
+   - DO NOT create new labels, mix labels across tasks, or use generic labels like "OTHER", "other", "MEMORY", "RELATIONSHIP"
 4. **Empty arrays are valid** - If no relations exist, use `"relations": []`
 5. **Multi-label emotions** - Most texts have 2-4 emotions
 6. **Indian English** - Recognize kinship terms: didi, bhai, nana, nani, dada, dadi, chacha, masi, etc.
@@ -1398,14 +1407,30 @@ class VertexAIClient:
 class UnifiedDataManager:
     """Thread-safe manager for unified output data."""
 
-    def __init__(self, output_dir: Path = OUTPUT_DIR, shard_size: int = 5000):
+    def __init__(
+        self,
+        output_dir: Path = OUTPUT_DIR,
+        shard_size: int = 5000,
+        enable_deduplication: bool = False,
+    ):
         self.output_dir = output_dir
         self.shard_size = shard_size
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.lock = threading.Lock()
         self.seen_hashes: set[str] = set()
-        self._load_existing_hashes()
+        self.enable_deduplication = enable_deduplication
+
+        # ALWAYS load existing hashes to prevent duplicates on resume
+        # Even in enrichment mode, we don't want to re-generate samples we already created
+        if enable_deduplication or self.output_dir.exists():
+            existing_count = self._load_existing_hashes()
+            if existing_count > 0:
+                logger.info(
+                    f"Checkpoint: Loaded {existing_count} existing samples - will skip duplicates"
+                )
+        else:
+            logger.info("Starting fresh - no existing data found")
 
         self.current_shard_id = self._get_next_shard_id()
         self.current_shard_count = self._count_shard_samples(self.current_shard_id)
@@ -1413,16 +1438,19 @@ class UnifiedDataManager:
         # Track task coverage
         self.task_counts: dict[str, int] = defaultdict(int)
 
-    def _load_existing_hashes(self) -> None:
+    def _load_existing_hashes(self) -> int:
+        """Load existing sample hashes to prevent duplicates on resume."""
+        count = 0
         for shard_file in self.output_dir.glob("shard_*.jsonl"):
             with open(shard_file, encoding="utf-8") as f:
                 for line in f:
                     try:
                         sample = json.loads(line.strip())
                         self.seen_hashes.add(compute_sample_hash(sample))
+                        count += 1
                     except json.JSONDecodeError:
                         continue
-        logger.info(f"Loaded {len(self.seen_hashes)} existing unified samples")
+        return count
 
     def _get_shard_path(self, shard_id: int) -> Path:
         return self.output_dir / f"shard_{shard_id:04d}.jsonl"
@@ -1445,11 +1473,16 @@ class UnifiedDataManager:
 
     def add_samples(self, samples: list[dict]) -> int:
         added = 0
+        skipped = 0
 
         with self.lock:
             for sample in samples:
                 sample_hash = compute_sample_hash(sample)
+
+                # ALWAYS check for duplicates (checkpoint resume protection)
+                # This prevents re-generating samples when resuming from checkpoint
                 if sample_hash in self.seen_hashes:
+                    skipped += 1
                     continue
 
                 if self.current_shard_count >= self.shard_size:
@@ -1471,6 +1504,9 @@ class UnifiedDataManager:
                         self.task_counts[hub] += 1
 
                 added += 1
+
+        if skipped > 0:
+            logger.debug(f"Skipped {skipped} duplicate samples (already in dataset)")
 
         return added
 
@@ -1556,7 +1592,8 @@ class UnifiedDataGeneratorAgent:
             ]
             logger.info(f"Using OpenRouter with {len(self.clients)} API keys")
 
-        self.output_manager = UnifiedDataManager()
+        # Disable deduplication during enrichment - we want to allow re-enriching texts
+        self.output_manager = UnifiedDataManager(enable_deduplication=False)
         self.progress_tracker = ProgressTracker()
         self.batch_counter = 0
         self.batch_lock = threading.Lock()
@@ -1999,9 +2036,9 @@ def show_stats() -> None:
     else:
         print("   No progress recorded yet. Run 'generate' to start.")
 
-    # Output stats
+    # Output stats (enable deduplication to get accurate unique counts)
     print("\n📊 Unified Output:")
-    manager = UnifiedDataManager()
+    manager = UnifiedDataManager(enable_deduplication=True)
     stats = manager.get_stats()
 
     print(f"   Total unified samples: {stats['total_samples']:,}")
@@ -2210,8 +2247,8 @@ def main():
                 return
             client = OpenRouterClient(api_key=OPENROUTER_API_KEYS[0], key_id=0)
 
-        # Process in batches
-        output_mgr = UnifiedDataManager()
+        # Process in batches (disable deduplication for retry)
+        output_mgr = UnifiedDataManager(enable_deduplication=False)
         total_added = 0
 
         for i in range(0, len(incomplete_samples), 10):
