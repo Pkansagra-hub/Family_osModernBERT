@@ -579,6 +579,12 @@ class EmbeddingCollator(BaseCollator):
             ),
         }
 
+        # Use provided labels when available; otherwise default to positives-only signal
+        if "labels" in features[0] and features[0]["labels"] is not None:
+            batch["labels"] = torch.tensor([f["labels"] for f in features], dtype=torch.float)
+        else:
+            batch["labels"] = torch.ones(len(features), dtype=torch.float)
+
         # Add negatives if present
         if "negative_input_ids" in features[0]:
             negative_input_ids = [f["negative_input_ids"] for f in features]

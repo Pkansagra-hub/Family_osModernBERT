@@ -3059,6 +3059,34 @@ class TestEmbeddingCollator:
         assert "positive_attention_mask" in batch
         assert "labels" in batch  # Default labels of 1.0 for positive pairs
 
+    def test_embedding_collator_triplet_alt_format_defaults_labels(self, tokenizer):
+        """Alternative triplet format sets default labels."""
+        from modeling_studio.trainers.collators import EmbeddingCollator
+
+        collator = EmbeddingCollator(tokenizer=tokenizer)
+
+        features = [
+            {
+                "input_ids": [1, 2, 3],
+                "attention_mask": [1, 1, 1],
+                "positive_input_ids": [4, 5],
+                "positive_attention_mask": [1, 1],
+                "task": "embedding",
+            },
+            {
+                "input_ids": [6, 7],
+                "attention_mask": [1, 1],
+                "positive_input_ids": [8, 9, 10],
+                "positive_attention_mask": [1, 1, 1],
+                "task": "embedding",
+            },
+        ]
+
+        batch = collator(features)
+
+        assert "labels" in batch
+        assert batch["labels"].tolist() == pytest.approx([1.0, 1.0])
+
     def test_embedding_collator_triplet_with_hard_negatives(self, tokenizer):
         """Handles triplet format with hard negatives."""
         from modeling_studio.trainers.collators import EmbeddingCollator

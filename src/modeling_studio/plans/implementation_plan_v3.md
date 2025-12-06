@@ -14140,7 +14140,7 @@ verification:
 **Effort:** 5 hours | **Priority:** P0 | **Depends On:** Epic 5.2
 
 **File:** `src/modeling_studio/data/loaders_v3.py`
-**Data:** `data/familyos/unified/output/shard_*.jsonl`
+**Data:** `data/familyos/unified/output_healed/shard_*.jsonl`, `data/familyos/unified/output_synthetic_healed/shard_*.jsonl`
 
 **Purpose:** Load the generated unified JSONL with hub_routing field for v3 multi-task training.
 

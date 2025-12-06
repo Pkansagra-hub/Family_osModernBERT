@@ -1,0 +1,217 @@
+# configs/training/multitask/stage_v3_phase0_5_enhanced.yaml
+#
+# Phase 0.5 Training Configuration for ModernBERT v3
+# "Enhanced Healing" - Repairs cloned layers while preserving v2 capabilities
+#
+# Training Focus:
+#   - Heal L23-28 (cloned from L15-20)
+#   - Smooth L22→L23 interface
+#   - Preserve L1-22 capabilities
+#   - Use enhanced healing data (SST-2, CoNLL, MNLI, SQuAD, STS-B)
+
+model:
+  name: "modernbert_v3_ultra"
+  pretrained_path: null  # Will be set by initialization script
+  config:
+    num_layers: 28
+    hidden_size: 768
+    num_attention_heads: 12
+    num_hub_tokens: 4
+    vocab_size: 50372
+
+training:
+  phase: "phase_0.5"
+  phase_name: "Enhanced Healing"
+
+  max_steps: 2500
+  warmup_steps: 500
+  warmup_ratio: 0.2
+
+  per_device_train_batch_size: 32
+  per_device_eval_batch_size: 64
+  gradient_accumulation_steps: 1
+  effective_batch_size: 32
+
+  eval_steps: 250
+  eval_strategy: "steps"
+  save_steps: 500
+  save_total_limit: 3
+
+  logging_steps: 50
+  logging_first_step: true
+
+  fp16: false
+  bf16: true
+
+  seed: 42
+  data_seed: 42
+
+layer_freezing:
+  phase: "phase_0.5"
+
+  frozen_bands:
+    - foundation
+    - core
+
+  trainable_bands:
+    - feeder
+    - family
+
+  freeze_embeddings: true
+  freeze_hub_tokens: false
+
+  expected_frozen_params: "~100M"
+  expected_trainable_params: "~50M"
+
+learning_rate:
+  strategy: "zipper"
+
+  base_lr: 3e-5
+  layers_1_18: 0.0
+  layers_19_22: 1e-5
+  layer_23: 5e-5
+  layers_24_28: 3e-5
+
+  family_graduated: true
+  family_decay: 0.85
+
+  embeddings_lr: 0.0
+  hub_tokens_lr: 1e-5
+  task_heads_lr: 3e-5
+
+scheduler:
+  type: "cosine"
+  warmup_steps: 500
+  min_lr_ratio: 0.01
+
+gradient:
+  max_grad_norm: 1.0
+
+  per_layer_clip: true
+  interface_clip: 0.5
+  feeder_clip: 1.0
+  family_clip: 1.0
+
+  log_grad_norms: true
+  log_every_n_steps: 100
+  explosion_threshold: 10.0
+
+  nan_check: true
+  zero_nan_grads: true
+
+hub_tokens:
+  gradient_masking: true
+  freeze_original_vocab: true
+  train_hub_tokens:
+    - "[EMO]"
+    - "[MEM]"
+    - "[REL]"
+    - "[TASK]"
+  hub_token_grad_scale: 1.0
+
+data:
+  config_file: "configs/data/multitask/healing_enhanced.yaml"
+
+  replay:
+    enabled: true
+    ratio: 0.15
+    task_balanced: true
+    dynamic_ratio: true
+    loss_threshold: 0.5
+    max_ratio: 0.3
+
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+
+optimizer:
+  type: "adamw"
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  eps: 1e-8
+
+loss:
+  use_task_weights: true
+  normalize_losses: true
+
+  task_weights:
+    sentiment: 1.0
+    ner: 1.0
+    nli: 1.0
+    qa: 1.2
+    similarity: 1.2
+
+  use_uncertainty_weighting: false
+
+lora:
+  enabled: false
+  rank: 16
+  alpha: 32.0
+  dropout: 0.1
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+  target_layers: [22, 23, 24, 25, 26, 27]
+
+checkpointing:
+  output_dir: "outputs/v3_phase0_5_enhanced"
+  save_strategy: "steps"
+  save_steps: 500
+  save_total_limit: 3
+  load_best_model_at_end: true
+
+  save_optimizer_state: true
+  save_scheduler_state: true
+  save_rng_state: true
+
+logging:
+  use_wandb: true
+  wandb_project: "modernbert-v3"
+  wandb_run_name: "phase0_5_enhanced_healing"
+  wandb_tags:
+    - "phase_0.5"
+    - "healing"
+    - "enhanced"
+    - "v3"
+
+  logging_steps: 50
+  log_level: "info"
+
+  track_metrics:
+    - train_loss
+    - eval_loss
+    - learning_rate
+    - grad_norm
+    - interface_grad_ratio
+
+early_stopping:
+  enabled: false
+  patience: 5
+  threshold: 0.001
+  metric: "eval_loss"
+  greater_is_better: false
+
+verification:
+  checkpoints: [500, 1000, 1500, 2000, 2500]
+
+  metrics:
+    - name: "interface_activation_similarity"
+      description: "Activation similarity between L22 and L23"
+      threshold: 0.8
+      direction: "higher_is_better"
+
+    - name: "embedding_space_stability"
+      description: "Cosine similarity of embeddings before/after"
+      threshold: 0.95
+      direction: "higher_is_better"
+
+    - name: "attention_entropy"
+      description: "Entropy of attention patterns in L23-28"
+      threshold: 2.0
+      direction: "bounded"
+
+  on_failure:
+    - "log_warning"
+    - "increase_replay_ratio"

@@ -1,0 +1,170 @@
+# configs/data/multitask/healing_enhanced.yaml
+#
+# Enhanced healing dataset configuration for ModernBERT v3 Phase 0.5
+# Uses 5 tasks: SST-2, CoNLL, MNLI, SQuAD, STS-B
+# Total: 12,000 samples
+#
+# Enhancement rationale:
+#   - SQuAD: Heals attention patterns for long-range context understanding
+#   - STS-B: Prevents embedding collapse, maintains semantic similarity capability
+
+# Dataset metadata
+dataset:
+  name: "healing_enhanced"
+  version: "1.0"
+  description: "Enhanced healing data for v3 Phase 0.5 with attention/embedding repair"
+  total_samples: 12000
+  purpose: "Comprehensive capability preservation during layer healing"
+
+# Data paths
+paths:
+  unified_file: "data/healing/healing_enhanced.jsonl"
+  split_dir: "data/healing/"
+  cache_dir: "data/cache/healing_enhanced/"
+
+# Task configurations
+tasks:
+  # === BASIC TASKS (from healing_datasets.yaml) ===
+
+  sentiment:
+    source: "sst2"
+    n_samples: 3000
+    task_type: "classification"
+    num_labels: 2
+    label_names: ["negative", "positive"]
+    weight: 1.0
+    healing_target: "classification_head"
+    metrics:
+      - accuracy
+      - f1
+
+  ner:
+    source: "conll2003"
+    n_samples: 3000
+    task_type: "token_classification"
+    num_labels: 9
+    label_names:
+      - "O"
+      - "B-PER"
+      - "I-PER"
+      - "B-ORG"
+      - "I-ORG"
+      - "B-LOC"
+      - "I-LOC"
+      - "B-MISC"
+      - "I-MISC"
+    weight: 1.0
+    healing_target: "token_representations"
+    metrics:
+      - f1
+      - precision
+      - recall
+
+  nli:
+    source: "mnli"
+    n_samples: 2000
+    task_type: "classification"
+    num_labels: 3
+    label_names: ["entailment", "neutral", "contradiction"]
+    weight: 1.0
+    healing_target: "reasoning_capability"
+    metrics:
+      - accuracy
+
+  # === ENHANCED TASKS ===
+
+  qa:
+    source: "squad"
+    n_samples: 2000
+    task_type: "span_extraction"
+    healing_target: "attention_patterns"
+    healing_purpose: "Heal long-range attention by requiring context-question alignment"
+    fields:
+      question: "question"
+      context: "context"
+      answer_text: "labels.answer_text"
+      answer_start: "labels.answer_start"
+    weight: 1.2  # Slightly higher weight for attention healing
+    metrics:
+      - exact_match
+      - f1
+
+  similarity:
+    source: "stsb"
+    n_samples: 2000
+    task_type: "regression"
+    healing_target: "embedding_space"
+    healing_purpose: "Prevent embedding collapse, maintain semantic similarity"
+    score_range: [0.0, 5.0]
+    normalized_range: [0.0, 1.0]
+    weight: 1.2  # Slightly higher weight for embedding preservation
+    metrics:
+      - pearson
+      - spearman
+      - mse
+
+# Preprocessing
+preprocessing:
+  max_length: 512
+  padding: "max_length"
+  truncation: true
+  add_hub_tokens: true
+  hub_token_offset: 5
+
+  # Task-specific preprocessing
+  task_specific:
+    qa:
+      max_context_length: 384
+      max_question_length: 64
+      doc_stride: 128  # For sliding window
+    similarity:
+      normalize_scores: true
+
+# Data loading
+loading:
+  batch_size: 32
+  shuffle: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+
+# Enhanced sampling strategy
+sampling:
+  strategy: "healing_weighted"
+  task_weights:
+    sentiment: 1.0
+    ner: 1.0
+    nli: 1.0
+    qa: 1.2       # Boost for attention healing
+    similarity: 1.2  # Boost for embedding preservation
+  healing_priority:
+    - qa         # Process attention-healing samples first in epoch
+    - similarity # Then embedding preservation
+    - ner        # Then structural tasks
+    - sentiment
+    - nli
+
+# Validation
+validation:
+  enabled: true
+  split_ratio: 0.1
+  stratify_by_task: true
+
+# Healing effectiveness tracking
+healing_metrics:
+  track_attention_entropy: true
+  track_embedding_similarity: true
+  track_layer_activation_stats: true
+  checkpoints:
+    - 500
+    - 1000
+    - 1500
+    - 2000
+    - 2500
+
+# Loss weighting for healing
+loss_config:
+  use_task_weights: true
+  use_uncertainty_weighting: false
+  normalize_losses: true
+  healing_loss_scale: 1.0
