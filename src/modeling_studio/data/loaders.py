@@ -775,7 +775,7 @@ def _standardize_classification_dataset(
             # Clamp to valid range
             new_label = max(0, min(original_label, label_schema.num_labels - 1))
 
-        return {"text": text, "label": new_label}
+        return {"text": text, "labels": new_label}  # 'labels' for collator compatibility
 
     # Apply standardization - use remove_columns to handle feature type conflict
     dataset = dataset.map(
@@ -3807,11 +3807,22 @@ def _load_dataset_by_task(
 
     elif task == "emotions":
         label_schema = _get_label_schema_from_config(dataset_config, EMOTIONS_LABELS)
-        ds = load_multilabel_dataset(
-            name=dataset_name_or_path,
-            split=split,
-            label_schema=label_schema,
-        )
+        problem_type = dataset_config.get("problem_type", "multi_label_classification")
+
+        if problem_type == "single_label_classification":
+            # Stage A: Single-label classification (7 super-labels)
+            ds = load_classification_dataset(
+                name=dataset_name_or_path,
+                split=split,
+                label_schema=label_schema,
+            )
+        else:
+            # Default: Multi-label classification (44 emotions)
+            ds = load_multilabel_dataset(
+                name=dataset_name_or_path,
+                split=split,
+                label_schema=label_schema,
+            )
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
     elif task == "safety_generic":
@@ -3945,8 +3956,11 @@ def _apply_tokenization(
                 max_length=max_length,
             )
             # For multi-label, keep labels as a list of floats
+            # Also support single-label (integer) from classification loader
             if "labels" in example:
                 result["labels"] = example["labels"]
+            elif "label" in example:
+                result["labels"] = example["label"]
             result["task"] = task
             return result
 

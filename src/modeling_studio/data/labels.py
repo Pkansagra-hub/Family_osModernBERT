@@ -309,15 +309,15 @@ EMOTIONS_REDUCED_LABELS = LabelSchema(
 EMOTIONS_SUPER_LABELS = LabelSchema(
     name="emotions_super",
     label2id={
-        "JOY": 0,  # joy, excitement, celebration, pride, relief, amusement, hope, optimism
+        "JOY": 0,  # joy, excitement, celebration, pride, relief, amusement, hope, optimism, surprise
         "AFFECTION": 1,  # love, warmth, caring, gratitude, tenderness, admiration, parental_pride, protectiveness, playfulness
         "SADNESS": 2,  # sadness, grief, disappointment, longing, emptiness, remorse, parental_guilt
         "ANXIETY": 3,  # worry, overwhelmed, frustration, annoyance, nervousness, fear, anger, disgust, disapproval, embarrassment
         "NOSTALGIA": 4,  # nostalgia, bittersweet, homesickness
         "CONTENTMENT": 5,  # contentment, belonging, togetherness, patience, approval
-        "NEUTRAL": 6,  # neutral, surprise
+        "NEUTRAL": 6,  # neutral
     },
-    problem_type="multi_label_classification",
+    problem_type="single_label_classification",  # Stage A uses CrossEntropyLoss
     description="7 super-label emotion categories for Stage A curriculum learning",
 )
 

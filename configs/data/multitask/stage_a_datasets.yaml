@@ -169,23 +169,29 @@ datasets:
     splits:
       train: train
 
-  # Stage A: Super-labels (7 classes) for curriculum learning
+  # Stage A: Super-labels (7 classes) - SINGLE-LABEL classification
   # Pre-consolidated from 44 granular emotions - see scripts/consolidate_labels.py
+  # Format: {"text": "...", "label": 0}  (integer class index)
   emotions_super:
     task: emotions
     source: local
     name: data/familyos/emotions/silver_super
     label_schema: emotions_super
     format: jsonl
+    problem_type: single_label_classification  # Uses CrossEntropyLoss
     splits:
       train: train
+      validation: validation
 
+  # DISABLED for Stage A - uses 44-label format, incompatible with 7 super-labels
+  # Re-enable for Stage B when training on full 44 labels
   emotions_familyos_gold:
     task: emotions
     source: local
     name: data/familyos/emotions/gold
     label_schema: emotions_familyos
     format: jsonl
+    enabled: false
     splits:
       train: train
       validation: validation

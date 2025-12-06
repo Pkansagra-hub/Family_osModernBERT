@@ -260,11 +260,21 @@ class MultiLabelCollator(BaseCollator):
         attention_mask = [f["attention_mask"] for f in features]
         labels = [f["labels"] for f in features]
 
+        # Auto-detect single-label vs multi-label based on first sample
+        # Single-label: labels is int, Multi-label: labels is list
+        first_label = labels[0]
+        if isinstance(first_label, (int, float)) and not isinstance(first_label, list):
+            # Single-label classification (Stage A super-labels)
+            label_dtype = torch.long
+        else:
+            # Multi-label classification (BCE loss expects float)
+            label_dtype = torch.float
+
         # Pad sequences
         batch = {
             "input_ids": self._pad_sequence(input_ids, self.pad_token_id, self.max_length),
             "attention_mask": self._pad_sequence(attention_mask, 0, self.max_length),
-            "labels": torch.tensor(labels, dtype=torch.float),  # float for BCE loss
+            "labels": torch.tensor(labels, dtype=label_dtype),
         }
 
         # Preserve task info if present

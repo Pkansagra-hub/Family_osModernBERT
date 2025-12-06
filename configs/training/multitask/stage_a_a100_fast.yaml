@@ -45,24 +45,12 @@ heads:
   emotions:
     enabled: true
     type: sequence_classification
-    # Stage A: 7 super-labels for curriculum learning
-    # See TRAINING_STRATEGY.md - fine-grained 44-label training is Stage B
+    # Stage A: 7 Primary Super-Labels (Hybrid Strategy)
+    # We predict the ONE primary emotional theme per sentence
     num_labels: 7
-    problem_type: multi_label_classification
+    problem_type: single_label_classification  # CrossEntropy (not BCE)
     dropout: 0.1
-    # CRITICAL: Plain BCE only - ASL/Focal/SOTA caused training collapse!
-    # Expert advice: "Never use ASL, Focal, or class-balanced anything"
-    use_asl: false                # ← DISABLED
-    asl_gamma_neg: 0.0
-    asl_gamma_pos: 0.0
-    asl_clip: 0.0
-    # ALL SOTA features DISABLED - caused predict-everything/nothing
-    use_hierarchical_loss: false  # ← DISABLED
-    use_label_correlation: false  # ← DISABLED
-    use_emotion_attention: false  # ← DISABLED
-    use_dynamic_thresholds: false # ← DISABLED
-    use_mixup: false              # ← DISABLED
-    label_smoothing: 0.0          # ← DISABLED for pure BCE
+    label_smoothing: 0.1       # Helps generalization/calibration
 
   safety_generic:
     enabled: true
