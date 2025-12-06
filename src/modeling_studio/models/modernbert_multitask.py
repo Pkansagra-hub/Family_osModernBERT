@@ -824,6 +824,12 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         """
         os.makedirs(save_directory, exist_ok=True)
 
+        # Handle shared tensors (e.g., pair_encoder shared between model and heads)
+        # The pair_encoder is shared by reference, so we need to use safe_serialization=False
+        # or explicitly handle the shared weights
+        if "safe_serialization" not in kwargs:
+            kwargs["safe_serialization"] = False
+
         # Save using parent class method
         super().save_pretrained(save_directory, **kwargs)
 
