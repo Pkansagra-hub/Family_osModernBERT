@@ -782,7 +782,11 @@ class MultiTaskTrainer(Trainer):
             )
             # No loss for simple embedding (used for inference)
             logits = outputs.logits if hasattr(outputs, "logits") else outputs[0]
-            loss = torch.tensor(0.0, device=logits.device)
+
+            # Preserve computation graph with a zero-valued loss so backward works
+            # even when using simple embedding format during training/debug.
+            # Using logits.sum() keeps the graph connected to model parameters.
+            loss = logits.sum() * 0.0
 
             if return_outputs:
                 return loss, outputs
