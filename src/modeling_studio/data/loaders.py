@@ -4007,10 +4007,22 @@ def _apply_tokenization(
                     result[f"positive_{k}"] = v
 
             # Add score if present (for STS-B style)
+            # Normalize to [0, 1] range - some datasets use 0-5 scale (STS-B, SICK)
+            # while others are already normalized (sentence-transformers/*)
             if "label" in example:
-                result["labels"] = example["label"]
+                score = float(example["label"])
             elif "score" in example:
-                result["labels"] = example["score"]
+                score = float(example["score"])
+            else:
+                score = None
+
+            if score is not None:
+                # Normalize if score > 1 (assumes 0-5 scale)
+                if score > 1.0:
+                    score = score / 5.0
+                # Clamp to [0, 1] range for safety
+                score = max(0.0, min(1.0, score))
+                result["labels"] = score
 
             result["task"] = task
             return result

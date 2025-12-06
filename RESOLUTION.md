@@ -447,8 +447,72 @@ python scripts/agents/embedding_data_healer.py \
 
 ---
 
+## Milestone 3: Embedding Score Normalization Fix ✅ COMPLETE
+
+**Goal:** Fix Stage A embedding learning by normalizing STS scores to consistent [0, 1] range
+**Status:** COMPLETE - All embedding datasets now properly normalized
+
+### Issue Analysis
+
+**Problem Identified:**
+Stage A embedding training showed Spearman correlation stuck at ~0.32 despite training. Investigation revealed:
+
+1. Different STS datasets have different score scales:
+   - `sentence-transformers/stsb`: 0-1 (already normalized)
+   - `sentence-transformers/all-nli`: 0-1 (already normalized)
+   - `mteb/sickr-sts`: 1-5 (raw STS scores)
+   - `mteb/sts12-sts`: 0-5 (raw STS scores)
+   - `mteb/sts13-sts`: 0-5 (raw STS scores)
+   - `mteb/sts14-sts`: 0-5 (raw STS scores)
+
+2. The loss function had per-batch normalization:
+   ```python
+   if labels.max() > 1.0:
+       labels = labels / 5.0
+   ```
+   This was incorrect because batches with only 0-1 scores wouldn't be normalized, while mixed batches would have incorrect normalization applied to already-normalized samples.
+
+**Solution Applied:**
+
+1. **Normalize during data loading** (in `_apply_tokenization`):
+   ```python
+   # In embedding tokenize_wrapper
+   if score is not None:
+       # Normalize if score > 1 (assumes 0-5 scale)
+       if score > 1.0:
+           score = score / 5.0
+       # Clamp to [0, 1] range for safety
+       score = max(0.0, min(1.0, score))
+       result["labels"] = score
+   ```
+
+2. **Remove per-batch normalization** from `_compute_embedding_loss`:
+   ```python
+   # Before: normalized per-batch (incorrect)
+   if labels.max() > 1.0:
+       labels = labels / 5.0
+   loss = F.mse_loss(cos_sim, labels)
+
+   # After: data is pre-normalized during loading
+   loss = F.mse_loss(cos_sim, labels)
+   ```
+
+**Verification:**
+After fix, label distribution across 124K samples:
+- 40.7% at 1.0 (perfect matches)
+- 31.7% at 0.0-0.2 (low similarity)
+- 27.1% at 0.4-0.6 (medium similarity)
+- Mean: 0.5489, Range: [0.0, 1.0]
+
+**Files Changed:**
+- `src/modeling_studio/data/loaders.py`: Score normalization in `tokenize_wrapper`
+- `src/modeling_studio/trainers/multitask_trainer.py`: Remove per-batch normalization
+
+---
+
 ## Notes
 
 - **Relations Simplification**: Using sentence-level multi-label instead of span-based extraction. v3 can upgrade to span-based using Pair Encoder later.
 - **Embedding Triplets**: Generated separately by `synthetic_embedding_generator.py`, stored in different location from unified data.
 - **No Data Regeneration Needed**: Existing data format is usable with loader fixes.
+- **Score Normalization**: All STS datasets now normalized to [0, 1] during loading for consistent loss computation.

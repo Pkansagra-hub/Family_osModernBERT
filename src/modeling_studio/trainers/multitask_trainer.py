@@ -750,11 +750,9 @@ class MultiTaskTrainer(Trainer):
 
             # Compute cosine similarity loss (if labels/scores are provided)
             if labels is not None:
-                # STS-style regression: labels are similarity scores
+                # STS-style regression: labels are similarity scores [0, 1]
+                # Note: Normalization now happens during data loading, not here
                 cos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
-                # Scale labels to [0, 1] if needed (STS-B uses 0-5 scale)
-                if labels.max() > 1.0:
-                    labels = labels / 5.0
                 loss = F.mse_loss(cos_sim, labels)
             else:
                 # Contrastive loss using in-batch negatives
