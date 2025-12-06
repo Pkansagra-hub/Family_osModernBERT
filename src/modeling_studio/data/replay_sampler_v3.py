@@ -94,9 +94,7 @@ class ReplaySampler(Sampler):
 
         requested_replay = max(
             int(
-                total_primary
-                * self.current_replay_ratio
-                / max(1e-8, 1 - self.current_replay_ratio)
+                total_primary * self.current_replay_ratio / max(1e-8, 1 - self.current_replay_ratio)
             ),
             self.config.min_replay_per_epoch,
         )
