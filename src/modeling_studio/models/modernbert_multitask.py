@@ -693,10 +693,32 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Load heads and Epic 5.0 components
         components_state = {**head_state, **adapter_state, **pair_encoder_state, **pooler_state}
         if components_state:
-            missing_h, unexpected_h = model.load_state_dict(components_state, strict=False)
-            loaded_count = (
-                len(head_state) + len(adapter_state) + len(pair_encoder_state) + len(pooler_state)
-            )
+            # Filter out keys with size mismatches (e.g., Stage A 7-label -> Stage B 44-label)
+            model_state = model.state_dict()
+            filtered_state = {}
+            skipped_keys = []
+            for key, value in components_state.items():
+                if key in model_state:
+                    if model_state[key].shape == value.shape:
+                        filtered_state[key] = value
+                    else:
+                        skipped_keys.append(
+                            f"{key}: checkpoint {value.shape} vs model {model_state[key].shape}"
+                        )
+                else:
+                    # Key not in model, let load_state_dict handle it
+                    filtered_state[key] = value
+
+            if skipped_keys:
+                logger.warning(
+                    f"Skipping {len(skipped_keys)} keys with size mismatch (will be reinitialized):"
+                )
+                for sk in skipped_keys:
+                    logger.warning(f"  - {sk}")
+
+            if filtered_state:
+                missing_h, unexpected_h = model.load_state_dict(filtered_state, strict=False)
+            loaded_count = len(filtered_state)
             logger.info(
                 f"Loaded {loaded_count} component parameters (heads, adapters, pair_encoder, pooler)"
             )

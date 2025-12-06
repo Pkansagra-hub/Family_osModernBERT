@@ -288,6 +288,9 @@ def reinitialize_emotions_head(
         else:
             emotion_labels = None  # Use head's default slicing
 
+        # Get problem_type from config (Stage A: single_label, Stage B: multi_label)
+        problem_type = emotions_cfg.get("problem_type", "multi_label_classification")
+
         # Create new head with correct num_labels
         hidden_size = model.config.hidden_size
         new_head = HierarchicalEmotionHead(
@@ -300,6 +303,7 @@ def reinitialize_emotions_head(
             use_valence_arousal=emotions_cfg.get("use_valence_arousal", False),
             use_familyos=cfg_num_labels != 7,  # Disable familyos for super-labels
             emotion_labels=emotion_labels,
+            problem_type=problem_type,  # Single-label for Stage A, multi-label for Stage B
             use_asl=emotions_cfg.get("use_asl", False),
             use_hierarchical_loss=emotions_cfg.get("use_hierarchical_loss", False),
             use_label_correlation=emotions_cfg.get("use_label_correlation", False),
@@ -317,7 +321,10 @@ def reinitialize_emotions_head(
         # Replace head in model
         model.heads["emotions"] = new_head
 
-        logger.info(f"Emotions head reinitialized with {cfg_num_labels} labels: {emotion_labels}")
+        logger.info(
+            f"Emotions head reinitialized with {cfg_num_labels} labels, "
+            f"problem_type={problem_type}: {emotion_labels}"
+        )
 
     except KeyError:
         logger.warning("Emotions head not found in model, skipping reinitialization")

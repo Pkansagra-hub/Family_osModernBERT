@@ -1095,11 +1095,20 @@ class MultiTaskTrainer(Trainer):
                 # Multi-label or regression - can be float
                 labels = labels.detach().cpu().float().numpy()
 
+        # Auto-detect single-label from labels for tasks that may be either
+        # (e.g., emotions: multi-label in Stage B, single-label in Stage A)
+        actual_problem_type = problem_type
+        if problem_type == "multi_label_classification":
+            labels_arr = np.asarray(labels)
+            if labels_arr.ndim == 1 or (labels_arr.ndim == 2 and labels_arr.shape[1] == 1):
+                # Labels are 1D integers = single-label format
+                actual_problem_type = "single_label_classification"
+
         # Convert logits to predictions (argmax for classification)
         if predictions.ndim == 3:
             # Token classification: (batch, seq_len, num_classes) -> (batch, seq_len)
             predictions = np.argmax(predictions, axis=-1)
-        elif predictions.ndim == 2 and problem_type == "single_label_classification":
+        elif predictions.ndim == 2 and actual_problem_type == "single_label_classification":
             # Sequence classification: (batch, num_classes) -> (batch,)
             predictions = np.argmax(predictions, axis=-1)
         # For multi-label, keep logits (threshold applied in metrics)
@@ -1107,7 +1116,7 @@ class MultiTaskTrainer(Trainer):
         # Get label list for NER tasks
         label_list = None
 
-        if problem_type == "token_classification":
+        if actual_problem_type == "token_classification":
             label_list = self._get_label_list_for_task(task)
 
         return compute_metrics_for_task(

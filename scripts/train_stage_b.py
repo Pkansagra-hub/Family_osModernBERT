@@ -213,6 +213,91 @@ def load_stage_a_model(
     return model
 
 
+def reinitialize_emotions_head_for_stage_b(
+    model: ModernBertMultiTaskModel,
+    heads_config: dict[str, Any],
+) -> None:
+    """
+    Reinitialize emotions head from Stage A (7 super-labels) to Stage B (44 labels).
+
+    Stage A trains with 7 super-labels for faster curriculum learning.
+    Stage B needs the full 44 FamilyOS emotion labels for fine-grained classification.
+
+    Args:
+        model: The multi-task model loaded from Stage A
+        heads_config: Head configuration from YAML (heads section)
+    """
+    from modeling_studio.data.labels import EMOTIONS_FAMILYOS_LABELS
+    from modeling_studio.models.heads import HierarchicalEmotionHead
+
+    emotions_cfg = heads_config.get("emotions", {})
+    if not emotions_cfg.get("enabled", True):
+        return
+
+    # Stage B expects 44 labels (or whatever is configured)
+    target_num_labels = emotions_cfg.get("num_labels", 44)
+
+    try:
+        current_head = model.get_head("emotions")
+        current_num_labels = getattr(
+            current_head, "num_emotions", getattr(current_head, "num_labels", 44)
+        )
+
+        if current_num_labels == target_num_labels:
+            logger.info(
+                f"Emotions head already has {target_num_labels} labels, no reinitialization needed"
+            )
+            return
+
+        logger.info(
+            f"Reinitializing emotions head for Stage B: {current_num_labels} -> {target_num_labels} labels"
+        )
+
+        # Get emotion labels for 44-class schema
+        emotion_labels = list(EMOTIONS_FAMILYOS_LABELS.label2id.keys())
+
+        # Stage B uses multi-label classification (44 emotions, BCE loss)
+        problem_type = emotions_cfg.get("problem_type", "multi_label_classification")
+
+        # Create new head with 44 labels
+        hidden_size = model.config.hidden_size
+        new_head = HierarchicalEmotionHead(
+            hidden_size=hidden_size,
+            num_emotions=target_num_labels,
+            num_secondary=emotions_cfg.get("num_secondary", 3),
+            dropout=emotions_cfg.get("dropout", 0.1),
+            pooling=emotions_cfg.get("pooling", "cls"),
+            use_intensity=emotions_cfg.get("use_intensity", True),
+            use_valence_arousal=emotions_cfg.get("use_valence_arousal", False),
+            use_familyos=True,  # Use FamilyOS 44-emotion schema
+            emotion_labels=emotion_labels,
+            problem_type=problem_type,
+            use_asl=emotions_cfg.get("use_asl", False),
+            use_hierarchical_loss=emotions_cfg.get("use_hierarchical_loss", False),
+            use_label_correlation=emotions_cfg.get("use_label_correlation", False),
+            use_emotion_attention=emotions_cfg.get("use_emotion_attention", False),
+            use_dynamic_thresholds=emotions_cfg.get("use_dynamic_thresholds", False),
+            use_mixup=emotions_cfg.get("use_mixup", False),
+            label_smoothing=emotions_cfg.get("label_smoothing", 0.0),
+        )
+
+        # Move to same device/dtype as old head
+        device = next(current_head.parameters()).device
+        dtype = next(current_head.parameters()).dtype
+        new_head = new_head.to(device=device, dtype=dtype)
+
+        # Replace head in model
+        model.heads["emotions"] = new_head
+
+        logger.info(
+            f"Emotions head reinitialized for Stage B with {target_num_labels} labels, "
+            f"problem_type={problem_type}"
+        )
+
+    except KeyError:
+        logger.warning("Emotions head not found in model, skipping reinitialization")
+
+
 def add_stage_b_heads(
     model: ModernBertMultiTaskModel,
     config: dict[str, Any],
@@ -1338,6 +1423,10 @@ def train_stage_b(
 
     # Load Stage A model
     model = load_stage_a_model(stage_a_path)
+
+    # Reinitialize emotions head from 7 super-labels (Stage A) to 44 labels (Stage B)
+    heads_config = config.get("heads", {})
+    reinitialize_emotions_head_for_stage_b(model, heads_config)
 
     # Add Stage B heads
     model = add_stage_b_heads(model, config)

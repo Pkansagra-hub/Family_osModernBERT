@@ -1113,6 +1113,17 @@ def compute_metrics_for_task(
     """
     problem_type = TASK_PROBLEM_TYPES.get(task, "single_label_classification")
 
+    # Auto-detect single-label vs multi-label based on label format
+    # This handles Stage A emotions (7 super-labels, single-label) vs Stage B (44 labels, multi-label)
+    if problem_type == "multi_label_classification":
+        labels_arr = np.asarray(labels)
+        # Single-label: labels are 1D array of integers (class indices)
+        # Multi-label: labels are 2D array of floats (multi-hot vectors)
+        if labels_arr.ndim == 1 or (labels_arr.ndim == 2 and labels_arr.shape[1] == 1):
+            # Single-label classification format detected
+            problem_type = "single_label_classification"
+            logger.debug(f"Auto-detected single-label format for {task}")
+
     if problem_type == "token_classification":
         if label_list is None:
             logger.warning(f"label_list not provided for {task}, using fallback metrics")

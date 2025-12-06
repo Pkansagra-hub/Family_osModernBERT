@@ -2151,6 +2151,8 @@ class HierarchicalEmotionHead(nn.Module):
         intensity_threshold: float = 0.1,
         emotion_labels: list[str] | None = None,
         use_familyos: bool = True,  # Use FamilyOS 44-emotion schema by default
+        # Stage A: single-label (7 super-labels) vs Stage B: multi-label (44 labels)
+        problem_type: str = "multi_label_classification",  # or "single_label_classification"
         # CRITICAL: Plain BCE is the stable choice for 44-class multi-label
         # ASL/Focal/hierarchical losses caused training collapse historically
         # Expert guidance: Use ONLY plain BCEWithLogitsLoss for stability
@@ -2186,6 +2188,7 @@ class HierarchicalEmotionHead(nn.Module):
         self.use_valence_arousal = use_valence_arousal
         self.intensity_threshold = intensity_threshold
         self.use_familyos = use_familyos
+        self.problem_type = problem_type
 
         # ASL parameters
         self.use_asl = use_asl
@@ -2752,69 +2755,87 @@ class HierarchicalEmotionHead(nn.Module):
 
         # Compute loss if labels provided
         if labels is not None:
-            # Use mixed labels if mixup was applied
-            effective_labels = mixed_labels if mixed_labels is not None else labels
+            # Single-label classification (Stage A: 7 super-labels)
+            if self.problem_type == "single_label_classification":
+                # Labels are integer class indices (0-6), not multi-hot vectors
+                # Use CrossEntropyLoss (with optional label smoothing)
+                if self.label_smoothing > 0:
+                    loss = F.cross_entropy(
+                        logits, labels.long(), label_smoothing=self.label_smoothing
+                    )
+                else:
+                    loss = F.cross_entropy(logits, labels.long())
+            else:
+                # Multi-label classification (Stage B: 44 labels)
+                # Use mixed labels if mixup was applied
+                effective_labels = mixed_labels if mixed_labels is not None else labels
 
-            # P0: Apply label smoothing for better generalization
-            if self.label_smoothing > 0:
-                effective_labels = self._apply_label_smoothing(
-                    effective_labels, self.label_smoothing
-                )
-
-            if self.use_asl:
-                # ASL (Asymmetric Loss) - SOTA for multi-label classification
-                # From "Asymmetric Loss For Multi-Label Classification" (ICCV 2021)
-                # Reference: https://github.com/Alibaba-MIIL/ASL
-                #
-                # Key insight: ASL focuses on HARD examples (low pt) not easy ones
-                # - For positives: focus on hard positives (low confidence correct predictions)
-                # - For negatives: focus on hard negatives (false positives the model is confident about)
-
-                # Probabilities
-                xs_pos = torch.sigmoid(logits)
-                xs_neg = 1 - xs_pos
-
-                # Probability margin (shift negative probs to reduce easy negative loss)
-                if self.asl_clip is not None and self.asl_clip > 0:
-                    xs_neg = (xs_neg + self.asl_clip).clamp(max=1)
-
-                # Basic CE components
-                los_pos = effective_labels * torch.log(xs_pos.clamp(min=1e-8))
-                los_neg = (1 - effective_labels) * torch.log(xs_neg.clamp(min=1e-8))
-
-                # Asymmetric Focusing weights - CORRECTED implementation
-                # pt = probability of being in the CORRECT class
-                # For positives: pt = xs_pos (want to predict 1, probability of 1)
-                # For negatives: pt = xs_neg (want to predict 0, probability of 0)
-                if self.asl_gamma_neg > 0 or self.asl_gamma_pos > 0:
-                    # pt for each sample based on ground truth
-                    pt0 = xs_pos * effective_labels  # pt for positive class
-                    pt1 = xs_neg * (1 - effective_labels)  # pt for negative class
-                    pt = pt0 + pt1  # Combined pt
-
-                    # Asymmetric gamma: different focusing for pos vs neg
-                    one_sided_gamma = self.asl_gamma_pos * effective_labels + self.asl_gamma_neg * (
-                        1 - effective_labels
+                # P0: Apply label smoothing for better generalization
+                if self.label_smoothing > 0:
+                    effective_labels = self._apply_label_smoothing(
+                        effective_labels, self.label_smoothing
                     )
 
-                    # Focus on hard examples (where pt is low)
-                    one_sided_w = torch.pow(1 - pt, one_sided_gamma)
+                if self.use_asl:
+                    # ASL (Asymmetric Loss) - SOTA for multi-label classification
+                    # From "Asymmetric Loss For Multi-Label Classification" (ICCV 2021)
+                    # Reference: https://github.com/Alibaba-MIIL/ASL
+                    #
+                    # Key insight: ASL focuses on HARD examples (low pt) not easy ones
+                    # - For positives: focus on hard positives (low confidence correct predictions)
+                    # - For negatives: focus on hard negatives (false positives the model is confident about)
 
-                    loss = -one_sided_w * (los_pos + los_neg)
-                    loss = loss.mean()
+                    # Probabilities
+                    xs_pos = torch.sigmoid(logits)
+                    xs_neg = 1 - xs_pos
+
+                    # Probability margin (shift negative probs to reduce easy negative loss)
+                    if self.asl_clip is not None and self.asl_clip > 0:
+                        xs_neg = (xs_neg + self.asl_clip).clamp(max=1)
+
+                    # Basic CE components
+                    los_pos = effective_labels * torch.log(xs_pos.clamp(min=1e-8))
+                    los_neg = (1 - effective_labels) * torch.log(xs_neg.clamp(min=1e-8))
+
+                    # Asymmetric Focusing weights - CORRECTED implementation
+                    # pt = probability of being in the CORRECT class
+                    # For positives: pt = xs_pos (want to predict 1, probability of 1)
+                    # For negatives: pt = xs_neg (want to predict 0, probability of 0)
+                    if self.asl_gamma_neg > 0 or self.asl_gamma_pos > 0:
+                        # pt for each sample based on ground truth
+                        pt0 = xs_pos * effective_labels  # pt for positive class
+                        pt1 = xs_neg * (1 - effective_labels)  # pt for negative class
+                        pt = pt0 + pt1  # Combined pt
+
+                        # Asymmetric gamma: different focusing for pos vs neg
+                        one_sided_gamma = (
+                            self.asl_gamma_pos * effective_labels
+                            + self.asl_gamma_neg * (1 - effective_labels)
+                        )
+
+                        # Focus on hard examples (where pt is low)
+                        one_sided_w = torch.pow(1 - pt, one_sided_gamma)
+
+                        loss = -one_sided_w * (los_pos + los_neg)
+                        loss = loss.mean()
+                    else:
+                        loss = -(los_pos + los_neg).mean()
                 else:
-                    loss = -(los_pos + los_neg).mean()
-            else:
-                # Standard BCE loss
-                loss = F.binary_cross_entropy_with_logits(logits, effective_labels.float())
+                    # Standard BCE loss
+                    loss = F.binary_cross_entropy_with_logits(logits, effective_labels.float())
 
-            # P0: Add hierarchical loss for family-level consistency
-            if self.use_hierarchical_loss:
-                hierarchy_loss = self._compute_hierarchical_loss(logits, labels)
-                loss = loss + hierarchy_loss
+                # P0: Add hierarchical loss for family-level consistency
+                if self.use_hierarchical_loss:
+                    hierarchy_loss = self._compute_hierarchical_loss(logits, labels)
+                    loss = loss + hierarchy_loss
 
-            # Add intensity loss if intensity labels provided
-            if self.use_intensity and labels.dim() > 1 and labels.size(-1) > self.num_emotions:
+            # Add intensity loss if intensity labels provided (multi-label only)
+            if (
+                self.problem_type != "single_label_classification"
+                and self.use_intensity
+                and labels.dim() > 1
+                and labels.size(-1) > self.num_emotions
+            ):
                 # Assume labels has shape (batch, num_emotions * 2) with intensity
                 intensity_labels = labels[:, self.num_emotions :]
                 intensity_loss = F.mse_loss(intensity, intensity_labels)
