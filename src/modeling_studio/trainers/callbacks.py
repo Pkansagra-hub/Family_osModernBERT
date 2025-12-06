@@ -986,7 +986,23 @@ class EpochDataDistributionCallback(TrainerCallback):
 
             elif is_multilabel:
                 # Multi-label: count each label occurrence
-                num_labels = 44 if task == "emotions" else 8
+                # Infer num_labels from first sample's label vector instead of hardcoding
+                first_labels = None
+                for example in dataset:
+                    first_labels = example.get("labels")
+                    if first_labels is not None:
+                        break
+                if first_labels is None:
+                    return {"type": "multilabel", "error": "no labels found"}
+                if hasattr(first_labels, "numpy"):
+                    first_labels = first_labels.numpy()
+                first_labels = np.array(first_labels)
+                num_labels = (
+                    len(first_labels)
+                    if first_labels.ndim == 1
+                    else (44 if task == "emotions" else 8)
+                )
+
                 ml_label_counts = np.zeros(num_labels, dtype=np.int64)
                 total_samples = 0
 

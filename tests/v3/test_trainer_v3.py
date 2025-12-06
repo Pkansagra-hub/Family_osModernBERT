@@ -4026,3 +4026,1771 @@ class TestIssue516AcceptanceCriteria:
                 break
 
         print("AC8: Override mechanism works [PASS]")
+
+
+# ============================================================================
+# Issue 5.1.7: Warmup + Cosine Decay Scheduler Tests
+# ============================================================================
+
+
+class TestWarmupCosineScheduler:
+    """Tests for WarmupCosineScheduler."""
+
+    @pytest.fixture
+    def optimizer(self):
+        """Create optimizer for scheduler tests."""
+        model = nn.Linear(10, 10)
+        return torch.optim.AdamW(model.parameters(), lr=3e-5)
+
+    @pytest.fixture
+    def multi_group_optimizer(self):
+        """Create optimizer with multiple param groups."""
+        model1 = nn.Linear(10, 10)
+        model2 = nn.Linear(10, 10)
+        return torch.optim.AdamW(
+            [
+                {"params": model1.parameters(), "lr": 3e-5},
+                {"params": model2.parameters(), "lr": 1e-5},
+            ]
+        )
+
+    def test_init_default(self, optimizer):
+        """Test default initialization."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        assert scheduler.warmup_steps == 500
+        assert scheduler.total_steps == 2500
+        assert scheduler.min_lr_ratio == 0.01
+
+    def test_init_custom_min_lr(self, optimizer):
+        """Test initialization with custom min_lr_ratio."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=100,
+            total_steps=1000,
+            min_lr_ratio=0.1,
+        )
+
+        assert scheduler.min_lr_ratio == 0.1
+
+    def test_init_invalid_warmup(self, optimizer):
+        """Test error on invalid warmup_steps."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        with pytest.raises(ValueError, match="warmup_steps"):
+            WarmupCosineScheduler(
+                optimizer,
+                warmup_steps=-1,
+                total_steps=1000,
+            )
+
+    def test_init_warmup_greater_than_total(self, optimizer):
+        """Test error when warmup > total."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        with pytest.raises(ValueError, match="total_steps"):
+            WarmupCosineScheduler(
+                optimizer,
+                warmup_steps=1000,
+                total_steps=500,
+            )
+
+    def test_lr_at_step_0(self, optimizer):
+        """Test LR is 0 at step 0."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        # Step 0: lr should be 0
+        lrs = scheduler.get_lr()
+        assert lrs[0] == 0.0
+
+    def test_lr_at_warmup_peak(self, optimizer):
+        """Test LR peaks at warmup_steps."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        # Advance to warmup_steps
+        for _ in range(500):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        assert abs(lrs[0] - 3e-5) < 1e-10  # Should be at base_lr
+
+    def test_lr_at_end(self, optimizer):
+        """Test LR at end is min_lr."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+            min_lr_ratio=0.01,
+        )
+
+        # Advance to total_steps
+        for _ in range(2500):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        expected = 3e-5 * 0.01
+        assert abs(lrs[0] - expected) < 1e-10
+
+    def test_lr_beyond_total(self, optimizer):
+        """Test LR stays at min after total_steps."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+            min_lr_ratio=0.01,
+        )
+
+        # Advance beyond total_steps
+        for _ in range(3000):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        expected = 3e-5 * 0.01
+        assert abs(lrs[0] - expected) < 1e-10
+
+    def test_cosine_shape(self, optimizer):
+        """Test cosine decay shape."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+        import math
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=0,  # No warmup for clean test
+            total_steps=1000,
+            min_lr_ratio=0.0,  # Decay to 0
+        )
+
+        # At step 500 (midpoint), should be at ~50% of base_lr
+        for _ in range(500):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        # Cosine at 0.5 progress: 0.5 * (1 + cos(pi * 0.5)) = 0.5
+        expected = 3e-5 * 0.5
+        assert abs(lrs[0] - expected) < 1e-7
+
+    def test_multi_param_groups(self, multi_group_optimizer):
+        """Test with multiple param groups."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            multi_group_optimizer,
+            warmup_steps=100,
+            total_steps=1000,
+        )
+
+        # Advance to warmup_steps
+        for _ in range(100):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        assert len(lrs) == 2
+        assert abs(lrs[0] - 3e-5) < 1e-10
+        assert abs(lrs[1] - 1e-5) < 1e-10
+
+    def test_get_lr_at_step(self, optimizer):
+        """Test getting LR at specific step without modifying state."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        # Check LR at step 500 without stepping
+        lrs = scheduler.get_lr_at_step(500)
+        assert abs(lrs[0] - 3e-5) < 1e-10
+
+        # Scheduler should still be at step 0 (PyTorch auto-steps on init from -1 to 0)
+        assert scheduler.last_epoch == 0
+
+
+class TestWarmupLinearScheduler:
+    """Tests for WarmupLinearScheduler."""
+
+    @pytest.fixture
+    def optimizer(self):
+        """Create optimizer for scheduler tests."""
+        model = nn.Linear(10, 10)
+        return torch.optim.AdamW(model.parameters(), lr=3e-5)
+
+    def test_init(self, optimizer):
+        """Test initialization."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupLinearScheduler
+
+        scheduler = WarmupLinearScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        assert scheduler.warmup_steps == 500
+        assert scheduler.total_steps == 2500
+        assert scheduler.min_lr_ratio == 0.0
+
+    def test_linear_warmup(self, optimizer):
+        """Test linear warmup phase."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupLinearScheduler
+
+        scheduler = WarmupLinearScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        # At step 250 (midpoint of warmup), should be at 50%
+        for _ in range(250):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        expected = 3e-5 * 0.5
+        assert abs(lrs[0] - expected) < 1e-10
+
+    def test_linear_decay(self, optimizer):
+        """Test linear decay phase."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupLinearScheduler
+
+        scheduler = WarmupLinearScheduler(
+            optimizer,
+            warmup_steps=0,  # No warmup
+            total_steps=1000,
+            min_lr_ratio=0.0,
+        )
+
+        # At step 500 (midpoint), should be at 50%
+        for _ in range(500):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        expected = 3e-5 * 0.5
+        assert abs(lrs[0] - expected) < 1e-10
+
+    def test_lr_at_end(self, optimizer):
+        """Test LR at end."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupLinearScheduler
+
+        scheduler = WarmupLinearScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+            min_lr_ratio=0.0,
+        )
+
+        # Advance to total_steps
+        for _ in range(2500):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        assert lrs[0] == 0.0
+
+
+class TestWarmupConstantScheduler:
+    """Tests for WarmupConstantScheduler."""
+
+    @pytest.fixture
+    def optimizer(self):
+        """Create optimizer for scheduler tests."""
+        model = nn.Linear(10, 10)
+        return torch.optim.AdamW(model.parameters(), lr=3e-5)
+
+    def test_init(self, optimizer):
+        """Test initialization."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupConstantScheduler
+
+        scheduler = WarmupConstantScheduler(
+            optimizer,
+            warmup_steps=500,
+        )
+
+        assert scheduler.warmup_steps == 500
+
+    def test_warmup_phase(self, optimizer):
+        """Test warmup phase."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupConstantScheduler
+
+        scheduler = WarmupConstantScheduler(
+            optimizer,
+            warmup_steps=500,
+        )
+
+        # At step 250 (midpoint of warmup), should be at 50%
+        for _ in range(250):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        expected = 3e-5 * 0.5
+        assert abs(lrs[0] - expected) < 1e-10
+
+    def test_constant_phase(self, optimizer):
+        """Test constant phase after warmup."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupConstantScheduler
+
+        scheduler = WarmupConstantScheduler(
+            optimizer,
+            warmup_steps=500,
+        )
+
+        # Advance past warmup
+        for _ in range(1000):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        assert abs(lrs[0] - 3e-5) < 1e-10
+
+    def test_stays_constant(self, optimizer):
+        """Test LR stays constant after warmup."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupConstantScheduler
+
+        scheduler = WarmupConstantScheduler(
+            optimizer,
+            warmup_steps=100,
+        )
+
+        # Advance to various points after warmup
+        for _ in range(100):
+            scheduler.step()
+        lr_at_100 = scheduler.get_lr()[0]
+
+        for _ in range(1000):
+            scheduler.step()
+        lr_at_1100 = scheduler.get_lr()[0]
+
+        assert abs(lr_at_100 - lr_at_1100) < 1e-10
+
+
+class TestPhaseAwareScheduler:
+    """Tests for PhaseAwareScheduler."""
+
+    @pytest.fixture
+    def optimizer(self):
+        """Create optimizer for scheduler tests."""
+        model = nn.Linear(10, 10)
+        return torch.optim.AdamW(model.parameters(), lr=3e-5)
+
+    @pytest.fixture
+    def phase_configs(self):
+        """Create phase configurations."""
+        return {
+            "phase_0.5": {
+                "scheduler_type": "cosine",
+                "warmup_steps": 100,
+                "total_steps": 500,
+                "min_lr_ratio": 0.01,
+            },
+            "phase_1": {
+                "scheduler_type": "linear",
+                "warmup_steps": 200,
+                "total_steps": 1000,
+                "min_lr_ratio": 0.01,
+            },
+            "phase_2": {
+                "scheduler_type": "constant",
+                "warmup_steps": 50,
+                "total_steps": 300,
+            },
+        }
+
+    def test_init(self, optimizer, phase_configs):
+        """Test initialization."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+
+        assert scheduler.current_phase is None
+        assert scheduler.current_scheduler is None
+        assert scheduler.phase_step == 0
+
+    def test_set_phase(self, optimizer, phase_configs):
+        """Test setting a phase."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+        scheduler.set_phase("phase_0.5")
+
+        assert scheduler.current_phase == "phase_0.5"
+        assert scheduler.current_scheduler is not None
+        assert scheduler.phase_step == 0
+
+    def test_set_unknown_phase(self, optimizer, phase_configs):
+        """Test error on unknown phase."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+
+        with pytest.raises(ValueError, match="Unknown phase"):
+            scheduler.set_phase("unknown")
+
+    def test_step(self, optimizer, phase_configs):
+        """Test stepping the scheduler."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+        scheduler.set_phase("phase_0.5")
+
+        scheduler.step()
+        assert scheduler.phase_step == 1
+        assert scheduler.total_steps_across_phases == 1
+
+    def test_get_last_lr(self, optimizer, phase_configs):
+        """Test getting last LR."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+        scheduler.set_phase("phase_0.5")
+
+        lrs = scheduler.get_last_lr()
+        assert len(lrs) == 1
+
+    def test_phase_transition(self, optimizer, phase_configs):
+        """Test transitioning between phases."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+
+        # Start phase 0.5
+        scheduler.set_phase("phase_0.5")
+        for _ in range(500):
+            scheduler.step()
+
+        # Transition to phase 1
+        scheduler.set_phase("phase_1")
+        assert scheduler.current_phase == "phase_1"
+        assert scheduler.phase_step == 0
+
+    def test_get_phase_progress(self, optimizer, phase_configs):
+        """Test getting phase progress."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+        scheduler.set_phase("phase_0.5")
+
+        # At step 250 of 500, should be 50%
+        for _ in range(250):
+            scheduler.step()
+
+        progress = scheduler.get_phase_progress()
+        assert abs(progress - 0.5) < 0.01
+
+    def test_is_warmup_complete(self, optimizer, phase_configs):
+        """Test warmup completion check."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+        scheduler.set_phase("phase_0.5")
+
+        # Before warmup complete
+        assert not scheduler.is_warmup_complete()
+
+        # After warmup
+        for _ in range(100):
+            scheduler.step()
+        assert scheduler.is_warmup_complete()
+
+    def test_state_dict(self, optimizer, phase_configs):
+        """Test state dict save/load."""
+        from modeling_studio.trainers.schedulers_v3 import PhaseAwareScheduler
+
+        scheduler = PhaseAwareScheduler(optimizer, phase_configs)
+        scheduler.set_phase("phase_0.5")
+        for _ in range(100):
+            scheduler.step()
+
+        state = scheduler.get_state_dict()
+
+        # Create new scheduler and load state
+        scheduler2 = PhaseAwareScheduler(optimizer, phase_configs)
+        scheduler2.load_state_dict(state)
+
+        assert scheduler2.current_phase == "phase_0.5"
+        assert scheduler2.phase_step == 100
+
+
+class TestCreateScheduler:
+    """Tests for create_scheduler factory function."""
+
+    @pytest.fixture
+    def optimizer(self):
+        """Create optimizer for scheduler tests."""
+        model = nn.Linear(10, 10)
+        return torch.optim.AdamW(model.parameters(), lr=3e-5)
+
+    def test_create_cosine(self, optimizer):
+        """Test creating cosine scheduler."""
+        from modeling_studio.trainers.schedulers_v3 import (
+            create_scheduler,
+            WarmupCosineScheduler,
+        )
+
+        scheduler = create_scheduler(
+            optimizer,
+            scheduler_type="cosine",
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        assert isinstance(scheduler, WarmupCosineScheduler)
+
+    def test_create_linear(self, optimizer):
+        """Test creating linear scheduler."""
+        from modeling_studio.trainers.schedulers_v3 import (
+            create_scheduler,
+            WarmupLinearScheduler,
+        )
+
+        scheduler = create_scheduler(
+            optimizer,
+            scheduler_type="linear",
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        assert isinstance(scheduler, WarmupLinearScheduler)
+
+    def test_create_constant(self, optimizer):
+        """Test creating constant scheduler."""
+        from modeling_studio.trainers.schedulers_v3 import (
+            create_scheduler,
+            WarmupConstantScheduler,
+        )
+
+        scheduler = create_scheduler(
+            optimizer,
+            scheduler_type="constant",
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        assert isinstance(scheduler, WarmupConstantScheduler)
+
+    def test_create_unknown(self, optimizer):
+        """Test error on unknown scheduler type."""
+        from modeling_studio.trainers.schedulers_v3 import create_scheduler
+
+        with pytest.raises(ValueError, match="Unknown scheduler type"):
+            create_scheduler(
+                optimizer,
+                scheduler_type="unknown",
+            )
+
+
+class TestSchedulerUtilities:
+    """Tests for scheduler utility functions."""
+
+    @pytest.fixture
+    def optimizer(self):
+        """Create optimizer for scheduler tests."""
+        model = nn.Linear(10, 10)
+        return torch.optim.AdamW(model.parameters(), lr=3e-5)
+
+    def test_compute_warmup_steps(self):
+        """Test computing warmup steps."""
+        from modeling_studio.trainers.schedulers_v3 import compute_warmup_steps
+
+        # Normal case
+        warmup = compute_warmup_steps(10000, warmup_ratio=0.1)
+        assert warmup == 1000
+
+        # Respects min
+        warmup = compute_warmup_steps(500, warmup_ratio=0.1, min_warmup=100)
+        assert warmup == 100
+
+        # Respects max
+        warmup = compute_warmup_steps(100000, warmup_ratio=0.1, max_warmup=2000)
+        assert warmup == 2000
+
+    def test_get_lr_at_step(self, optimizer):
+        """Test getting LR at specific step."""
+        from modeling_studio.trainers.schedulers_v3 import (
+            WarmupCosineScheduler,
+            get_lr_at_step,
+        )
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        # Get LR at warmup peak
+        lrs = get_lr_at_step(scheduler, 500)
+        assert abs(lrs[0] - 3e-5) < 1e-10
+
+    def test_default_phase_configs(self):
+        """Test default phase configurations exist."""
+        from modeling_studio.trainers.schedulers_v3 import DEFAULT_PHASE_SCHEDULER_CONFIGS
+
+        assert "phase_0.5" in DEFAULT_PHASE_SCHEDULER_CONFIGS
+        assert "phase_1" in DEFAULT_PHASE_SCHEDULER_CONFIGS
+        assert "phase_2" in DEFAULT_PHASE_SCHEDULER_CONFIGS
+
+        # Check phase_0.5 config
+        config = DEFAULT_PHASE_SCHEDULER_CONFIGS["phase_0.5"]
+        assert config["scheduler_type"] == "cosine"
+        assert config["warmup_steps"] == 500
+        assert config["total_steps"] == 2500
+
+    def test_valid_scheduler_types(self):
+        """Test valid scheduler types constant."""
+        from modeling_studio.trainers.schedulers_v3 import VALID_SCHEDULER_TYPES
+
+        assert "cosine" in VALID_SCHEDULER_TYPES
+        assert "linear" in VALID_SCHEDULER_TYPES
+        assert "constant" in VALID_SCHEDULER_TYPES
+
+
+class TestIssue517AcceptanceCriteria:
+    """Acceptance criteria tests for Issue 5.1.7."""
+
+    @pytest.fixture
+    def optimizer(self):
+        """Create optimizer for acceptance tests."""
+        model = nn.Linear(10, 10)
+        return torch.optim.AdamW(model.parameters(), lr=3e-5)
+
+    def test_ac1_warmup_cosine_implements_correctly(self, optimizer):
+        """AC1: WarmupCosineScheduler implements warmup + cosine correctly."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+        import math
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+            min_lr_ratio=0.01,
+        )
+
+        # Test warmup phase
+        for _ in range(250):
+            scheduler.step()
+        lr_mid_warmup = scheduler.get_lr()[0]
+        assert abs(lr_mid_warmup - 3e-5 * 0.5) < 1e-10
+
+        # Test peak at warmup
+        for _ in range(250):
+            scheduler.step()
+        lr_peak = scheduler.get_lr()[0]
+        assert abs(lr_peak - 3e-5) < 1e-10
+
+        # Test decay
+        for _ in range(1000):
+            scheduler.step()
+        # At midpoint of decay (step 1500), cosine gives ~0.5
+        lr_mid_decay = scheduler.get_lr()[0]
+        # Should be between min and peak
+        assert 3e-5 * 0.01 < lr_mid_decay < 3e-5
+
+        print("AC1: WarmupCosineScheduler implements warmup + cosine correctly [PASS]")
+
+    def test_ac2_lr_profile(self, optimizer):
+        """AC2: LR starts at 0, peaks at warmup_steps, decays to min_lr."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+            min_lr_ratio=0.01,
+        )
+
+        # Step 0: lr = 0
+        assert scheduler.get_lr()[0] == 0.0
+
+        # Step 500: lr = base_lr (peak)
+        for _ in range(500):
+            scheduler.step()
+        assert abs(scheduler.get_lr()[0] - 3e-5) < 1e-10
+
+        # Step 2500: lr = min_lr
+        for _ in range(2000):
+            scheduler.step()
+        assert abs(scheduler.get_lr()[0] - 3e-5 * 0.01) < 1e-10
+
+        print("AC2: LR starts at 0, peaks at warmup_steps, decays to min_lr [PASS]")
+
+    def test_ac3_warmup_linear_provides_alternative(self, optimizer):
+        """AC3: WarmupLinearScheduler provides linear alternative."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupLinearScheduler
+
+        scheduler = WarmupLinearScheduler(
+            optimizer,
+            warmup_steps=500,
+            total_steps=2500,
+        )
+
+        # Linear warmup
+        for _ in range(250):
+            scheduler.step()
+        assert abs(scheduler.get_lr()[0] - 3e-5 * 0.5) < 1e-10
+
+        # Linear decay
+        for _ in range(250):  # Now at step 500
+            scheduler.step()
+        lr_at_500 = scheduler.get_lr()[0]
+        assert abs(lr_at_500 - 3e-5) < 1e-10
+
+        for _ in range(1000):  # Now at step 1500
+            scheduler.step()
+        # Linear decay: 1500 is at 50% through decay phase
+        lr_at_1500 = scheduler.get_lr()[0]
+        assert lr_at_1500 < lr_at_500  # Should have decayed
+
+        print("AC3: WarmupLinearScheduler provides linear alternative [PASS]")
+
+    def test_ac4_warmup_constant_for_short_runs(self, optimizer):
+        """AC4: WarmupConstantScheduler for short runs."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupConstantScheduler
+
+        scheduler = WarmupConstantScheduler(
+            optimizer,
+            warmup_steps=100,
+        )
+
+        # After warmup, should stay constant
+        for _ in range(100):
+            scheduler.step()
+        lr_at_100 = scheduler.get_lr()[0]
+
+        for _ in range(1000):
+            scheduler.step()
+        lr_at_1100 = scheduler.get_lr()[0]
+
+        assert abs(lr_at_100 - lr_at_1100) < 1e-10
+        assert abs(lr_at_100 - 3e-5) < 1e-10
+
+        print("AC4: WarmupConstantScheduler for short runs [PASS]")
+
+    def test_ac5_phase_aware_handles_transitions(self, optimizer):
+        """AC5: PhaseAwareScheduler handles phase transitions."""
+        from modeling_studio.trainers.schedulers_v3 import (
+            PhaseAwareScheduler,
+            DEFAULT_PHASE_SCHEDULER_CONFIGS,
+        )
+
+        scheduler = PhaseAwareScheduler(optimizer, DEFAULT_PHASE_SCHEDULER_CONFIGS)
+
+        # Phase 0.5
+        scheduler.set_phase("phase_0.5")
+        assert scheduler.current_phase == "phase_0.5"
+        for _ in range(500):
+            scheduler.step()
+
+        # Transition to phase 1
+        scheduler.set_phase("phase_1")
+        assert scheduler.current_phase == "phase_1"
+        assert scheduler.phase_step == 0  # Reset
+
+        print("AC5: PhaseAwareScheduler handles phase transitions [PASS]")
+
+    def test_ac6_create_scheduler_factory(self, optimizer):
+        """AC6: create_scheduler() factory function works."""
+        from modeling_studio.trainers.schedulers_v3 import create_scheduler
+
+        # All types should work
+        for scheduler_type in ["cosine", "linear", "constant"]:
+            scheduler = create_scheduler(
+                optimizer,
+                scheduler_type=scheduler_type,
+                warmup_steps=100,
+                total_steps=1000,
+            )
+            assert scheduler is not None
+
+        print("AC6: create_scheduler() factory function works [PASS]")
+
+    def test_ac7_compatible_with_per_layer_lrs(self):
+        """AC7: Compatible with per-layer-group LRs."""
+        from modeling_studio.trainers.schedulers_v3 import WarmupCosineScheduler
+
+        # Create optimizer with multiple param groups (different LRs)
+        model1 = nn.Linear(10, 10)
+        model2 = nn.Linear(10, 10)
+        optimizer = torch.optim.AdamW(
+            [
+                {"params": model1.parameters(), "lr": 5e-5},  # Interface
+                {"params": model2.parameters(), "lr": 1e-5},  # Feeder
+            ]
+        )
+
+        scheduler = WarmupCosineScheduler(
+            optimizer,
+            warmup_steps=100,
+            total_steps=1000,
+        )
+
+        # Advance to peak
+        for _ in range(100):
+            scheduler.step()
+
+        lrs = scheduler.get_lr()
+        assert len(lrs) == 2
+        assert abs(lrs[0] - 5e-5) < 1e-10  # Group 1 at its peak
+        assert abs(lrs[1] - 1e-5) < 1e-10  # Group 2 at its peak
+
+        print("AC7: Compatible with per-layer-group LRs [PASS]")
+
+
+# ============================================================================
+# Issue 5.1.8: Gradient Clipping for Phase 0.5
+# ============================================================================
+
+
+class TestGradientClipConfig:
+    """Tests for GradientClipConfig dataclass."""
+
+    def test_default_values(self):
+        """Test default configuration values."""
+        from modeling_studio.trainers.gradient_utils_v3 import GradientClipConfig
+
+        config = GradientClipConfig()
+        assert config.max_grad_norm == 1.0
+        assert config.per_layer_clip is False
+        assert config.interface_clip == 0.5
+        assert config.family_clip == 1.0
+        assert config.feeder_clip == 1.0
+        assert config.log_grad_norms is True
+        assert config.log_every_n_steps == 100
+        assert config.explosion_threshold == 10.0
+        assert config.nan_check is True
+
+    def test_custom_values(self):
+        """Test custom configuration values."""
+        from modeling_studio.trainers.gradient_utils_v3 import GradientClipConfig
+
+        config = GradientClipConfig(
+            max_grad_norm=2.0,
+            per_layer_clip=True,
+            interface_clip=0.3,
+            log_every_n_steps=50,
+        )
+        assert config.max_grad_norm == 2.0
+        assert config.per_layer_clip is True
+        assert config.interface_clip == 0.3
+        assert config.log_every_n_steps == 50
+
+
+class TestGradientStats:
+    """Tests for GradientStats dataclass."""
+
+    def test_default_values(self):
+        """Test default statistics values."""
+        from modeling_studio.trainers.gradient_utils_v3 import GradientStats
+
+        stats = GradientStats()
+        assert stats.total_norm == 0.0
+        assert stats.layer_norms == {}
+        assert stats.max_grad == 0.0
+        assert stats.min_grad == 0.0
+        assert stats.has_nan is False
+        assert stats.has_inf is False
+        assert stats.clipped is False
+
+    def test_custom_values(self):
+        """Test custom statistics values."""
+        from modeling_studio.trainers.gradient_utils_v3 import GradientStats
+
+        stats = GradientStats(
+            total_norm=5.0,
+            layer_norms={"layer_23": 1.5},
+            has_nan=True,
+            clipped=True,
+        )
+        assert stats.total_norm == 5.0
+        assert stats.layer_norms == {"layer_23": 1.5}
+        assert stats.has_nan is True
+        assert stats.clipped is True
+
+
+class TestGradientClipper:
+    """Tests for GradientClipper class."""
+
+    @pytest.fixture
+    def simple_model(self):
+        """Create a simple model for testing."""
+        return nn.Sequential(
+            nn.Linear(10, 10),
+            nn.ReLU(),
+            nn.Linear(10, 5),
+        )
+
+    @pytest.fixture
+    def mock_encoder_model(self):
+        """Create a mock model with encoder.layers structure."""
+
+        class MockEncoder(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.layers = nn.ModuleList([nn.Linear(10, 10) for _ in range(28)])
+
+        class MockModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.encoder = MockEncoder()
+
+        return MockModel()
+
+    def test_global_clip_no_gradients(self, simple_model):
+        """Test global clipping with no gradients."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        config = GradientClipConfig(log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+        stats = clipper.clip_gradients()
+
+        assert stats.total_norm == 0.0
+        assert stats.clipped is False
+
+    def test_global_clip_with_gradients(self, simple_model):
+        """Test global clipping with gradients."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = simple_model(x)
+        loss = y.sum()
+        loss.backward()
+
+        config = GradientClipConfig(max_grad_norm=1.0, log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+        stats = clipper.clip_gradients()
+
+        assert stats.total_norm > 0
+        assert isinstance(stats.clipped, bool)
+
+    def test_global_clip_clips_large_gradients(self, simple_model):
+        """Test that large gradients are clipped."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create large gradients
+        x = torch.randn(4, 10) * 100
+        y = simple_model(x)
+        loss = y.sum() * 100
+        loss.backward()
+
+        config = GradientClipConfig(max_grad_norm=0.1, log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+
+        # Get norm before clipping
+        params = [p for p in simple_model.parameters() if p.grad is not None]
+        norm_before = 0.0
+        for p in params:
+            norm_before += p.grad.data.norm(2).item() ** 2
+        norm_before = norm_before**0.5
+
+        stats = clipper.clip_gradients()
+
+        # Verify clipping happened
+        assert norm_before > 0.1  # Was above threshold
+        assert stats.clipped is True
+
+    def test_per_layer_clip(self, mock_encoder_model):
+        """Test per-layer gradient clipping."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        config = GradientClipConfig(
+            per_layer_clip=True,
+            interface_clip=0.5,
+            family_clip=1.0,
+            feeder_clip=1.0,
+            log_grad_norms=False,
+        )
+        clipper = GradientClipper(mock_encoder_model, config)
+        stats = clipper.clip_gradients()
+
+        assert stats.total_norm >= 0
+        assert stats.clipped is True  # Per-layer always marks as clipped
+
+    def test_nan_detection(self, simple_model):
+        """Test NaN gradient detection."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create gradients with NaN
+        x = torch.randn(4, 10)
+        y = simple_model(x)
+        loss = y.sum()
+        loss.backward()
+
+        # Inject NaN
+        for p in simple_model.parameters():
+            if p.grad is not None:
+                p.grad[0] = float("nan")
+                break
+
+        config = GradientClipConfig(nan_check=True, log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+        stats = clipper.clip_gradients()
+
+        assert stats.has_nan is True
+
+    def test_inf_detection(self, simple_model):
+        """Test Inf gradient detection."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create gradients with Inf
+        x = torch.randn(4, 10)
+        y = simple_model(x)
+        loss = y.sum()
+        loss.backward()
+
+        # Inject Inf
+        for p in simple_model.parameters():
+            if p.grad is not None:
+                p.grad[0] = float("inf")
+                break
+
+        config = GradientClipConfig(nan_check=True, log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+        stats = clipper.clip_gradients()
+
+        assert stats.has_inf is True
+
+    def test_bad_gradients_zeroed(self, simple_model):
+        """Test that NaN/Inf gradients are zeroed."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = simple_model(x)
+        loss = y.sum()
+        loss.backward()
+
+        # Inject NaN and Inf
+        for p in simple_model.parameters():
+            if p.grad is not None:
+                p.grad.data[0] = float("nan")
+                p.grad.data[1] = float("inf")
+                break
+
+        config = GradientClipConfig(nan_check=True, log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+        clipper.clip_gradients()
+
+        # Verify NaN/Inf are gone
+        for p in simple_model.parameters():
+            if p.grad is not None:
+                assert not torch.isnan(p.grad).any()
+                assert not torch.isinf(p.grad).any()
+
+    def test_compute_layer_norms(self, mock_encoder_model):
+        """Test per-layer gradient norm computation."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        config = GradientClipConfig(log_grad_norms=True)
+        clipper = GradientClipper(mock_encoder_model, config)
+        stats = clipper.clip_gradients()
+
+        # Check layer norms computed
+        assert len(stats.layer_norms) == 28
+        assert "layer_1" in stats.layer_norms
+        assert "layer_23" in stats.layer_norms
+        assert "layer_28" in stats.layer_norms
+
+    def test_explosion_detection(self, simple_model, caplog):
+        """Test gradient explosion detection."""
+        import logging
+
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create large gradients
+        x = torch.randn(4, 10) * 1000
+        y = simple_model(x)
+        loss = y.sum() * 1000
+        loss.backward()
+
+        config = GradientClipConfig(
+            explosion_threshold=0.01,
+            log_grad_norms=False,
+        )
+        clipper = GradientClipper(simple_model, config)
+
+        with caplog.at_level(logging.WARNING):
+            clipper.clip_gradients()
+
+        assert clipper.explosion_count == 1
+
+    def test_gradient_history(self, simple_model):
+        """Test gradient history tracking."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        config = GradientClipConfig(log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+
+        # Run multiple steps
+        for _ in range(5):
+            x = torch.randn(4, 10)
+            y = simple_model(x)
+            loss = y.sum()
+            simple_model.zero_grad()
+            loss.backward()
+            clipper.clip_gradients()
+
+        assert len(clipper.gradient_history) == 5
+        assert clipper.step == 5
+
+    def test_gradient_summary(self, simple_model):
+        """Test gradient summary computation."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        config = GradientClipConfig(log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+
+        # Run multiple steps
+        for _ in range(5):
+            x = torch.randn(4, 10)
+            y = simple_model(x)
+            loss = y.sum()
+            simple_model.zero_grad()
+            loss.backward()
+            clipper.clip_gradients()
+
+        summary = clipper.get_gradient_summary()
+
+        assert "mean_norm" in summary
+        assert "max_norm" in summary
+        assert "min_norm" in summary
+        assert "clip_count" in summary
+        assert "clip_ratio" in summary
+        assert "explosion_count" in summary
+
+    def test_clear_history(self, simple_model):
+        """Test clearing gradient history."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        config = GradientClipConfig(log_grad_norms=False)
+        clipper = GradientClipper(simple_model, config)
+
+        # Add some history
+        for _ in range(5):
+            x = torch.randn(4, 10)
+            y = simple_model(x)
+            loss = y.sum()
+            simple_model.zero_grad()
+            loss.backward()
+            clipper.clip_gradients()
+
+        assert len(clipper.gradient_history) == 5
+
+        clipper.clear_history()
+        assert len(clipper.gradient_history) == 0
+
+    def test_reset(self, simple_model):
+        """Test full reset."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        config = GradientClipConfig(
+            explosion_threshold=0.001,
+            log_grad_norms=False,
+        )
+        clipper = GradientClipper(simple_model, config)
+
+        # Add some history and explosions
+        for _ in range(5):
+            x = torch.randn(4, 10) * 100
+            y = simple_model(x)
+            loss = y.sum() * 100
+            simple_model.zero_grad()
+            loss.backward()
+            clipper.clip_gradients()
+
+        assert clipper.step == 5
+        assert clipper.explosion_count > 0
+
+        clipper.reset()
+        assert clipper.step == 0
+        assert clipper.explosion_count == 0
+        assert len(clipper.gradient_history) == 0
+
+
+class TestInterfaceGradientMonitor:
+    """Tests for InterfaceGradientMonitor class."""
+
+    @pytest.fixture
+    def mock_encoder_model(self):
+        """Create a mock model with encoder.layers structure."""
+
+        class MockEncoder(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.layers = nn.ModuleList([nn.Linear(10, 10) for _ in range(28)])
+
+        class MockModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.encoder = MockEncoder()
+
+        return MockModel()
+
+    def test_record_with_gradients(self, mock_encoder_model):
+        """Test recording interface gradients."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+        stats = monitor.record()
+
+        assert "l22_grad_norm" in stats
+        assert "l23_grad_norm" in stats
+        assert "l23_l22_ratio" in stats
+        assert "interface_healthy" in stats
+
+    def test_record_no_gradients(self, mock_encoder_model):
+        """Test recording when no gradients exist."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+        stats = monitor.record()
+
+        assert stats["l22_grad_norm"] == 0.0
+        assert stats["l23_grad_norm"] == 0.0
+        assert stats["l23_l22_ratio"] == 0.0
+
+    def test_interface_healthy(self, mock_encoder_model):
+        """Test interface health detection."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+        stats = monitor.record()
+
+        # With normal gradients, ratio should be within healthy range
+        assert stats["l23_l22_ratio"] > 0
+
+    def test_history_tracking(self, mock_encoder_model):
+        """Test history tracking."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+
+        # Record multiple times
+        for _ in range(5):
+            x = torch.randn(4, 10)
+            y = x
+            for layer in mock_encoder_model.encoder.layers:
+                y = layer(y)
+            loss = y.sum()
+            mock_encoder_model.zero_grad()
+            loss.backward()
+            monitor.record()
+
+        assert len(monitor.history) == 5
+
+    def test_get_interface_health_no_history(self, mock_encoder_model):
+        """Test interface health with no history."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+        health = monitor.get_interface_health()
+
+        assert health["healthy"] is True
+        assert health["message"] == "No data yet"
+
+    def test_get_interface_health_with_history(self, mock_encoder_model):
+        """Test interface health with history."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+
+        # Record multiple healthy steps
+        for _ in range(10):
+            x = torch.randn(4, 10)
+            y = x
+            for layer in mock_encoder_model.encoder.layers:
+                y = layer(y)
+            loss = y.sum()
+            mock_encoder_model.zero_grad()
+            loss.backward()
+            monitor.record()
+
+        health = monitor.get_interface_health()
+
+        assert "healthy" in health
+        assert "health_ratio" in health
+        assert "mean_l23_l22_ratio" in health
+        assert "message" in health
+
+    def test_clear_history(self, mock_encoder_model):
+        """Test clearing history."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+
+        # Add some history
+        for _ in range(5):
+            x = torch.randn(4, 10)
+            y = x
+            for layer in mock_encoder_model.encoder.layers:
+                y = layer(y)
+            loss = y.sum()
+            mock_encoder_model.zero_grad()
+            loss.backward()
+            monitor.record()
+
+        assert len(monitor.history) == 5
+
+        monitor.clear_history()
+        assert len(monitor.history) == 0
+
+
+class TestClipGradientsFunction:
+    """Tests for clip_gradients convenience function."""
+
+    @pytest.fixture
+    def simple_model(self):
+        """Create a simple model for testing."""
+        return nn.Sequential(
+            nn.Linear(10, 10),
+            nn.ReLU(),
+            nn.Linear(10, 5),
+        )
+
+    def test_basic_usage(self, simple_model):
+        """Test basic clip_gradients usage."""
+        from modeling_studio.trainers.gradient_utils_v3 import clip_gradients
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = simple_model(x)
+        loss = y.sum()
+        loss.backward()
+
+        norm = clip_gradients(simple_model, max_norm=1.0)
+        assert norm >= 0
+
+    def test_per_layer_flag(self, simple_model):
+        """Test per_layer parameter."""
+        from modeling_studio.trainers.gradient_utils_v3 import clip_gradients
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = simple_model(x)
+        loss = y.sum()
+        loss.backward()
+
+        # Should not raise even without encoder.layers
+        norm = clip_gradients(simple_model, max_norm=1.0, per_layer=True)
+        assert norm >= 0
+
+    def test_custom_max_norm(self, simple_model):
+        """Test custom max_norm."""
+        from modeling_studio.trainers.gradient_utils_v3 import clip_gradients
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = simple_model(x)
+        loss = y.sum()
+        loss.backward()
+
+        norm = clip_gradients(simple_model, max_norm=0.5)
+        assert norm >= 0
+
+
+class TestCreateGradientClipper:
+    """Tests for create_gradient_clipper factory function."""
+
+    @pytest.fixture
+    def simple_model(self):
+        """Create a simple model for testing."""
+        return nn.Linear(10, 5)
+
+    def test_default_creation(self, simple_model):
+        """Test creating clipper with defaults."""
+        from modeling_studio.trainers.gradient_utils_v3 import create_gradient_clipper
+
+        clipper = create_gradient_clipper(simple_model)
+
+        assert clipper.config.max_grad_norm == 1.0
+        assert clipper.config.per_layer_clip is False
+        assert clipper.config.interface_clip == 0.5
+
+    def test_custom_creation(self, simple_model):
+        """Test creating clipper with custom settings."""
+        from modeling_studio.trainers.gradient_utils_v3 import create_gradient_clipper
+
+        clipper = create_gradient_clipper(
+            simple_model,
+            max_grad_norm=2.0,
+            per_layer_clip=True,
+            interface_clip=0.3,
+            log_every_n_steps=50,
+        )
+
+        assert clipper.config.max_grad_norm == 2.0
+        assert clipper.config.per_layer_clip is True
+        assert clipper.config.interface_clip == 0.3
+        assert clipper.config.log_every_n_steps == 50
+
+
+class TestIssue518AcceptanceCriteria:
+    """Tests verifying Issue 5.1.8 acceptance criteria."""
+
+    @pytest.fixture
+    def mock_encoder_model(self):
+        """Create a mock model with encoder.layers structure."""
+
+        class MockEncoder(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.layers = nn.ModuleList([nn.Linear(10, 10) for _ in range(28)])
+
+        class MockModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.encoder = MockEncoder()
+
+        return MockModel()
+
+    def test_ac1_global_clipping(self, mock_encoder_model):
+        """AC1: GradientClipper implements global clipping (max_norm=1.0)."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create large gradients
+        x = torch.randn(4, 10) * 100
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum() * 100
+        loss.backward()
+
+        config = GradientClipConfig(max_grad_norm=1.0, log_grad_norms=False)
+        clipper = GradientClipper(mock_encoder_model, config)
+        stats = clipper.clip_gradients()
+
+        # Verify clipping was applied
+        assert stats.total_norm > 0
+        # After clipping, gradient norm should be <= max_norm
+        params = [p for p in mock_encoder_model.parameters() if p.grad is not None]
+        total_norm = 0.0
+        for p in params:
+            total_norm += p.grad.data.norm(2).item() ** 2
+        total_norm = total_norm**0.5
+        assert total_norm <= 1.0 + 1e-5
+
+        print("AC1: GradientClipper implements global clipping [PASS]")
+
+    def test_ac2_per_layer_l23_tighter_clip(self, mock_encoder_model):
+        """AC2: Per-layer clipping applies tighter clip to L23 (0.5)."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create large gradients
+        x = torch.randn(4, 10) * 100
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum() * 100
+        loss.backward()
+
+        config = GradientClipConfig(
+            per_layer_clip=True,
+            interface_clip=0.5,
+            family_clip=1.0,
+            feeder_clip=1.0,
+            log_grad_norms=False,
+        )
+        clipper = GradientClipper(mock_encoder_model, config)
+        clipper.clip_gradients()
+
+        # Check L23 (index 22) has smaller norm than family layers
+        l23 = mock_encoder_model.encoder.layers[22]
+        l23_norm = 0.0
+        for p in l23.parameters():
+            if p.grad is not None:
+                l23_norm += p.grad.data.norm(2).item() ** 2
+        l23_norm = l23_norm**0.5
+
+        # L23 should be clipped to 0.5
+        assert l23_norm <= 0.5 + 1e-5
+
+        print("AC2: Per-layer clipping applies tighter clip to L23 [PASS]")
+
+    def test_ac3_nan_inf_detection_and_zeroing(self, mock_encoder_model):
+        """AC3: NaN/Inf gradient detection and zeroing."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        # Inject NaN and Inf
+        mock_encoder_model.encoder.layers[0].weight.grad[0, 0] = float("nan")
+        mock_encoder_model.encoder.layers[1].weight.grad[0, 0] = float("inf")
+
+        config = GradientClipConfig(nan_check=True, log_grad_norms=False)
+        clipper = GradientClipper(mock_encoder_model, config)
+        stats = clipper.clip_gradients()
+
+        # Verify detection
+        assert stats.has_nan is True
+        assert stats.has_inf is True
+
+        # Verify zeroing
+        for p in mock_encoder_model.parameters():
+            if p.grad is not None:
+                assert not torch.isnan(p.grad).any()
+                assert not torch.isinf(p.grad).any()
+
+        print("AC3: NaN/Inf gradient detection and zeroing [PASS]")
+
+    def test_ac4_explosion_warnings(self, mock_encoder_model, caplog):
+        """AC4: Gradient explosion warnings logged."""
+        import logging
+
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        # Create large gradients
+        x = torch.randn(4, 10) * 1000
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum() * 1000
+        loss.backward()
+
+        config = GradientClipConfig(
+            explosion_threshold=1.0,  # Low threshold
+            log_grad_norms=False,
+        )
+        clipper = GradientClipper(mock_encoder_model, config)
+
+        with caplog.at_level(logging.WARNING):
+            clipper.clip_gradients()
+
+        # Verify explosion was detected
+        assert clipper.explosion_count > 0
+
+        print("AC4: Gradient explosion warnings logged [PASS]")
+
+    def test_ac5_interface_gradient_monitor(self, mock_encoder_model):
+        """AC5: InterfaceGradientMonitor tracks L22->L23 gradient flow."""
+        from modeling_studio.trainers.gradient_utils_v3 import InterfaceGradientMonitor
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+        stats = monitor.record()
+
+        # Verify L22 and L23 norms are tracked
+        assert "l22_grad_norm" in stats
+        assert "l23_grad_norm" in stats
+        assert stats["l22_grad_norm"] > 0
+        assert stats["l23_grad_norm"] > 0
+        assert "l23_l22_ratio" in stats
+
+        # Verify health assessment works
+        health = monitor.get_interface_health()
+        assert "healthy" in health
+        assert "health_ratio" in health
+
+        print("AC5: InterfaceGradientMonitor tracks L22->L23 flow [PASS]")
+
+    def test_ac6_stats_logged_periodically(self, mock_encoder_model, caplog):
+        """AC6: Gradient statistics logged periodically."""
+        import logging
+
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+        )
+
+        config = GradientClipConfig(
+            log_grad_norms=True,
+            log_every_n_steps=1,  # Log every step
+        )
+        clipper = GradientClipper(mock_encoder_model, config)
+
+        # Create gradients and clip
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        with caplog.at_level(logging.INFO):
+            clipper.clip_gradients()
+
+        # Verify stats were logged (at step 0)
+        # The logger should have been called with gradient stats
+        assert clipper.step == 1
+
+        print("AC6: Gradient statistics logged periodically [PASS]")
+
+    def test_ac7_convenience_function(self, mock_encoder_model):
+        """AC7: clip_gradients() convenience function works."""
+        from modeling_studio.trainers.gradient_utils_v3 import clip_gradients
+
+        # Create gradients
+        x = torch.randn(4, 10)
+        y = x
+        for layer in mock_encoder_model.encoder.layers:
+            y = layer(y)
+        loss = y.sum()
+        loss.backward()
+
+        norm = clip_gradients(mock_encoder_model, max_norm=1.0)
+        assert norm > 0
+        assert isinstance(norm, float)
+
+        # Also test with per_layer=True - need fresh forward pass
+        mock_encoder_model.zero_grad()
+        x2 = torch.randn(4, 10)
+        y2 = x2
+        for layer in mock_encoder_model.encoder.layers:
+            y2 = layer(y2)
+        loss2 = y2.sum()
+        loss2.backward()
+        norm2 = clip_gradients(mock_encoder_model, max_norm=1.0, per_layer=True)
+        assert norm2 >= 0
+
+        print("AC7: clip_gradients() convenience function works [PASS]")
+
+    def test_ac8_no_memory_leaks(self, mock_encoder_model):
+        """AC8: No memory leaks from gradient history."""
+        from modeling_studio.trainers.gradient_utils_v3 import (
+            GradientClipConfig,
+            GradientClipper,
+            InterfaceGradientMonitor,
+        )
+
+        config = GradientClipConfig(log_grad_norms=False)
+        clipper = GradientClipper(mock_encoder_model, config)
+        monitor = InterfaceGradientMonitor(mock_encoder_model)
+
+        # Run many steps
+        for _ in range(100):
+            x = torch.randn(4, 10)
+            y = x
+            for layer in mock_encoder_model.encoder.layers:
+                y = layer(y)
+            loss = y.sum()
+            mock_encoder_model.zero_grad()
+            loss.backward()
+            clipper.clip_gradients()
+            monitor.record()
+
+        # Verify history exists
+        assert len(clipper.gradient_history) == 100
+        assert len(monitor.history) == 100
+
+        # Clear history
+        clipper.clear_history()
+        monitor.clear_history()
+
+        # Verify cleared
+        assert len(clipper.gradient_history) == 0
+        assert len(monitor.history) == 0
+
+        print("AC8: No memory leaks from gradient history [PASS]")

@@ -243,6 +243,86 @@ def parse_args() -> argparse.Namespace:
 # =============================================================================
 
 
+def reinitialize_emotions_head(
+    model: ModernBertMultiTaskModel,
+    heads_config: dict[str, Any],
+) -> None:
+    """
+    Reinitialize emotions head if num_labels differs from model default.
+
+    This is needed for Stage A super-label training (7 labels instead of 44).
+    The model initializes with 44 labels by default, but Stage A uses 7 super-labels.
+
+    Args:
+        model: The multi-task model
+        heads_config: Head configuration from YAML
+    """
+    from modeling_studio.models.heads import HierarchicalEmotionHead
+    from modeling_studio.data.labels import EMOTIONS_SUPER_LABELS
+
+    emotions_cfg = heads_config.get("emotions", {})
+    if not emotions_cfg.get("enabled", True):
+        return
+
+    cfg_num_labels = emotions_cfg.get("num_labels")
+    if cfg_num_labels is None:
+        return  # Use model default (44)
+
+    try:
+        current_head = model.get_head("emotions")
+        current_num_labels = getattr(
+            current_head, "num_emotions", getattr(current_head, "num_labels", 44)
+        )
+
+        if cfg_num_labels == current_num_labels:
+            return  # Already correct
+
+        logger.info(
+            f"Reinitializing emotions head: {current_num_labels} -> {cfg_num_labels} labels"
+        )
+
+        # Get emotion labels for the new num_labels
+        if cfg_num_labels == 7:
+            # Stage A: Use super-labels
+            emotion_labels = list(EMOTIONS_SUPER_LABELS.label2id.keys())
+        else:
+            emotion_labels = None  # Use head's default slicing
+
+        # Create new head with correct num_labels
+        hidden_size = model.config.hidden_size
+        new_head = HierarchicalEmotionHead(
+            hidden_size=hidden_size,
+            num_emotions=cfg_num_labels,
+            num_secondary=emotions_cfg.get("num_secondary", 3),
+            dropout=emotions_cfg.get("dropout", 0.1),
+            pooling=emotions_cfg.get("pooling", "cls"),
+            use_intensity=emotions_cfg.get("use_intensity", True),
+            use_valence_arousal=emotions_cfg.get("use_valence_arousal", False),
+            use_familyos=cfg_num_labels != 7,  # Disable familyos for super-labels
+            emotion_labels=emotion_labels,
+            use_asl=emotions_cfg.get("use_asl", False),
+            use_hierarchical_loss=emotions_cfg.get("use_hierarchical_loss", False),
+            use_label_correlation=emotions_cfg.get("use_label_correlation", False),
+            use_emotion_attention=emotions_cfg.get("use_emotion_attention", False),
+            use_dynamic_thresholds=emotions_cfg.get("use_dynamic_thresholds", False),
+            use_mixup=emotions_cfg.get("use_mixup", False),
+            label_smoothing=emotions_cfg.get("label_smoothing", 0.0),
+        )
+
+        # Move to same device/dtype as old head
+        device = next(current_head.parameters()).device
+        dtype = next(current_head.parameters()).dtype
+        new_head = new_head.to(device=device, dtype=dtype)
+
+        # Replace head in model
+        model.heads["emotions"] = new_head
+
+        logger.info(f"Emotions head reinitialized with {cfg_num_labels} labels: {emotion_labels}")
+
+    except KeyError:
+        logger.warning("Emotions head not found in model, skipping reinitialization")
+
+
 def init_model(config: dict[str, Any]) -> ModernBertMultiTaskModel:
     """Initialize the multi-task model from config."""
     model_config = config.get("model", {})
@@ -839,6 +919,10 @@ def train(
     model = init_model(config)
     logger.info(f"Model initialized with {sum(p.numel() for p in model.parameters()):,} parameters")
 
+    # Reinitialize emotions head if num_labels differs from default (e.g., Stage A super-labels)
+    heads_config = config.get("heads", {})
+    reinitialize_emotions_head(model, heads_config)
+
     # Load datasets
     train_datasets, eval_datasets = load_datasets(
         config=config,
@@ -848,7 +932,6 @@ def train(
     )
 
     # === Configure head loss functions and SOTA parameters ===
-    heads_config = config.get("heads", {})
     logger.info("Configuring head loss functions and SOTA parameters...")
     for head_name, head_cfg in heads_config.items():
         if head_cfg.get("enabled", True):

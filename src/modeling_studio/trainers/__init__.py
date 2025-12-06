@@ -118,6 +118,31 @@ from modeling_studio.trainers.zipper_lr_v3 import (
     ZIPPER_LR_QUICK_REF,
 )
 
+# Learning rate schedulers for v3
+from modeling_studio.trainers.schedulers_v3 import (
+    DEFAULT_PHASE_SCHEDULER_CONFIGS,
+    PhaseAwareScheduler,
+    VALID_SCHEDULER_TYPES,
+    WarmupConstantScheduler,
+    WarmupCosineScheduler,
+    WarmupLinearScheduler,
+    compute_warmup_steps,
+    create_phase_aware_scheduler,
+    create_scheduler,
+    get_lr_at_step,
+    print_scheduler_profile,
+)
+
+# Gradient clipping and monitoring for v3
+from modeling_studio.trainers.gradient_utils_v3 import (
+    GradientClipConfig,
+    GradientClipper,
+    GradientStats,
+    InterfaceGradientMonitor,
+    clip_gradients,
+    create_gradient_clipper,
+)
+
 # Optimizer with head-wise learning rates
 from modeling_studio.trainers.optimizer import create_optimizer_with_head_lr, create_param_groups
 from modeling_studio.trainers.task_sampler import (
@@ -205,4 +230,23 @@ __all__ = [
     "compare_zipper_presets",
     "validate_zipper_config",
     "ZIPPER_LR_QUICK_REF",
+    # Learning rate schedulers (v3)
+    "WarmupCosineScheduler",
+    "WarmupLinearScheduler",
+    "WarmupConstantScheduler",
+    "PhaseAwareScheduler",
+    "create_scheduler",
+    "create_phase_aware_scheduler",
+    "DEFAULT_PHASE_SCHEDULER_CONFIGS",
+    "VALID_SCHEDULER_TYPES",
+    "compute_warmup_steps",
+    "get_lr_at_step",
+    "print_scheduler_profile",
+    # Gradient clipping and monitoring (v3)
+    "GradientClipConfig",
+    "GradientClipper",
+    "GradientStats",
+    "InterfaceGradientMonitor",
+    "clip_gradients",
+    "create_gradient_clipper",
 ]

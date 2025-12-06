@@ -165,6 +165,18 @@ datasets:
     name: data/familyos/emotions/silver
     label_schema: emotions_familyos
     format: jsonl
+    enabled: false  # Disabled for Stage A - use super-labels version below
+    splits:
+      train: train
+
+  # Stage A: Super-labels (7 classes) for curriculum learning
+  # Pre-consolidated from 44 granular emotions - see scripts/consolidate_labels.py
+  emotions_super:
+    task: emotions
+    source: local
+    name: data/familyos/emotions/silver_super
+    label_schema: emotions_super
+    format: jsonl
     splits:
       train: train
 

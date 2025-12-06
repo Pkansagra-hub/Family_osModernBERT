@@ -45,7 +45,9 @@ heads:
   emotions:
     enabled: true
     type: sequence_classification
-    num_labels: 44
+    # Stage A: 7 super-labels for curriculum learning
+    # See TRAINING_STRATEGY.md - fine-grained 44-label training is Stage B
+    num_labels: 7
     problem_type: multi_label_classification
     dropout: 0.1
     # CRITICAL: Plain BCE only - ASL/Focal/SOTA caused training collapse!
