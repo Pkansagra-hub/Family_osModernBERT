@@ -211,7 +211,7 @@ data:
 training:
   # Use head LR for heads, layer-wise LR for encoder
   learning_rate: 1e-4  # For heads only
-  num_train_epochs: 8  # More epochs for full fine-tuning
+  num_train_epochs: 10  # More epochs for full fine-tuning
 
   # OPTIMIZED: 4x larger batch size (short sequences = low memory)
   per_device_train_batch_size: 128   # Was 32 - safe with max_length=128
