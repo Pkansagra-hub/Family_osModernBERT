@@ -91,6 +91,33 @@ from modeling_studio.trainers.lr_groups_v3 import (
     print_lr_summary,
 )
 
+# Hub token gradient masking for v3
+from modeling_studio.trainers.gradient_masking_v3 import (
+    EmbeddingGradientHook,
+    GradientMaskConfig,
+    HubTokenGradientManager,
+    HUB_TOKEN_POSITIONS,
+    V2_VOCAB_SIZE,
+    V3_VOCAB_SIZE,
+    get_hub_token_positions,
+    get_vocab_layout,
+    setup_hub_token_gradient_masking,
+)
+
+# Zipper Learning Rate strategy for v3
+from modeling_studio.trainers.zipper_lr_v3 import (
+    ZIPPER_PRESETS,
+    ZipperLRConfig,
+    ZipperLROptimizer,
+    compare_zipper_presets,
+    create_zipper_optimizer,
+    get_zipper_preset,
+    list_zipper_presets,
+    print_zipper_lr_profile,
+    validate_zipper_config,
+    ZIPPER_LR_QUICK_REF,
+)
+
 # Optimizer with head-wise learning rates
 from modeling_studio.trainers.optimizer import create_optimizer_with_head_lr, create_param_groups
 from modeling_studio.trainers.task_sampler import (
@@ -157,4 +184,25 @@ __all__ = [
     "create_layer_group_optimizer",
     "get_phase_config",
     "print_lr_summary",
+    # Hub token gradient masking (v3)
+    "GradientMaskConfig",
+    "EmbeddingGradientHook",
+    "HubTokenGradientManager",
+    "HUB_TOKEN_POSITIONS",
+    "V2_VOCAB_SIZE",
+    "V3_VOCAB_SIZE",
+    "setup_hub_token_gradient_masking",
+    "get_hub_token_positions",
+    "get_vocab_layout",
+    # Zipper Learning Rate strategy (v3)
+    "ZipperLRConfig",
+    "ZipperLROptimizer",
+    "ZIPPER_PRESETS",
+    "create_zipper_optimizer",
+    "get_zipper_preset",
+    "list_zipper_presets",
+    "print_zipper_lr_profile",
+    "compare_zipper_presets",
+    "validate_zipper_config",
+    "ZIPPER_LR_QUICK_REF",
 ]

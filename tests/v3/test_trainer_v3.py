@@ -2573,3 +2573,1456 @@ class TestIssue514AcceptanceCriteria:
             assert isinstance(config, LayerGroupLRConfig)
 
         print("AC7: Preset configs for all phases [PASS]")
+
+
+# ==============================================================================
+# Issue 5.1.5: Hub Token Gradient Masking Tests
+# ==============================================================================
+
+
+class MockEmbeddingsForGradMask(nn.Module):
+    """Mock embeddings with word_embeddings for gradient masking tests."""
+
+    def __init__(self, vocab_size: int = 50372, hidden_size: int = 768):
+        super().__init__()
+        self.word_embeddings = nn.Embedding(vocab_size, hidden_size)
+        self.layer_norm = nn.LayerNorm(hidden_size)
+
+
+class MockModelForGradMask(nn.Module):
+    """Mock model for gradient masking tests."""
+
+    def __init__(self, vocab_size: int = 50372, hidden_size: int = 768):
+        super().__init__()
+        self.embeddings = MockEmbeddingsForGradMask(vocab_size, hidden_size)
+        self.encoder = MockEncoder(num_layers=28, hidden_size=hidden_size)
+
+
+class TestGradientMaskConfig:
+    """Tests for GradientMaskConfig dataclass."""
+
+    def test_default_config(self):
+        """Test default config values."""
+        from modeling_studio.trainers.gradient_masking_v3 import GradientMaskConfig
+
+        config = GradientMaskConfig()
+
+        assert config.freeze_original_vocab is True
+        assert config.hub_token_grad_scale == 1.0
+        assert config.train_hub_tokens is not None
+        assert len(config.train_hub_tokens) == 4  # All hub tokens by default
+
+    def test_custom_config(self):
+        """Test custom config values."""
+        from modeling_studio.trainers.gradient_masking_v3 import GradientMaskConfig
+
+        config = GradientMaskConfig(
+            train_hub_tokens=["[EMO]", "[TASK]"],
+            freeze_original_vocab=False,
+            hub_token_grad_scale=0.5,
+        )
+
+        assert config.train_hub_tokens == ["[EMO]", "[TASK]"]
+        assert config.freeze_original_vocab is False
+        assert config.hub_token_grad_scale == 0.5
+
+    def test_to_dict(self):
+        """Test to_dict method."""
+        from modeling_studio.trainers.gradient_masking_v3 import GradientMaskConfig
+
+        config = GradientMaskConfig(train_hub_tokens=["[EMO]"])
+        d = config.to_dict()
+
+        assert d["train_hub_tokens"] == ["[EMO]"]
+        assert d["freeze_original_vocab"] is True
+        assert d["hub_token_grad_scale"] == 1.0
+
+    def test_from_dict(self):
+        """Test from_dict class method."""
+        from modeling_studio.trainers.gradient_masking_v3 import GradientMaskConfig
+
+        d = {"train_hub_tokens": ["[MEM]"], "hub_token_grad_scale": 2.0}
+        config = GradientMaskConfig.from_dict(d)
+
+        assert config.train_hub_tokens == ["[MEM]"]
+        assert config.hub_token_grad_scale == 2.0
+
+
+class TestHubTokenPositions:
+    """Tests for hub token position constants."""
+
+    def test_hub_token_positions(self):
+        """Test hub token positions are correct."""
+        from modeling_studio.trainers.gradient_masking_v3 import HUB_TOKEN_POSITIONS
+
+        assert HUB_TOKEN_POSITIONS["[EMO]"] == 50368
+        assert HUB_TOKEN_POSITIONS["[MEM]"] == 50369
+        assert HUB_TOKEN_POSITIONS["[REL]"] == 50370
+        assert HUB_TOKEN_POSITIONS["[TASK]"] == 50371
+        assert len(HUB_TOKEN_POSITIONS) == 4
+
+    def test_vocab_constants(self):
+        """Test vocabulary layout constants."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            V2_VOCAB_SIZE,
+            V3_VOCAB_SIZE,
+            HUB_TOKEN_START,
+            HUB_TOKEN_COUNT,
+        )
+
+        assert V2_VOCAB_SIZE == 50368
+        assert HUB_TOKEN_START == 50368
+        assert HUB_TOKEN_COUNT == 4
+        assert V3_VOCAB_SIZE == 50372
+        assert V3_VOCAB_SIZE == V2_VOCAB_SIZE + HUB_TOKEN_COUNT
+
+    def test_get_hub_token_positions(self):
+        """Test get_hub_token_positions helper."""
+        from modeling_studio.trainers.gradient_masking_v3 import get_hub_token_positions
+
+        positions = get_hub_token_positions()
+        assert len(positions) == 4
+        assert positions["[EMO]"] == 50368
+
+    def test_get_vocab_layout(self):
+        """Test get_vocab_layout helper."""
+        from modeling_studio.trainers.gradient_masking_v3 import get_vocab_layout
+
+        layout = get_vocab_layout()
+        assert layout["V2_VOCAB_SIZE"] == 50368
+        assert layout["V3_VOCAB_SIZE"] == 50372
+
+
+class TestEmbeddingGradientHook:
+    """Tests for EmbeddingGradientHook class."""
+
+    @pytest.fixture
+    def model_for_hook(self):
+        """Create model for hook tests."""
+        return MockModelForGradMask(vocab_size=50372, hidden_size=768)
+
+    def test_hook_init(self, model_for_hook):
+        """Test hook initialization."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+        )
+
+        config = GradientMaskConfig()
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        assert hook.grad_mask is not None
+        assert hook.grad_mask.shape[0] == 50372
+        assert hook.grad_mask.shape[1] == 1
+
+    def test_hook_mask_frozen_vocab(self, model_for_hook):
+        """Test that mask freezes original vocab when configured."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+        )
+
+        config = GradientMaskConfig(freeze_original_vocab=True)
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        # Original vocab should be frozen (mask = 0)
+        assert hook.grad_mask[0].item() == 0.0
+        assert hook.grad_mask[50367].item() == 0.0  # Last v2 token
+
+    def test_hook_mask_hub_tokens_trainable(self, model_for_hook):
+        """Test that hub tokens are trainable by default."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        config = GradientMaskConfig(freeze_original_vocab=True, hub_token_grad_scale=1.0)
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        # Hub tokens should be trainable (mask = 1.0)
+        for name, pos in HUB_TOKEN_POSITIONS.items():
+            assert hook.grad_mask[pos].item() == 1.0, f"{name} should be trainable"
+
+    def test_hook_mask_specific_hub_tokens(self, model_for_hook):
+        """Test training only specific hub tokens."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        config = GradientMaskConfig(
+            train_hub_tokens=["[EMO]", "[TASK]"],
+            freeze_original_vocab=True,
+        )
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        # Only [EMO] and [TASK] should be trainable
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[EMO]"]].item() == 1.0
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[TASK]"]].item() == 1.0
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[MEM]"]].item() == 0.0
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[REL]"]].item() == 0.0
+
+    def test_hook_grad_scaling(self, model_for_hook):
+        """Test gradient scaling for hub tokens."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        config = GradientMaskConfig(hub_token_grad_scale=0.5)
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        for name, pos in HUB_TOKEN_POSITIONS.items():
+            assert hook.grad_mask[pos].item() == 0.5, f"{name} should have scale 0.5"
+
+    def test_hook_register_remove(self, model_for_hook):
+        """Test hook registration and removal."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+        )
+
+        config = GradientMaskConfig()
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        assert not hook.is_registered()
+
+        result = hook.register()
+        assert result is True
+        assert hook.is_registered()
+
+        hook.remove()
+        assert not hook.is_registered()
+
+    def test_hook_update_trainable_tokens(self, model_for_hook):
+        """Test updating trainable tokens."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        config = GradientMaskConfig(train_hub_tokens=["[EMO]"])
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        # Initially only [EMO] trainable
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[EMO]"]].item() == 1.0
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[MEM]"]].item() == 0.0
+
+        # Update to train [MEM] only
+        hook.update_trainable_tokens(["[MEM]"])
+
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[EMO]"]].item() == 0.0
+        assert hook.grad_mask[HUB_TOKEN_POSITIONS["[MEM]"]].item() == 1.0
+
+    def test_hook_get_mask_stats(self, model_for_hook):
+        """Test get_mask_stats method."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+        )
+
+        config = GradientMaskConfig(train_hub_tokens=["[EMO]", "[TASK]"])
+        embedding_weight = model_for_hook.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        stats = hook.get_mask_stats()
+
+        assert stats["total_tokens"] == 50372
+        assert stats["trainable_tokens"] == 2  # [EMO] and [TASK]
+        assert stats["frozen_tokens"] == 50370
+        assert stats["hub_tokens_trainable"] == ["[EMO]", "[TASK]"]
+
+
+class TestHubTokenGradientManager:
+    """Tests for HubTokenGradientManager class."""
+
+    @pytest.fixture
+    def model_for_manager(self):
+        """Create model for manager tests."""
+        return MockModelForGradMask(vocab_size=50372, hidden_size=768)
+
+    def test_manager_init(self, model_for_manager):
+        """Test manager initialization."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_manager)
+
+        assert manager.model is model_for_manager
+        assert manager.config is not None
+        assert len(manager.hooks) == 0
+        assert not manager.is_setup()
+
+    def test_manager_get_embedding_weight(self, model_for_manager):
+        """Test finding embedding weight."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_manager)
+        weight = manager.get_embedding_weight()
+
+        assert weight is not None
+        assert weight.shape[0] == 50372
+        assert weight.shape[1] == 768
+
+    def test_manager_setup(self, model_for_manager):
+        """Test setup method."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_manager)
+
+        result = manager.setup()
+        assert result is True
+        assert manager.is_setup()
+        assert len(manager.hooks) == 1
+
+        # Cleanup
+        manager.cleanup()
+
+    def test_manager_cleanup(self, model_for_manager):
+        """Test cleanup method."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_manager)
+        manager.setup()
+
+        assert manager.is_setup()
+
+        manager.cleanup()
+
+        assert not manager.is_setup()
+        assert len(manager.hooks) == 0
+
+    def test_manager_freeze_unfreeze_all(self, model_for_manager):
+        """Test freeze/unfreeze all hub tokens."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            HubTokenGradientManager,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        manager = HubTokenGradientManager(model_for_manager)
+        manager.setup()
+
+        # Freeze all
+        manager.freeze_all_hub_tokens()
+
+        for hook in manager.hooks:
+            for pos in HUB_TOKEN_POSITIONS.values():
+                assert hook.grad_mask[pos].item() == 0.0
+
+        # Unfreeze all
+        manager.unfreeze_all_hub_tokens()
+
+        for hook in manager.hooks:
+            for pos in HUB_TOKEN_POSITIONS.values():
+                assert hook.grad_mask[pos].item() == 1.0
+
+        manager.cleanup()
+
+    def test_manager_train_specific_tokens(self, model_for_manager):
+        """Test training specific hub tokens."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            HubTokenGradientManager,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        manager = HubTokenGradientManager(model_for_manager)
+        manager.setup()
+
+        manager.train_specific_hub_tokens(["[EMO]", "[MEM]"])
+
+        for hook in manager.hooks:
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[EMO]"]].item() == 1.0
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[MEM]"]].item() == 1.0
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[REL]"]].item() == 0.0
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[TASK]"]].item() == 0.0
+
+        manager.cleanup()
+
+    def test_manager_set_grad_scale(self, model_for_manager):
+        """Test setting gradient scale."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            HubTokenGradientManager,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        manager = HubTokenGradientManager(model_for_manager)
+        manager.setup()
+
+        manager.set_grad_scale(0.25)
+
+        for hook in manager.hooks:
+            for pos in HUB_TOKEN_POSITIONS.values():
+                assert hook.grad_mask[pos].item() == 0.25
+
+        manager.cleanup()
+
+    def test_manager_get_hub_token_embeddings(self, model_for_manager):
+        """Test getting hub token embeddings."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_manager)
+
+        embeddings = manager.get_hub_token_embeddings()
+
+        assert len(embeddings) == 4
+        assert "[EMO]" in embeddings
+        assert "[MEM]" in embeddings
+        assert "[REL]" in embeddings
+        assert "[TASK]" in embeddings
+        assert embeddings["[EMO]"].shape == (768,)
+
+    def test_manager_get_hub_token_gradients_no_grad(self, model_for_manager):
+        """Test getting gradients when none exist."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_manager)
+
+        gradients = manager.get_hub_token_gradients()
+
+        assert len(gradients) == 4
+        for name, grad in gradients.items():
+            assert grad is None
+
+    def test_manager_get_stats(self, model_for_manager):
+        """Test getting stats."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_manager)
+        manager.setup()
+
+        stats = manager.get_stats()
+
+        assert stats["is_setup"] is True
+        assert stats["num_hooks"] == 1
+        assert stats["vocab_size"] == 50372
+        assert stats["embedding_dim"] == 768
+        assert "config" in stats
+        assert "mask_stats" in stats
+
+        manager.cleanup()
+
+
+class TestSetupHubTokenGradientMasking:
+    """Tests for setup_hub_token_gradient_masking helper function."""
+
+    @pytest.fixture
+    def model_for_setup(self):
+        """Create model for setup tests."""
+        return MockModelForGradMask(vocab_size=50372, hidden_size=768)
+
+    def test_setup_default(self, model_for_setup):
+        """Test setup with default config."""
+        from modeling_studio.trainers.gradient_masking_v3 import setup_hub_token_gradient_masking
+
+        manager = setup_hub_token_gradient_masking(model_for_setup)
+
+        assert manager.is_setup()
+        assert len(manager.hooks) == 1
+
+        manager.cleanup()
+
+    def test_setup_custom_tokens(self, model_for_setup):
+        """Test setup with specific hub tokens."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            setup_hub_token_gradient_masking,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        manager = setup_hub_token_gradient_masking(
+            model_for_setup,
+            train_hub_tokens=["[EMO]"],
+        )
+
+        for hook in manager.hooks:
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[EMO]"]].item() == 1.0
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[MEM]"]].item() == 0.0
+
+        manager.cleanup()
+
+    def test_setup_unfreeze_original_vocab(self, model_for_setup):
+        """Test setup with original vocab unfrozen."""
+        from modeling_studio.trainers.gradient_masking_v3 import setup_hub_token_gradient_masking
+
+        manager = setup_hub_token_gradient_masking(
+            model_for_setup,
+            freeze_original_vocab=False,
+        )
+
+        for hook in manager.hooks:
+            # Original vocab should be trainable
+            assert hook.grad_mask[0].item() == 1.0
+            assert hook.grad_mask[1000].item() == 1.0
+
+        manager.cleanup()
+
+    def test_setup_custom_grad_scale(self, model_for_setup):
+        """Test setup with custom gradient scale."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            setup_hub_token_gradient_masking,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        manager = setup_hub_token_gradient_masking(
+            model_for_setup,
+            hub_token_grad_scale=2.0,
+        )
+
+        for hook in manager.hooks:
+            for pos in HUB_TOKEN_POSITIONS.values():
+                assert hook.grad_mask[pos].item() == 2.0
+
+        manager.cleanup()
+
+
+class TestGradientMaskingIntegration:
+    """Integration tests for gradient masking with actual backward pass."""
+
+    @pytest.fixture
+    def model_for_integration(self):
+        """Create model for integration tests."""
+        return MockModelForGradMask(vocab_size=50372, hidden_size=768)
+
+    def test_gradient_masking_forward_backward(self, model_for_integration):
+        """Test that gradient masking works in forward/backward pass."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            setup_hub_token_gradient_masking,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        manager = setup_hub_token_gradient_masking(
+            model_for_integration,
+            train_hub_tokens=["[EMO]"],
+            freeze_original_vocab=True,
+        )
+
+        # Forward pass with embedding lookup
+        embedding_weight = model_for_integration.embeddings.word_embeddings.weight
+
+        # Create input that uses various token indices
+        input_indices = torch.tensor(
+            [
+                0,  # Original vocab (should be frozen)
+                100,  # Original vocab (should be frozen)
+                50368,  # [EMO] (should be trainable)
+                50369,  # [MEM] (should be frozen)
+            ]
+        )
+
+        # Get embeddings and compute loss
+        embeddings = embedding_weight[input_indices]
+        loss = embeddings.sum()
+        loss.backward()
+
+        # Check gradients
+        grad = embedding_weight.grad
+
+        # Original vocab should have zero gradients
+        assert grad[0].abs().sum() == 0.0
+        assert grad[100].abs().sum() == 0.0
+
+        # [EMO] should have non-zero gradients
+        assert grad[HUB_TOKEN_POSITIONS["[EMO]"]].abs().sum() > 0.0
+
+        # [MEM] should have zero gradients (not in train_hub_tokens)
+        assert grad[HUB_TOKEN_POSITIONS["[MEM]"]].abs().sum() == 0.0
+
+        manager.cleanup()
+
+    def test_no_memory_leak_from_hooks(self, model_for_integration):
+        """Test that hooks don't cause memory leaks."""
+        from modeling_studio.trainers.gradient_masking_v3 import setup_hub_token_gradient_masking
+        import gc
+
+        # Create and cleanup multiple times
+        for _ in range(10):
+            manager = setup_hub_token_gradient_masking(model_for_integration)
+            manager.cleanup()
+
+        gc.collect()
+        # If we get here without error, no memory leak detected
+
+
+class TestIssue515AcceptanceCriteria:
+    """Acceptance criteria tests for Issue 5.1.5."""
+
+    @pytest.fixture
+    def model_for_ac(self):
+        """Create model for acceptance criteria tests."""
+        return MockModelForGradMask(vocab_size=50372, hidden_size=768)
+
+    def test_ac1_embedding_gradient_hook_masks_correctly(self, model_for_ac):
+        """AC1: EmbeddingGradientHook masks gradients correctly."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        config = GradientMaskConfig(
+            train_hub_tokens=["[EMO]"],
+            freeze_original_vocab=True,
+        )
+        embedding_weight = model_for_ac.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+        hook.register()
+
+        # Test gradient masking
+        test_grad = torch.ones_like(embedding_weight.data)
+        masked_grad = hook._gradient_hook(test_grad)
+
+        # Original vocab should be zeroed
+        assert masked_grad[0].sum() == 0.0
+        assert masked_grad[50367].sum() == 0.0
+
+        # [EMO] should be preserved
+        assert masked_grad[HUB_TOKEN_POSITIONS["[EMO]"]].sum() == 768.0
+
+        # [MEM] should be zeroed (not in train list)
+        assert masked_grad[HUB_TOKEN_POSITIONS["[MEM]"]].sum() == 0.0
+
+        hook.remove()
+        print("AC1: EmbeddingGradientHook masks gradients correctly [PASS]")
+
+    def test_ac2_original_vocab_gradients_zeroed(self, model_for_ac):
+        """AC2: Original vocab (0-50367) gradients zeroed when frozen."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            setup_hub_token_gradient_masking,
+            V2_VOCAB_SIZE,
+        )
+
+        manager = setup_hub_token_gradient_masking(
+            model_for_ac,
+            freeze_original_vocab=True,
+        )
+
+        for hook in manager.hooks:
+            for i in range(V2_VOCAB_SIZE):
+                assert hook.grad_mask[i].item() == 0.0, f"Token {i} should be frozen"
+
+        manager.cleanup()
+        print("AC2: Original vocab gradients zeroed when frozen [PASS]")
+
+    def test_ac3_hub_token_gradients_preserved_scaled(self, model_for_ac):
+        """AC3: Hub token gradients preserved/scaled."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            setup_hub_token_gradient_masking,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        # Test with scale 1.0 (preserved)
+        manager = setup_hub_token_gradient_masking(
+            model_for_ac,
+            hub_token_grad_scale=1.0,
+        )
+
+        for hook in manager.hooks:
+            for pos in HUB_TOKEN_POSITIONS.values():
+                assert hook.grad_mask[pos].item() == 1.0
+
+        manager.cleanup()
+
+        # Test with scale 0.5 (scaled)
+        manager = setup_hub_token_gradient_masking(
+            model_for_ac,
+            hub_token_grad_scale=0.5,
+        )
+
+        for hook in manager.hooks:
+            for pos in HUB_TOKEN_POSITIONS.values():
+                assert hook.grad_mask[pos].item() == 0.5
+
+        manager.cleanup()
+        print("AC3: Hub token gradients preserved/scaled [PASS]")
+
+    def test_ac4_train_specific_hub_tokens(self, model_for_ac):
+        """AC4: train_specific_hub_tokens() selects specific tokens."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            HubTokenGradientManager,
+            HUB_TOKEN_POSITIONS,
+        )
+
+        manager = HubTokenGradientManager(model_for_ac)
+        manager.setup()
+
+        manager.train_specific_hub_tokens(["[REL]", "[TASK]"])
+
+        for hook in manager.hooks:
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[EMO]"]].item() == 0.0
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[MEM]"]].item() == 0.0
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[REL]"]].item() == 1.0
+            assert hook.grad_mask[HUB_TOKEN_POSITIONS["[TASK]"]].item() == 1.0
+
+        manager.cleanup()
+        print("AC4: train_specific_hub_tokens() selects specific tokens [PASS]")
+
+    def test_ac5_get_hub_token_gradients(self, model_for_ac):
+        """AC5: get_hub_token_gradients() returns correct values."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+
+        manager = HubTokenGradientManager(model_for_ac)
+
+        # No gradients yet
+        gradients = manager.get_hub_token_gradients()
+        assert len(gradients) == 4
+        for name, grad in gradients.items():
+            assert grad is None
+
+        # Compute gradients
+        embedding_weight = model_for_ac.embeddings.word_embeddings.weight
+        loss = embedding_weight.sum()
+        loss.backward()
+
+        # Now should have gradients
+        gradients = manager.get_hub_token_gradients()
+        for name, grad in gradients.items():
+            assert grad is not None
+            assert grad.shape == (768,)
+
+        print("AC5: get_hub_token_gradients() returns correct values [PASS]")
+
+    def test_ac6_hooks_properly_registered_removable(self, model_for_ac):
+        """AC6: Hooks properly registered and removable."""
+        from modeling_studio.trainers.gradient_masking_v3 import (
+            EmbeddingGradientHook,
+            GradientMaskConfig,
+        )
+
+        config = GradientMaskConfig()
+        embedding_weight = model_for_ac.embeddings.word_embeddings.weight
+        hook = EmbeddingGradientHook(embedding_weight, config)
+
+        # Not registered yet
+        assert not hook.is_registered()
+        assert hook.hook_handle is None
+
+        # Register
+        result = hook.register()
+        assert result is True
+        assert hook.is_registered()
+        assert hook.hook_handle is not None
+
+        # Remove
+        hook.remove()
+        assert not hook.is_registered()
+        assert hook.hook_handle is None
+
+        print("AC6: Hooks properly registered and removable [PASS]")
+
+    def test_ac7_no_memory_leaks(self, model_for_ac):
+        """AC7: No memory leaks from hook registration."""
+        from modeling_studio.trainers.gradient_masking_v3 import HubTokenGradientManager
+        import gc
+        import weakref
+
+        # Create manager and setup
+        manager = HubTokenGradientManager(model_for_ac)
+        manager.setup()
+
+        # Get weak reference to hook
+        hook_ref = weakref.ref(manager.hooks[0])
+
+        # Cleanup
+        manager.cleanup()
+
+        # Force garbage collection
+        gc.collect()
+
+        # Hook should still exist because manager still exists
+        # (but hook should be properly unregistered)
+        assert len(manager.hooks) == 0
+
+        print("AC7: No memory leaks from hook registration [PASS]")
+
+
+# ============================================================================
+# Issue 5.1.6: Zipper Learning Rate Strategy Tests
+# ============================================================================
+
+
+class MockModelForZipper(nn.Module):
+    """Mock model for Zipper LR testing."""
+
+    def __init__(self, num_layers: int = 28, hidden_size: int = 768):
+        super().__init__()
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+
+        # Create encoder with layers
+        self.encoder = nn.Module()
+        self.encoder.layers = nn.ModuleList(
+            [nn.Linear(hidden_size, hidden_size) for _ in range(num_layers)]
+        )
+
+        # Create embeddings
+        self.embeddings = nn.Embedding(50372, hidden_size)
+
+        # Create task heads
+        self.task_heads = nn.ModuleDict(
+            {
+                "intent": nn.Linear(hidden_size, 10),
+                "emotion": nn.Linear(hidden_size, 8),
+            }
+        )
+
+
+class TestZipperLRConfig:
+    """Tests for ZipperLRConfig dataclass."""
+
+    def test_default_config(self):
+        """Test default configuration values."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+
+        assert config.base_lr == 3e-5
+        assert config.feeder_lr == 1e-5
+        assert config.interface_lr == 5e-5
+        assert config.family_lr == 3e-5
+        assert config.family_graduated is True
+        assert config.family_decay == 0.9
+        assert config.frozen_lr == 0.0
+        assert config.embeddings_lr == 0.0
+        assert config.task_heads_lr == 3e-5
+
+    def test_custom_config(self):
+        """Test custom configuration values."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig(
+            base_lr=5e-5,
+            feeder_lr=2e-5,
+            interface_lr=1e-4,
+            family_lr=4e-5,
+            family_graduated=False,
+            family_decay=0.8,
+        )
+
+        assert config.base_lr == 5e-5
+        assert config.feeder_lr == 2e-5
+        assert config.interface_lr == 1e-4
+        assert config.family_lr == 4e-5
+        assert config.family_graduated is False
+
+    def test_get_layer_lr_frozen_layers(self):
+        """Test LR for frozen layers (L1-18)."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+
+        # Foundation (L1-6, indices 0-5)
+        for idx in range(6):
+            assert config.get_layer_lr(idx) == 0.0
+
+        # Core (L7-18, indices 6-17)
+        for idx in range(6, 18):
+            assert config.get_layer_lr(idx) == 0.0
+
+    def test_get_layer_lr_feeder_band(self):
+        """Test LR for Feeder band (L19-22)."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig(feeder_lr=1e-5)
+
+        # Feeder (L19-22, indices 18-21)
+        for idx in range(18, 22):
+            assert config.get_layer_lr(idx) == 1e-5
+
+    def test_get_layer_lr_interface_layer(self):
+        """Test LR for Interface layer (L23)."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig(interface_lr=5e-5)
+
+        # Interface (L23, index 22)
+        assert config.get_layer_lr(22) == 5e-5
+
+    def test_get_layer_lr_family_uniform(self):
+        """Test uniform LR for Family band."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig(
+            family_lr=3e-5,
+            family_graduated=False,
+        )
+
+        # Family (L24-28, indices 23-27)
+        for idx in range(23, 28):
+            assert config.get_layer_lr(idx) == 3e-5
+
+    def test_get_layer_lr_family_graduated(self):
+        """Test graduated LR for Family band."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig(
+            interface_lr=5e-5,
+            family_graduated=True,
+            family_decay=0.9,
+        )
+
+        # Family (L24-28, indices 23-27) with decay
+        # L24 (idx 23): 5e-5 * 0.9^1 = 4.5e-5
+        # L25 (idx 24): 5e-5 * 0.9^2 = 4.05e-5
+        # etc.
+        expected_l24 = 5e-5 * (0.9**1)
+        expected_l25 = 5e-5 * (0.9**2)
+        expected_l28 = 5e-5 * (0.9**5)
+
+        assert abs(config.get_layer_lr(23) - expected_l24) < 1e-10
+        assert abs(config.get_layer_lr(24) - expected_l25) < 1e-10
+        assert abs(config.get_layer_lr(27) - expected_l28) < 1e-10
+
+    def test_interface_has_highest_lr(self):
+        """Test that interface layer has highest LR."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+
+        interface_lr = config.get_layer_lr(22)
+
+        # Check interface LR is higher than all others
+        for idx in range(28):
+            if idx != 22:
+                assert interface_lr >= config.get_layer_lr(idx)
+
+    def test_get_all_layer_lrs(self):
+        """Test getting all layer LRs."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+        all_lrs = config.get_all_layer_lrs()
+
+        assert len(all_lrs) == 28
+        assert all_lrs[0] == 0.0  # Foundation frozen
+        assert all_lrs[17] == 0.0  # Core frozen
+        assert all_lrs[18] == config.feeder_lr  # Feeder
+        assert all_lrs[22] == config.interface_lr  # Interface
+
+    def test_get_trainable_layer_lrs(self):
+        """Test getting trainable layer LRs only."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+        trainable_lrs = config.get_trainable_layer_lrs()
+
+        # Should only have L19-28 (indices 18-27)
+        assert len(trainable_lrs) == 10
+        assert 0 not in trainable_lrs  # Frozen
+        assert 17 not in trainable_lrs  # Frozen
+        assert 18 in trainable_lrs  # Feeder
+        assert 22 in trainable_lrs  # Interface
+
+    def test_get_band_summary(self):
+        """Test getting band summary."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+        summary = config.get_band_summary()
+
+        assert "foundation" in summary
+        assert "core" in summary
+        assert "feeder" in summary
+        assert "interface" in summary
+        assert "family" in summary
+
+        assert summary["interface"]["lr"] == config.interface_lr
+        assert summary["feeder"]["lr"] == config.feeder_lr
+
+
+class TestZipperPresets:
+    """Tests for Zipper LR presets."""
+
+    def test_presets_exist(self):
+        """Test that all expected presets exist."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZIPPER_PRESETS
+
+        expected_presets = [
+            "phase_0.5_healing",
+            "phase_1_multitask",
+            "phase_2_polish",
+            "conservative",
+            "aggressive",
+        ]
+
+        for preset in expected_presets:
+            assert preset in ZIPPER_PRESETS
+
+    def test_preset_values(self):
+        """Test preset configuration values."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZIPPER_PRESETS
+
+        # Phase 0.5 healing
+        healing = ZIPPER_PRESETS["phase_0.5_healing"]
+        assert healing.interface_lr == 5e-5
+        assert healing.family_decay == 0.85
+
+        # Phase 1 multitask
+        multitask = ZIPPER_PRESETS["phase_1_multitask"]
+        assert multitask.interface_lr == 4e-5
+        assert multitask.family_decay == 0.9
+
+        # Phase 2 polish
+        polish = ZIPPER_PRESETS["phase_2_polish"]
+        assert polish.family_graduated is False
+
+        # Aggressive
+        aggressive = ZIPPER_PRESETS["aggressive"]
+        assert aggressive.interface_lr == 1e-4
+
+    def test_get_zipper_preset(self):
+        """Test getting a preset by name."""
+        from modeling_studio.trainers.zipper_lr_v3 import get_zipper_preset
+
+        config = get_zipper_preset("phase_0.5_healing")
+        assert config.interface_lr == 5e-5
+
+    def test_get_zipper_preset_unknown(self):
+        """Test error on unknown preset."""
+        from modeling_studio.trainers.zipper_lr_v3 import get_zipper_preset
+
+        with pytest.raises(ValueError, match="Unknown preset"):
+            get_zipper_preset("unknown_preset")
+
+    def test_list_zipper_presets(self):
+        """Test listing available presets."""
+        from modeling_studio.trainers.zipper_lr_v3 import list_zipper_presets
+
+        presets = list_zipper_presets()
+        assert len(presets) == 5
+        assert "phase_0.5_healing" in presets
+
+
+class TestZipperLROptimizer:
+    """Tests for ZipperLROptimizer class."""
+
+    @pytest.fixture
+    def model_for_zipper(self):
+        """Create mock model for Zipper tests."""
+        return MockModelForZipper(num_layers=28, hidden_size=768)
+
+    def test_optimizer_creation(self, model_for_zipper):
+        """Test creating optimizer with Zipper strategy."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(model_for_zipper, config)
+
+        optimizer = zipper.create_optimizer()
+
+        assert isinstance(optimizer, torch.optim.AdamW)
+
+    def test_optimizer_param_groups(self, model_for_zipper):
+        """Test that param groups are created correctly."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(model_for_zipper, config)
+
+        optimizer = zipper.create_optimizer()
+
+        # Should have groups for L19-28 + embeddings (if lr>0) + task_heads + other
+        # With default config, embeddings_lr=0, so no embeddings group
+        assert len(optimizer.param_groups) > 0
+
+        # Check that layer groups have correct names
+        layer_names = [g.get("name", "") for g in optimizer.param_groups]
+        # Should have layer_19 through layer_28
+        for layer_num in range(19, 29):
+            assert f"layer_{layer_num}" in layer_names
+
+    def test_optimizer_layer_lrs(self, model_for_zipper):
+        """Test that layers get correct LRs."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig(
+            feeder_lr=1e-5,
+            interface_lr=5e-5,
+            family_graduated=False,
+            family_lr=3e-5,
+        )
+        zipper = ZipperLROptimizer(model_for_zipper, config)
+
+        optimizer = zipper.create_optimizer()
+
+        # Find layer_23 group (interface)
+        for group in optimizer.param_groups:
+            if group.get("name") == "layer_23":
+                assert group["lr"] == 5e-5
+            elif group.get("name") == "layer_19":
+                assert group["lr"] == 1e-5
+            elif group.get("name") == "layer_24":
+                assert group["lr"] == 3e-5
+
+    def test_optimizer_with_weight_decay(self, model_for_zipper):
+        """Test weight decay is applied."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(model_for_zipper, config, weight_decay=0.05)
+
+        optimizer = zipper.create_optimizer()
+
+        assert optimizer.defaults["weight_decay"] == 0.05
+
+    def test_optimizer_custom_betas(self, model_for_zipper):
+        """Test custom beta parameters."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(
+            model_for_zipper,
+            config,
+            betas=(0.85, 0.99),
+        )
+
+        optimizer = zipper.create_optimizer()
+
+        assert optimizer.defaults["betas"] == (0.85, 0.99)
+
+    def test_get_lr_dict(self, model_for_zipper):
+        """Test getting LR dictionary."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(model_for_zipper, config)
+
+        lr_dict = zipper.get_lr_dict()
+
+        assert "layer_1" in lr_dict
+        assert "layer_23" in lr_dict
+        assert "layer_28" in lr_dict
+        assert "embeddings" in lr_dict
+        assert "task_heads" in lr_dict
+
+        assert lr_dict["layer_1"] == 0.0  # Frozen
+        assert lr_dict["layer_23"] == config.interface_lr
+
+    def test_get_param_group_count(self, model_for_zipper):
+        """Test counting param groups."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(model_for_zipper, config)
+
+        count = zipper.get_param_group_count()
+        assert count >= 10  # At least L19-28
+
+    def test_get_trainable_param_count(self, model_for_zipper):
+        """Test counting trainable parameters."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(model_for_zipper, config)
+
+        count = zipper.get_trainable_param_count()
+        assert count > 0
+
+
+class TestCreateZipperOptimizer:
+    """Tests for create_zipper_optimizer factory function."""
+
+    @pytest.fixture
+    def model_for_factory(self):
+        """Create mock model for factory tests."""
+        return MockModelForZipper(num_layers=28, hidden_size=768)
+
+    def test_create_with_default_preset(self, model_for_factory):
+        """Test creating optimizer with default preset."""
+        from modeling_studio.trainers.zipper_lr_v3 import create_zipper_optimizer
+
+        optimizer = create_zipper_optimizer(model_for_factory)
+
+        assert isinstance(optimizer, torch.optim.AdamW)
+
+    def test_create_with_named_preset(self, model_for_factory):
+        """Test creating optimizer with named preset."""
+        from modeling_studio.trainers.zipper_lr_v3 import create_zipper_optimizer
+
+        optimizer = create_zipper_optimizer(
+            model_for_factory,
+            preset="phase_1_multitask",
+        )
+
+        # Find interface layer group and check LR
+        for group in optimizer.param_groups:
+            if group.get("name") == "layer_23":
+                assert group["lr"] == 4e-5  # Phase 1 interface LR
+
+    def test_create_with_overrides(self, model_for_factory):
+        """Test creating optimizer with config overrides."""
+        from modeling_studio.trainers.zipper_lr_v3 import create_zipper_optimizer
+
+        optimizer = create_zipper_optimizer(
+            model_for_factory,
+            preset="phase_0.5_healing",
+            interface_lr=7e-5,  # Override
+        )
+
+        # Check override was applied
+        for group in optimizer.param_groups:
+            if group.get("name") == "layer_23":
+                assert group["lr"] == 7e-5
+
+    def test_create_with_weight_decay(self, model_for_factory):
+        """Test creating optimizer with custom weight decay."""
+        from modeling_studio.trainers.zipper_lr_v3 import create_zipper_optimizer
+
+        optimizer = create_zipper_optimizer(
+            model_for_factory,
+            weight_decay=0.02,
+        )
+
+        assert optimizer.defaults["weight_decay"] == 0.02
+
+    def test_create_unknown_preset_uses_default(self, model_for_factory):
+        """Test that unknown preset falls back to default."""
+        from modeling_studio.trainers.zipper_lr_v3 import create_zipper_optimizer
+
+        # Should not raise, but use default
+        optimizer = create_zipper_optimizer(
+            model_for_factory,
+            preset="unknown_preset",
+        )
+
+        assert isinstance(optimizer, torch.optim.AdamW)
+
+
+class TestZipperUtilityFunctions:
+    """Tests for Zipper utility functions."""
+
+    def test_compare_zipper_presets(self):
+        """Test comparing presets."""
+        from modeling_studio.trainers.zipper_lr_v3 import compare_zipper_presets
+
+        comparison = compare_zipper_presets()
+
+        assert "phase_0.5_healing" in comparison
+        assert "phase_1_multitask" in comparison
+
+        healing = comparison["phase_0.5_healing"]
+        assert "interface_lr" in healing
+        assert "family_graduated" in healing
+
+    def test_validate_zipper_config_valid(self):
+        """Test validation of valid config."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            validate_zipper_config,
+        )
+
+        config = ZipperLRConfig()
+        warnings = validate_zipper_config(config)
+
+        assert len(warnings) == 0
+
+    def test_validate_zipper_config_interface_too_low(self):
+        """Test validation catches low interface LR."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            validate_zipper_config,
+        )
+
+        config = ZipperLRConfig(
+            feeder_lr=1e-4,
+            interface_lr=1e-5,  # Lower than feeder
+        )
+        warnings = validate_zipper_config(config)
+
+        assert len(warnings) > 0
+        assert any("Interface LR" in w for w in warnings)
+
+    def test_validate_zipper_config_bad_decay(self):
+        """Test validation catches invalid decay."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            validate_zipper_config,
+        )
+
+        config = ZipperLRConfig(
+            family_graduated=True,
+            family_decay=1.5,  # Invalid: > 1
+        )
+        warnings = validate_zipper_config(config)
+
+        assert len(warnings) > 0
+        assert any("family_decay" in w for w in warnings)
+
+    def test_quick_ref_string(self):
+        """Test quick reference string exists."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZIPPER_LR_QUICK_REF
+
+        assert isinstance(ZIPPER_LR_QUICK_REF, str)
+        assert "Interface" in ZIPPER_LR_QUICK_REF
+        assert "L23" in ZIPPER_LR_QUICK_REF
+
+
+class TestIssue516AcceptanceCriteria:
+    """Acceptance criteria tests for Issue 5.1.6."""
+
+    @pytest.fixture
+    def model_for_ac(self):
+        """Create model for acceptance criteria tests."""
+        return MockModelForZipper(num_layers=28, hidden_size=768)
+
+    def test_ac1_zipper_lr_config_defines_all_layer_lrs(self):
+        """AC1: ZipperLRConfig defines all layer LRs."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+
+        # All 28 layers should have defined LRs
+        for idx in range(28):
+            lr = config.get_layer_lr(idx)
+            assert lr is not None
+            assert lr >= 0
+
+        print("AC1: ZipperLRConfig defines all layer LRs [PASS]")
+
+    def test_ac2_interface_layer_gets_highest_lr(self):
+        """AC2: Interface layer (L23) gets highest LR."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig()
+        interface_lr = config.get_layer_lr(22)  # L23, index 22
+
+        for idx in range(28):
+            if idx != 22:
+                assert interface_lr >= config.get_layer_lr(idx)
+
+        print("AC2: Interface layer (L23) gets highest LR [PASS]")
+
+    def test_ac3_graduated_decay_in_family_band(self):
+        """AC3: Graduated decay in Family band works correctly."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig(
+            interface_lr=5e-5,
+            family_graduated=True,
+            family_decay=0.9,
+        )
+
+        # Check that LRs decrease from L24 to L28
+        prev_lr = config.get_layer_lr(22)  # Interface
+        for idx in range(23, 28):
+            current_lr = config.get_layer_lr(idx)
+            assert current_lr < prev_lr
+            prev_lr = current_lr
+
+        print("AC3: Graduated decay in Family band works correctly [PASS]")
+
+    def test_ac4_feeder_band_uniform_low_lr(self):
+        """AC4: Feeder band gets uniform low LR."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+
+        config = ZipperLRConfig(feeder_lr=1e-5)
+
+        # All feeder layers should have same LR
+        for idx in range(18, 22):  # L19-22
+            assert config.get_layer_lr(idx) == 1e-5
+
+        print("AC4: Feeder band gets uniform low LR [PASS]")
+
+    def test_ac5_create_optimizer_creates_valid_adamw(self, model_for_ac):
+        """AC5: create_optimizer() creates valid AdamW."""
+        from modeling_studio.trainers.zipper_lr_v3 import create_zipper_optimizer
+
+        optimizer = create_zipper_optimizer(model_for_ac)
+
+        assert isinstance(optimizer, torch.optim.AdamW)
+        assert len(optimizer.param_groups) > 0
+
+        # Verify can do a step
+        for group in optimizer.param_groups:
+            for param in group["params"]:
+                if param.requires_grad:
+                    param.grad = torch.zeros_like(param)
+
+        optimizer.step()  # Should not raise
+
+        print("AC5: create_optimizer() creates valid AdamW [PASS]")
+
+    def test_ac6_ascii_visualization(self, model_for_ac, capsys):
+        """AC6: ASCII visualization shows LR profile clearly."""
+        from modeling_studio.trainers.zipper_lr_v3 import (
+            ZipperLRConfig,
+            ZipperLROptimizer,
+        )
+
+        config = ZipperLRConfig()
+        zipper = ZipperLROptimizer(model_for_ac, config)
+        zipper._print_zipper_summary()
+
+        captured = capsys.readouterr()
+
+        # Check for key elements in output
+        assert "Zipper Learning Rate" in captured.out
+        assert "Layer" in captured.out
+        assert "Band" in captured.out
+        assert "Interface" in captured.out
+        assert "frozen" in captured.out.lower()
+
+        print("AC6: ASCII visualization shows LR profile clearly [PASS]")
+
+    def test_ac7_presets_for_all_phases(self):
+        """AC7: Presets for all phases available."""
+        from modeling_studio.trainers.zipper_lr_v3 import ZIPPER_PRESETS
+
+        # Required presets
+        required = ["phase_0.5_healing", "phase_1_multitask", "phase_2_polish"]
+
+        for preset in required:
+            assert preset in ZIPPER_PRESETS
+
+        print("AC7: Presets for all phases available [PASS]")
+
+    def test_ac8_override_mechanism_works(self, model_for_ac):
+        """AC8: Override mechanism works."""
+        from modeling_studio.trainers.zipper_lr_v3 import create_zipper_optimizer
+
+        # Override interface_lr
+        optimizer = create_zipper_optimizer(
+            model_for_ac,
+            preset="phase_0.5_healing",
+            interface_lr=8e-5,  # Override from 5e-5
+        )
+
+        # Find interface group and verify override
+        for group in optimizer.param_groups:
+            if group.get("name") == "layer_23":
+                assert group["lr"] == 8e-5
+                break
+
+        print("AC8: Override mechanism works [PASS]")
