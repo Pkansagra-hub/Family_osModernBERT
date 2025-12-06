@@ -681,7 +681,7 @@ RELATION_LABELS = LabelSchema(
         "lives_at": 13,  # X lives at Y (location)
         "owns": 14,  # X owns Y (heirloom)
     },
-    problem_type="single_label_classification",
+    problem_type="multi_label_classification",  # Sentence can have multiple relations
     description="Relationship extraction between entities (15 relations)",
 )
 

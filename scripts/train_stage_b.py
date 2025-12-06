@@ -86,6 +86,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from modeling_studio.data import load_stage_b_datasets
 from modeling_studio.data.labels import Capability
 from modeling_studio.data.loaders import (
+    load_embedding_triplets,
     load_familyos_unified,
     load_familyos_unified_for_training,
 )
@@ -647,6 +648,82 @@ def _load_unified_familyos_data(
         tokenizer=tokenizer,
         max_length=max_length,
     )
+
+    # Load embedding triplets if configured
+    embedding_config = data_config.get("embedding_familyos", {})
+    if embedding_config.get("enabled", False):
+        embedding_data_dir = embedding_config.get(
+            "data_dir", "data/familyos/embeddings/silver_synthetic"
+        )
+        logger.info(f"Loading embedding triplets from: {embedding_data_dir}")
+
+        # Load train and validation splits separately
+        embedding_train = load_embedding_triplets(
+            data_dir=embedding_data_dir,
+            split="train",
+            validation_ratio=validation_ratio,
+            seed=seed,
+        )
+        embedding_eval = load_embedding_triplets(
+            data_dir=embedding_data_dir,
+            split="validation",
+            validation_ratio=validation_ratio,
+            seed=seed,
+        )
+
+        # Tokenize the triplets
+        def tokenize_triplets(examples):
+            """Tokenize anchor, positive, and negative texts."""
+            anchor_enc = tokenizer(
+                examples["anchor"],
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+            )
+            positive_enc = tokenizer(
+                examples["positive"],
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+            )
+            negative_enc = tokenizer(
+                examples["negative"],
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+            )
+            return {
+                "input_ids": anchor_enc["input_ids"],
+                "attention_mask": anchor_enc["attention_mask"],
+                "positive_input_ids": positive_enc["input_ids"],
+                "positive_attention_mask": positive_enc["attention_mask"],
+                "negative_input_ids": negative_enc["input_ids"],
+                "negative_attention_mask": negative_enc["attention_mask"],
+                "task": examples["task"],
+            }
+
+        # Apply tokenization
+        embedding_train = embedding_train.map(
+            tokenize_triplets,
+            batched=True,
+            remove_columns=["anchor", "positive", "negative", "anchor_cluster"],
+            desc="Tokenizing embedding train triplets",
+        )
+        embedding_eval = embedding_eval.map(
+            tokenize_triplets,
+            batched=True,
+            remove_columns=["anchor", "positive", "negative", "anchor_cluster"],
+            desc="Tokenizing embedding eval triplets",
+        )
+
+        # NOTE: Don't set_format("torch") - the collator handles tensor conversion
+        # and expects Python lists
+
+        train_datasets["embedding"] = embedding_train
+        eval_datasets["embedding"] = embedding_eval
+        logger.info(
+            f"Loaded {len(embedding_train):,} train / {len(embedding_eval):,} eval embedding triplets"
+        )
 
     # Apply max samples limit in debug mode
     if debug:

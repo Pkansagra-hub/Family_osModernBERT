@@ -3900,11 +3900,12 @@ def _apply_tokenization(
         "safety_familyos": "classification",
         "emotions": "multilabel",
         "safety_generic": "multilabel",
+        "relations": "multilabel",  # Sentence-level relation classification
+        "relation": "relation",  # Legacy: span-based relation extraction
         "ner_general": "token_classification",
         "ner_family": "token_classification",
         "temporal": "token_classification",
         "nli": "nli",
-        "relation": "relation",
         "embedding": "embedding",
     }
 
@@ -4015,23 +4016,47 @@ def _apply_tokenization(
             return result
 
     elif mapped_task == "relation":
-
+        # Sentence-level multi-label relation classification
+        # Unlike entity-level RE, this is just text -> predicate multi-hot
         def tokenize_wrapper(example):
-            text = example.get("text")
+            text = example.get("text", "")
+
+            # Check if this is entity-level RE (has entity1/entity2) or sentence-level
             entity1 = example.get("entity1")
             entity2 = example.get("entity2")
-            result = tokenize_for_relation(
-                tokenizer=tokenizer,
-                text=text,
-                entity1=entity1,
-                entity2=entity2,
-                max_length=max_length,
-                mark_entities=True,
-            )
-            if "relation" in example:
+
+            if entity1 is not None and entity2 is not None:
+                # Entity-level RE with entity markers
+                result = tokenize_for_relation(
+                    tokenizer=tokenizer,
+                    text=text,
+                    entity1=entity1,
+                    entity2=entity2,
+                    max_length=max_length,
+                    mark_entities=True,
+                )
+            else:
+                # Sentence-level multi-label (no entity markers)
+                # Use simple sequence classification tokenization
+                encoding = tokenizer(
+                    text,
+                    max_length=max_length,
+                    truncation=True,
+                    padding="max_length",
+                )
+                result = {
+                    "input_ids": encoding["input_ids"],
+                    "attention_mask": encoding["attention_mask"],
+                }
+
+            # Handle labels (multi-hot or single label)
+            if "labels" in example:
+                result["labels"] = example["labels"]
+            elif "relation" in example:
                 result["labels"] = example["relation"]
             elif "label" in example:
                 result["labels"] = example["label"]
+
             result["task"] = task
             return result
 
@@ -4247,8 +4272,11 @@ def load_familyos_unified(
     for task in tasks:
         task_data = _extract_task_data(samples, task)
         if task_data:
-            task_datasets[task] = Dataset.from_list(task_data)
-            logger.info(f"  {task}: {len(task_data)} samples")
+            # Use the task name from the first record (normalized)
+            # This handles "relations" -> "relation" mapping
+            normalized_task = task_data[0].get("task", task)
+            task_datasets[normalized_task] = Dataset.from_list(task_data)
+            logger.info(f"  {normalized_task}: {len(task_data)} samples")
         else:
             logger.warning(f"  {task}: No valid samples found")
 
@@ -4344,11 +4372,20 @@ def _extract_task_data(
                 task_data.append({"tokens": tokens, "temporal_tags": temporal_tags, "task": task})
 
         elif task == "relations":
-            # Relation extraction: list of relations
-            # For now, skip if empty (relation extraction needs entity pairs)
-            if label_value:
-                # TODO: Implement relation extraction format
-                pass
+            # Sentence-level relation classification
+            # Extract predicate types as multi-label (can have multiple relations)
+            # NOTE: Data uses "relations" (plural), but Capability enum uses "relation" (singular)
+            if not label_value or not isinstance(label_value, list):
+                continue
+
+            # Convert list of relations to multi-hot vector
+            try:
+                labels = _relations_to_multihot(label_value)
+                if sum(labels) > 0:  # At least one valid relation
+                    # Use "relation" (singular) to match Capability.RELATION
+                    task_data.append({"text": text, "labels": labels, "task": "relation"})
+            except Exception as e:
+                logger.debug(f"Error processing relations: {e}")
 
     return task_data
 
@@ -4363,6 +4400,33 @@ def _emotions_to_multihot(emotion_list: list[str]) -> list[int]:
         except KeyError:
             # Skip unknown emotions that might not be in the schema
             logger.warning(f"Unknown emotion '{emotion}' not in EMOTIONS_FAMILYOS_LABELS, skipping")
+    return multihot
+
+
+def _relations_to_multihot(relations_list: list[dict]) -> list[int]:
+    """
+    Convert list of relation dicts to multi-hot vector.
+
+    Each relation dict has format: {"subject": "...", "predicate": "...", "object": "..."}
+    We extract the predicate and encode it as a multi-hot vector.
+
+    Args:
+        relations_list: List of relation dictionaries
+
+    Returns:
+        Multi-hot vector of size RELATION_LABELS.num_labels (15)
+    """
+    multihot = [0] * RELATION_LABELS.num_labels
+    for rel in relations_list:
+        if not isinstance(rel, dict):
+            continue
+        predicate = rel.get("predicate", "")
+        if predicate:
+            try:
+                idx = RELATION_LABELS.encode(predicate)
+                multihot[idx] = 1
+            except KeyError:
+                logger.warning(f"Unknown relation predicate '{predicate}' not in RELATION_LABELS")
     return multihot
 
 
@@ -4434,6 +4498,109 @@ def _spans_to_bio_tags(
                     logger.debug(f"Unknown tag '{tag}' for schema {label_schema.name}")
 
     return tokens, ner_tags
+
+
+# =============================================================================
+# FamilyOS Embedding Triplets Loader
+# =============================================================================
+
+
+def load_embedding_triplets(
+    data_dir: str | Path,
+    split: str = "train",
+    validation_ratio: float = 0.1,
+    seed: int = 42,
+    max_samples: int | None = None,
+) -> Dataset:
+    """
+    Load FamilyOS embedding triplets for contrastive learning.
+
+    This loads synthetic triplets generated by synthetic_embedding_generator.py.
+    Each triplet has an anchor, positive (similar), and negative (dissimilar) text.
+
+    Args:
+        data_dir: Path to directory containing triplet JSONL files
+        split: "train" or "validation"
+        validation_ratio: Fraction for validation (default: 0.1)
+        seed: Random seed for shuffling and splitting
+        max_samples: Maximum samples to load (None = all)
+
+    Returns:
+        Dataset with columns:
+            - anchor: str - Anchor sentence
+            - positive: str - Similar sentence
+            - negative: str - Dissimilar sentence
+            - anchor_cluster: str - Cluster name for anchor (optional)
+            - task: str - Always "embedding"
+
+    Example:
+        >>> triplets = load_embedding_triplets(
+        ...     "data/familyos/embeddings/silver_synthetic",
+        ...     split="train"
+        ... )
+        >>> print(f"Loaded {len(triplets)} triplets")
+    """
+    import random
+
+    data_dir = Path(data_dir)
+    if not data_dir.exists():
+        raise FileNotFoundError(f"Embedding triplet directory not found: {data_dir}")
+
+    # Find all triplet JSONL files
+    triplet_files = sorted(data_dir.glob("triplets_*.jsonl"))
+    if not triplet_files:
+        raise FileNotFoundError(f"No triplet files (triplets_*.jsonl) found in {data_dir}")
+
+    logger.info(f"Loading embedding triplets from {data_dir} ({len(triplet_files)} files)")
+
+    # Load all triplets
+    triplets = []
+    for jsonl_file in triplet_files:
+        with open(jsonl_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    triplet = json.loads(line)
+                    # Validate required fields
+                    if all(k in triplet for k in ["anchor", "positive", "negative"]):
+                        triplets.append(triplet)
+                except json.JSONDecodeError:
+                    continue
+
+    logger.info(f"Loaded {len(triplets):,} total triplets")
+
+    # Apply max_samples before splitting
+    if max_samples and len(triplets) > max_samples:
+        random.seed(seed)
+        triplets = random.sample(triplets, max_samples)
+
+    # Shuffle and split
+    random.seed(seed)
+    random.shuffle(triplets)
+    val_size = int(len(triplets) * validation_ratio)
+
+    if split == "train":
+        triplets = triplets[val_size:]
+    elif split == "validation":
+        triplets = triplets[:val_size]
+
+    logger.info(f"Using {len(triplets):,} triplets for {split}")
+
+    # Convert to Dataset
+    return Dataset.from_list(
+        [
+            {
+                "anchor": t["anchor"],
+                "positive": t["positive"],
+                "negative": t["negative"],
+                "anchor_cluster": t.get("anchor_cluster", t.get("cluster", "")),
+                "task": "embedding",
+            }
+            for t in triplets
+        ]
+    )
 
 
 def load_familyos_unified_for_training(
@@ -4579,6 +4746,8 @@ __all__ = [
     # Unified FamilyOS loader (for synthetic data)
     "load_familyos_unified",
     "load_familyos_unified_for_training",
+    # FamilyOS embedding triplets
+    "load_embedding_triplets",
     # Config-based loading
     "load_from_config",
     "load_stage_a_datasets",

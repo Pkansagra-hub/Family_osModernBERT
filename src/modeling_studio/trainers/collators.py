@@ -488,15 +488,19 @@ class EmbeddingCollator(BaseCollator):
         # Detect format based on keys present
         sample = features[0]
 
-        # Format 1: Triplet format (anchor, positive, negative)
+        # Format 1: Triplet format with explicit anchor naming
         if "anchor_input_ids" in sample:
             return self._collate_triplets(features)
 
-        # Format 2: Pair with scores (sentence1, sentence2, score)
+        # Format 2: Triplet format with input_ids as anchor + positive/negative
+        elif "input_ids" in sample and "positive_input_ids" in sample:
+            return self._collate_triplets_alt(features)
+
+        # Format 3: Pair with scores (sentence1, sentence2, score)
         elif "input_ids_1" in sample:
             return self._collate_pairs(features)
 
-        # Format 3: Simple format (for in-batch negatives)
+        # Format 4: Simple format (for in-batch negatives)
         elif "input_ids" in sample:
             return self._collate_simple(features)
 
@@ -536,6 +540,44 @@ class EmbeddingCollator(BaseCollator):
         else:
             # Fallback: dummy labels for contrastive learning (positive pairs assumed similar)
             batch["labels"] = torch.ones(len(features), dtype=torch.float)
+
+        # Add negatives if present
+        if "negative_input_ids" in features[0]:
+            negative_input_ids = [f["negative_input_ids"] for f in features]
+            negative_attention_mask = [f["negative_attention_mask"] for f in features]
+            batch["negative_input_ids"] = self._pad_sequence(
+                negative_input_ids, self.pad_token_id, self.max_length
+            )
+            batch["negative_attention_mask"] = self._pad_sequence(
+                negative_attention_mask, 0, self.max_length
+            )
+
+        # Preserve task info
+        if "task" in features[0]:
+            batch["task"] = features[0]["task"]
+
+        return batch
+
+    def _collate_triplets_alt(self, features: list[dict[str, Any]]) -> dict[str, Any]:
+        """Collate triplet format with input_ids as anchor (alternative naming)."""
+        # Extract anchor sequences (using input_ids)
+        input_ids = [f["input_ids"] for f in features]
+        attention_mask = [f["attention_mask"] for f in features]
+
+        # Extract positive sequences
+        positive_input_ids = [f["positive_input_ids"] for f in features]
+        positive_attention_mask = [f["positive_attention_mask"] for f in features]
+
+        batch = {
+            "input_ids": self._pad_sequence(input_ids, self.pad_token_id, self.max_length),
+            "attention_mask": self._pad_sequence(attention_mask, 0, self.max_length),
+            "positive_input_ids": self._pad_sequence(
+                positive_input_ids, self.pad_token_id, self.max_length
+            ),
+            "positive_attention_mask": self._pad_sequence(
+                positive_attention_mask, 0, self.max_length
+            ),
+        }
 
         # Add negatives if present
         if "negative_input_ids" in features[0]:
@@ -686,6 +728,7 @@ TASK_COLLATOR_MAPPING: dict[str, type] = {
     # Multi-label classification tasks
     "emotions": MultiLabelCollator,
     "safety_generic": MultiLabelCollator,
+    "relation": MultiLabelCollator,  # Sentence-level multi-label (not entity-level RE)
     # Token classification tasks
     "ner_general": TokenClassificationCollator,
     "ner_family": TokenClassificationCollator,
@@ -694,8 +737,6 @@ TASK_COLLATOR_MAPPING: dict[str, type] = {
     "nli": NLICollator,
     # Embedding task
     "embedding": EmbeddingCollator,
-    # Relation extraction
-    "relation": RelationCollator,
 }
 
 

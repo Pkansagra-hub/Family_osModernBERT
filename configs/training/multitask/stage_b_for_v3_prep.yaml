@@ -152,8 +152,9 @@ task_weights:
   ingress: 1.5
   safety_familyos: 5.0   # ← was 15.0, reduced since CRISIS already oversampled 20x
   intent: 1.5
-  relation: 2.0
+  relation: 2.0   # Singular to match Capability.RELATION (data field is 'relations')
   temporal: 1.5
+  embedding_familyos: 2.0  # FamilyOS synthetic triplets - train encoder on family semantics
 
 # =============================================================================
 # Data Configuration - Uses Unified FamilyOS Loader
@@ -165,10 +166,11 @@ data:
 
   # Primary: Your 420K FamilyOS synthetic data directories
   familyos_data_dirs:
-    - data/familyos/unified/output_synthetic
-    - data/familyos/unified/output
+    - data/familyos/unified/output_synthetic_healed
+    - data/familyos/unified/output_healed
 
   # Tasks to extract from unified data
+  # These are classification/NER tasks stored in unified format
   familyos_tasks:
     - emotions
     - sentiment
@@ -177,6 +179,17 @@ data:
     - intent
     - ingress
     - temporal
+    - relations  # Family relationship classification
+    # NOTE: embedding is NOT here - it uses separate triplet format below
+
+  # FamilyOS Embedding Triplets (200K+ synthetic data)
+  # Generated via synthetic_embedding_generator.py
+  embedding_familyos:
+    data_dir: data/familyos/embeddings/silver_synthetic
+    format: triplets  # anchor, positive, negative format
+    loss_type: triplet_margin  # TripletMarginLoss for hard negatives
+    margin: 0.3
+    enabled: true
 
   # Train/Val split
   validation_ratio: 0.1
