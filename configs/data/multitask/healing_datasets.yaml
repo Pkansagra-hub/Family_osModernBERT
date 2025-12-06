@@ -1,0 +1,107 @@
+# configs/data/multitask/healing_datasets.yaml
+#
+# Basic healing dataset configuration for ModernBERT v3 Phase 0.5
+# Uses 3 standard benchmarks: SST-2, CoNLL-2003, MNLI
+# Total: 10,000 samples
+
+# Dataset metadata
+dataset:
+  name: "healing_basic"
+  version: "1.0"
+  description: "Basic healing data for v3 Phase 0.5 training"
+  total_samples: 10000
+  purpose: "Preserve v2 capabilities during layer healing"
+
+# Data paths
+paths:
+  unified_file: "data/healing/healing_generic.jsonl"
+  split_dir: "data/healing/"
+  cache_dir: "data/cache/healing/"
+
+# Task configurations
+tasks:
+  sentiment:
+    source: "sst2"
+    n_samples: 3000
+    task_type: "classification"
+    num_labels: 2
+    label_names: ["negative", "positive"]
+    weight: 1.0
+    metrics:
+      - accuracy
+      - f1
+
+  ner:
+    source: "conll2003"
+    n_samples: 3000
+    task_type: "token_classification"
+    num_labels: 9
+    label_names:
+      - "O"
+      - "B-PER"
+      - "I-PER"
+      - "B-ORG"
+      - "I-ORG"
+      - "B-LOC"
+      - "I-LOC"
+      - "B-MISC"
+      - "I-MISC"
+    weight: 1.0
+    metrics:
+      - f1
+      - precision
+      - recall
+
+  nli:
+    source: "mnli"
+    n_samples: 4000
+    task_type: "classification"
+    num_labels: 3
+    label_names: ["entailment", "neutral", "contradiction"]
+    weight: 1.0
+    metrics:
+      - accuracy
+
+# Preprocessing
+preprocessing:
+  max_length: 512
+  padding: "max_length"
+  truncation: true
+  add_hub_tokens: true
+  hub_token_offset: 5  # [CLS] + 4 hub tokens
+
+# Data loading
+loading:
+  batch_size: 32
+  shuffle: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+
+# Sampling strategy
+sampling:
+  strategy: "proportional"  # or "balanced", "task_weighted"
+  task_weights:
+    sentiment: 1.0
+    ner: 1.0
+    nli: 1.0
+  oversample_minority: false
+  undersample_majority: false
+
+# Validation split
+validation:
+  enabled: true
+  split_ratio: 0.1
+  stratify_by_task: true
+
+# Augmentation (optional for healing)
+augmentation:
+  enabled: false
+  techniques: []
+
+# Quality filters
+filters:
+  min_length: 5
+  max_length: 500
+  remove_duplicates: true
+  remove_empty: true
