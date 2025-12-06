@@ -216,7 +216,7 @@ training:
   # OPTIMIZED: 4x larger batch size (short sequences = low memory)
   per_device_train_batch_size: 128   # Was 32 - safe with max_length=128
   per_device_eval_batch_size: 256    # Was 64 - eval uses less memory
-  gradient_accumulation_steps: 32    # Was 48 - effective batch = 128*32 = 4096
+  gradient_accumulation_steps: 6    # Was 48 - effective batch = 128*32 = 4096
   gradient_checkpointing: true       # Keep for safety margin
 
   # Regularization
