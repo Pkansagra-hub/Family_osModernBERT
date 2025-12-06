@@ -129,7 +129,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_and_sample_dataset(config: dict[str, Any], n_samples: int, seed: int) -> list[dict[str, Any]]:
+def load_and_sample_dataset(
+    config: dict[str, Any], n_samples: int, seed: int
+) -> list[dict[str, Any]]:
     """Load dataset from HuggingFace and sample examples."""
 
     logger.info("Loading %s...", config["hf_name"])
@@ -143,12 +145,18 @@ def load_and_sample_dataset(config: dict[str, Any], n_samples: int, seed: int) -
     if dataset_length > n_samples:
         dataset = dataset.shuffle(seed=seed).select(range(n_samples))
     elif dataset_length < n_samples:
-        logger.warning("Dataset smaller than requested: %d available vs %d requested", dataset_length, n_samples)
+        logger.warning(
+            "Dataset smaller than requested: %d available vs %d requested",
+            dataset_length,
+            n_samples,
+        )
 
     return list(dataset)
 
 
-def _bio_tags_to_spans(tokens: list[str], tag_ids: list[int], label_map: dict[int, str]) -> list[dict[str, Any]]:
+def _bio_tags_to_spans(
+    tokens: list[str], tag_ids: list[int], label_map: dict[int, str]
+) -> list[dict[str, Any]]:
     """Convert BIO tag sequence to span annotations."""
 
     spans: list[dict[str, Any]] = []
@@ -307,7 +315,9 @@ CONVERTERS = {
 }
 
 
-def prepare_enhanced_healing_data(seed: int = 42, include_basic: bool = True) -> dict[str, list[dict[str, Any]]]:
+def prepare_enhanced_healing_data(
+    seed: int = 42, include_basic: bool = True
+) -> dict[str, list[dict[str, Any]]]:
     """Prepare all enhanced healing datasets."""
 
     random.seed(seed)
@@ -324,7 +334,9 @@ def prepare_enhanced_healing_data(seed: int = 42, include_basic: bool = True) ->
 
         raw_samples = load_and_sample_dataset(config, config["n_samples"], seed)
         converter = CONVERTERS[task_name]
-        converted = [converter(sample, config) for sample in tqdm(raw_samples, desc=f"Convert {task_name}")]
+        converted = [
+            converter(sample, config) for sample in tqdm(raw_samples, desc=f"Convert {task_name}")
+        ]
         healing_data[task_name] = converted
         logger.info("  Converted %d samples", len(converted))
 

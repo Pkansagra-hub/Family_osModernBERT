@@ -34,7 +34,9 @@ validate_healing_data = prep.validate_healing_data
 
 
 def _load_enhanced_module():
-    spec = importlib.util.spec_from_file_location("prepare_healing_data_enhanced", ENHANCED_MODULE_PATH)
+    spec = importlib.util.spec_from_file_location(
+        "prepare_healing_data_enhanced", ENHANCED_MODULE_PATH
+    )
     if spec is None or spec.loader is None:
         raise ImportError("Unable to load prepare_healing_data_enhanced module")
 
@@ -251,7 +253,9 @@ def test_prepare_enhanced_healing_data_counts(monkeypatch):
         assert all("healing_purpose" in sample for sample in healing_data[task])
 
     squad_sample = healing_data["squad"][0]
-    assert squad_sample["labels"]["answer_end"] == squad_sample["labels"]["answer_start"] + len(squad_sample["labels"]["answer_text"])
+    assert squad_sample["labels"]["answer_end"] == squad_sample["labels"]["answer_start"] + len(
+        squad_sample["labels"]["answer_text"]
+    )
 
     stsb_sample = healing_data["stsb"][0]
     assert 0.0 <= stsb_sample["labels"]["normalized_score"] <= 1.0
@@ -262,23 +266,63 @@ def test_save_and_validate_enhanced_split_by_task(tmp_path):
 
     healing_data = {
         "sst2": [
-            {"text": "a", "task": "sentiment", "task_type": "classification", "labels": {}, "source": "sst2", "split": "healing", "healing_purpose": "p"}
+            {
+                "text": "a",
+                "task": "sentiment",
+                "task_type": "classification",
+                "labels": {},
+                "source": "sst2",
+                "split": "healing",
+                "healing_purpose": "p",
+            }
             for _ in range(2)
         ],
         "conll": [
-            {"text": "b", "task": "ner", "task_type": "token_classification", "labels": {}, "source": "conll", "split": "healing", "healing_purpose": "p"}
+            {
+                "text": "b",
+                "task": "ner",
+                "task_type": "token_classification",
+                "labels": {},
+                "source": "conll",
+                "split": "healing",
+                "healing_purpose": "p",
+            }
             for _ in range(2)
         ],
         "mnli": [
-            {"text": "c", "task": "nli", "task_type": "classification", "labels": {}, "source": "mnli", "split": "healing", "healing_purpose": "p"}
+            {
+                "text": "c",
+                "task": "nli",
+                "task_type": "classification",
+                "labels": {},
+                "source": "mnli",
+                "split": "healing",
+                "healing_purpose": "p",
+            }
             for _ in range(2)
         ],
         "squad": [
-            {"text": "d", "task": "qa", "task_type": "span_extraction", "labels": {}, "source": "squad", "split": "healing", "healing_purpose": "p"}
+            {
+                "text": "d",
+                "task": "qa",
+                "task_type": "span_extraction",
+                "labels": {},
+                "source": "squad",
+                "split": "healing",
+                "healing_purpose": "p",
+            }
             for _ in range(2)
         ],
         "stsb": [
-            {"text": "e", "task": "similarity", "task_type": "regression", "labels": {}, "source": "stsb", "split": "healing", "healing_purpose": "p"}
+            {
+                "text": "e",
+                "task": "similarity",
+                "task_type": "regression",
+                "labels": {},
+                "source": "stsb",
+                "split": "healing",
+                "healing_purpose": "p",
+            }
             for _ in range(2)
         ],
     }
@@ -286,7 +330,13 @@ def test_save_and_validate_enhanced_split_by_task(tmp_path):
     output_dir = tmp_path / "healing_enh"
     save_enhanced_healing_data(healing_data, str(output_dir), split_by_task=True, seed=0)
 
-    expected_files = {"healing_enhanced_sst2.jsonl", "healing_enhanced_conll.jsonl", "healing_enhanced_mnli.jsonl", "healing_enhanced_squad.jsonl", "healing_enhanced_stsb.jsonl"}
+    expected_files = {
+        "healing_enhanced_sst2.jsonl",
+        "healing_enhanced_conll.jsonl",
+        "healing_enhanced_mnli.jsonl",
+        "healing_enhanced_squad.jsonl",
+        "healing_enhanced_stsb.jsonl",
+    }
     assert expected_files == {path.name for path in output_dir.glob("*.jsonl")}
 
     total_expected = sum(len(samples) for samples in healing_data.values())
