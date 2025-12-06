@@ -51,6 +51,46 @@ from modeling_studio.trainers.collators import (
 # EMA model for smoother training
 from modeling_studio.trainers.ema import EMAModel
 
+# Layer freezing for v3 phase-based training
+from modeling_studio.trainers.freezing_v3 import (
+    LAYER_BANDS,
+    PHASE_TRAINABLE_BANDS,
+    LayerBand,
+    LayerFreezer,
+    TrainingPhase,
+    configure_model_for_phase,
+    get_band_for_layer,
+    get_layers_for_band,
+    get_trainable_bands_for_phase,
+)
+
+# Phase-aware trainer for v3
+from modeling_studio.trainers.trainer_v3 import (
+    ModernBERTv3Trainer,
+    TrainingConfig,
+    TrainingState,
+)
+
+# LoRA adapters for v3
+from modeling_studio.trainers.lora_v3 import (
+    LoRAConfig,
+    LoRALinear,
+    LoRAManager,
+    apply_lora_to_family_band,
+    get_lora_param_count,
+)
+
+# Layer-group learning rates for v3
+from modeling_studio.trainers.lr_groups_v3 import (
+    LAYER_BAND_RANGES,
+    PHASE_LR_CONFIGS,
+    LayerGroupLRConfig,
+    LayerGroupOptimizer,
+    create_layer_group_optimizer,
+    get_phase_config,
+    print_lr_summary,
+)
+
 # Optimizer with head-wise learning rates
 from modeling_studio.trainers.optimizer import create_optimizer_with_head_lr, create_param_groups
 from modeling_studio.trainers.task_sampler import (
@@ -89,4 +129,32 @@ __all__ = [
     "create_optimizer_with_head_lr",
     "create_param_groups",
     "UncertaintyWeighting",
+    # Layer freezing (v3)
+    "LayerBand",
+    "TrainingPhase",
+    "LayerFreezer",
+    "LAYER_BANDS",
+    "PHASE_TRAINABLE_BANDS",
+    "configure_model_for_phase",
+    "get_band_for_layer",
+    "get_layers_for_band",
+    "get_trainable_bands_for_phase",
+    # Phase-aware trainer (v3)
+    "ModernBERTv3Trainer",
+    "TrainingConfig",
+    "TrainingState",
+    # LoRA adapters (v3)
+    "LoRAConfig",
+    "LoRALinear",
+    "LoRAManager",
+    "apply_lora_to_family_band",
+    "get_lora_param_count",
+    # Layer-group learning rates (v3)
+    "LayerGroupLRConfig",
+    "LayerGroupOptimizer",
+    "PHASE_LR_CONFIGS",
+    "LAYER_BAND_RANGES",
+    "create_layer_group_optimizer",
+    "get_phase_config",
+    "print_lr_summary",
 ]
