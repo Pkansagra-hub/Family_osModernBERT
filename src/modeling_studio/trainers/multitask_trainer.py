@@ -161,11 +161,16 @@ class MultiTaskDataLoader:
         self._reset_iterators()
         self.sampler.reset()
 
-        step = 0
-        while True:
-            if self.total_steps is not None and step >= self.total_steps:
-                break
+        # Calculate total steps - use explicit total or sum of dataloader lengths
+        max_steps = self.total_steps
+        if max_steps is None:
+            max_steps = sum(len(loader) for loader in self.dataloaders.values())
 
+        # Safety check: ensure we have a valid number of steps
+        if max_steps <= 0:
+            return
+
+        for step in range(max_steps):
             # Sample task
             task = self.sampler.sample()
 
@@ -173,7 +178,6 @@ class MultiTaskDataLoader:
             batch = self._get_batch(task)
 
             yield batch
-            step += 1
 
     def __len__(self) -> int:
         """Return total number of batches across all dataloaders."""

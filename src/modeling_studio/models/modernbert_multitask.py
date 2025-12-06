@@ -661,8 +661,19 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Initialize encoder first
         model.encoder = AutoModel.from_config(config)
 
-        # Load state dict from safetensors
-        state_dict = load_file(str(checkpoint_path / "model.safetensors"))  # type: ignore
+        # Load state dict - try safetensors first, then pytorch format
+        safetensors_path = checkpoint_path / "model.safetensors"
+        pytorch_path = checkpoint_path / "pytorch_model.bin"
+
+        if safetensors_path.exists():
+            state_dict = load_file(str(safetensors_path))  # type: ignore
+        elif pytorch_path.exists():
+            state_dict = torch.load(str(pytorch_path), map_location="cpu", weights_only=True)
+        else:
+            raise FileNotFoundError(
+                f"No model weights found at {checkpoint_path}. "
+                f"Expected 'model.safetensors' or 'pytorch_model.bin'"
+            )
 
         # Separate state dict by component
         encoder_state = {}
