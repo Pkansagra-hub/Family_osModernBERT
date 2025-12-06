@@ -631,8 +631,10 @@ def _load_unified_familyos_data(
     logger.info(f"Tasks: {tasks}")
     logger.info(f"Safety oversampling: {safety_oversampling}")
 
-    # Limit samples in debug mode
-    max_samples = 5000 if debug else None
+    # Limit samples in debug mode (pre-tokenization to reduce map time)
+    max_samples_tokenization = None
+    if debug:
+        max_samples_tokenization = data_config.get("tokenization_debug_max_samples", 2000)
 
     # Get max length from training config
     training_config = config.get("training", {})
@@ -647,6 +649,7 @@ def _load_unified_familyos_data(
         safety_oversampling=safety_oversampling if not debug else None,
         tokenizer=tokenizer,
         max_length=max_length,
+        max_samples_tokenization=max_samples_tokenization,
     )
 
     # Load embedding triplets if configured
@@ -663,12 +666,14 @@ def _load_unified_familyos_data(
             split="train",
             validation_ratio=validation_ratio,
             seed=seed,
+            max_samples=embedding_config.get("max_samples_debug", 5000) if debug else None,
         )
         embedding_eval = load_embedding_triplets(
             data_dir=embedding_data_dir,
             split="validation",
             validation_ratio=validation_ratio,
             seed=seed,
+            max_samples=embedding_config.get("max_samples_debug", 1000) if debug else None,
         )
 
         # Tokenize the triplets
@@ -725,17 +730,19 @@ def _load_unified_familyos_data(
             f"Loaded {len(embedding_train):,} train / {len(embedding_eval):,} eval embedding triplets"
         )
 
-    # Apply max samples limit in debug mode
+    # Apply post-tokenization sample caps in debug mode (smaller than pre-tokenization if desired)
     if debug:
         logger.info("=" * 60)
         logger.info("DEBUG MODE: Using smaller dataset subsets")
         logger.info("=" * 60)
+        train_cap = data_config.get("debug_train_cap", 500)
+        eval_cap = data_config.get("debug_eval_cap", 100)
         for task in list(train_datasets.keys()):
-            if len(train_datasets[task]) > 500:
-                train_datasets[task] = train_datasets[task].select(range(500))
+            if len(train_datasets[task]) > train_cap:
+                train_datasets[task] = train_datasets[task].select(range(train_cap))
         for task in list(eval_datasets.keys()):
-            if len(eval_datasets[task]) > 100:
-                eval_datasets[task] = eval_datasets[task].select(range(100))
+            if len(eval_datasets[task]) > eval_cap:
+                eval_datasets[task] = eval_datasets[task].select(range(eval_cap))
 
     # Load replay datasets if configured
     replay_config = data_config.get("replay", {})

@@ -164,6 +164,11 @@ data:
   # Loader type: use the new unified loader
   loader: familyos_unified
 
+  # Debug-speed knobs (only used when --debug)
+  tokenization_debug_max_samples: 2000   # pre-tokenization cap to speed up map
+  debug_train_cap: 500                   # post-tokenization cap for train
+  debug_eval_cap: 100                    # post-tokenization cap for eval
+
   # Primary: Your 420K FamilyOS synthetic data directories
   familyos_data_dirs:
     - data/familyos/unified/output_synthetic_healed
@@ -190,6 +195,7 @@ data:
     loss_type: triplet_margin  # TripletMarginLoss for hard negatives
     margin: 0.3
     enabled: true
+    max_samples_debug: 5000              # cap train split in debug (optional)
 
   # Train/Val split
   validation_ratio: 0.1

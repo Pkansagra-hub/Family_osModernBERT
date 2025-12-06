@@ -4623,6 +4623,7 @@ def load_familyos_unified_for_training(
     safety_oversampling: dict[str, int] | None = None,
     tokenizer: Any = None,
     max_length: int = 512,
+    max_samples_tokenization: int | None = None,
 ) -> tuple[dict[str, Dataset], dict[str, Dataset]]:
     """
     Load FamilyOS unified data ready for multi-task training with safety oversampling.
@@ -4677,11 +4678,17 @@ def load_familyos_unified_for_training(
     # Apply tokenization if tokenizer is provided
     if tokenizer is not None:
         for task in list(train_datasets.keys()):
+            if max_samples_tokenization is not None:
+                limit = min(max_samples_tokenization, len(train_datasets[task]))
+                train_datasets[task] = train_datasets[task].select(range(limit))
             train_datasets[task] = _apply_tokenization(
                 train_datasets[task], task, tokenizer, max_length
             )
             logger.info(f"  {task}: {len(train_datasets[task])} samples")
         for task in list(val_datasets.keys()):
+            if max_samples_tokenization is not None:
+                limit = min(max_samples_tokenization, len(val_datasets[task]))
+                val_datasets[task] = val_datasets[task].select(range(limit))
             val_datasets[task] = _apply_tokenization(
                 val_datasets[task], task, tokenizer, max_length
             )
