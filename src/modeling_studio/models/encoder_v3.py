@@ -95,6 +95,7 @@ class ModernBERTEncoderV3(nn.Module):
             hidden_dropout_prob=hidden_dropout_prob,
             attention_probs_dropout_prob=attention_probs_dropout_prob,
             use_flash_attention=use_flash_attention,
+            use_fused_qkv=True,  # ModernBERT-compatible fused Wqkv
             lora_layers=lora_layers,
             lora_r=lora_r,
             lora_alpha=lora_alpha,

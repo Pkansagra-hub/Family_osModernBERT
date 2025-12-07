@@ -1198,6 +1198,9 @@ def aggregate_metrics(
         primary_metric = get_task_primary_metric(task)
         if primary_metric in metrics:
             primary_scores[task] = metrics[primary_metric]
+        # For embedding task, also check triplet_accuracy if spearman not found
+        elif task == "embedding" and "triplet_accuracy" in metrics:
+            primary_scores[task] = metrics["triplet_accuracy"]
         elif "f1" in metrics:
             primary_scores[task] = metrics["f1"]
         elif "accuracy" in metrics:

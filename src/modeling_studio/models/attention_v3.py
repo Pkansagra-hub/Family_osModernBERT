@@ -877,6 +877,176 @@ class FlashAttentionWithGlobals(nn.Module):
 
 
 # ==============================================================================
+# ModernBERT-Compatible Attention (Fused Wqkv)
+# ==============================================================================
+
+
+class ModernBertAttentionWithGlobals(nn.Module):
+    """
+    ModernBERT-compatible attention with fused Wqkv projection.
+
+    This attention module exactly matches ModernBERT's weight structure
+    to enable perfect weight transfer from v2 checkpoints, while still
+    providing the v3 global-local attention pattern.
+
+    Key differences from MultiScaleAttentionWithGlobals:
+    - Uses fused Wqkv [hidden*3, hidden] instead of separate Q, K, V
+    - Uses Wo instead of out_proj (naming convention)
+    - Matches ModernBERT checkpoint key names exactly
+
+    Weight mapping from ModernBERT:
+        - attn.Wqkv.weight [2304, 768] -> self.Wqkv.weight
+        - attn.Wo.weight [768, 768] -> self.Wo.weight
+
+    Args:
+        hidden_size: Model hidden dimension (default: 768)
+        num_attention_heads: Number of attention heads (default: 12)
+        attention_dropout: Dropout probability for attention weights
+        layer_idx: 1-indexed layer number (1-28) for window size lookup
+        max_position_embeddings: Maximum sequence length (default: 8192)
+
+    Example:
+        >>> attn = ModernBertAttentionWithGlobals(layer_idx=1)
+        >>> hidden = torch.randn(2, 100, 768)
+        >>> output, _ = attn(hidden)
+        >>> output.shape  # [2, 100, 768]
+    """
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        num_attention_heads: int = 12,
+        attention_dropout: float = 0.1,
+        layer_idx: int = 1,
+        max_position_embeddings: int = 8192,
+    ):
+        super().__init__()
+
+        self.hidden_size = hidden_size
+        self.num_attention_heads = num_attention_heads
+        self.head_dim = hidden_size // num_attention_heads
+        self.layer_idx = layer_idx
+        self.window_size = get_window_size_for_layer(layer_idx)
+        self.max_position_embeddings = max_position_embeddings
+
+        assert hidden_size % num_attention_heads == 0, (
+            f"hidden_size ({hidden_size}) must be divisible by "
+            f"num_attention_heads ({num_attention_heads})"
+        )
+
+        # Fused QKV projection (matches ModernBERT)
+        # Wqkv: [hidden*3, hidden] = [2304, 768]
+        self.Wqkv = nn.Linear(hidden_size, hidden_size * 3, bias=False)
+
+        # Output projection (matches ModernBERT naming)
+        self.Wo = nn.Linear(hidden_size, hidden_size, bias=False)
+
+        self.dropout = nn.Dropout(attention_dropout)
+        self.scale = 1.0 / math.sqrt(self.head_dim)
+
+        # Cache for attention mask
+        self._cached_mask: Optional[torch.Tensor] = None
+        self._cached_seq_len: int = 0
+
+    def _get_attention_mask(
+        self,
+        seq_len: int,
+        device: torch.device,
+    ) -> torch.Tensor:
+        """Get or create cached attention mask."""
+        if self._cached_mask is None or self._cached_seq_len != seq_len:
+            self._cached_mask = create_global_local_attention_mask(
+                seq_len=seq_len,
+                window_size=self.window_size,
+                global_positions=GLOBAL_TOKEN_POSITIONS,
+                device=device,
+                dtype=torch.float32,
+            )
+            self._cached_seq_len = seq_len
+        return self._cached_mask.to(device)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        output_attentions: bool = False,
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Forward pass with fused Wqkv projection.
+
+        Args:
+            hidden_states: Input tensor [batch, seq_len, hidden_size]
+            attention_mask: Optional padding mask [batch, seq_len]
+            output_attentions: Whether to return attention weights
+
+        Returns:
+            Tuple of (output, attention_weights)
+        """
+        batch_size, seq_len, _ = hidden_states.shape
+
+        # Fused QKV projection then split
+        qkv = self.Wqkv(hidden_states)  # [batch, seq, hidden*3]
+        query, key, value = qkv.chunk(3, dim=-1)  # Each [batch, seq, hidden]
+
+        # Reshape for multi-head attention: [batch, heads, seq, head_dim]
+        query = query.view(batch_size, seq_len, self.num_attention_heads, self.head_dim).transpose(
+            1, 2
+        )
+        key = key.view(batch_size, seq_len, self.num_attention_heads, self.head_dim).transpose(1, 2)
+        value = value.view(batch_size, seq_len, self.num_attention_heads, self.head_dim).transpose(
+            1, 2
+        )
+
+        # Create combined attention mask (global-local + padding)
+        global_local_mask = self._get_attention_mask(seq_len, hidden_states.device)
+
+        if attention_mask is not None:
+            combined_mask = global_local_mask.unsqueeze(0).expand(batch_size, -1, -1)
+            padding_mask = attention_mask.unsqueeze(1)
+            combined_mask = combined_mask * padding_mask.float()
+        else:
+            combined_mask = global_local_mask.unsqueeze(0).expand(batch_size, -1, -1)
+
+        # Convert to boolean mask for SDPA (True = MASK OUT)
+        attn_mask = combined_mask == 0
+
+        if output_attentions:
+            # Manual attention for debugging
+            attn_weights = torch.matmul(query, key.transpose(-2, -1)) * self.scale
+            attn_weights = attn_weights.masked_fill(attn_mask.unsqueeze(1), float("-inf"))
+            attn_weights = F.softmax(attn_weights, dim=-1)
+            attn_weights = self.dropout(attn_weights)
+            attn_output = torch.matmul(attn_weights, value)
+        else:
+            # Use SDPA for memory-efficient attention
+            attn_output = F.scaled_dot_product_attention(
+                query,
+                key,
+                value,
+                attn_mask=attn_mask.unsqueeze(1).expand(-1, self.num_attention_heads, -1, -1),
+                dropout_p=self.dropout.p if self.training else 0.0,
+                is_causal=False,
+            )
+            attn_weights = None
+
+        # Reshape back to [batch, seq, hidden]
+        attn_output = (
+            attn_output.transpose(1, 2).contiguous().view(batch_size, seq_len, self.hidden_size)
+        )
+
+        # Output projection
+        attn_output = self.Wo(attn_output)
+
+        return attn_output, attn_weights
+
+    def extra_repr(self) -> str:
+        return (
+            f"layer={self.layer_idx}, window={self.window_size}, "
+            f"heads={self.num_attention_heads}, fused_qkv=True (ModernBERT compat)"
+        )
+
+
+# ==============================================================================
 # Attention Layer Factory (Safety Switch)
 # ==============================================================================
 
@@ -887,56 +1057,38 @@ def create_attention_layer(
     attention_dropout: float = 0.1,
     layer_idx: int = 1,
     use_flash_attention: bool = False,
+    use_fused_qkv: bool = True,
 ) -> nn.Module:
     """
     Factory function implementing the DECISION MATRIX (Safety Switch).
 
     Decision Logic:
-    1. If Flash Attention missing → Standard (SDPA optimized)
-    2. If use_flash_attention=False → Standard (for Training Phase)
-    3. If use_flash_attention=True & available → Flash (for Long Inference)
+    1. If use_fused_qkv=True → ModernBertAttentionWithGlobals (v2 compatible)
+    2. If Flash Attention missing → Standard (SDPA optimized)
+    3. If use_flash_attention=False → Standard (for Training Phase)
+    4. If use_flash_attention=True & available → Flash (for Long Inference)
 
-    ⚠️ CRITICAL: For Phase 1 Training, set use_flash_attention=False in config
-    to ensure Text→Hub attention is preserved.
-
-    **Decision Matrix:**
-
-    | Phase              | Implementation                       | Reason                    |
-    |--------------------|--------------------------------------|---------------------------|
-    | Training (Phase 1) | MultiScaleAttentionWithGlobals+SDPA  | Correctness > speed       |
-    | Inference (<2k)    | MultiScaleAttentionWithGlobals       | Negligible speed diff     |
-    | Inference (8k+)    | FlashAttentionWithGlobals           | Speed, accept blindness   |
+    For v3 with v2 weight transfer, use_fused_qkv=True (default).
 
     Args:
         hidden_size: Model hidden dimension (default: 768)
         num_attention_heads: Number of attention heads (default: 12)
-        attention_dropout: Dropout probability for attention weights
-        layer_idx: 1-indexed layer number (1-28) for window size lookup
-        use_flash_attention: Whether to use Flash Attention.
-            - Training: Set to False (correctness > speed)
-            - Inference 8k+: Set to True (speed, accept Text→Hub blindness)
+        attention_dropout: Dropout probability
+        layer_idx: 1-indexed layer number (1-28)
+        use_flash_attention: Whether to use Flash Attention
+        use_fused_qkv: Whether to use fused Wqkv (ModernBERT compatible)
 
     Returns:
-        Attention module (Flash or Standard with SDPA)
-
-    Example:
-        >>> # Training: Use standard attention with SDPA
-        >>> attn_train = create_attention_layer(
-        ...     layer_idx=25, use_flash_attention=False
-        ... )
-        >>> type(attn_train).__name__
-        'MultiScaleAttentionWithGlobals'
-        >>>
-        >>> # Inference: Use Flash Attention if available
-        >>> attn_infer = create_attention_layer(
-        ...     layer_idx=25, use_flash_attention=True
-        ... )
-        >>> type(attn_infer).__name__  # 'FlashAttentionWithGlobals' if installed
-        'MultiScaleAttentionWithGlobals'  # Falls back if not available
+        Attention module
     """
-    # SAFETY SWITCH: Force standard attention for correctness
-    # Controlled via 'use_flash_attention' in model config
-    # Phase 1 Training config MUST set: use_flash_attention: false
+    # Default: Use ModernBERT-compatible attention for v2 weight transfer
+    if use_fused_qkv:
+        return ModernBertAttentionWithGlobals(
+            hidden_size=hidden_size,
+            num_attention_heads=num_attention_heads,
+            attention_dropout=attention_dropout,
+            layer_idx=layer_idx,
+        )
 
     if use_flash_attention and FLASH_ATTN_AVAILABLE:
         return FlashAttentionWithGlobals(
@@ -946,9 +1098,6 @@ def create_attention_layer(
             layer_idx=layer_idx,
         )
     else:
-        # Standard attention with SDPA optimization
-        # MultiScaleAttentionWithGlobals now uses F.scaled_dot_product_attention
-        # for memory efficiency even without Flash Attention
         return MultiScaleAttentionWithGlobals(
             hidden_size=hidden_size,
             num_attention_heads=num_attention_heads,
@@ -980,6 +1129,7 @@ __all__ = [
     "get_layer_config_summary",
     # Attention modules
     "MultiScaleAttentionWithGlobals",
+    "ModernBertAttentionWithGlobals",
     "FlashAttentionWithGlobals",
     "create_attention_layer",
     # Utilities

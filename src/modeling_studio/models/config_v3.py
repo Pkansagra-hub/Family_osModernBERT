@@ -21,7 +21,7 @@ class ModernBERTv3Config:
     hidden_size: int = 768  # Same as v2 (enables weight transfer)
     num_layers: int = 28  # 22 from v2 + 6 cloned
     num_attention_heads: int = 12  # MHA (no GQA)
-    intermediate_size: int = 3072  # 4x hidden (GELU FFN)
+    intermediate_size: int = 1152  # ModernBERT GLU FFN (not 4x hidden)
     max_position_embeddings: int = 8192
     vocab_size: int = 50432  # 256-aligned (50265 base + 4 hub + 163 padding = 256×197)
 

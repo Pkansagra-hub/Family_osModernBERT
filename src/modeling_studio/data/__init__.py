@@ -123,6 +123,14 @@ __all__ = [
     "SpanAnnotation",
     "RelationTriple",
     "UnifiedSample",
+    "ShardConfig",
+    "ShardStats",
+    "ShardIndex",
+    "ShardReader",
+    "StreamingShardDataset",
+    "BufferedShardDataset",
+    "create_shard_dataset",
+    "get_shard_statistics",
     # Multi-task dataset
     "TaskDataset",
     "MultiTaskDataset",
@@ -187,6 +195,16 @@ from modeling_studio.data.loaders_v3 import (
     TaskType,
     UnifiedFamilyOSDataset,
     UnifiedSample,
+)
+from modeling_studio.data.shard_loader_v3 import (
+    BufferedShardDataset,
+    ShardConfig,
+    ShardIndex,
+    ShardReader,
+    ShardStats,
+    StreamingShardDataset,
+    create_shard_dataset,
+    get_shard_statistics,
 )
 from modeling_studio.data.extractors_v3 import (
     ExtractedLabels,

@@ -86,11 +86,12 @@ class ModernBERTLayerV3(nn.Module):
         self,
         hidden_size: int = 768,
         num_attention_heads: int = 12,
-        intermediate_size: int = 3072,
+        intermediate_size: int = 1152,  # ModernBERT-compatible (was 3072)
         hidden_dropout_prob: float = 0.1,
         attention_probs_dropout_prob: float = 0.1,
         layer_idx: int = 1,
-        use_flash_attention: bool = True,
+        use_flash_attention: bool = False,  # Default to standard for v2 compat
+        use_fused_qkv: bool = True,  # ModernBERT-compatible fused Wqkv
         enable_lora: bool = False,
         lora_r: int = 16,
         lora_alpha: int = 16,
@@ -105,25 +106,30 @@ class ModernBERTLayerV3(nn.Module):
         self.hidden_size = hidden_size
         self.enable_lora = enable_lora
 
-        # Pre-LayerNorm architecture (like GPT-2, not BERT)
-        self.attention_norm = nn.LayerNorm(hidden_size, eps=1e-6)
-        self.ffn_norm = nn.LayerNorm(hidden_size, eps=1e-6)
+        # Pre-LayerNorm architecture matching ModernBERT naming
+        # ModernBERT uses bias=False for all LayerNorms
+        # Note: Layer 0 in ModernBERT has no attn_norm (comes after embedding norm)
+        # but we include it for simplicity - it will just be randomly initialized
+        self.attn_norm = nn.LayerNorm(hidden_size, eps=1e-6, bias=False)
+        self.mlp_norm = nn.LayerNorm(hidden_size, eps=1e-6, bias=False)
 
-        # Multi-scale attention with global hub tokens
-        self.attention = create_attention_layer(
+        # Multi-scale attention with global hub tokens (ModernBERT-compatible)
+        self.attn = create_attention_layer(
             hidden_size=hidden_size,
             num_attention_heads=num_attention_heads,
             attention_dropout=attention_probs_dropout_prob,
             layer_idx=layer_idx,
             use_flash_attention=use_flash_attention,
+            use_fused_qkv=use_fused_qkv,
         )
 
-        # GELU Feed-Forward Network
-        self.ffn = create_ffn(
+        # ModernBERT-compatible GLU Feed-Forward Network
+        # Named 'mlp' to match ModernBERT checkpoint structure (mlp.Wi, mlp.Wo)
+        self.mlp = create_ffn(
             hidden_size=hidden_size,
             intermediate_size=intermediate_size,
             hidden_dropout_prob=hidden_dropout_prob,
-            ffn_type="gelu",
+            ffn_type="modernbert_glu",  # Matches v2 checkpoint structure
         )
 
         # Dropout for residual connections
@@ -192,10 +198,10 @@ class ModernBERTLayerV3(nn.Module):
         """
         # === Attention Block (Pre-LayerNorm) ===
         residual = hidden_states
-        hidden_states = self.attention_norm(hidden_states)
+        hidden_states = self.attn_norm(hidden_states)
 
         # Multi-scale attention with global hub tokens
-        attn_output, attn_weights = self.attention(
+        attn_output, attn_weights = self.attn(
             hidden_states,
             attention_mask=attention_mask,
             output_attentions=output_attentions,
@@ -216,10 +222,10 @@ class ModernBERTLayerV3(nn.Module):
 
         # === FFN Block (Pre-LayerNorm) ===
         residual = hidden_states
-        hidden_states = self.ffn_norm(hidden_states)
+        hidden_states = self.mlp_norm(hidden_states)
 
-        # GELU Feed-Forward Network
-        ffn_output = self.ffn(hidden_states)
+        # GLU Feed-Forward Network (ModernBERT style)
+        ffn_output = self.mlp(hidden_states)
 
         # Residual connection (FFN has internal dropout)
         hidden_states = residual + ffn_output
@@ -279,8 +285,8 @@ class ModernBERTLayerV3(nn.Module):
                 - trainable: Trainable parameters
         """
         total = sum(p.numel() for p in self.parameters())
-        attention = sum(p.numel() for p in self.attention.parameters())
-        ffn = sum(p.numel() for p in self.ffn.parameters())
+        attention = sum(p.numel() for p in self.attn.parameters())
+        ffn = sum(p.numel() for p in self.mlp.parameters())
         lora = sum(p.numel() for n, p in self.named_parameters() if "lora" in n.lower())
         trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
 
@@ -310,10 +316,11 @@ def create_layer_stack(
     num_layers: int = 28,
     hidden_size: int = 768,
     num_attention_heads: int = 12,
-    intermediate_size: int = 3072,
+    intermediate_size: int = 1152,  # ModernBERT GLU FFN size
     hidden_dropout_prob: float = 0.1,
     attention_probs_dropout_prob: float = 0.1,
     use_flash_attention: bool = True,
+    use_fused_qkv: bool = True,  # ModernBERT-compatible fused Wqkv
     lora_layers: list[int] | None = None,
     lora_r: int = 16,
     lora_alpha: int = 16,
@@ -371,6 +378,7 @@ def create_layer_stack(
             attention_probs_dropout_prob=attention_probs_dropout_prob,
             layer_idx=i,
             use_flash_attention=use_flash_attention,
+            use_fused_qkv=use_fused_qkv,
             enable_lora=enable_lora,
             lora_r=lora_r,
             lora_alpha=lora_alpha,

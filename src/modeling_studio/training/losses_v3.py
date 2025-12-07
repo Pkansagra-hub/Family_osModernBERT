@@ -247,7 +247,11 @@ class HubGradientMaskedLoss(nn.Module):
             hidden_states.register_hook(lambda grad: grad * mask.unsqueeze(-1))
 
         loss_kwargs_with_states = {**loss_kwargs}
-        loss_kwargs_with_states.setdefault("hidden_states", hidden_states)
+        if (
+            "hidden_states" not in loss_kwargs_with_states
+            and "hidden_states_input" not in loss_kwargs_with_states
+        ):
+            loss_kwargs_with_states["hidden_states"] = hidden_states
         return self.base_loss(**loss_kwargs_with_states)
 
 

@@ -145,7 +145,7 @@ def create_v3_config(v2_loader: V2CheckpointLoader) -> ModernBERTv3Config:
         hidden_size=info.hidden_size,
         num_layers=28,  # v3 has 28 layers
         num_attention_heads=12,
-        intermediate_size=info.hidden_size * 4,
+        intermediate_size=1152,  # ModernBERT GLU FFN size (not 4x hidden)
         vocab_size=v3_vocab_size,
         max_position_embeddings=8192,
     )

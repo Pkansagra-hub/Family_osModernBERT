@@ -112,6 +112,94 @@ class GELUFFN(nn.Module):
         return f"hidden={self.hidden_size}, intermediate={self.intermediate_size}"
 
 
+class ModernBertGLUFFN(nn.Module):
+    """
+    ModernBERT-compatible GLU Feed-Forward Network.
+
+    This FFN exactly matches ModernBERT's MLP architecture to enable
+    perfect weight transfer from v2 checkpoints. Uses gated linear unit
+    with fused Wi projection.
+
+    Architecture (matches answerdotai/ModernBERT-base):
+        Wi: [hidden, intermediate*2] - fused gate+input projection
+        Wo: [intermediate, hidden] - down projection
+        Forward: Wo(dropout(act(input) * gate))
+        where: input, gate = Wi(x).chunk(2, dim=-1)
+
+    Key dimensions for ModernBERT-base:
+        - hidden_size: 768
+        - intermediate_size: 1152
+        - Wi: [2304, 768] (2304 = 1152 * 2)
+        - Wo: [768, 1152]
+
+    Args:
+        hidden_size: Input/output dimension (default: 768)
+        intermediate_size: Intermediate dimension (default: 1152)
+        hidden_dropout_prob: Dropout probability (default: 0.1)
+        activation: Activation function (default: "gelu")
+
+    Shape:
+        - Input: [batch, seq_len, hidden_size]
+        - Output: [batch, seq_len, hidden_size]
+
+    Example:
+        >>> ffn = ModernBertGLUFFN(hidden_size=768, intermediate_size=1152)
+        >>> x = torch.randn(2, 128, 768)
+        >>> out = ffn(x)  # [2, 128, 768]
+    """
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        intermediate_size: int = 1152,
+        hidden_dropout_prob: float = 0.1,
+        activation: str = "gelu",
+    ):
+        super().__init__()
+
+        self.hidden_size = hidden_size
+        self.intermediate_size = intermediate_size
+
+        # Fused gate+input projection: hidden → intermediate*2
+        # Wi weight shape: [intermediate*2, hidden] = [2304, 768]
+        self.Wi = nn.Linear(hidden_size, intermediate_size * 2, bias=False)
+
+        # Down projection: intermediate → hidden
+        # Wo weight shape: [hidden, intermediate] = [768, 1152]
+        self.Wo = nn.Linear(intermediate_size, hidden_size, bias=False)
+
+        # Dropout
+        self.drop = nn.Dropout(hidden_dropout_prob)
+
+        # Activation
+        if activation == "gelu":
+            self.act = F.gelu
+        elif activation == "silu":
+            self.act = F.silu
+        else:
+            self.act = F.gelu
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass matching ModernBERT exactly.
+
+        Args:
+            hidden_states: [batch, seq_len, hidden_size]
+
+        Returns:
+            Output: [batch, seq_len, hidden_size]
+        """
+        # Fused projection then split: [batch, seq, hidden] → [batch, seq, intermediate*2]
+        # Then chunk into input and gate, each [batch, seq, intermediate]
+        input, gate = self.Wi(hidden_states).chunk(2, dim=-1)
+
+        # GLU: act(input) * gate, then down project
+        return self.Wo(self.drop(self.act(input) * gate))
+
+    def extra_repr(self) -> str:
+        return f"hidden={self.hidden_size}, intermediate={self.intermediate_size} (ModernBERT GLU)"
+
+
 class SwiGLUFFN(nn.Module):
     """
     SwiGLU Feed-Forward Network (DEPRECATED - R&D only).
@@ -193,56 +281,67 @@ class SwiGLUFFN(nn.Module):
 
 def create_ffn(
     hidden_size: int = 768,
-    intermediate_size: int = 3072,
+    intermediate_size: int = 1152,
     hidden_dropout_prob: float = 0.1,
-    ffn_type: str = "gelu",
+    ffn_type: str = "modernbert_glu",
 ) -> nn.Module:
     """
     Factory function to create FFN module.
 
     This function provides a unified interface for creating different
-    FFN variants. By default, it creates the production-ready GELU FFN.
+    FFN variants. Default is ModernBERT-compatible GLU for v2 weight transfer.
 
     Args:
         hidden_size: Input/output dimension (default: 768)
-        intermediate_size: Intermediate dimension (default: 3072)
+        intermediate_size: Intermediate dimension (default: 1152 for ModernBERT)
         hidden_dropout_prob: Dropout probability (default: 0.1)
-        ffn_type: FFN type - "gelu" (default) or "swiglu" (R&D only)
+        ffn_type: FFN type:
+            - "modernbert_glu" (default): ModernBERT-compatible GLU for v2 transfer
+            - "gelu": Standard GELU FFN (NOT compatible with v2 weights)
+            - "swiglu": SwiGLU (R&D only, NOT compatible with v2 weights)
 
     Returns:
-        FFN module (GELUFFN or SwiGLUFFN)
+        FFN module
 
     Raises:
         ValueError: If unknown ffn_type provided
 
     Examples:
-        >>> # Production usage (GELU)
-        >>> ffn = create_ffn(hidden_size=768, intermediate_size=3072)
+        >>> # Production usage (ModernBERT GLU - v2 compatible)
+        >>> ffn = create_ffn(hidden_size=768, intermediate_size=1152)
 
-        >>> # Research experiment (SwiGLU)
-        >>> ffn = create_ffn(ffn_type="swiglu")  # Prints warning
+        >>> # Standard GELU (not v2 compatible)
+        >>> ffn = create_ffn(ffn_type="gelu", intermediate_size=3072)
     """
-    if ffn_type == "gelu":
+    if ffn_type == "modernbert_glu":
+        return ModernBertGLUFFN(
+            hidden_size=hidden_size,
+            intermediate_size=intermediate_size,
+            hidden_dropout_prob=hidden_dropout_prob,
+        )
+    elif ffn_type == "gelu":
         return GELUFFN(
             hidden_size=hidden_size,
             intermediate_size=intermediate_size,
             hidden_dropout_prob=hidden_dropout_prob,
         )
     elif ffn_type == "swiglu":
-        print("⚠️  WARNING: SwiGLU is R&D only - not recommended for production")
-        print("   This variant does NOT support v2 weight transfer")
+        print("WARNING: SwiGLU is R&D only - not compatible with v2 weight transfer")
         return SwiGLUFFN(
             hidden_size=hidden_size,
             intermediate_size=intermediate_size,
             hidden_dropout_prob=hidden_dropout_prob,
         )
     else:
-        raise ValueError(f"Unknown FFN type: {ffn_type}. Must be 'gelu' or 'swiglu'.")
+        raise ValueError(
+            f"Unknown FFN type: {ffn_type}. Must be 'modernbert_glu', 'gelu', or 'swiglu'."
+        )
 
 
 # Export public API
 __all__ = [
     "GELUFFN",
+    "ModernBertGLUFFN",
     "SwiGLUFFN",
     "create_ffn",
 ]

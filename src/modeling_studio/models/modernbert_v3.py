@@ -180,7 +180,8 @@ class ModernBERTv3Ultra(nn.Module):
                 module.weight.data[module.padding_idx].zero_()
         elif isinstance(module, nn.LayerNorm):
             nn.init.ones_(module.weight)
-            nn.init.zeros_(module.bias)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
 
     def forward(
         self,

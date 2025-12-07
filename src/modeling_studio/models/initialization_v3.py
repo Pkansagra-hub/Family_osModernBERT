@@ -50,8 +50,10 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import torch
+from safetensors import safe_open
 
 logger = logging.getLogger(__name__)
 
@@ -237,19 +239,27 @@ class V2CheckpointLoader:
                 )
 
             try:
-                checkpoint = torch.load(
-                    self.checkpoint_path,
-                    map_location="cpu",
-                    weights_only=True,
-                )
+                # Handle safetensors format
+                if self.checkpoint_path.suffix == ".safetensors":
+                    checkpoint = {}
+                    with safe_open(self.checkpoint_path, framework="pt") as f:
+                        for key in f.keys():
+                            checkpoint[key] = f.get_tensor(key)
+                else:
+                    # Standard PyTorch format
+                    checkpoint = torch.load(
+                        self.checkpoint_path,
+                        map_location="cpu",
+                        weights_only=True,
+                    )
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to load checkpoint {self.checkpoint_path}: {e}\n"
-                    f"Ensure the file is a valid PyTorch checkpoint."
+                    f"Ensure the file is a valid PyTorch or safetensors checkpoint."
                 ) from e
 
-            # Handle different checkpoint formats
-            if "state_dict" in checkpoint:
+            # Handle different checkpoint formats (for .pt/.pth files)
+            if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
                 self._state_dict = checkpoint["state_dict"]
             elif "model_state_dict" in checkpoint:
                 self._state_dict = checkpoint["model_state_dict"]
@@ -262,6 +272,8 @@ class V2CheckpointLoader:
             # Clean up module. prefix if present
             if self._state_dict is not None:
                 self._state_dict = self._clean_state_dict(self._state_dict)
+                # Normalize key names to expected format
+                self._state_dict = self._normalize_keys(self._state_dict)
 
                 logger.info(
                     f"Loaded checkpoint with {len(self._state_dict)} keys from {self.checkpoint_path.name}"
@@ -306,6 +318,91 @@ class V2CheckpointLoader:
 
         return cleaned
 
+    def _normalize_keys(
+        self,
+        state_dict: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        """
+        Normalize key names from v2 checkpoint format to v3 model format.
+
+        Handles the actual ModernBERT v2 checkpoint format:
+        - encoder.embeddings.tok_embeddings -> embeddings.word_embeddings
+        - encoder.embeddings.norm -> embeddings.LayerNorm
+        - encoder.final_norm -> final_layer_norm
+        - encoder.layers.X.* -> encoder.layers.X.* (keep as-is, layer internals match)
+
+        The v2 checkpoint structure (from safetensors):
+        - encoder.embeddings.tok_embeddings.weight [50368, 768]
+        - encoder.embeddings.norm.weight [768]
+        - encoder.layers.X.attn.Wqkv.weight [2304, 768]
+        - encoder.layers.X.attn.Wo.weight [768, 768]
+        - encoder.layers.X.attn_norm.weight [768] (except layer 0)
+        - encoder.layers.X.mlp.Wi.weight [2304, 768]
+        - encoder.layers.X.mlp.Wo.weight [768, 1152]
+        - encoder.layers.X.mlp_norm.weight [768]
+        - encoder.final_norm.weight [768]
+
+        The v3 model structure:
+        - embeddings.word_embeddings.weight [50432, 768]
+        - embeddings.LayerNorm.weight [768]
+        - embeddings.LayerNorm.bias [768]
+        - encoder.layers.X.attn.Wqkv.weight [2304, 768]
+        - encoder.layers.X.attn.Wo.weight [768, 768]
+        - encoder.layers.X.attn_norm.weight [768]
+        - encoder.layers.X.mlp.Wi.weight [2304, 768]
+        - encoder.layers.X.mlp.Wo.weight [768, 1152]
+        - encoder.layers.X.mlp_norm.weight [768]
+        - final_layer_norm.weight [768]
+        - final_layer_norm.bias [768]
+
+        Args:
+            state_dict: State dict with v2 key names
+
+        Returns:
+            State dict with normalized v3 key names
+
+        Example:
+            >>> state_dict = {"encoder.embeddings.tok_embeddings.weight": tensor(...)}
+            >>> normalized = loader._normalize_keys(state_dict)
+            >>> print(list(normalized.keys()))
+            ['embeddings.word_embeddings.weight']
+        """
+        normalized = {}
+        key_mappings = 0
+
+        for key, value in state_dict.items():
+            new_key = key
+
+            # Embedding keys (encoder.embeddings.* -> embeddings.*)
+            if key.startswith("encoder.embeddings.tok_embeddings"):
+                new_key = key.replace(
+                    "encoder.embeddings.tok_embeddings",
+                    "embeddings.word_embeddings",
+                )
+            elif key.startswith("encoder.embeddings.norm"):
+                new_key = key.replace(
+                    "encoder.embeddings.norm",
+                    "embeddings.LayerNorm",
+                )
+
+            # Final norm (encoder.final_norm -> final_layer_norm)
+            elif key.startswith("encoder.final_norm"):
+                new_key = key.replace("encoder.final_norm", "final_layer_norm")
+
+            # Layer keys: encoder.layers.X.* stays the same
+            # The internal structure (attn.Wqkv, mlp.Wi, etc.) already matches v3
+
+            if new_key != key:
+                key_mappings += 1
+                logger.debug(f"Key mapping: {key} -> {new_key}")
+
+            normalized[new_key] = value
+
+        if key_mappings > 0:
+            logger.info(f"Normalized {key_mappings} key names from v2 to v3 format")
+
+        return normalized
+
     def get_info(self) -> V2CheckpointInfo:
         """
         Extract checkpoint metadata.
@@ -338,12 +435,11 @@ class V2CheckpointLoader:
 
             num_layers = max(layer_indices) + 1 if layer_indices else 0
 
-            # Detect hidden size from first layer norm
+            # Detect hidden size from first layer norm or attn_norm
             hidden_size = 768  # default
             for key, tensor in state_dict.items():
-                if "layer_norm" in key.lower() and tensor.dim() == 1:
+                if ("layernorm" in key.lower() or "attn_norm" in key.lower()) and tensor.dim() == 1:
                     hidden_size = tensor.shape[0]
-                    break
                     break
 
             # Detect vocab size from embeddings
@@ -468,20 +564,48 @@ class V2CheckpointLoader:
             >>> loader = V2CheckpointLoader("checkpoint.pt")
             >>> embeddings = loader.get_embedding_weights()
             >>> print(embeddings.keys())
-            dict_keys(['word_embeddings.weight', 'position_embeddings.weight', ...])
+            dict_keys(['norm.weight', 'tok_embeddings.weight', ...])
         """
         state_dict = self.load()
         embedding_weights = {}
 
+        # Try both possible prefixes for embeddings
+        prefixes = ["encoder.embeddings.", "embeddings."]
+
         for key, tensor in state_dict.items():
-            if key.startswith("embeddings."):
-                short_key = key[len("embeddings.") :]
-                embedding_weights[short_key] = tensor
+            for prefix in prefixes:
+                if key.startswith(prefix):
+                    short_key = key[len(prefix) :]
+                    embedding_weights[short_key] = tensor
+                    break
 
         if not embedding_weights:
             logger.warning("No embedding weights found in checkpoint")
 
         return embedding_weights
+
+    def get_encoder_weights(self) -> dict[str, torch.Tensor]:
+        """
+        Get encoder-level weights (embedding norm, final norm).
+
+        Returns:
+            Dict of encoder weight name → tensor
+
+        Example:
+            >>> loader = V2CheckpointLoader("checkpoint.pt")
+            >>> encoder_weights = loader.get_encoder_weights()
+            >>> print(encoder_weights.keys())
+            dict_keys(['embeddings.norm.weight', 'final_norm.weight'])
+        """
+        state_dict = self.load()
+        encoder_weights = {}
+
+        for key, tensor in state_dict.items():
+            if key.startswith("encoder.") and not key.startswith("encoder.layers."):
+                short_key = key[len("encoder.") :]
+                encoder_weights[short_key] = tensor
+
+        return encoder_weights
 
     def print_summary(self) -> None:
         """
@@ -619,6 +743,16 @@ class LayerCopier:
             "mismatched_shape": 0,
             "missing_in_v2": 0,
         }
+        # Cache embedding norm for layer 0's attn_norm
+        self._embedding_norm: Optional[torch.Tensor] = None
+
+    def _get_embedding_norm(self) -> Optional[torch.Tensor]:
+        """Get embedding norm weight for layer 0's attn_norm."""
+        if self._embedding_norm is None:
+            encoder_weights = self.v2_loader.get_encoder_weights()
+            if "embeddings.norm.weight" in encoder_weights:
+                self._embedding_norm = encoder_weights["embeddings.norm.weight"]
+        return self._embedding_norm
 
     def copy_layer(
         self,
@@ -631,6 +765,9 @@ class LayerCopier:
 
         Performs direct state dict copy with shape validation.
         Preserves parameter values exactly (no modifications).
+
+        Special case: Layer 0 has no attn_norm in ModernBERT checkpoint.
+        We copy the embedding norm to layer 0's attn_norm instead.
 
         Args:
             v3_layer: Target v3 layer module (nn.Module)
@@ -656,6 +793,16 @@ class LayerCopier:
             v2_key = v3_key
 
             if v2_key not in v2_weights:
+                # Special case: Layer 0's attn_norm comes from embedding norm
+                if v2_layer_idx == 0 and v3_key == "attn_norm.weight":
+                    embed_norm = self._get_embedding_norm()
+                    if embed_norm is not None:
+                        v3_state[v3_key] = embed_norm.clone()
+                        copied_params += embed_norm.numel()
+                        self.copy_stats["matched"] += 1
+                        logger.info(f"Layer 0: Copied embedding norm to attn_norm")
+                        continue
+
                 if self.strict:
                     logger.warning(f"Layer {v3_layer_idx}: Missing v2 weight for '{v3_key}'")
                 self.copy_stats["missing_in_v2"] += 1
