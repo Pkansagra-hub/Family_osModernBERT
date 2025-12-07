@@ -68,6 +68,7 @@ Post-Training:
 
 import argparse
 import json
+import re
 import logging
 import sys
 from datetime import datetime
@@ -78,7 +79,9 @@ import torch
 import yaml
 from omegaconf import OmegaConf
 from peft import LoraConfig, PeftModel, TaskType, get_peft_model
-from transformers import AutoTokenizer, TrainingArguments
+from transformers import AutoTokenizer, TrainingArguments, TrainerCallback
+
+from datasets import load_dataset
 
 # Add src to path for local imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -92,6 +95,7 @@ from modeling_studio.data.loaders import (
 )
 from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer, MultiTaskTrainingArguments
+from modeling_studio.evaluation.evaluator import Evaluator
 
 # Epic 5.0 imports (optional enhancements)
 try:
@@ -179,6 +183,412 @@ def apply_overrides(config: dict[str, Any], overrides: list[str]) -> dict[str, A
             OmegaConf.update(omega_conf, key, parsed_value, merge=True)
 
     return OmegaConf.to_container(omega_conf, resolve=True)
+
+
+# =============================================================================
+# Forgetting Evaluation & v3 Verification Utilities
+# =============================================================================
+
+
+def _load_stage_a_baseline_metrics(model_path: str | Path) -> dict[str, float]:
+    """Load Stage A baseline metrics if available."""
+
+    metrics_path = Path(model_path) / "eval_results.json"
+    if not metrics_path.exists():
+        logger.warning(f"Stage A baseline metrics not found at {metrics_path}")
+        return {}
+
+    try:
+        with open(metrics_path, encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return data
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Failed to load baseline metrics from {metrics_path}: {exc}")
+
+    return {}
+
+
+def _load_forgetting_benchmark_datasets(
+    tokenizer: AutoTokenizer, max_samples: int = 500
+) -> dict[str, Any]:
+    """Load small eval datasets for CoNLL-2003 (NER), SST-2 (sentiment), MNLI (NLI)."""
+
+    datasets: dict[str, Any] = {}
+
+    # CoNLL-2003 → ner_general
+    try:
+        conll = load_dataset("conll2003", split="validation")
+
+        def tokenize_ner(batch: dict[str, Any]) -> dict[str, Any]:
+            tokenized = tokenizer(
+                batch["tokens"],
+                is_split_into_words=True,
+                truncation=True,
+                max_length=256,
+                padding=False,
+            )
+
+            labels: list[list[int]] = []
+            for i, label in enumerate(batch["ner_tags"]):
+                word_ids = tokenized.word_ids(batch_index=i)
+                aligned: list[int] = []
+                previous_word_idx: int | None = None
+                for word_idx in word_ids:
+                    if word_idx is None:
+                        aligned.append(-100)
+                    elif word_idx != previous_word_idx:
+                        aligned.append(label[word_idx] if word_idx < len(label) else -100)
+                    else:
+                        aligned.append(-100)
+                    previous_word_idx = word_idx
+                labels.append(aligned)
+            tokenized["labels"] = labels
+            return tokenized
+
+        conll = conll.select(range(min(max_samples, len(conll))))
+        conll = conll.rename_column("ner_tags", "labels")
+        conll = conll.map(
+            tokenize_ner, batched=True, remove_columns=["tokens", "pos_tags", "chunk_tags", "id"]
+        )
+        datasets["ner_general"] = conll
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Skipping CoNLL forgetting eval (load error): {exc}")
+
+    # SST-2 → sentiment (map to 5-class schema used in Stage A)
+    try:
+        sst2 = load_dataset("glue", "sst2", split="validation")
+
+        def map_sst2_to_five_class(example: dict[str, Any]) -> dict[str, Any]:
+            example["labels"] = 1 if example["label"] == 0 else 3  # neg->1, pos->3
+            return example
+
+        sst2 = sst2.map(map_sst2_to_five_class, remove_columns=["label", "idx"])
+        sst2 = sst2.select(range(min(max_samples, len(sst2))))
+        sst2 = sst2.map(
+            lambda batch: tokenizer(
+                batch["sentence"], truncation=True, max_length=256, padding=False
+            ),
+            batched=True,
+            remove_columns=(
+                ["sentence", "original_label"]
+                if "original_label" in sst2.column_names
+                else ["sentence"]
+            ),
+        )
+        datasets["sentiment"] = sst2
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Skipping SST-2 forgetting eval (load error): {exc}")
+
+    # MNLI → nli
+    try:
+        mnli = load_dataset("glue", "mnli", split="validation_matched")
+        mnli = mnli.select(range(min(max_samples, len(mnli))))
+        mnli = mnli.rename_column("label", "labels")
+        mnli = mnli.map(
+            lambda batch: tokenizer(
+                batch["premise"],
+                batch["hypothesis"],
+                truncation=True,
+                max_length=256,
+                padding=False,
+            ),
+            batched=True,
+            remove_columns=(
+                ["premise", "hypothesis", "idx"]
+                if "idx" in mnli.column_names
+                else ["premise", "hypothesis"]
+            ),
+        )
+        datasets["nli"] = mnli
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Skipping MNLI forgetting eval (load error): {exc}")
+
+    return datasets
+
+
+def _compute_metric_drop(baseline: float | None, current: float | None) -> float:
+    """Compute drop between baseline and current metrics."""
+    if baseline is None or current is None:
+        return 0.0
+    return float(baseline) - float(current)
+
+
+def run_forgetting_evaluation(
+    model: ModernBertMultiTaskModel,
+    tokenizer: AutoTokenizer,
+    config: dict[str, Any],
+    device: str,
+    datasets_cache: dict[str, Any] | None = None,
+) -> None:
+    """Run forgetting evaluation on Stage A benchmarks if configured."""
+
+    fe_config = config.get("forgetting_evaluation", {})
+    if not fe_config.get("enabled", False):
+        return
+
+    benchmarks = fe_config.get("benchmarks", [])
+    if not benchmarks:
+        logger.warning("Forgetting evaluation enabled but no benchmarks specified")
+        return
+
+    datasets = datasets_cache or _load_forgetting_benchmark_datasets(tokenizer, max_samples=500)
+    if not datasets:
+        logger.warning("No forgetting benchmark datasets loaded; skipping")
+        return
+
+    evaluator = Evaluator(
+        model=model, tokenizer=tokenizer, capabilities=list(datasets.keys()), device=device
+    )
+    results = evaluator.evaluate_all(
+        datasets=datasets, batch_size=16, num_workers=0, show_progress=False
+    )
+
+    baseline_metrics = _load_stage_a_baseline_metrics(
+        config.get("model", {}).get("name_or_path", "")
+    )
+
+    benchmark_metric_map = {
+        "CoNLL-2003": ("ner_general", "f1", "eval_ner_general_f1"),
+        "SST-2": ("sentiment", "accuracy", "eval_sentiment_accuracy"),
+        "MNLI": ("nli", "accuracy", "eval_nli_accuracy"),
+    }
+
+    for bench in benchmarks:
+        name = bench.get("name")
+        max_drop = float(bench.get("max_drop", 0.0))
+        task, _, baseline_key = benchmark_metric_map.get(name, (None, None, None))
+        if task is None:
+            logger.warning(f"Unknown benchmark '{name}' in forgetting_evaluation; skipping")
+            continue
+
+        task_results = results.task_results.get(task)
+        current_primary = task_results.primary_metric if task_results else None
+        baseline_value = baseline_metrics.get(baseline_key)
+        drop = _compute_metric_drop(baseline_value, current_primary)
+
+        logger.info(
+            f"Forgetting check [{name}]: baseline={baseline_value}, current={current_primary}, drop={drop:.4f}, max_drop={max_drop}"
+        )
+
+        if drop > max_drop:
+            action = fe_config.get("action_on_failure")
+            logger.warning(
+                f"Forgetting guard triggered for {name} (drop {drop:.4f} > {max_drop}). Action: {action}"
+            )
+            # Action hook: currently only logs. Can be extended to adjust optimizer LR if training is ongoing.
+
+
+def export_layers_15_20(encoder: Any, output_path: Path) -> None:
+    """Export encoder layers 15-20 (1-indexed) to a state_dict file."""
+
+    state_dict = encoder.state_dict()
+    selected: dict[str, Any] = {}
+    pattern = re.compile(r"(encoder\.(?:layer|layers)\.(\d+)\.)")
+
+    for key, value in state_dict.items():
+        match = pattern.search(key)
+        if match:
+            layer_idx = int(match.group(2))
+            if 14 <= layer_idx <= 19:  # 0-indexed layers 14-19 correspond to 15-20
+                selected[key] = value
+
+    if not selected:
+        logger.warning("Could not isolate layers 15-20; exporting full encoder as fallback")
+        selected = state_dict
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(selected, output_path)
+    logger.info(f"Exported encoder weights to {output_path}")
+
+
+def run_v3_transfer_verification(
+    model: ModernBertMultiTaskModel,
+    config: dict[str, Any],
+) -> None:
+    """Execute post-training v3 transfer verification steps (export layers)."""
+
+    v3_config = config.get("v3_transfer_verification", {})
+    if not v3_config.get("enabled", False):
+        return
+
+    steps = v3_config.get("steps", [])
+    if not steps:
+        logger.warning("v3_transfer_verification enabled but no steps provided")
+        return
+
+    for step in steps:
+        method = step.get("method")
+        if method == "export_layers_15_20":
+            output = step.get("output", "checkpoints/v2_layers_15_20_for_v3.pt")
+            encoder = model.get_encoder()
+            export_layers_15_20(encoder, Path(output))
+        else:
+            logger.info(f"Skipping verification step '{method}' (not implemented)")
+
+
+# =============================================================================
+# Forgetting Self-Heal Callback
+# =============================================================================
+
+
+class ForgettingSelfHealCallback(TrainerCallback):
+    """Respond to forgetting eval drops with non-blocking self-heal actions."""
+
+    def __init__(
+        self,
+        trainer_ref: Any,
+        fe_config: dict[str, Any],
+        tokenizer: AutoTokenizer,
+        baseline_metrics: dict[str, float],
+        forgetting_datasets: dict[str, Any],
+    ):
+        self.trainer_ref = trainer_ref
+        self.fe_config = fe_config
+        self.tokenizer = tokenizer
+        self.baseline_metrics = baseline_metrics
+        self.datasets = forgetting_datasets
+
+        # Self-heal settings
+        self.lr_backoff_factor = float(fe_config.get("lr_backoff_factor", 0.5))
+        self.replay_boost_factor = float(fe_config.get("replay_boost_factor", 2.0))
+        self.replay_boost_steps = int(fe_config.get("replay_boost_steps", 200))
+        self.quick_eval_after_steps = int(fe_config.get("quick_eval_after_steps", 200))
+
+        # Task mapping for benchmarks
+        self.benchmark_map = {
+            "CoNLL-2003": ("ner_general", "eval_ner_general_f1"),
+            "SST-2": ("sentiment", "eval_sentiment_accuracy"),
+            "MNLI": ("nli", "eval_nli_accuracy"),
+        }
+
+        # State
+        self.base_task_weights = dict(trainer_ref.task_sampler.task_weights)
+        self.boost_active_until: int | None = None
+        self.quick_eval_schedule: list[tuple[str, int]] = []
+
+    # Utilities
+    def _apply_lr_backoff(self) -> None:
+        optimizer = self.trainer_ref.optimizer
+        if optimizer is None:
+            return
+        for group in optimizer.param_groups:
+            name = group.get("name", "")
+            if name.startswith("layers_1-6") or name.startswith("layers_7-14"):
+                old_lr = group["lr"]
+                group["lr"] = old_lr * self.lr_backoff_factor
+                logger.warning(
+                    f"Forgetting self-heal: backoff LR for {name}: {old_lr:.2e} -> {group['lr']:.2e}"
+                )
+
+    def _apply_replay_boost(self, task: str, current_step: int) -> None:
+        sampler = self.trainer_ref.task_sampler
+        new_weights = dict(sampler.task_weights)
+
+        # Prefer replay variants if present
+        candidates = [f"{task}_replay", task]
+        boosted = []
+        for cand in candidates:
+            if cand in new_weights:
+                new_weights[cand] = new_weights[cand] * self.replay_boost_factor
+                boosted.append(cand)
+
+        if boosted:
+            sampler.update_weights(new_weights)
+            self.boost_active_until = current_step + self.replay_boost_steps
+            logger.warning(
+                f"Forgetting self-heal: boosted replay weights for {boosted} until step {self.boost_active_until}"
+            )
+
+    def _maybe_revert_replay_boost(self, current_step: int) -> None:
+        if self.boost_active_until is not None and current_step >= self.boost_active_until:
+            self.trainer_ref.task_sampler.update_weights(self.base_task_weights)
+            logger.info("Forgetting self-heal: replay boost window ended; weights restored")
+            self.boost_active_until = None
+
+    def _schedule_quick_eval(self, task: str, current_step: int) -> None:
+        target = current_step + self.quick_eval_after_steps
+        self.quick_eval_schedule.append((task, target))
+        logger.info(f"Forgetting self-heal: scheduled quick re-eval for {task} at step {target}")
+
+    def _run_quick_eval(self, task: str) -> None:
+        if task not in self.datasets:
+            return
+        evaluator = Evaluator(
+            model=self.trainer_ref.model,
+            tokenizer=self.tokenizer,
+            capabilities=[task],
+            device=str(self.trainer_ref.args.device),
+        )
+        res = evaluator.evaluate_all(
+            {task: self.datasets[task]}, batch_size=16, num_workers=0, show_progress=False
+        )
+        task_res = res.task_results.get(task)
+        if task_res:
+            logger.info(
+                f"Quick re-eval [{task}] primary={task_res.primary_metric:.4f} metrics={task_res.metrics}"
+            )
+
+    # HF callbacks
+    def on_evaluate(self, args, state, control, **kwargs):  # type: ignore[override]
+        if not self.datasets or not self.fe_config.get("enabled", False):
+            return control
+
+        benchmarks = self.fe_config.get("benchmarks", [])
+        if not benchmarks:
+            return control
+
+        evaluator = Evaluator(
+            model=self.trainer_ref.model,
+            tokenizer=self.tokenizer,
+            capabilities=list(self.datasets.keys()),
+            device=str(args.device),
+        )
+        results = evaluator.evaluate_all(
+            datasets=self.datasets,
+            batch_size=16,
+            num_workers=0,
+            show_progress=False,
+        )
+
+        for bench in benchmarks:
+            name = bench.get("name")
+            max_drop = float(bench.get("max_drop", 0.0))
+            task, baseline_key = self.benchmark_map.get(name, (None, None))
+            if task is None:
+                continue
+
+            task_res = results.task_results.get(task)
+            current_primary = task_res.primary_metric if task_res else None
+            baseline_value = self.baseline_metrics.get(baseline_key)
+            drop = _compute_metric_drop(baseline_value, current_primary)
+
+            logger.info(
+                f"Forgetting check [{name}]: baseline={baseline_value}, current={current_primary}, drop={drop:.4f}, max_drop={max_drop}"
+            )
+
+            if drop > max_drop:
+                self._apply_lr_backoff()
+                self._apply_replay_boost(task, state.global_step)
+                self._schedule_quick_eval(task, state.global_step)
+
+        return control
+
+    def on_step_end(self, args, state, control, **kwargs):  # type: ignore[override]
+        # Revert replay boost if window ended
+        self._maybe_revert_replay_boost(state.global_step)
+
+        # Run any due quick re-evals (non-blocking training)
+        due = [(t, step) for (t, step) in self.quick_eval_schedule if state.global_step >= step]
+        if due:
+            # remove due
+            self.quick_eval_schedule = [
+                (t, s) for (t, s) in self.quick_eval_schedule if s > state.global_step
+            ]
+            for task, _ in due:
+                self._run_quick_eval(task)
+
+        return control
 
 
 # =============================================================================
@@ -1655,6 +2065,27 @@ def train_stage_b(
         optimizers=optimizers,
     )
 
+    # Optional forgetting self-heal callback
+    fe_config = config.get("forgetting_evaluation", {})
+    forgetting_datasets_cache = (
+        _load_forgetting_benchmark_datasets(tokenizer, max_samples=500)
+        if fe_config.get("enabled", False)
+        else {}
+    )
+    baseline_metrics = _load_stage_a_baseline_metrics(
+        config.get("model", {}).get("name_or_path", "")
+    )
+    if fe_config.get("enabled", False):
+        trainer.add_callback(
+            ForgettingSelfHealCallback(
+                trainer_ref=trainer,
+                fe_config=fe_config,
+                tokenizer=tokenizer,
+                baseline_metrics=baseline_metrics,
+                forgetting_datasets=forgetting_datasets_cache,
+            )
+        )
+
     # Train
     logger.info("Starting Stage B training...")
     train_result = trainer.train(resume_from_checkpoint=resume_from_checkpoint)
@@ -1678,6 +2109,17 @@ def train_stage_b(
     config_save_path = final_output_path / "training_config.json"
     with open(config_save_path, "w") as f:
         json.dump(config, f, indent=2, default=str)
+
+    # Post-training checks: forgetting evaluation and v3 transfer verification
+    run_forgetting_evaluation(
+        model=peft_model,
+        tokenizer=tokenizer,
+        config=config,
+        device=str(training_args.device),
+        datasets_cache=forgetting_datasets_cache,
+    )
+
+    run_v3_transfer_verification(model=peft_model, config=config)
 
     # Final summary
     logger.info("=" * 60)

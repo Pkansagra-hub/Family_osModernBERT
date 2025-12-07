@@ -73,7 +73,7 @@ TASK_PROBLEM_TYPES: dict[str, str] = {
     "safety_familyos": "single_label_classification",
     "intent": "single_label_classification",
     "nli": "single_label_classification",
-    "relation": "single_label_classification",
+    "relation": "multi_label_classification",
     # Multi-label classification
     "emotions": "multi_label_classification",
     "safety_generic": "multi_label_classification",

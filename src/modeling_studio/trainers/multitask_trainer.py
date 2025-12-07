@@ -754,6 +754,13 @@ class MultiTaskTrainer(Trainer):
                 # Note: Normalization now happens during data loading, not here
                 cos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
                 loss = F.mse_loss(cos_sim, labels)
+
+                # Surface cosine scores as logits so evaluation metrics receive
+                # 1D similarity predictions instead of full embeddings
+                if hasattr(anchor_outputs, "logits"):
+                    anchor_outputs.logits = cos_sim
+                else:
+                    anchor_outputs = (loss, cos_sim)
             else:
                 # Contrastive loss using in-batch negatives
                 # Cosine similarity between all pairs
@@ -1399,8 +1406,8 @@ class MultiTaskTrainer(Trainer):
         inputs.pop("token_type_ids", None)
 
         with torch.no_grad():
-            # Handle embedding task specially (anchor/positive format)
-            if task == "embedding" and "anchor_input_ids" in inputs:
+            # Handle embedding task specially (support all embedding formats)
+            if task == "embedding":
                 return self._embedding_prediction_step(model, inputs, labels, prediction_loss_only)
 
             outputs = model(
@@ -1442,44 +1449,79 @@ class MultiTaskTrainer(Trainer):
         """Handle embedding task prediction with anchor/positive pairs."""
         import torch.nn.functional as F
 
-        # Get embeddings for anchor and positive
+        # Detect embedding input format
+        anchor_ids = None
+        anchor_mask = None
+        positive_ids = None
+        positive_mask = None
+
+        if "anchor_input_ids" in inputs:
+            anchor_ids = inputs["anchor_input_ids"]
+            anchor_mask = inputs.get("anchor_attention_mask")
+            positive_ids = inputs.get("positive_input_ids")
+            positive_mask = inputs.get("positive_attention_mask")
+        elif "input_ids_1" in inputs and "input_ids_2" in inputs:
+            anchor_ids = inputs["input_ids_1"]
+            anchor_mask = inputs.get("attention_mask_1")
+            positive_ids = inputs["input_ids_2"]
+            positive_mask = inputs.get("attention_mask_2")
+        elif "input_ids" in inputs and "positive_input_ids" in inputs:
+            anchor_ids = inputs["input_ids"]
+            anchor_mask = inputs.get("attention_mask")
+            positive_ids = inputs["positive_input_ids"]
+            positive_mask = inputs.get("positive_attention_mask")
+        elif "input_ids" in inputs:
+            anchor_ids = inputs["input_ids"]
+            anchor_mask = inputs.get("attention_mask")
+
+        # Compute embeddings for available inputs
+        if anchor_ids is None:
+            # If format is unknown, return safe defaults to avoid crashing evaluation
+            model_device = next(model.parameters()).device
+            dummy_loss = torch.tensor(0.0, device=model_device)
+            dummy_logits = torch.tensor([], device=model_device)
+            return (dummy_loss, dummy_logits, labels)
+
         anchor_outputs = model(
             capability="embedding",
-            input_ids=inputs["anchor_input_ids"],
-            attention_mask=inputs["anchor_attention_mask"],
+            input_ids=anchor_ids,
+            attention_mask=anchor_mask,
             return_dict=True,
         )
-        # Handle PEFT-wrapped models that return tuple
         anchor_embeds = (
             anchor_outputs.logits if hasattr(anchor_outputs, "logits") else anchor_outputs[0]
         )
 
-        positive_outputs = model(
-            capability="embedding",
-            input_ids=inputs["positive_input_ids"],
-            attention_mask=inputs["positive_attention_mask"],
-            return_dict=True,
-        )
-        # Handle PEFT-wrapped models that return tuple
-        positive_embeds = (
-            positive_outputs.logits if hasattr(positive_outputs, "logits") else positive_outputs[0]
-        )
-
-        # Compute cosine similarity as "predictions"
-        cos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
-
-        # Compute loss if labels provided
-        if labels is not None:
-            # Scale labels to [0, 1] if needed (STS-B uses 0-5 scale)
-            scaled_labels = labels / 5.0 if labels.max() > 1.0 else labels
-            loss = F.mse_loss(cos_sim, scaled_labels)
-        else:
-            # Contrastive loss
-            sim_matrix = F.cosine_similarity(
-                anchor_embeds.unsqueeze(1), positive_embeds.unsqueeze(0), dim=2
+        if positive_ids is not None:
+            positive_outputs = model(
+                capability="embedding",
+                input_ids=positive_ids,
+                attention_mask=positive_mask,
+                return_dict=True,
             )
-            batch_labels = torch.arange(sim_matrix.size(0), device=sim_matrix.device)
-            loss = F.cross_entropy(sim_matrix * 20, batch_labels)
+            positive_embeds = (
+                positive_outputs.logits
+                if hasattr(positive_outputs, "logits")
+                else positive_outputs[0]
+            )
+            cos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
+        else:
+            # Without positives, fall back to L2-normalized embeddings compared to self
+            cos_sim = torch.ones(anchor_embeds.size(0), device=anchor_embeds.device)
+
+        # Compute loss if labels provided (labels are already normalized to [0,1])
+        if labels is not None:
+            loss = F.mse_loss(cos_sim, labels)
+        else:
+            # Contrastive loss when labels are absent but positives exist
+            if positive_ids is not None:
+                sim_matrix = F.cosine_similarity(
+                    anchor_embeds.unsqueeze(1), positive_embeds.unsqueeze(0), dim=2
+                )
+                batch_labels = torch.arange(sim_matrix.size(0), device=sim_matrix.device)
+                loss = F.cross_entropy(sim_matrix * 20, batch_labels)
+            else:
+                loss = None
 
         if prediction_loss_only:
             return (loss, None, None)

@@ -195,7 +195,7 @@ data:
     loss_type: triplet_margin  # TripletMarginLoss for hard negatives
     margin: 0.3
     enabled: true
-    max_samples_debug: 5000              # cap train split in debug (optional)
+    max_samples_debug: 30000              # cap train split in debug (optional)
 
   # Train/Val split
   validation_ratio: 0.1
@@ -230,12 +230,12 @@ data:
 training:
   # Use head LR for heads, layer-wise LR for encoder
   learning_rate: 1e-4  # For heads only
-  num_train_epochs: 10  # More epochs for full fine-tuning
+  num_train_epochs: 8  # More epochs for full fine-tuning
 
   # OPTIMIZED: 4x larger batch size (short sequences = low memory)
-  per_device_train_batch_size: 128   # Was 32 - safe with max_length=128
-  per_device_eval_batch_size: 256    # Was 64 - eval uses less memory
-  gradient_accumulation_steps: 6    # Was 48 - effective batch = 128*32 = 4096
+  per_device_train_batch_size: 10   # 128 Was 32 - safe with max_length=128
+  per_device_eval_batch_size: 10    # 128 Was 64 - eval uses less memory
+  gradient_accumulation_steps: 1    # 6 Was 48 - effective batch = 128*32 = 4096
   gradient_checkpointing: true       # Keep for safety margin
 
   # Regularization
