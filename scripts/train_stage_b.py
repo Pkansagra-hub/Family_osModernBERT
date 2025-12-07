@@ -2030,21 +2030,34 @@ def train_stage_b(
         # Create scheduler
         from transformers import get_scheduler
 
-        num_training_steps = (
-            len(train_datasets.get(list(train_datasets.keys())[0], []))
-            * training_args.num_train_epochs
-            // (
-                training_args.per_device_train_batch_size
-                * training_args.gradient_accumulation_steps
-            )
+        # CRITICAL FIX: Calculate total steps across ALL task datasets
+        # The multi-task trainer samples from all datasets, so we need total samples
+        total_train_samples = sum(len(ds) for ds in train_datasets.values())
+        steps_per_epoch = total_train_samples // (
+            training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps
         )
+        num_training_steps = steps_per_epoch * training_args.num_train_epochs
         warmup_steps = int(num_training_steps * training_args.warmup_ratio)
+
+        logger.info(
+            f"Scheduler: {total_train_samples:,} samples, {steps_per_epoch:,} steps/epoch, "
+            f"{num_training_steps:,} total steps, {warmup_steps:,} warmup steps"
+        )
+
+        # Build scheduler kwargs for cosine_with_restarts or other schedulers
+        scheduler_kwargs = {}
+        lr_scheduler_kwargs = training_config.get("lr_scheduler_kwargs", {})
+        if training_args.lr_scheduler_type == "cosine_with_restarts":
+            # Default to 2 cycles for 8 epochs (restart at epoch 4)
+            scheduler_kwargs["num_cycles"] = lr_scheduler_kwargs.get("num_cycles", 2)
+            logger.info(f"Using cosine_with_restarts with {scheduler_kwargs['num_cycles']} cycles")
 
         scheduler = get_scheduler(
             name=training_args.lr_scheduler_type,
             optimizer=optimizer,
             num_warmup_steps=warmup_steps,
             num_training_steps=num_training_steps,
+            **scheduler_kwargs,
         )
 
         optimizers = (optimizer, scheduler)

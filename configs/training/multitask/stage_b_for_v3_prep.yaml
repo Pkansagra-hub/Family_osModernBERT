@@ -33,31 +33,36 @@ model:
 # =============================================================================
 # Goal: Strongly train layers 15-20 (will become v3 layers 23-28)
 #       while preserving foundation layers 1-14
+#
+# UPDATED: Increased LRs by 2x to prevent early plateau
 layer_wise_lr:
   enabled: true
   strategy: "v3_preparation"
 
   # Foundation Band (preserve - these are well-trained)
   layers_1_6:
-    learning_rate: 5e-6
+    learning_rate: 1e-5   # Was 5e-6, doubled
     freeze: false  # Train gently, don't freeze
 
   # Context Band (preserve with light tuning)
   layers_7_14:
-    learning_rate: 1e-5
+    learning_rate: 2e-5   # Was 1e-5, doubled
     freeze: false
 
   # CRITICAL: Target Layers for v3 Clone (layers 15-20)
   # These will become v3 layers 23-28 (Family Band)
   # Train these strongly on FamilyOS data!
   layers_15_20:
-    learning_rate: 3e-5  # Higher LR - we want these to learn family semantics
+    learning_rate: 5e-5   # Was 3e-5, increased for stronger adaptation
     freeze: false
 
   # Upper Semantic Band (will become v3 layers 19-22)
   layers_21_22:
-    learning_rate: 2e-5
+    learning_rate: 4e-5   # Was 2e-5, doubled
     freeze: false
+
+  # Head learning rate (typically higher than encoder)
+  head_lr: 1e-4  # Explicit head LR
 
 # =============================================================================
 # NO LoRA - Full Fine-Tuning
@@ -235,16 +240,18 @@ training:
   # OPTIMIZED: short sequences allow larger per-device batches on A100
   per_device_train_batch_size: 128   # Was 32; fits safely with max_length=96
   per_device_eval_batch_size: 128   # Higher eval throughput; still within VRAM
-  gradient_accumulation_steps: 4    # Effective train batch ≈ 128 sequences
+  gradient_accumulation_steps: 4    # Effective train batch ≈ 512 sequences
   gradient_checkpointing: true       # Keep for safety margin
 
   # Regularization
   weight_decay: 0.01
   max_grad_norm: 1.0
 
-  # Schedule
-  lr_scheduler_type: cosine
-  warmup_ratio: 0.1
+  # Schedule - FIXED: Use cosine_with_restarts for continued learning
+  lr_scheduler_type: cosine_with_restarts
+  warmup_ratio: 0.05  # Reduced warmup since model is pre-trained
+  lr_scheduler_kwargs:
+    num_cycles: 2  # 2 restarts over 8 epochs = restart at epoch 4
 
   # Mixed precision
   bf16: true
