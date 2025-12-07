@@ -74,7 +74,9 @@ class HubLossWeightCalculator:
         elif hub == "TASK":
             hub_active = hub_routing.task
 
-        weight = base_weight * (self.config.active_weight if hub_active else self.config.inactive_weight)
+        weight = base_weight * (
+            self.config.active_weight if hub_active else self.config.inactive_weight
+        )
 
         if task_name == "safety_familyos":
             if self.config.always_train_safety:
@@ -146,14 +148,18 @@ class HubWeightedMultiTaskLoss(nn.Module):
 
             weighted_loss = (loss * weights).sum()
             weight_sum = weights.sum()
-            task_loss = weighted_loss / weight_sum if weight_sum > 0 else torch.tensor(0.0, device=device)
+            task_loss = (
+                weighted_loss / weight_sum if weight_sum > 0 else torch.tensor(0.0, device=device)
+            )
 
             task_losses[task_name] = task_loss
             total_loss = total_loss + task_loss
 
         return total_loss, task_losses
 
-    def _compute_task_loss(self, task_name: str, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    def _compute_task_loss(
+        self, task_name: str, logits: torch.Tensor, labels: torch.Tensor
+    ) -> torch.Tensor:
         """Compute per-sample loss for a given task."""
 
         if task_name == "emotions":
@@ -165,7 +171,9 @@ class HubWeightedMultiTaskLoss(nn.Module):
 
         return self.ce_loss(logits, labels)
 
-    def _compute_token_loss(self, logits: torch.Tensor, labels: torch.Tensor, ignore_index: int = -100) -> torch.Tensor:
+    def _compute_token_loss(
+        self, logits: torch.Tensor, labels: torch.Tensor, ignore_index: int = -100
+    ) -> torch.Tensor:
         """Compute token classification loss with ignore_index handling."""
 
         batch_size, seq_len, num_labels = logits.shape
@@ -203,12 +211,16 @@ class HubWeightedMultiTaskLoss(nn.Module):
 class HubGradientMaskedLoss(nn.Module):
     """Apply hub token gradient masking before delegating to a base loss."""
 
-    def __init__(self, base_loss: nn.Module, hub_token_positions: dict[str, int] | None = None) -> None:
+    def __init__(
+        self, base_loss: nn.Module, hub_token_positions: dict[str, int] | None = None
+    ) -> None:
         super().__init__()
         self.base_loss = base_loss
         self.hub_token_positions = hub_token_positions or HUB_TOKEN_POSITIONS_DEFAULT
 
-    def get_hub_gradient_mask(self, hub_routings: list[HubRouting], seq_len: int, device: torch.device) -> torch.Tensor:
+    def get_hub_gradient_mask(
+        self, hub_routings: list[HubRouting], seq_len: int, device: torch.device
+    ) -> torch.Tensor:
         """Build gradient mask for hub tokens (1 = keep grad, 0 = mask)."""
 
         mask = torch.ones(len(hub_routings), seq_len, device=device)
@@ -223,10 +235,14 @@ class HubGradientMaskedLoss(nn.Module):
                 mask[index, self.hub_token_positions["TASK"]] = 0.0
         return mask
 
-    def forward(self, hidden_states: torch.Tensor, hub_routings: list[HubRouting], **loss_kwargs) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    def forward(
+        self, hidden_states: torch.Tensor, hub_routings: list[HubRouting], **loss_kwargs
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Forward pass applying gradient mask hook before base loss."""
 
-        mask = self.get_hub_gradient_mask(hub_routings, hidden_states.shape[1], hidden_states.device)
+        mask = self.get_hub_gradient_mask(
+            hub_routings, hidden_states.shape[1], hidden_states.device
+        )
         if hidden_states.requires_grad:
             hidden_states.register_hook(lambda grad: grad * mask.unsqueeze(-1))
 
@@ -235,7 +251,9 @@ class HubGradientMaskedLoss(nn.Module):
         return self.base_loss(**loss_kwargs_with_states)
 
 
-def aggregate_task_losses(task_losses: dict[str, torch.Tensor], task_weights: dict[str, float] | None = None) -> torch.Tensor:
+def aggregate_task_losses(
+    task_losses: dict[str, torch.Tensor], task_weights: dict[str, float] | None = None
+) -> torch.Tensor:
     """Aggregate per-task losses using optional weights."""
 
     weights = task_weights or {}
@@ -245,7 +263,9 @@ def aggregate_task_losses(task_losses: dict[str, torch.Tensor], task_weights: di
     return total
 
 
-def log_task_losses(task_losses: dict[str, torch.Tensor], prefix: str = "train") -> dict[str, float]:
+def log_task_losses(
+    task_losses: dict[str, torch.Tensor], prefix: str = "train"
+) -> dict[str, float]:
     """Convert task losses to scalars for logging."""
 
     return {f"{prefix}/loss_{name}": loss.item() for name, loss in task_losses.items()}
