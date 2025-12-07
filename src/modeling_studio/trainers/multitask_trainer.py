@@ -1173,6 +1173,21 @@ class MultiTaskTrainer(Trainer):
         if task == "embedding" and labels is not None and len(labels) > 0:
             labels_arr = np.asarray(labels).flatten()
             preds_arr = np.asarray(predictions).flatten()
+
+            # DEBUG: Print values to understand why triplet detection might fail
+            import logging
+
+            _logger = logging.getLogger(__name__)
+            _logger.warning(
+                f"EMBEDDING DEBUG: labels shape={labels_arr.shape}, preds shape={preds_arr.shape}"
+            )
+            _logger.warning(
+                f"EMBEDDING DEBUG: labels range=[{labels_arr.min():.4f}, {labels_arr.max():.4f}], preds range=[{preds_arr.min():.4f}, {preds_arr.max():.4f}]"
+            )
+            _logger.warning(
+                f"EMBEDDING DEBUG: unique labels count={len(np.unique(labels_arr.round(4)))}"
+            )
+
             # Detect triplet format: both are 1D floats in similarity range [-1, 1]
             # Key insight: cosine similarity values are continuous floats,
             # while STS labels are typically integers (0-5) or normalized to [0, 1]
@@ -1186,6 +1201,7 @@ class MultiTaskTrainer(Trainer):
                 and np.all(preds_arr >= -1.0)
                 and np.all(preds_arr <= 1.0)
             )
+            _logger.warning(f"EMBEDDING DEBUG: is_triplet={is_triplet}")
             # Additional check: triplet format has neg_sim as labels (cosine similarity)
             # vs STS which has integer-ish labels (0, 1, 2, 3, 4, 5 or 0.0, 0.2, 0.4...)
             # Cosine sim from random embeddings centers around 0, not near 1.0
@@ -1671,13 +1687,15 @@ class MultiTaskTrainer(Trainer):
             return (loss, None, None)
 
         # Return format depends on whether we have triplet data or STS data
-        if labels is not None:
-            # STS-style: return (loss, pos_sim, labels) for Spearman correlation
-            return (loss, pos_sim, labels)
-        elif neg_sim is not None:
+        # Check triplet format FIRST (has neg_sim from negative_ids)
+        # because collator may add dummy labels even for triplets
+        if neg_sim is not None:
             # Triplet format: return (loss, pos_sim, neg_sim) for triplet_accuracy
             # We encode neg_sim as "labels" so metric computation can compare pos vs neg
             return (loss, pos_sim, neg_sim)
+        elif labels is not None:
+            # STS-style: return (loss, pos_sim, labels) for Spearman correlation
+            return (loss, pos_sim, labels)
         else:
             # Fallback: only positive similarity available
             return (loss, pos_sim, labels)
