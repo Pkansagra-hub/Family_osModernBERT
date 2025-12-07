@@ -94,7 +94,7 @@ TASK_PRIMARY_METRICS: dict[str, str] = {
     "nli": "accuracy",
     "relation": "f1",
     "emotions": "macro_f1",
-    "embedding": "spearman",
+    "embedding": "triplet_accuracy",  # For triplet contrastive learning
 }
 
 

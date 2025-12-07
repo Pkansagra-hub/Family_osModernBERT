@@ -1171,30 +1171,35 @@ class MultiTaskTrainer(Trainer):
         # We detect triplet format by checking if labels look like similarity scores
         # (all values in [-1, 1] range, continuous, not integer class labels)
         if task == "embedding" and labels is not None and len(labels) > 0:
-            labels_arr = np.asarray(labels)
-            preds_arr = np.asarray(predictions)
-            # Detect triplet format: both are 1D floats in similarity range
+            labels_arr = np.asarray(labels).flatten()
+            preds_arr = np.asarray(predictions).flatten()
+            # Detect triplet format: both are 1D floats in similarity range [-1, 1]
+            # Key insight: cosine similarity values are continuous floats,
+            # while STS labels are typically integers (0-5) or normalized to [0, 1]
             is_triplet = (
                 labels_arr.ndim == 1
                 and preds_arr.ndim == 1
                 and len(labels_arr) == len(preds_arr)
+                and len(labels_arr) > 0
                 and np.all(labels_arr >= -1.0)
                 and np.all(labels_arr <= 1.0)
                 and np.all(preds_arr >= -1.0)
                 and np.all(preds_arr <= 1.0)
             )
-            # Additional check: for triplets, the "labels" are actually neg_sim values
-            # and should NOT be close to 1.0 (which would indicate STS labels)
-            # STS labels are typically normalized to [0, 1] where 1 = most similar
-            # For triplets, neg_sim should generally be lower than pos_sim
+            # Additional check: triplet format has neg_sim as labels (cosine similarity)
+            # vs STS which has integer-ish labels (0, 1, 2, 3, 4, 5 or 0.0, 0.2, 0.4...)
+            # Cosine sim from random embeddings centers around 0, not near 1.0
             if is_triplet:
-                # Check if this looks like STS data (labels cluster near high values)
-                # vs triplet data (neg_sim distributed, often lower than pos_sim)
-                mean_label = np.mean(labels_arr)
-                mean_pred = np.mean(preds_arr)
-                # Triplet pattern: pos_sim (predictions) > neg_sim (labels) on average
-                # Also: neg_sim shouldn't all be very high (near 1.0)
-                if mean_pred > mean_label and mean_label < 0.9:
+                # Check if labels look like discrete STS scores vs continuous similarity
+                unique_labels = np.unique(labels_arr)
+                # STS typically has few unique values (5-6 score levels)
+                # Triplet neg_sim has continuous values (many unique)
+                is_likely_triplet = len(unique_labels) > 10 or (
+                    # Or if values are mostly negative (which STS labels never are)
+                    np.mean(labels_arr)
+                    < 0.5
+                )
+                if is_likely_triplet:
                     # This is triplet format - compute triplet accuracy
                     triplet_correct = (preds_arr > labels_arr).sum()
                     triplet_accuracy = float(triplet_correct) / len(preds_arr)
