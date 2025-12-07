@@ -23,7 +23,7 @@ class ModernBERTv3Config:
     num_attention_heads: int = 12  # MHA (no GQA)
     intermediate_size: int = 1152  # ModernBERT GLU FFN (not 4x hidden)
     max_position_embeddings: int = 8192
-    vocab_size: int = 50432  # 256-aligned (50265 base + 4 hub + 163 padding = 256×197)
+    vocab_size: int = 50432  # 256-aligned (50368 base + 4 hub + 60 padding = 256×197)
 
     # Hub Tokens
     hub_tokens: list[str] = field(default_factory=lambda: ["[EMO]", "[MEM]", "[REL]", "[TASK]"])

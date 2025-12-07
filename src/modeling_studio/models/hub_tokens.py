@@ -74,12 +74,13 @@ HUB_TOKEN_REGISTRY: dict[str, HubTokenSpec] = {
 TOKEN_LEVEL_CAPABILITIES: set[str] = {"ner_general", "ner_family", "temporal"}
 
 # Hub token IDs (reserved token IDs in vocabulary)
-# These will be assigned when extending the v2 tokenizer vocabulary
+# ModernBERT-base has vocab_size=50368, so hub tokens start at 50368
+# These are added when extending the v2 tokenizer vocabulary for v3
 HUB_TOKEN_IDS: dict[str, int] = {
-    "[EMO]": 50265,
-    "[MEM]": 50266,
-    "[REL]": 50267,
-    "[TASK]": 50268,
+    "[EMO]": 50368,
+    "[MEM]": 50369,
+    "[REL]": 50370,
+    "[TASK]": 50371,
 }
 
 

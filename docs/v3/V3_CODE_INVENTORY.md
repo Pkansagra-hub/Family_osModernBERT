@@ -114,8 +114,8 @@
 | 5.3.5 - Shard-Based Data Loading | `data/shard_loader_v3.py` | ✅ Created |
 | 5.3.6 - Unified FamilyOS Dataset Config | `configs/data/multitask/familyos_unified.yaml` | ✅ Created |
 | **Epic 5.4: Training Scripts** | | |
-| 5.4.1 - Phase 0.5 Healing Training Script | `scripts/train_v3_phase0_5.py` | ✅ Created |
-| 5.4.2 - Phase 1 Multi-Task Training Script | `scripts/train_v3_phase1.py` | ✅ Created |
+| 5.4.1 - Phase 0.5 Healing Training Script | `scripts/train_v3_phase0_5.py` | ❌ Not created |
+| 5.4.2 - Phase 1 Multi-Task Training Script | `scripts/train_v3_phase1.py` | ❌ Not created |
 | 5.4.3 - Multi-Phase Training Orchestrator | `scripts/train_v3_orchestrator.py` | ❌ Not created |
 | 5.4.4 - Phase-Specific Training Configs | Various | Partial |
 

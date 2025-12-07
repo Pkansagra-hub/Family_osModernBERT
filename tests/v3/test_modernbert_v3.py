@@ -46,14 +46,14 @@ class TestModernBERTEmbeddingsV3:
         """Test embeddings initialization with default parameters."""
         embeddings = ModernBERTEmbeddingsV3()
 
-        assert embeddings.vocab_size == 50268
+        assert embeddings.vocab_size == 50372
         assert embeddings.hidden_size == 768
         assert embeddings.max_position_embeddings == 8192
         assert embeddings.pad_token_id == 0
         assert embeddings.use_rotary_embeddings is True
 
         # Check word embeddings
-        assert embeddings.word_embeddings.num_embeddings == 50268
+        assert embeddings.word_embeddings.num_embeddings == 50372
         assert embeddings.word_embeddings.embedding_dim == 768
         assert embeddings.word_embeddings.padding_idx == 0
 
@@ -94,7 +94,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 4
         seq_len = 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
 
         output = embeddings(input_ids)
 
@@ -107,7 +107,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 4
         seq_len = 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
 
         output = embeddings(input_ids)
 
@@ -119,7 +119,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 4
         seq_len = 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
         position_ids = torch.arange(seq_len).unsqueeze(0).expand(batch_size, -1)
 
         output = embeddings(input_ids, position_ids=position_ids)
@@ -143,7 +143,7 @@ class TestModernBERTEmbeddingsV3:
         embeddings = ModernBERTEmbeddingsV3()
 
         for seq_len in [32, 64, 128, 256, 512]:
-            input_ids = torch.randint(0, 50268, (2, seq_len))
+            input_ids = torch.randint(0, 50372, (2, seq_len))
             output = embeddings(input_ids)
             assert output.shape == (2, seq_len, 768)
 
@@ -153,7 +153,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 1
         seq_len = 8192
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
 
         output = embeddings(input_ids)
 
@@ -202,12 +202,12 @@ class TestModernBERTEmbeddingsV3:
 
         hub_embeds = embeddings.get_hub_token_embeddings()
 
-        # Verify that embeddings are from vocab indices 50264-50267 (0-indexed)
-        # v2 vocab ends at 50263, so hub tokens are at 50264, 50265, 50266, 50267
-        emo_expected = embeddings.word_embeddings.weight[50264]
-        mem_expected = embeddings.word_embeddings.weight[50265]
-        rel_expected = embeddings.word_embeddings.weight[50266]
-        task_expected = embeddings.word_embeddings.weight[50267]
+        # Verify that embeddings are from vocab indices 50368-50371 (0-indexed)
+        # ModernBERT-base vocab ends at 50367, so hub tokens are at 50368, 50369, 50370, 50371
+        emo_expected = embeddings.word_embeddings.weight[50368]
+        mem_expected = embeddings.word_embeddings.weight[50369]
+        rel_expected = embeddings.word_embeddings.weight[50370]
+        task_expected = embeddings.word_embeddings.weight[50371]
 
         assert torch.allclose(hub_embeds["[EMO]"], emo_expected.detach())
         assert torch.allclose(hub_embeds["[MEM]"], mem_expected.detach())
@@ -216,53 +216,53 @@ class TestModernBERTEmbeddingsV3:
 
     def test_embeddings_resize_token_embeddings_expand(self):
         """Test resizing embeddings to larger vocabulary."""
-        embeddings = ModernBERTEmbeddingsV3(vocab_size=50264)  # v2 vocab
+        embeddings = ModernBERTEmbeddingsV3(vocab_size=50368)  # v2 vocab
 
         original_size = embeddings.word_embeddings.num_embeddings
-        assert original_size == 50264
+        assert original_size == 50368
 
         # Resize to add hub tokens
-        embeddings.resize_token_embeddings(50268)
+        embeddings.resize_token_embeddings(50372)
 
-        assert embeddings.vocab_size == 50268
-        assert embeddings.word_embeddings.num_embeddings == 50268
+        assert embeddings.vocab_size == 50372
+        assert embeddings.word_embeddings.num_embeddings == 50372
         assert embeddings.word_embeddings.embedding_dim == 768
 
     def test_embeddings_resize_token_embeddings_preserves_old(self):
         """Test that resizing preserves old embeddings."""
-        embeddings = ModernBERTEmbeddingsV3(vocab_size=50264)
+        embeddings = ModernBERTEmbeddingsV3(vocab_size=50368)
 
         # Save old embeddings
         old_embeddings = embeddings.word_embeddings.weight.data.clone()
 
         # Resize
-        embeddings.resize_token_embeddings(50268)
+        embeddings.resize_token_embeddings(50372)
 
         # Check that old embeddings are preserved
-        assert torch.allclose(embeddings.word_embeddings.weight.data[:50264], old_embeddings)
+        assert torch.allclose(embeddings.word_embeddings.weight.data[:50368], old_embeddings)
 
     def test_embeddings_resize_token_embeddings_initializes_new(self):
         """Test that new embeddings are initialized correctly."""
-        embeddings = ModernBERTEmbeddingsV3(vocab_size=50264)
+        embeddings = ModernBERTEmbeddingsV3(vocab_size=50368)
 
-        embeddings.resize_token_embeddings(50268)
+        embeddings.resize_token_embeddings(50372)
 
-        # New embeddings (50265-50268) should be initialized
-        new_embeds = embeddings.word_embeddings.weight.data[50264:]
+        # New embeddings (50368-50371) should be initialized
+        new_embeds = embeddings.word_embeddings.weight.data[50368:]
         assert new_embeds.shape == (4, 768)
         # Should not be all zeros (initialized with normal distribution)
         assert not torch.allclose(new_embeds, torch.zeros_like(new_embeds))
 
     def test_embeddings_resize_token_embeddings_no_op(self):
         """Test that resizing to same size is a no-op."""
-        embeddings = ModernBERTEmbeddingsV3(vocab_size=50268)
+        embeddings = ModernBERTEmbeddingsV3(vocab_size=50372)
 
         old_embeddings = embeddings.word_embeddings.weight.data.clone()
 
-        embeddings.resize_token_embeddings(50268)
+        embeddings.resize_token_embeddings(50372)
 
         # Should be unchanged
-        assert embeddings.vocab_size == 50268
+        assert embeddings.vocab_size == 50372
         assert torch.allclose(embeddings.word_embeddings.weight.data, old_embeddings)
 
     def test_embeddings_layernorm_applied(self):
@@ -272,7 +272,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 4
         seq_len = 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
 
         output = embeddings(input_ids)
 
@@ -290,7 +290,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 4
         seq_len = 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
 
         # Run multiple times and check variance
         outputs = []
@@ -309,7 +309,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 4
         seq_len = 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
 
         # Run multiple times
         output1 = embeddings(input_ids)
@@ -324,7 +324,7 @@ class TestModernBERTEmbeddingsV3:
 
         batch_size = 4
         seq_len = 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
 
         output = embeddings(input_ids)
         loss = output.sum()
@@ -340,8 +340,8 @@ class TestModernBERTEmbeddingsV3:
 
         params = embeddings.get_num_params()
 
-        # Word embeddings: 50268 * 768
-        expected_word = 50268 * 768
+        # Word embeddings: 50372 * 768
+        expected_word = 50372 * 768
         assert params["word_embeddings"] == expected_word
 
         # No position embeddings in RoPE mode
@@ -372,7 +372,7 @@ class TestModernBERTEmbeddingsV3:
 
         repr_str = embeddings.extra_repr()
 
-        assert "vocab_size=50268" in repr_str
+        assert "vocab_size=50372" in repr_str
         assert "hidden_size=768" in repr_str
         assert "max_position=8192" in repr_str
         assert "rotary=yes" in repr_str
@@ -393,8 +393,8 @@ class TestModernBERTEmbeddingsV3:
         """AC1: Word embeddings sized for v2 vocab + 4 hub tokens."""
         embeddings = ModernBERTEmbeddingsV3()
 
-        # v2 vocab (50264) + 4 hub tokens = 50268
-        assert embeddings.word_embeddings.num_embeddings == 50268
+        # v2 vocab (50368) + 4 hub tokens = 50372
+        assert embeddings.word_embeddings.num_embeddings == 50372
         assert embeddings.word_embeddings.embedding_dim == 768
 
     def test_ac2_position_embeddings_support_8192(self):
@@ -405,7 +405,7 @@ class TestModernBERTEmbeddingsV3:
         assert embeddings.position_embeddings.num_embeddings == 8192
 
         # Test forward pass with 8192 tokens
-        input_ids = torch.randint(0, 50268, (1, 8192))
+        input_ids = torch.randint(0, 50372, (1, 8192))
         output = embeddings(input_ids)
         assert output.shape == (1, 8192, 768)
 
@@ -428,17 +428,17 @@ class TestModernBERTEmbeddingsV3:
 
     def test_ac4_resize_token_embeddings_works(self):
         """AC4: resize_token_embeddings() works for adding hub tokens."""
-        embeddings = ModernBERTEmbeddingsV3(vocab_size=50264)
+        embeddings = ModernBERTEmbeddingsV3(vocab_size=50368)
 
         # Resize to add hub tokens
-        embeddings.resize_token_embeddings(50268)
+        embeddings.resize_token_embeddings(50372)
 
         # Verify new size
-        assert embeddings.vocab_size == 50268
-        assert embeddings.word_embeddings.num_embeddings == 50268
+        assert embeddings.vocab_size == 50372
+        assert embeddings.word_embeddings.num_embeddings == 50372
 
         # Verify forward pass works
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = embeddings(input_ids)
         assert output.shape == (2, 128, 768)
 
@@ -450,7 +450,7 @@ class TestModernBERTEmbeddingsV3:
         assert embeddings.position_embeddings is None
 
         # Forward pass should work without adding position embeddings
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = embeddings(input_ids)
         assert output.shape == (2, 128, 768)
 
@@ -470,7 +470,7 @@ class TestModernBERTEmbeddingsV3:
 
         # Test that they are applied in forward pass
         embeddings.eval()  # Disable dropout for stable test
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = embeddings(input_ids)
 
         # Output should have approximately normalized variance (LayerNorm effect)
@@ -785,7 +785,7 @@ class TestEncoderV3Integration:
         encoder = ModernBERTEncoderV3()
 
         batch_size, seq_len = 2, 64
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
         attention_mask = torch.ones(batch_size, seq_len)
 
         # Get embeddings
@@ -1246,7 +1246,7 @@ class TestPairEncoderV3Integration:
         pair_encoder = PairEncoderV3(num_labels=3)
 
         batch_size, seq_len = 2, 128
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
         attention_mask = torch.ones(batch_size, seq_len)
 
         # Forward through embeddings and encoder
@@ -1269,8 +1269,8 @@ class TestPairEncoderV3Integration:
         siamese = SiamesePairEncoderV3(similarity_function="cosine")
 
         batch_size, seq_len = 2, 128
-        input_ids_a = torch.randint(0, 50268, (batch_size, seq_len))
-        input_ids_b = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids_a = torch.randint(0, 50372, (batch_size, seq_len))
+        input_ids_b = torch.randint(0, 50372, (batch_size, seq_len))
         attention_mask = torch.ones(batch_size, seq_len)
 
         # Encode both sequences
@@ -1429,9 +1429,9 @@ class TestEmbeddingsV3Integration:
         """Test that embeddings use correct vocab indices for hub tokens."""
         embeddings = ModernBERTEmbeddingsV3()
 
-        # Create input with hub tokens (0-indexed: 50264-50267)
+        # Create input with hub tokens (0-indexed: 50368-50267)
         input_ids = torch.tensor(
-            [[0, 50264, 50265, 50266, 50267, 100, 200, 300, 1]]
+            [[0, 50368, 50265, 50266, 50267, 100, 200, 300, 1]]
         )  # [CLS] [EMO] [MEM] [REL] [TASK] <text> [SEP]
 
         output = embeddings(input_ids)
@@ -1447,7 +1447,7 @@ class TestEmbeddingsV3Integration:
         seq_len = 128
 
         for batch_size in batch_sizes:
-            input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+            input_ids = torch.randint(0, 50372, (batch_size, seq_len))
             output = embeddings(input_ids)
             assert output.shape == (batch_size, seq_len, 768)
 
@@ -1455,7 +1455,7 @@ class TestEmbeddingsV3Integration:
         """Test that embeddings work with mixed precision training."""
         embeddings = ModernBERTEmbeddingsV3()
 
-        input_ids = torch.randint(0, 50268, (4, 128))
+        input_ids = torch.randint(0, 50372, (4, 128))
 
         # Test with autocast
         with torch.autocast(device_type="cpu", dtype=torch.float16):
@@ -1516,7 +1516,7 @@ class TestModernBERTv3Ultra:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         assert isinstance(output, ModernBERTv3Output)
@@ -1530,7 +1530,7 @@ class TestModernBERTv3Ultra:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         attention_mask = torch.ones(2, 128)
         attention_mask[:, 64:] = 0  # Mask second half
 
@@ -1545,7 +1545,7 @@ class TestModernBERTv3Ultra:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids, output_hidden_states=True)
 
         assert output.hidden_states is not None
@@ -1559,7 +1559,7 @@ class TestModernBERTv3Ultra:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids, output_attentions=True)
 
         assert output.attentions is not None
@@ -1571,7 +1571,7 @@ class TestModernBERTv3Ultra:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids, return_dict=False)
 
         assert isinstance(output, tuple)
@@ -1585,7 +1585,7 @@ class TestModernBERTv3Ultra:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         expected_keys = {"[CLS]", "[EMO]", "[MEM]", "[REL]", "[TASK]"}
@@ -1699,7 +1699,7 @@ class TestModernBERTv3CapabilityRouting:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         # Test hub-routed capabilities
@@ -1715,7 +1715,7 @@ class TestModernBERTv3CapabilityRouting:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         # Test token-level capabilities
@@ -1731,7 +1731,7 @@ class TestModernBERTv3CapabilityRouting:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         hub_capabilities = [
@@ -1759,7 +1759,7 @@ class TestModernBERTv3CapabilityRouting:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         token_capabilities = ["ner_general", "ner_family", "temporal"]
@@ -1776,7 +1776,7 @@ class TestModernBERTv3CapabilityRouting:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         embedding = model.get_embedding_representation(output.last_hidden_state)
@@ -1848,7 +1848,7 @@ class TestModernBERTv3Integration:
         # Simulate realistic input
         batch_size = 4
         seq_len = 256
-        input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+        input_ids = torch.randint(0, 50372, (batch_size, seq_len))
         attention_mask = torch.ones(batch_size, seq_len)
         attention_mask[:, 128:] = 0  # Mask half
 
@@ -1873,7 +1873,7 @@ class TestModernBERTv3Integration:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (1, 2048))
+        input_ids = torch.randint(0, 50372, (1, 2048))
         output = model(input_ids)
 
         assert output.last_hidden_state.shape == (1, 2048, 768)
@@ -1889,7 +1889,7 @@ class TestModernBERTv3Integration:
         seq_len = 128
 
         for batch_size in batch_sizes:
-            input_ids = torch.randint(0, 50268, (batch_size, seq_len))
+            input_ids = torch.randint(0, 50372, (batch_size, seq_len))
             output = model(input_ids)
             assert output.last_hidden_state.shape == (batch_size, seq_len, 768)
 
@@ -1899,7 +1899,7 @@ class TestModernBERTv3Integration:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
 
         with torch.autocast(device_type="cpu", dtype=torch.float16):
             output = model(input_ids)
@@ -1916,7 +1916,7 @@ class TestModernBERTv3AcceptanceCriteria:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         # Verify all components are connected
@@ -1930,7 +1930,7 @@ class TestModernBERTv3AcceptanceCriteria:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids, output_hidden_states=True, output_attentions=True)
 
         # Verify all fields present
@@ -1945,7 +1945,7 @@ class TestModernBERTv3AcceptanceCriteria:
         model = ModernBERTv3Ultra(config)
         model.eval()
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
 
         # Test hub-routed capability
@@ -1987,7 +1987,7 @@ class TestModernBERTv3AcceptanceCriteria:
 
         # Model should still work after merging
         model.eval()
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model(input_ids)
         assert output.last_hidden_state.shape == (2, 128, 768)
 
@@ -2133,7 +2133,7 @@ class TestModernBERTv3ForMultiTask:
         # Register task
         model.register_task_head("emotions", ClassificationHead(768, 7))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_for_task(input_ids, task="emotions")
 
         assert "logits" in output
@@ -2148,7 +2148,7 @@ class TestModernBERTv3ForMultiTask:
 
         model.register_task_head("emotions", ClassificationHead(768, 7))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         labels = torch.randint(0, 7, (2,))
         output = model.forward_for_task(input_ids, task="emotions", labels=labels)
 
@@ -2160,7 +2160,7 @@ class TestModernBERTv3ForMultiTask:
         config = ModernBERTv3Config()
         model = ModernBERTv3ForMultiTask(config)
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
 
         try:
             model.forward_for_task(input_ids, task="unknown_task")
@@ -2173,7 +2173,7 @@ class TestModernBERTv3ForMultiTask:
         config = ModernBERTv3Config()
         model = ModernBERTv3ForMultiTask(config)
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
 
         try:
             model.forward_for_task(input_ids, task=None)
@@ -2191,7 +2191,7 @@ class TestModernBERTv3ForMultiTask:
         model.register_task_head("emotions", ClassificationHead(768, 7))
         model.register_task_head("sentiment", ClassificationHead(768, 3))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_multitask(input_ids)
 
         assert "task_logits" in output
@@ -2209,7 +2209,7 @@ class TestModernBERTv3ForMultiTask:
         model.register_task_head("emotions", ClassificationHead(768, 7))
         model.register_task_head("sentiment", ClassificationHead(768, 3))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         task_labels = {
             "emotions": torch.randint(0, 7, (2,)),
             "sentiment": torch.randint(0, 3, (2,)),
@@ -2233,7 +2233,7 @@ class TestModernBERTv3ForMultiTask:
         model.register_task_head("sentiment", ClassificationHead(768, 3))
         model.register_task_head("nli", ClassificationHead(768, 3))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_multitask(input_ids, active_tasks=["emotions", "sentiment"])
 
         assert "emotions" in output["task_logits"]
@@ -2249,7 +2249,7 @@ class TestModernBERTv3ForMultiTask:
         model.register_task_head("emotions", ClassificationHead(768, 7), loss_weight=2.0)
         model.register_task_head("sentiment", ClassificationHead(768, 3), loss_weight=0.5)
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         task_labels = {
             "emotions": torch.randint(0, 7, (2,)),
             "sentiment": torch.randint(0, 3, (2,)),
@@ -2296,7 +2296,7 @@ class TestModernBERTv3HubRouting:
 
         model.register_task_head("emotions", ClassificationHead(768, 7))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_for_task(input_ids, task="emotions")
 
         # Should use hub pooling
@@ -2311,7 +2311,7 @@ class TestModernBERTv3HubRouting:
 
         model.register_task_head("sentiment", ClassificationHead(768, 3))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_for_task(input_ids, task="sentiment")
 
         assert output["pool_type"] == "hub"
@@ -2324,7 +2324,7 @@ class TestModernBERTv3HubRouting:
 
         model.register_task_head("nli", ClassificationHead(768, 3))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_for_task(input_ids, task="nli")
 
         assert output["pool_type"] == "hub"
@@ -2337,7 +2337,7 @@ class TestModernBERTv3HubRouting:
 
         model.register_task_head("ner_general", TokenClassificationHead(768, 9))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_for_task(input_ids, task="ner_general")
 
         # Should use token-level representation
@@ -2352,7 +2352,7 @@ class TestModernBERTv3HubRouting:
 
         model.register_task_head("temporal", TokenClassificationHead(768, 5))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_for_task(input_ids, task="temporal")
 
         assert output["pool_type"] == "token"
@@ -2368,7 +2368,7 @@ class TestModernBERTv3HubRouting:
         model.register_task_head("emotions", ClassificationHead(768, 7))
         model.register_task_head("sentiment", ClassificationHead(768, 3))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_multitask(input_ids)
 
         # Both should have hub pooling
@@ -2387,7 +2387,7 @@ class TestModernBERTv3LossComputation:
 
         model.register_task_head("emotions", ClassificationHead(768, 7))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         labels = torch.randint(0, 7, (2,))
 
         output = model.forward_for_task(input_ids, task="emotions", labels=labels)
@@ -2403,7 +2403,7 @@ class TestModernBERTv3LossComputation:
 
         model.register_task_head("ner_general", TokenClassificationHead(768, 9))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         labels = torch.randint(0, 9, (2, 128))
 
         output = model.forward_for_task(input_ids, task="ner_general", labels=labels)
@@ -2419,7 +2419,7 @@ class TestModernBERTv3LossComputation:
 
         model.register_task_head("similarity", RegressionHead(768))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         labels = torch.randn(2)
 
         output = model.forward_for_task(input_ids, task="similarity", labels=labels)
@@ -2532,7 +2532,7 @@ class TestModernBERTv3ForMultiTaskAcceptanceCriteria:
         model.register_task_head("emotions", ClassificationHead(768, 7))  # [EMO]
         model.register_task_head("nli", ClassificationHead(768, 3))  # [REL]
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
 
         # Test emotions routes to [EMO] (hub pooling)
         emo_output = model.forward_for_task(input_ids, task="emotions")
@@ -2554,7 +2554,7 @@ class TestModernBERTv3ForMultiTaskAcceptanceCriteria:
         model.register_task_head("sentiment", ClassificationHead(768, 3))
         model.register_task_head("nli", ClassificationHead(768, 3))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
         output = model.forward_multitask(input_ids)
 
         # Should process all tasks in one pass
@@ -2575,7 +2575,7 @@ class TestModernBERTv3ForMultiTaskAcceptanceCriteria:
         model.register_task_head("nli", ClassificationHead(768, 3))
         model.register_task_head("intent", ClassificationHead(768, 10))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
 
         # All should use hub pooling with correct hubs
         for task in ["emotions", "sentiment", "nli", "intent"]:
@@ -2591,7 +2591,7 @@ class TestModernBERTv3ForMultiTaskAcceptanceCriteria:
         model.register_task_head("ner_general", TokenClassificationHead(768, 9))
         model.register_task_head("temporal", TokenClassificationHead(768, 5))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
 
         # Token-level tasks should get full sequence
         ner_output = model.forward_for_task(input_ids, task="ner_general")
@@ -2612,7 +2612,7 @@ class TestModernBERTv3ForMultiTaskAcceptanceCriteria:
         model.register_task_head("ner_general", TokenClassificationHead(768, 9))
         model.register_task_head("similarity", RegressionHead(768))
 
-        input_ids = torch.randint(0, 50268, (2, 128))
+        input_ids = torch.randint(0, 50372, (2, 128))
 
         # Classification loss
         emo_output = model.forward_for_task(
