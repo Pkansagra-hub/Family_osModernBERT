@@ -434,6 +434,11 @@ class MultiTaskTrainer(Trainer):
             preprocess_logits_for_metrics=preprocess_logits_for_metrics,
         )
 
+        # Prefer the new processing_class attribute to avoid tokenizer deprecation warnings
+        self.processing_class = (
+            tokenizer if tokenizer is not None else getattr(self, "processing_class", None)
+        )
+
         # Track current task for loss computation
         self.current_task: str | None = None
 
@@ -525,7 +530,14 @@ class MultiTaskTrainer(Trainer):
         dataloaders = {}
         for task, dataset in self.train_datasets.items():
             # Get task-specific collator
-            collator = get_task_collator(task, tokenizer=self.tokenizer)
+            collator = get_task_collator(
+                task,
+                tokenizer=(
+                    self.processing_class
+                    if self.processing_class is not None
+                    else getattr(self, "tokenizer", None)
+                ),
+            )
 
             # Build dataloader kwargs, handling prefetch_factor correctly
             # prefetch_factor must be None when num_workers=0
@@ -1051,7 +1063,14 @@ class MultiTaskTrainer(Trainer):
         """Create evaluation dataloader for a specific task."""
         from modeling_studio.trainers.collators import get_task_collator
 
-        collator = get_task_collator(task, tokenizer=self.tokenizer)
+        collator = get_task_collator(
+            task,
+            tokenizer=(
+                self.processing_class
+                if self.processing_class is not None
+                else getattr(self, "tokenizer", None)
+            ),
+        )
 
         # Build dataloader kwargs, handling prefetch_factor correctly
         # prefetch_factor must be None when num_workers=0

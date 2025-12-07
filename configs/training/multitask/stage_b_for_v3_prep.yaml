@@ -233,9 +233,9 @@ training:
   num_train_epochs: 8  # More epochs for full fine-tuning
 
   # OPTIMIZED: short sequences allow larger per-device batches on A100
-  per_device_train_batch_size: 64   # Was 32; fits safely with max_length=96
+  per_device_train_batch_size: 128   # Was 32; fits safely with max_length=96
   per_device_eval_batch_size: 128   # Higher eval throughput; still within VRAM
-  gradient_accumulation_steps: 2    # Effective train batch ≈ 128 sequences
+  gradient_accumulation_steps: 4    # Effective train batch ≈ 128 sequences
   gradient_checkpointing: true       # Keep for safety margin
 
   # Regularization

@@ -15,6 +15,7 @@ Date: December 2025
 Version: 3.3
 """
 
+import pytest
 import torch
 import torch.nn as nn
 
@@ -24,6 +25,16 @@ from modeling_studio.models.losses_v3 import (
     UncertaintyWeightedLoss,
     create_loss_computer,
 )
+from modeling_studio.training.losses_v3 import (
+    HUB_TOKEN_POSITIONS_DEFAULT,
+    HubGradientMaskedLoss,
+    HubLossConfig,
+    HubLossWeightCalculator,
+    HubWeightedMultiTaskLoss,
+    aggregate_task_losses,
+    log_task_losses,
+)
+from modeling_studio.data.loaders_v3 import HubRouting
 
 
 # ======================================================================
@@ -256,6 +267,97 @@ class TestFocalLoss:
         assert not torch.isnan(loss_gamma_0)
         assert not torch.isnan(loss_gamma_2)
         assert not torch.isnan(loss_gamma_5)
+
+
+# ======================================================================
+# Hub-Weighted Loss Scaling (Issue 5.3.4)
+# ======================================================================
+
+
+class TestHubWeightedLoss:
+    """Tests for hub-weighted loss scaling utilities."""
+
+    def test_weight_calculator_applies_active_inactive_and_safety(self) -> None:
+        config = HubLossConfig()
+        calculator = HubLossWeightCalculator(config)
+
+        hub_routings = [
+            HubRouting(emo=True, rel=False, mem=False, task=False),
+            HubRouting(emo=False, rel=True, mem=True, task=False),
+        ]
+
+        weights_emo = calculator.compute_batch_weights("emotions", hub_routings, [True, True]).tolist()
+        weights_safety = calculator.compute_batch_weights("safety_familyos", hub_routings, [True, True]).tolist()
+
+        assert weights_emo == [pytest.approx(1.0), pytest.approx(0.3)]
+        assert weights_safety == [pytest.approx(2.0), pytest.approx(0.6)]
+
+    def test_hub_weighted_multitask_loss(self) -> None:
+        hub_routings = [
+            HubRouting(emo=True, rel=False, mem=False, task=True),
+            HubRouting(emo=False, rel=True, mem=False, task=True),
+        ]
+
+        task_logits = {
+            "emotions": torch.zeros(2, 2),
+            "sentiment": torch.tensor([[2.0, 0.0], [0.5, 1.0]]),
+            "ner_family": torch.zeros(2, 4, 3),
+        }
+
+        task_labels = {
+            "emotions": torch.tensor([[1.0, 0.0], [0.0, 1.0]]),
+            "sentiment": torch.tensor([0, 1]),
+            "ner_family": torch.tensor([[0, 1, -100, -100], [0, 2, 1, -100]]),
+        }
+
+        loss_module = HubWeightedMultiTaskLoss()
+        total_loss, task_losses = loss_module(task_logits, task_labels, hub_routings)
+
+        assert total_loss.item() > 0
+        assert set(task_losses.keys()) == {"emotions", "sentiment", "ner_family"}
+        assert task_losses["emotions"].item() > 0
+        assert task_losses["sentiment"].item() > 0
+        assert task_losses["ner_family"].item() > 0
+
+        weights = loss_module.weight_calculator.compute_batch_weights("emotions", hub_routings, [True, True])
+        assert weights.tolist() == [pytest.approx(1.0), pytest.approx(0.3)]
+
+    def test_hub_gradient_mask_zeroes_inactive_hubs(self) -> None:
+        class DummyLoss(nn.Module):
+            def forward(self, hidden_states_input: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+                return hidden_states_input.sum(), {}
+
+        hidden_states = torch.ones(2, 6, 4, requires_grad=True)
+        hub_routings = [
+            HubRouting(emo=True, rel=False, mem=False, task=False),
+            HubRouting(emo=False, rel=True, mem=True, task=False),
+        ]
+
+        wrapper = HubGradientMaskedLoss(DummyLoss())
+        total_loss, _ = wrapper(hidden_states, hub_routings, hidden_states_input=hidden_states)
+        total_loss.backward()
+
+        gradients = hidden_states.grad
+
+        # Sample 0: REL, MEM, TASK inactive -> positions 2,3,4 masked
+        assert torch.allclose(gradients[0, HUB_TOKEN_POSITIONS_DEFAULT["REL"]], torch.zeros_like(gradients[0, 0]))
+        assert torch.allclose(gradients[0, HUB_TOKEN_POSITIONS_DEFAULT["MEM"]], torch.zeros_like(gradients[0, 0]))
+        assert torch.allclose(gradients[0, HUB_TOKEN_POSITIONS_DEFAULT["TASK"]], torch.zeros_like(gradients[0, 0]))
+
+        # Sample 1: EMO and TASK inactive -> positions 1 and 4 masked
+        assert torch.allclose(gradients[1, HUB_TOKEN_POSITIONS_DEFAULT["EMO"]], torch.zeros_like(gradients[1, 0]))
+        assert torch.allclose(gradients[1, HUB_TOKEN_POSITIONS_DEFAULT["TASK"]], torch.zeros_like(gradients[1, 0]))
+
+    def test_aggregation_and_logging_helpers(self) -> None:
+        task_losses = {"a": torch.tensor(1.0), "b": torch.tensor(2.0)}
+        weights = {"a": 0.5, "b": 2.0}
+
+        total = aggregate_task_losses(task_losses, weights)
+        assert total.item() == pytest.approx(1.0 * 0.5 + 2.0 * 2.0)
+
+        logs = log_task_losses(task_losses, prefix="eval")
+        assert logs["eval/loss_a"] == 1.0
+        assert logs["eval/loss_b"] == 2.0
 
 
 # ======================================================================

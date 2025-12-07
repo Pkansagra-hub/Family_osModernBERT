@@ -337,6 +337,10 @@ def compute_embedding_metrics(
     if len(predictions) < 2:
         return {"spearman": 0.0, "pearson": 0.0}
 
+    # Guard against constant inputs which trigger scipy warnings and undefined correlations
+    if np.all(predictions == predictions[0]) or np.all(labels == labels[0]):
+        return {"spearman": 0.0, "pearson": 0.0}
+
     spearman_corr, _ = spearmanr(predictions, labels)
     pearson_corr, _ = pearsonr(predictions, labels)
 
