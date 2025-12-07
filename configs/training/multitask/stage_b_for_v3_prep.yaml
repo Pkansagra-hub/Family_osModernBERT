@@ -202,9 +202,9 @@ data:
   seed: 42
 
   # OPTIMIZED: Your data max=58 tokens, P99=35, avg=15
-  # max_length=128 covers 100% of data with 2x headroom
+  # max_length=96 covers 100% of data with comfortable headroom
   preprocessing:
-    max_length: 128          # Was 512 - reduced for your short data
+    max_length: 96           # Reduced further for short FamilyOS sequences
     truncation: true
     padding: max_length
 
@@ -226,16 +226,16 @@ data:
 # Training Hyperparameters - OPTIMIZED for A100 40GB + short sequences
 # =============================================================================
 # Your data: max=58 tokens, P99=35, avg=15 tokens
-# With max_length=128, batch_size=128 uses only ~28-30GB VRAM
+# With max_length=96, larger batches fit comfortably in A100 40GB
 training:
   # Use head LR for heads, layer-wise LR for encoder
   learning_rate: 1e-4  # For heads only
   num_train_epochs: 8  # More epochs for full fine-tuning
 
-  # OPTIMIZED: 4x larger batch size (short sequences = low memory)
-  per_device_train_batch_size: 10   # 128 Was 32 - safe with max_length=128
-  per_device_eval_batch_size: 10    # 128 Was 64 - eval uses less memory
-  gradient_accumulation_steps: 1    # 6 Was 48 - effective batch = 128*32 = 4096
+  # OPTIMIZED: short sequences allow larger per-device batches on A100
+  per_device_train_batch_size: 64   # Was 32; fits safely with max_length=96
+  per_device_eval_batch_size: 128   # Higher eval throughput; still within VRAM
+  gradient_accumulation_steps: 2    # Effective train batch ≈ 128 sequences
   gradient_checkpointing: true       # Keep for safety margin
 
   # Regularization
