@@ -2045,19 +2045,22 @@ def train_stage_b(
         )
 
         # Build scheduler kwargs for cosine_with_restarts or other schedulers
-        scheduler_kwargs = {}
         lr_scheduler_kwargs = training_config.get("lr_scheduler_kwargs", {})
+        scheduler_specific_kwargs = {}
         if training_args.lr_scheduler_type == "cosine_with_restarts":
             # Default to 2 cycles for 8 epochs (restart at epoch 4)
-            scheduler_kwargs["num_cycles"] = lr_scheduler_kwargs.get("num_cycles", 2)
-            logger.info(f"Using cosine_with_restarts with {scheduler_kwargs['num_cycles']} cycles")
+            num_cycles = lr_scheduler_kwargs.get("num_cycles", 2)
+            scheduler_specific_kwargs["num_cycles"] = num_cycles
+            logger.info(f"Using cosine_with_restarts with {num_cycles} cycles")
 
         scheduler = get_scheduler(
             name=training_args.lr_scheduler_type,
             optimizer=optimizer,
             num_warmup_steps=warmup_steps,
             num_training_steps=num_training_steps,
-            **scheduler_kwargs,
+            scheduler_specific_kwargs=(
+                scheduler_specific_kwargs if scheduler_specific_kwargs else None
+            ),
         )
 
         optimizers = (optimizer, scheduler)
