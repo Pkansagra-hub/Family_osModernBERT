@@ -130,23 +130,23 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
 │  🔤 TOKENIZATION + HUB INJECTION                                                            │
 │                                                                                             │
-│  Input IDs:   [101]  [EMO]  [MEM]  [REL] [TASK]  [Mom]  [is] [feeling] [sad] [today] [102]│
+│  Input IDs:   [101]  [EMO]  [MEM]  [REL] [TASK]  [Mom]  [is] [feeling] [sad] [today] [102]  │
 │  Positions:     0      1      2      3      4       5     6      7       8      9      10   │
-│  Token Type:  [CLS]  HUB-1  HUB-2  HUB-3  HUB-4  TEXT  TEXT   TEXT    TEXT   TEXT   [SEP]  │
+│  Token Type:  [CLS]  HUB-1  HUB-2  HUB-3  HUB-4  TEXT  TEXT   TEXT    TEXT   TEXT   [SEP]   │
 │                                                                                             │
 │  🎯 Hub Token Semantics (Initialized via Centroid):                                         │
-│     [EMO]  → Emotion/Affect space   (joy, sadness, anger, fear...)                         │
-│     [MEM]  → Memory/Retrieval space (dense semantic embeddings)                            │
-│     [REL]  → Relation/Logic space   (entailment, parent_of, sibling...)                    │
-│     [TASK] → Action/Intent space    (log_memory, remind, query...)                         │
+│     [EMO]  → Emotion/Affect space   (joy, sadness, anger, fear...)                          │
+│     [MEM]  → Memory/Retrieval space (dense semantic embeddings)                             │
+│     [REL]  → Relation/Logic space   (entailment, parent_of, sibling...)                     │
+│     [TASK] → Action/Intent space    (log_memory, remind, query...)                          │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
                                             │
                                             ▼
 ╔═════════════════════════════════════════════════════════════════════════════════════════════╗
 ║  🧠 ModernBERT v3 Ultra ENCODER (28 Layers × 768-dim × 12 Heads)                           ║
-║                                                                                             ║
+║                                                                                            ║
 ║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🔵 FOUNDATION BAND (Layers 1-6)                            Window: 64    ❄️ FROZEN   │ ║
+║  │  🔵 FOUNDATION BAND (Layers 1-6)                            Window: 64    ❄️ FROZEN  │ ║
 ║  │  ─────────────────────────────────────                                                │ ║
 ║  │  • Basic linguistic patterns, morphology, syntax                                      │ ║
 ║  │  • Short-range dependencies (articles, prepositions)                                  │ ║
@@ -154,9 +154,9 @@
 ║  │  • Hub tokens: GLOBAL BIDIRECTIONAL attention (see all 11 positions)                  │ ║
 ║  │  • Text tokens: SLIDING WINDOW attention (window=64, local neighbors only)            │ ║
 ║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
-║                                            │                                                ║
+║                                            │                                               ║
 ║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🟢 CONTEXT BAND (Layers 7-18)                              Window: 128   ❄️ FROZEN   │ ║
+║  │  🟢 CONTEXT BAND (Layers 7-18)                              Window: 128   ❄️ FROZEN  │ ║
 ║  │  ──────────────────────────────                                                       │ ║
 ║  │  • Mid-range semantic understanding, entity recognition                               │ ║
 ║  │  • Phrasal composition, simple reasoning                                              │ ║
@@ -164,9 +164,9 @@
 ║  │  • Hub tokens: GLOBAL attention (aggregating semantic info)                           │ ║
 ║  │  • Text tokens: SLIDING WINDOW (window=128, moderate context)                         │ ║
 ║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
-║                                            │                                                ║
+║                                            │                                               ║
 ║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🟡 SEMANTIC BAND (Layers 19-22)                            Window: 256   🔥 TRAINABLE │ ║
+║  │  🟡 SEMANTIC BAND (Layers 19-22)                          Window: 256   🔥 TRAINABLE │ ║
 ║  │  ────────────────────────────────                                                     │ ║
 ║  │  • High-level semantic abstraction, discourse understanding                           │ ║
 ║  │  • Emotion nuances, pragmatic reasoning                                               │ ║
@@ -174,19 +174,19 @@
 ║  │  • Hub tokens: GLOBAL attention (refining task-specific representations)              │ ║
 ║  │  • Text tokens: SLIDING WINDOW (window=256, broader context)                          │ ║
 ║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
-║                                            │                                                ║
+║                                            │                                               ║
 ║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🔴 FAMILY BAND (Layers 23-28)  ⭐NEW⭐                      Window: 512   🔥 LoRA      │ ║
+║  │  🔴 FAMILY BAND (Layers 23-28)  ⭐NEW⭐                  Window: 512   🔥 LoRA      │ ║
 ║  │  ──────────────────────────────────                                                   │ ║
 ║  │  • Family-specific understanding, cultural context                                    │ ║
 ║  │  • Safety/crisis detection, relationship mapping                                      │ ║
 ║  │  • Cloned from v2 L15-20 + LoRA adaptation (r=16, α=16)                               │ ║
 ║  │  • Hub tokens: GLOBAL attention (final task routing)                                  │ ║
 ║  │  • Text tokens: SLIDING WINDOW (window=512, maximum context)                          │ ║
-║  │  • LoRA applied to: q_proj, k_proj, v_proj, o_proj (only these 6 layers)             │ ║
+║  │  • LoRA applied to: q_proj, k_proj, v_proj, o_proj (only these 6 layers)              │ ║
 ║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
-║                                                                                             ║
-║  💡 Key Innovation: HYBRID ATTENTION MECHANISM                                              ║
+║                                                                                            ║
+║  💡 Key Innovation: HYBRID ATTENTION MECHANISM                                            ║
 ║     • Hub tokens [EMO][MEM][REL][TASK] = GLOBAL bidirectional attention                    ║
 ║     • Text tokens = SLIDING WINDOW local attention (multi-scale: 64→128→256→512)           ║
 ║     • Efficiency: O(n·w) instead of O(n²), where w << n                                    ║
@@ -197,69 +197,69 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
 │  🎯 OUTPUT REPRESENTATIONS (All from final layer L28)                                       │
 │                                                                                             │
-│  Position 0:  [CLS]  → 768-dim (general sequence representation)                           │
-│  Position 1:  [EMO]  → 768-dim (emotion/sentiment/safety hub)                              │
-│  Position 2:  [MEM]  → 768-dim (embedding/memory hub)                                      │
-│  Position 3:  [REL]  → 768-dim (relation/logic hub)                                        │
-│  Position 4:  [TASK] → 768-dim (intent/ingress hub)                                        │
-│  Position 5-10: TEXT → 768-dim each (token-level representations)                          │
+│  Position 0:  [CLS]  → 768-dim (general sequence representation)                            │
+│  Position 1:  [EMO]  → 768-dim (emotion/sentiment/safety hub)                               │
+│  Position 2:  [MEM]  → 768-dim (embedding/memory hub)                                       │
+│  Position 3:  [REL]  → 768-dim (relation/logic hub)                                         │
+│  Position 4:  [TASK] → 768-dim (intent/ingress hub)                                         │
+│  Position 5-10: TEXT → 768-dim each (token-level representations)                           │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
                                             │
                                             ▼
 ╔═════════════════════════════════════════════════════════════════════════════════════════════╗
-║  🎪 ROUTING LAYER (Hub Token Pooler + Task-Specific Heads)                                 ║
+║  🎪 ROUTING LAYER (Hub Token Pooler + Task-Specific Heads)                                  ║
 ║                                                                                             ║
-║  ┌─────────────────────┐       ┌─────────────────────┐       ┌──────────────────────────┐ ║
-║  │   🟠 [EMO] HUB      │       │   🔵 [MEM] HUB      │       │   🟣 [REL] HUB          │ ║
-║  │   Position 1        │       │   Position 2        │       │   Position 3             │ ║
-║  │   (768-dim)         │       │   (768-dim)         │       │   (768-dim)              │ ║
-║  └──────────┬──────────┘       └──────────┬──────────┘       └──────────┬───────────────┘ ║
-║             │                             │                             │                  ║
-║    ┌────────┴────────┐           ┌────────▼────────┐           ┌────────▼────────┐       ║
-║    │                 │           │                 │           │                 │       ║
-║    ▼                 ▼           ▼                 │           ▼                 ▼       ║
-║  ┌────────┐    ┌─────────┐   ┌─────────┐          │      ┌────────┐      ┌──────────┐  ║
-║  │Emotions│    │Sentiment│   │ Safety  │          │      │  NLI   │      │Relations │  ║
-║  │  Head  │    │  Head   │   │  Head   │          │      │  Head  │      │   Head   │  ║
-║  │ (44cls)│    │ (5 cls) │   │(4 bands)│          │      │(3 cls) │      │ (15 cls) │  ║
-║  └────────┘    └─────────┘   └─────────┘          │      └────────┘      └──────────┘  ║
-║     │               │              │               │          │                │         ║
-║     ▼               ▼              ▼               ▼          ▼                ▼         ║
-║  [joy,        very_positive     GREEN         (768-dim)  entailment      parent_of     ║
-║   love,                                       embedding                                  ║
-║   concern]                                                                               ║
-║                                                                                           ║
-║  ┌─────────────────────┐       ┌──────────────────────────────────────────────────────┐ ║
-║  │   🟢 [TASK] HUB     │       │   📊 TOKEN-LEVEL OUTPUTS (Full Sequence)            │ ║
-║  │   Position 4        │       │   Positions 5-10 (all text tokens)                  │ ║
-║  │   (768-dim)         │       │                                                      │ ║
-║  └──────────┬──────────┘       └──────────────────────┬───────────────────────────────┘ ║
-║             │                                         │                                  ║
-║    ┌────────┴────────┐                       ┌────────┴────────┐                        ║
-║    │                 │                       │                 │                        ║
-║    ▼                 ▼                       ▼                 ▼                        ║
-║  ┌────────┐    ┌─────────┐            ┌──────────┐      ┌──────────┐                   ║
-║  │ Intent │    │ Ingress │            │   NER    │      │   NER    │                   ║
-║  │  Head  │    │  Head   │            │ General  │      │  Family  │                   ║
-║  │(8 cls) │    │(6 cls)  │            │ (9 BIO)  │      │ (12 BIO) │                   ║
-║  └────────┘    └─────────┘            └──────────┘      └──────────┘                   ║
-║     │               │                       │                  │                        ║
-║     ▼               ▼                       ▼                  ▼                        ║
-║  log_memory     DIARY              [O, B-PER, O, O, B-EMO, O]                           ║
-║                                    [O, B-KINSHIP, O, O, B-EMOTION, O]                   ║
-║                                                                                           ║
-║  ┌──────────────────────────────────────────────────────────────────────────────────┐   ║
-║  │   🔧 Temporal Head (Token-level, separate pathway)                               │   ║
-║  │   Input: Full sequence positions 5-10                                            │   ║
-║  │   Output: [O, O, O, O, B-TIME, O]  (7 BIO tags)                                  │   ║
-║  └──────────────────────────────────────────────────────────────────────────────────┘   ║
+║  ┌─────────────────────┐       ┌─────────────────────┐       ┌──────────────────────────┐   ║
+║  │   🟠 [EMO] HUB      │       │   🔵 [MEM] HUB     │       │   🟣 [REL] HUB           │   ║
+║  │   Position 1        │       │   Position 2        │       │   Position 3             │   ║
+║  │   (768-dim)         │       │   (768-dim)         │       │   (768-dim)              │   ║
+║  └──────────┬──────────┘       └──────────┬──────────┘       └──────────┬───────────────┘   ║
+║             │                             │                             │                   ║
+║    ┌────────┴────────┐           ┌────────▼────────┐           ┌────────▼────────┐          ║
+║    │                 │           │                 │           │                 │          ║
+║    ▼                 ▼           ▼                 │           ▼                 ▼          ║
+║  ┌────────┐    ┌─────────┐   ┌─────────┐          │      ┌────────┐      ┌──────────┐       ║
+║  │Emotions│    │Sentiment│   │ Safety  │          │      │  NLI   │      │Relations │       ║
+║  │  Head  │    │  Head   │   │  Head   │          │      │  Head  │      │   Head   │       ║
+║  │ (44cls)│    │ (5 cls) │   │(4 bands)│          │      │(3 cls) │      │ (15 cls) │       ║
+║  └────────┘    └─────────┘   └─────────┘          │      └────────┘      └──────────┘       ║
+║     │               │              │               │          │                │            ║
+║     ▼               ▼              ▼               ▼          ▼                ▼            ║
+║  [joy,        very_positive     GREEN         (768-dim)  entailment      parent_of          ║
+║   love,                                       embedding                                     ║
+║   concern]                                                                                  ║
+║                                                                                             ║
+║  ┌─────────────────────┐       ┌──────────────────────────────────────────────────────┐     ║
+║  │   🟢 [TASK] HUB     │       │   📊 TOKEN-LEVEL OUTPUTS (Full Sequence)            │     ║
+║  │   Position 4        │       │   Positions 5-10 (all text tokens)                   │     ║
+║  │   (768-dim)         │       │                                                      │     ║
+║  └──────────┬──────────┘       └──────────────────────┬───────────────────────────────┘     ║
+║             │                                         │                                     ║
+║    ┌────────┴────────┐                       ┌────────┴────────┐                            ║
+║    │                 │                       │                 │                            ║
+║    ▼                 ▼                       ▼                 ▼                            ║
+║  ┌────────┐    ┌─────────┐            ┌──────────┐      ┌──────────┐                        ║
+║  │ Intent │    │ Ingress │            │   NER    │      │   NER    │                        ║
+║  │  Head  │    │  Head   │            │ General  │      │  Family  │                        ║
+║  │(8 cls) │    │(6 cls)  │            │ (9 BIO)  │      │ (12 BIO) │                        ║
+║  └────────┘    └─────────┘            └──────────┘      └──────────┘                        ║
+║     │               │                       │                  │                            ║
+║     ▼               ▼                       ▼                  ▼                            ║
+║  log_memory     DIARY              [O, B-PER, O, O, B-EMO, O]                               ║
+║                                    [O, B-KINSHIP, O, O, B-EMOTION, O]                       ║ 
+║                                                                                             ║
+║  ┌──────────────────────────────────────────────────────────────────────────────────┐       ║
+║  │   🔧 Temporal Head (Token-level, separate pathway)                               │      ║
+║  │   Input: Full sequence positions 5-10                                            │       ║
+║  │   Output: [O, O, O, O, B-TIME, O]  (7 BIO tags)                                  │       ║
+║  └──────────────────────────────────────────────────────────────────────────────────┘       ║
 ╚═════════════════════════════════════════════════════════════════════════════════════════════╝
                                             │
                                             ▼
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  📦 UNIFIED OUTPUT (Single Forward Pass)                                                 ┃
-┃                                                                                          ┃
-┃  {                                                                                       ┃
+┃  📦 UNIFIED OUTPUT (Single Forward Pass)                                                ┃
+┃                                                                                         ┃
+┃  {                                                                                      ┃
 ┃    "emotions": ["joy", "love", "concern"],              # [EMO] hub → Multi-label head  ┃
 ┃    "sentiment": "very_positive",                        # [EMO] hub → 5-class head      ┃
 ┃    "safety_band": "GREEN",                              # [EMO] hub → 4-band hierarchy  ┃
@@ -268,12 +268,12 @@
 ┃    "relation": "parent_of",                             # [REL] hub → 15-class head     ┃
 ┃    "intent": "log_memory",                              # [TASK] hub → 8-class head     ┃
 ┃    "ingress": "DIARY",                                  # [TASK] hub → 6-class head     ┃
-┃    "ner_general": [("Mom", "PER"), ("today", "TIME")], # Token-level → BIO tags        ┃
-┃    "ner_family": [("Mom", "KINSHIP")],                 # Token-level → BIO tags        ┃
-┃    "temporal": [("today", "TIME")],                    # Token-level → BIO tags        ┃
-┃  }                                                                                       ┃
-┃                                                                                          ┃
-┃  ⚡ Performance: <35ms on NPU (256 tokens) | ~180M parameters | Zero routing overhead   ┃
+┃    "ner_general": [("Mom", "PER"), ("today", "TIME")], # Token-level → BIO tags         ┃
+┃    "ner_family": [("Mom", "KINSHIP")],                 # Token-level → BIO tags         ┃
+┃    "temporal": [("today", "TIME")],                    # Token-level → BIO tags         ┃
+┃  }                                                                                      ┃
+┃                                                                                         ┃
+┃  ⚡ Performance: <35ms on NPU (256 tokens) | ~180M parameters | Zero routing overhead  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
@@ -443,30 +443,30 @@ print(result.embedding.shape) # (768,)
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                        │
-│  Phase 0: Initialization          Phase 0.5: Healing         Phase 1: Multi-Task     │
-│  ─────────────────────            ────────────────────       ────────────────────     │
+│  Phase 0: Initialization          Phase 0.5: Healing         Phase 1: Multi-Task       │
+│  ─────────────────────            ────────────────────       ────────────────────      │
 │                                                                                        │
-│  ┌──────────────────┐             ┌──────────────────┐       ┌──────────────────┐     │
-│  │  ModernBERT v2   │             │ v3 Initialized   │       │   v3 Healed      │     │
-│  │  22 layers       │────────────▶│ 28 layers        │──────▶│  + Multi-Task    │     │
-│  │  149M params     │  Function   │ 180M params      │ 2.5K  │  Heads trained   │     │
-│  └──────────────────┘  Preserving └──────────────────┘ steps └──────────────────┘     │
+│  ┌──────────────────┐             ┌──────────────────┐       ┌──────────────────┐      │
+│  │  ModernBERT v2   │             │ v3 Initialized   │       │   v3 Healed      │      │
+│  │  22 layers       │───────────▶│ 28 layers        │──────▶│  + Multi-Task    │     │
+│  │  149M params     │  Function   │ 180M params      │ 2.5K  │  Heads trained   │      │
+│  └──────────────────┘  Preserving └──────────────────┘ steps └──────────────────┘      │
 │                        Growth                                                          │
 │  Weight Transfer:                 Healing Data:              Training Data:            │
-│  • L1-22: Direct copy             • SST-2: 3K samples        • FamilyOS unified:      │
-│  • L23-28: Clone L15-20           • CoNLL: 3K samples          85% (shards)          │
-│  • Hub tokens: Semantic           • MNLI: 2K samples         • Stage A replay:        │
-│    centroid init                  • SQuAD: 2K samples          15% (forgetting gate) │
-│                                   • STS-B: 2K samples                                 │
-│  Layer Freezing:                                             Safety Oversampling:     │
-│  N/A (initialization)             L1-18: ❄️ Frozen           • CRISIS: 20x           │
-│                                   L19-22: 🔥 Zipper LR       • RED: 5x               │
-│  Output:                          L23: 🔥 MAX (5e-5)         • 15% Stage A replay    │
-│  modernbert-v3-initialized        L24-28: 🔥 Zipper          • EMA decay 0.999       │
-│                                   Heads: ❄️ Frozen                                    │
-│                                                              Output:                  │
-│                                   Output:                    modernbert-v3-phase1     │
-│                                   modernbert-v3-healed                                │
+│  • L1-22: Direct copy             • SST-2: 3K samples        • FamilyOS unified:       │
+│  • L23-28: Clone L15-20           • CoNLL: 3K samples          85% (shards)            │
+│  • Hub tokens: Semantic           • MNLI: 2K samples         • Stage A replay:         │
+│    centroid init                  • SQuAD: 2K samples          15% (forgetting gate)   │
+│                                   • STS-B: 2K samples                                  │
+│  Layer Freezing:                                             Safety Oversampling:      │
+│  N/A (initialization)             L1-18: ❄️ Frozen           • CRISIS: 20x             │
+│                                   L19-22: 🔥 Zipper LR       • RED: 5x                 │
+│  Output:                          L23: 🔥 MAX (5e-5)         • 15% Stage A replay      │
+│  modernbert-v3-initialized        L24-28: 🔥 Zipper          • EMA decay 0.999         │
+│                                   Heads: ❄️ Frozen                                     │
+│                                                              Output:                   │
+│                                   Output:                    modernbert-v3-phase1      │
+│                                   modernbert-v3-healed                                 │
 │                                                                                        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
