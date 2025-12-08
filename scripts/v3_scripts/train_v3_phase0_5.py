@@ -2220,11 +2220,14 @@ def train_step(
             "clipped": False,
         }
 
-    # Clamp loss to prevent extreme gradients from loss spikes
-    MAX_LOSS = 100.0  # Reasonable upper bound for classification/regression losses
-    if loss.item() > MAX_LOSS:
-        logger.warning(f"Loss spike detected: {loss.item():.2f} > {MAX_LOSS}, clamping")
-        loss = torch.clamp(loss, max=MAX_LOSS)
+    # Scale loss if it exceeds threshold (gradient-preserving approach)
+    MAX_LOSS = 50.0  # Upper bound for loss scaling
+    original_loss = loss.item()
+    if original_loss > MAX_LOSS:
+        # Scale down the loss to MAX_LOSS while preserving gradient direction
+        scale_factor = MAX_LOSS / original_loss
+        loss = loss * scale_factor
+        logger.warning(f"Loss spike: {original_loss:.2f} > {MAX_LOSS}, scaled by {scale_factor:.4f}")
 
     # Backward pass
     loss.backward()
