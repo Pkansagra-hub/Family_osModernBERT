@@ -1387,7 +1387,18 @@ class Phase05TrainingModel(nn.Module):
                         task_loss_accum.setdefault("similarity", []).append(loss.item())
 
             elif task == "qa":
-                # Use [TASK] hub token for QA
+                # QA task is DISABLED for Phase 0.5 (weight=0 in YAML)
+                # Skip computation entirely if weight is 0
+                qa_weight = self.task_weights.get("qa", 0.0)
+                if qa_weight == 0.0:
+                    # Still need to add logits for batch consistency
+                    pooled = hidden_states[i, POSITION_TASK, :]
+                    logits = self.qa_head(pooled)
+                    all_logits.append(logits)
+                    # No loss contribution
+                    continue
+
+                # Use [TASK] hub token for QA (when enabled)
                 pooled = hidden_states[i, POSITION_TASK, :]
                 logits = self.qa_head(pooled)
                 all_logits.append(logits)
@@ -1409,9 +1420,11 @@ class Phase05TrainingModel(nn.Module):
 
             elif task == "ner":
                 # NER: sequence labeling (simplified for healing)
-                # For now, just use [CLS] as sequence representation
+                # Use [CLS] for sequence-level classification as a simplified proxy
+                # Full token-level NER is done in Phase 1
                 pooled = hidden_states[i, POSITION_CLS, :]
-                logits = self.sentiment_head(pooled)  # Binary as placeholder
+                # Use first 2 classes of ner_head as binary (B-PER vs O as proxy)
+                logits = self.ner_head(pooled)[:2]  # Take first 2 logits
                 all_logits.append(logits)
 
                 if labels is not None:
@@ -1427,9 +1440,11 @@ class Phase05TrainingModel(nn.Module):
                     else:
                         label_val = labels[i]
 
+                    # Map to binary: 0 = O (outside), 1 = any entity
+                    binary_label = (label_val.long() > 0).long()  # 0 if O, 1 if any entity
                     loss = self.ce_loss(
                         logits.unsqueeze(0),
-                        (label_val.long() % 2).unsqueeze(0),
+                        binary_label.unsqueeze(0),
                     )
                     weighted_loss = loss.mean() * self.task_weights.get("ner", 1.0)
                     total_loss = total_loss + weighted_loss
@@ -1637,6 +1652,13 @@ def merge_configs(base_config: Phase05Config, yaml_config: dict[str, Any]) -> Ph
     for yaml_key, config_key in key_mapping.items():
         if yaml_key in flat_yaml:
             config_dict[config_key] = flat_yaml[yaml_key]
+
+    # Handle nested task_weights specially (loss.task_weights.X -> task_weights dict)
+    if "loss" in yaml_config and isinstance(yaml_config["loss"], dict):
+        loss_config = yaml_config["loss"]
+        if "task_weights" in loss_config and isinstance(loss_config["task_weights"], dict):
+            config_dict["task_weights"] = loss_config["task_weights"]
+            logger.info(f"Loaded task_weights from YAML: {config_dict['task_weights']}")
 
     # Also apply direct matches
     for key, value in flat_yaml.items():
@@ -2783,8 +2805,8 @@ def run_smoke_test(config: Phase05Config) -> bool:
         # Setup layer freezing
         setup_layer_freezing(base_model, config)
 
-        # Wrap in training model
-        model = Phase05TrainingModel(base_model).to(device)
+        # Wrap in training model with task weights from config
+        model = Phase05TrainingModel(base_model, task_weights=config.task_weights).to(device)
 
         # Create dataloaders (use synthetic data for speed)
         train_loader, val_loader = create_dataloaders(config, tokenizer, synthetic=True)
@@ -2884,8 +2906,8 @@ def run_debug_mode(config: Phase05Config) -> bool:
         print(f"Frozen layers: {freezer.get_frozen_layers()}")
         print(f"Trainable layers: {freezer.get_trainable_layers()}")
 
-        # Wrap in training model
-        model = Phase05TrainingModel(base_model).to(device)
+        # Wrap in training model with task weights from config
+        model = Phase05TrainingModel(base_model, task_weights=config.task_weights).to(device)
 
         # Create dataloaders (use limited real data in debug mode)
         use_synthetic = config.max_samples is None  # Use synthetic only if no limit set
@@ -3028,6 +3050,23 @@ def run_full_training(
     device = torch.device(config.device)
     base_model = base_model.to(device)
 
+    # CRITICAL VALIDATION: Verify hub token IDs are within model vocab range
+    model_vocab_size = base_model.config.vocab_size
+    max_hub_token_id = max(HUB_TOKEN_IDS.values())
+    if max_hub_token_id >= model_vocab_size:
+        raise ValueError(
+            f"Hub token ID {max_hub_token_id} exceeds model vocab size {model_vocab_size}!\n"
+            f"Hub tokens: {HUB_TOKEN_IDS}\n"
+            f"This will cause embedding index out of bounds errors."
+        )
+    logger.info(f"Hub token IDs validated: {HUB_TOKEN_IDS} (model vocab: {model_vocab_size})")
+
+    # Log task weights to confirm QA is disabled
+    logger.info("Task weights from config:")
+    for task, weight in config.task_weights.items():
+        status = "ENABLED" if weight > 0 else "DISABLED"
+        logger.info(f"  {task}: {weight} ({status})")
+
     # Setup layer freezing
     freezer = setup_layer_freezing(base_model, config)
     logger.info(f"Frozen layers: {freezer.get_frozen_layers()}")
@@ -3038,8 +3077,8 @@ def run_full_training(
     if hub_masker:
         logger.info("Hub token gradient masking enabled")
 
-    # Wrap in training model
-    model = Phase05TrainingModel(base_model).to(device)
+    # Wrap in training model with task weights from config
+    model = Phase05TrainingModel(base_model, task_weights=config.task_weights).to(device)
 
     # Create dataloaders
     train_loader, val_loader = create_dataloaders(config, tokenizer, synthetic=False)

@@ -17,7 +17,7 @@ model:
     hidden_size: 768
     num_attention_heads: 12
     num_hub_tokens: 4
-    vocab_size: 50372
+    vocab_size: 50432  # 256-aligned (50368 base + 4 hub + 60 padding)
 
 training:
   phase: "phase_0.5"
