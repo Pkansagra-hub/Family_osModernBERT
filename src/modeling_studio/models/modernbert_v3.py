@@ -118,6 +118,8 @@ class ModernBERTv3Ultra(nn.Module):
         )
 
         # Encoder (28 layers)
+        # Only pass LoRA params if lora_enabled is True
+        lora_layers = config.lora_target_layers if config.lora_enabled else None
         self.encoder = ModernBERTEncoderV3(
             num_layers=config.num_layers,
             hidden_size=config.hidden_size,
@@ -127,9 +129,9 @@ class ModernBERTv3Ultra(nn.Module):
             attention_probs_dropout_prob=config.attention_probs_dropout_prob,
             use_flash_attention=False,  # Use SDPA for correctness
             gradient_checkpointing=False,  # Disabled by default
-            lora_layers=config.lora_target_layers,
-            lora_r=config.lora_r,
-            lora_alpha=config.lora_alpha,
+            lora_layers=lora_layers,
+            lora_r=config.lora_r if config.lora_enabled else 0,
+            lora_alpha=config.lora_alpha if config.lora_enabled else 0,
         )
 
         # Poolers
@@ -161,7 +163,10 @@ class ModernBERTv3Ultra(nn.Module):
         print(f"  - Hidden: {config.hidden_size}")
         print(f"  - Heads: {config.num_attention_heads}")
         print(f"  - Hub tokens: {list(HUB_TOKEN_REGISTRY.keys())}")
-        print(f"  - LoRA layers: {config.lora_target_layers}")
+        if config.lora_enabled:
+            print(f"  - LoRA layers: {config.lora_target_layers}")
+        else:
+            print("  - LoRA: DISABLED (direct layer training)")
 
     def _init_weights(self, module: nn.Module) -> None:
         """

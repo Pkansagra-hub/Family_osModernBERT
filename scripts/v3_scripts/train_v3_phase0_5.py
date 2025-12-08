@@ -1677,7 +1677,8 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
     # Try loading from existing v3 checkpoint (pytorch_model.bin)
     if model_path.exists() and (model_path / "pytorch_model.bin").exists():
         logger.info(f"Loading v3 model from {model_path}")
-        v3_config = ModernBERTv3Config()
+        # Disable LoRA for Phase 0.5 - train layers directly
+        v3_config = ModernBERTv3Config(lora_enabled=False, lora_target_layers=[])
         model = ModernBERTv3Ultra(v3_config)
 
         state_dict = torch.load(
@@ -1692,7 +1693,8 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
     # Try loading from safetensors format
     if model_path.exists() and (model_path / "model.safetensors").exists():
         logger.info(f"Loading v3 model from safetensors: {model_path}")
-        v3_config = ModernBERTv3Config()
+        # Disable LoRA for Phase 0.5 - train layers directly
+        v3_config = ModernBERTv3Config(lora_enabled=False, lora_target_layers=[])
         model = ModernBERTv3Ultra(v3_config)
 
         try:
@@ -1709,7 +1711,8 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
     v2_path = Path(config.v2_checkpoint)
     if v2_path.exists() and V2_INIT_AVAILABLE:
         logger.info(f"Initializing v3 model from v2 checkpoint: {v2_path}")
-        v3_config = ModernBERTv3Config()
+        # Disable LoRA for Phase 0.5 - train layers directly
+        v3_config = ModernBERTv3Config(lora_enabled=False, lora_target_layers=[])
         model = ModernBERTv3Ultra(v3_config)
 
         stats = initialize_from_v2(model, str(v2_path))
@@ -1728,7 +1731,8 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
         f"  Checked: {model_path}\n"
         f"  Checked: {v2_path}"
     )
-    v3_config = ModernBERTv3Config()
+    # Disable LoRA for Phase 0.5 - train layers directly
+    v3_config = ModernBERTv3Config(lora_enabled=False, lora_target_layers=[])
     model = ModernBERTv3Ultra(v3_config)
     logger.info(f"Created model with {sum(p.numel() for p in model.parameters()):,} parameters")
     return model
@@ -2687,7 +2691,8 @@ def run_dry_run(config: Phase05Config) -> bool:
     # Check 5: Model Creation
     checks_total += 1
     try:
-        v3_config = ModernBERTv3Config()
+        # Disable LoRA for Phase 0.5
+        v3_config = ModernBERTv3Config(lora_enabled=False, lora_target_layers=[])
         model = ModernBERTv3Ultra(v3_config)
         param_count = sum(p.numel() for p in model.parameters())
         print(f"[OK] Model created: {param_count:,} parameters")
