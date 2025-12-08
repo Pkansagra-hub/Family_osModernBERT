@@ -12,7 +12,7 @@ def analyze_generated_data(
     """Analyze all generated shards from multiple directories and print distribution stats."""
     if output_dirs is None:
         output_dirs = [
-            "D:/Modeling_studio/data/familyos/unified/output",
+            "D:/Modeling_studio/data/familyos/unified/output_healed_merged",
         ]
 
     # Load all samples from all directories

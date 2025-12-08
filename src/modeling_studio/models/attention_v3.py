@@ -384,7 +384,7 @@ def print_layer_config() -> None:
           Family       (L23-28): window = 512
         --------------------------------------------------
     """
-    print("\n📊 Layer Window Configuration:")
+    print("\n[CONFIG] Layer Window Configuration:")
     print("-" * 50)
     for band_name, (start, end, window) in LAYER_BANDS.items():
         print(f"  {band_name.capitalize():12} (L{start:2}-{end:2}): window = {window}")

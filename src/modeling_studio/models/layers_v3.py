@@ -168,7 +168,7 @@ class ModernBERTLayerV3(nn.Module):
         self.lora_k = LoRALayer(hidden_size, hidden_size, r, alpha, dropout)
         self.lora_v = LoRALayer(hidden_size, hidden_size, r, alpha, dropout)
         self.lora_o = LoRALayer(hidden_size, hidden_size, r, alpha, dropout)
-        print(f"  ✓ LoRA initialized for layer {self.layer_idx} (r={r}, alpha={alpha})")
+        print(f"  [OK] LoRA initialized for layer {self.layer_idx} (r={r}, alpha={alpha})")
 
     def forward(
         self,
@@ -242,7 +242,7 @@ class ModernBERTLayerV3(nn.Module):
         for name, param in self.named_parameters():
             if "lora" not in name.lower():
                 param.requires_grad_(False)
-        print(f"  ❄️ Froze base weights for layer {self.layer_idx}")
+        print(f"  [FROZEN] Froze base weights for layer {self.layer_idx}")
 
     def unfreeze_base_weights(self) -> None:
         """
@@ -253,7 +253,7 @@ class ModernBERTLayerV3(nn.Module):
         for name, param in self.named_parameters():
             if "lora" not in name.lower():
                 param.requires_grad_(True)
-        print(f"  🔥 Unfroze base weights for layer {self.layer_idx}")
+        print(f"  [UNFROZEN] Unfroze base weights for layer {self.layer_idx}")
 
     def merge_lora_weights(self) -> None:
         """
@@ -268,7 +268,7 @@ class ModernBERTLayerV3(nn.Module):
         if self.lora_o is None:
             return
 
-        print(f"  ⚠️ LoRA merging not yet implemented for layer {self.layer_idx}")
+        print(f"  [WARN] LoRA merging not yet implemented for layer {self.layer_idx}")
         # TODO: Implement LoRA merging into attention projections
         # This requires modifying q_proj, k_proj, v_proj, out_proj in attention module
 
@@ -360,7 +360,7 @@ def create_layer_stack(
 
     layers = nn.ModuleList()
 
-    print("\n🏗️  Building v3 transformer stack...")
+    print("\n[BUILD] Building v3 transformer stack...")
     print(f"   Layers: {num_layers}")
     print(f"   Hidden size: {hidden_size}")
     print(f"   Attention heads: {num_attention_heads}")
@@ -385,7 +385,7 @@ def create_layer_stack(
         )
         layers.append(layer)
 
-    print(f"\n✓ Created {num_layers} layers")
+    print(f"\n[OK] Created {num_layers} layers")
     print(f"  - Foundation (L1-6): window=64, no LoRA")
     print(f"  - Context (L7-18): window=128, no LoRA")
     print(f"  - Semantic (L19-22): window=256, no LoRA")
@@ -425,14 +425,14 @@ def freeze_layer_bands(
     frozen_count = 0
     for band_name in freeze_bands:
         if band_name not in band_ranges:
-            print(f"⚠️ Unknown band: {band_name}")
+            print(f"[WARN] Unknown band: {band_name}")
             continue
 
         for i in band_ranges[band_name]:
             layers[i].freeze_base_weights()
             frozen_count += 1
 
-    print(f"\n❄️ Froze {frozen_count} layers ({', '.join(freeze_bands)})")
+    print(f"\n[FROZEN] Froze {frozen_count} layers ({', '.join(freeze_bands)})")
 
 
 def unfreeze_layer_bands(
@@ -463,14 +463,14 @@ def unfreeze_layer_bands(
     unfrozen_count = 0
     for band_name in unfreeze_bands:
         if band_name not in band_ranges:
-            print(f"⚠️ Unknown band: {band_name}")
+            print(f"[WARN] Unknown band: {band_name}")
             continue
 
         for i in band_ranges[band_name]:
             layers[i].unfreeze_base_weights()
             unfrozen_count += 1
 
-    print(f"\n🔥 Unfroze {unfrozen_count} layers ({', '.join(unfreeze_bands)})")
+    print(f"\n[UNFREEZE] Unfroze {unfrozen_count} layers ({', '.join(unfreeze_bands)})")
 
 
 def get_layer_stats(layers: nn.ModuleList) -> dict:

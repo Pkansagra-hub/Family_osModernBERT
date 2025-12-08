@@ -636,7 +636,7 @@ class V2CheckpointLoader:
         """
         info = self.get_info()
         print("\n" + "=" * 60)
-        print("📦 v2 Checkpoint Summary")
+        print("[CHECKPOINT] v2 Checkpoint Summary")
         print("=" * 60)
         print(f"  Path: {info.path.name}")
         print(f"  Layers: {info.num_layers}")
@@ -924,7 +924,7 @@ def copy_layers_direct(
     loader = V2CheckpointLoader(v2_checkpoint_path)
     copier = LayerCopier(loader)
 
-    print("\n🔄 Copying v2 Layers 1-22 to v3 Layers 1-22...")
+    print("\n[COPY] Copying v2 Layers 1-22 to v3 Layers 1-22...")
 
     # Get encoder from model
     encoder = v3_model.encoder if hasattr(v3_model, "encoder") else v3_model
@@ -932,7 +932,7 @@ def copy_layers_direct(
     total_copied = copier.copy_layers_1_to_22(encoder)
 
     stats = copier.get_stats()
-    print(f"\n✓ Direct copy complete:")
+    print(f"\n[OK] Direct copy complete:")
     print(f"  - Matched: {stats['matched']}")
     print(f"  - Shape mismatches: {stats['mismatched_shape']}")
     print(f"  - Missing in v2: {stats['missing_in_v2']}")
@@ -1121,7 +1121,7 @@ class LayerCloner:
         """
         total_cloned = 0
 
-        print("\n🧬 Cloning v2 Layers 15-20 to v3 Layers 23-28...")
+        print("\n[CLONE] Cloning v2 Layers 15-20 to v3 Layers 23-28...")
 
         for v3_idx, v2_idx in self.CLONE_MAPPING.items():
             v3_layer = v3_encoder.layers[v3_idx]
@@ -1198,7 +1198,7 @@ def clone_layers_for_growth(
     total_cloned = cloner.clone_layers_23_to_28(encoder)
 
     stats = cloner.get_stats()
-    print("\n✓ Layer cloning complete:")
+    print("\n[OK] Layer cloning complete:")
     print(f"  - Cloned weights: {stats['cloned']}")
     print(f"  - Noise added to: {stats['noise_added']} tensors")
     print(f"  - Missing in v2: {stats['missing_in_v2']}")
@@ -1316,7 +1316,7 @@ def print_layer_band_summary() -> None:
     }
 
     print("\n" + "=" * 60)
-    print("📊 v3 Layer Band Configuration")
+    print("[CONFIG] v3 Layer Band Configuration")
     print("=" * 60)
 
     for band_name, layers in V3_LAYER_BANDS.items():
@@ -1636,13 +1636,13 @@ class EmbeddingTransfer:
         """
         total = 0
 
-        print("\n📝 Transferring Embeddings (with Hub Token Slots)...")
+        print("\n[TRANSFER] Transferring Embeddings (with Hub Token Slots)...")
 
         total += self.transfer_word_embeddings(v3_embeddings)
         total += self.transfer_position_embeddings(v3_embeddings)
         total += self.transfer_layer_norm(v3_embeddings)
 
-        print(f"\n✓ Embedding transfer complete: {total:,} params")
+        print(f"\n[OK] Embedding transfer complete: {total:,} params")
 
         return total
 
@@ -1952,7 +1952,7 @@ class HubTokenSemanticInitializer:
             >>> print(f"Initialized {num_initialized} hub tokens")
             Initialized 4 hub tokens
         """
-        print("\n🎯 Initializing Hub Token Embeddings (Semantic)...")
+        print("\n[INIT] Initializing Hub Token Embeddings (Semantic)...")
 
         # Get word embeddings - handle different structures
         word_emb = self._get_word_embeddings(v3_embeddings)
@@ -1997,7 +1997,7 @@ class HubTokenSemanticInitializer:
 
     def _print_summary(self) -> None:
         """Print initialization summary."""
-        print("\n✓ Hub Token Initialization Summary:")
+        print("\n[OK] Hub Token Initialization Summary:")
         print("-" * 50)
 
         for hub, stats in self.init_stats.items():
@@ -2139,14 +2139,14 @@ def initialize_from_v2(
         Transferred: 85,000,000 params
     """
     print("\n" + "=" * 70)
-    print("🚀 ModernBERT v2 → v3 Weight Transfer")
+    print("[TRANSFER] ModernBERT v2 -> v3 Weight Transfer")
     print("=" * 70)
 
     # Step 1: Load and validate v2 checkpoint
     loader = V2CheckpointLoader(v2_checkpoint_path)
     is_valid, issues = loader.validate()
     if not is_valid:
-        print(f"⚠️  Checkpoint issues: {issues}")
+        print(f"[WARN] Checkpoint issues: {issues}")
     loader.print_summary()
 
     # Step 2: Copy layers 1-22 directly
@@ -2183,7 +2183,7 @@ def initialize_from_v2(
     )
 
     print("\n" + "=" * 70)
-    print("✅ Weight Transfer Complete!")
+    print("[OK] Weight Transfer Complete!")
     print("=" * 70)
     print(f"  Total v3 params: {stats.total_params:,}")
     print(f"  Direct transferred: {stats.transferred_params:,}")

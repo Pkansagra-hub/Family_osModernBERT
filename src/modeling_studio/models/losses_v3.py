@@ -354,9 +354,9 @@ class HubAwareLossComputer(nn.Module):
         buffer_name = f"weight_{task}"
         if hasattr(self, buffer_name):
             setattr(self, buffer_name, torch.tensor(weight))
-            print(f"✓ Updated weight for '{task}': {weight}")
+            print(f"[OK] Updated weight for '{task}': {weight}")
         else:
-            print(f"⚠️ Task '{task}' not found in loss computer")
+            print(f"[WARN] Task '{task}' not found in loss computer")
 
     def extra_repr(self) -> str:
         return (

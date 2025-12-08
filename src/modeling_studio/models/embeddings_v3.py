@@ -175,32 +175,37 @@ class ModernBERTEmbeddingsV3(nn.Module):
         Resize embedding matrix to accommodate new vocabulary size.
 
         Used when adding hub tokens to v2 vocabulary.
+        Vocab size is padded to next multiple of 256 for GPU efficiency.
 
         Args:
-            new_vocab_size: New vocabulary size (e.g., 50372 for v2 + 4 hubs)
+            new_vocab_size: Minimum new vocabulary size (will be rounded up to 256 multiple)
 
         Example:
             >>> embeddings = ModernBERTEmbeddingsV3(vocab_size=50368)
             >>> embeddings.resize_token_embeddings(50372)
-            ✓ Resized embeddings: 50368 → 50372
+            [OK] Resized embeddings: 50368 -> 50432 (padded to 256 multiple)
         """
         old_vocab_size = self.word_embeddings.num_embeddings
-        if new_vocab_size == old_vocab_size:
+
+        # Round up to next multiple of 256 for GPU efficiency
+        padded_vocab_size = ((new_vocab_size + 255) // 256) * 256
+
+        if padded_vocab_size == old_vocab_size:
             return
 
         # Create new embedding matrix
         new_embeddings = nn.Embedding(
-            new_vocab_size,
+            padded_vocab_size,
             self.hidden_size,
             padding_idx=self.pad_token_id,
         )
 
         # Copy old embeddings
-        num_to_copy = min(old_vocab_size, new_vocab_size)
+        num_to_copy = min(old_vocab_size, padded_vocab_size)
         new_embeddings.weight.data[:num_to_copy] = self.word_embeddings.weight.data[:num_to_copy]
 
-        # Initialize new embeddings (hub tokens) with small random values
-        if new_vocab_size > old_vocab_size:
+        # Initialize new embeddings (hub tokens + padding) with small random values
+        if padded_vocab_size > old_vocab_size:
             nn.init.normal_(
                 new_embeddings.weight.data[old_vocab_size:],
                 mean=0.0,
@@ -208,8 +213,13 @@ class ModernBERTEmbeddingsV3(nn.Module):
             )
 
         self.word_embeddings = new_embeddings
-        self.vocab_size = new_vocab_size
-        print(f"✓ Resized embeddings: {old_vocab_size} → {new_vocab_size}")
+        self.vocab_size = padded_vocab_size
+        if padded_vocab_size != new_vocab_size:
+            print(
+                f"[OK] Resized embeddings: {old_vocab_size} -> {padded_vocab_size} (padded to 256 multiple)"
+            )
+        else:
+            print(f"[OK] Resized embeddings: {old_vocab_size} -> {padded_vocab_size}")
 
     def get_num_params(self) -> dict[str, int]:
         """

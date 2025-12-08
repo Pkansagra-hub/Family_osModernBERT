@@ -87,7 +87,7 @@ class TestParseArgs:
 
     def test_required_arguments(self):
         """Test that required arguments are enforced."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         # Should fail without required args
         with pytest.raises(SystemExit):
@@ -96,7 +96,7 @@ class TestParseArgs:
 
     def test_v2_checkpoint_required(self):
         """Test --v2-checkpoint is required."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         with pytest.raises(SystemExit):
             with patch("sys.argv", ["prog", "--output-dir", "/tmp/out"]):
@@ -104,7 +104,7 @@ class TestParseArgs:
 
     def test_output_dir_required(self):
         """Test --output-dir is required."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         with pytest.raises(SystemExit):
             with patch("sys.argv", ["prog", "--v2-checkpoint", "/tmp/ckpt.pt"]):
@@ -112,7 +112,7 @@ class TestParseArgs:
 
     def test_default_values(self):
         """Test default argument values."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         with patch(
             "sys.argv",
@@ -130,7 +130,7 @@ class TestParseArgs:
 
     def test_verify_flag(self):
         """Test --verify flag."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         with patch(
             "sys.argv",
@@ -142,7 +142,7 @@ class TestParseArgs:
 
     def test_custom_tolerance(self):
         """Test --tolerance argument."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         with patch(
             "sys.argv",
@@ -162,7 +162,7 @@ class TestParseArgs:
 
     def test_no_clone_noise_flag(self):
         """Test --no-clone-noise flag."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         with patch(
             "sys.argv",
@@ -181,7 +181,7 @@ class TestParseArgs:
 
     def test_device_argument(self):
         """Test --device argument."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         with patch(
             "sys.argv",
@@ -211,7 +211,7 @@ class TestCreateV3Config:
     def test_creates_config_from_v2(self, mock_v2_checkpoint):
         """Test config is created from v2 checkpoint info."""
         from modeling_studio.models.initialization_v3 import V2CheckpointLoader
-        from scripts.initialize_v3_from_v2 import create_v3_config
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config
 
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
         config = create_v3_config(loader)
@@ -223,7 +223,7 @@ class TestCreateV3Config:
     def test_config_has_correct_layer_count(self, mock_v2_checkpoint):
         """Test v3 config has 28 layers."""
         from modeling_studio.models.initialization_v3 import V2CheckpointLoader
-        from scripts.initialize_v3_from_v2 import create_v3_config
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config
 
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
         config = create_v3_config(loader)
@@ -242,7 +242,7 @@ class TestCreateMockV2Model:
     def test_creates_mock_model(self, mock_v2_checkpoint):
         """Test mock v2 model can be created."""
         from modeling_studio.models.initialization_v3 import V2CheckpointLoader
-        from scripts.initialize_v3_from_v2 import create_mock_v2_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_mock_v2_model
 
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
         v2_model = create_mock_v2_model(loader)
@@ -254,7 +254,7 @@ class TestCreateMockV2Model:
     def test_mock_model_has_22_layers(self, mock_v2_checkpoint):
         """Test mock model has 22 layers."""
         from modeling_studio.models.initialization_v3 import V2CheckpointLoader
-        from scripts.initialize_v3_from_v2 import create_mock_v2_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_mock_v2_model
 
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
         v2_model = create_mock_v2_model(loader)
@@ -264,7 +264,7 @@ class TestCreateMockV2Model:
     def test_mock_embeddings_forward(self, mock_v2_checkpoint):
         """Test mock embeddings forward pass works."""
         from modeling_studio.models.initialization_v3 import V2CheckpointLoader
-        from scripts.initialize_v3_from_v2 import create_mock_v2_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_mock_v2_model
 
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
         v2_model = create_mock_v2_model(loader)
@@ -277,7 +277,7 @@ class TestCreateMockV2Model:
     def test_mock_layer_forward(self, mock_v2_checkpoint):
         """Test mock layer forward pass works."""
         from modeling_studio.models.initialization_v3 import V2CheckpointLoader
-        from scripts.initialize_v3_from_v2 import create_mock_v2_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_mock_v2_model
 
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
         v2_model = create_mock_v2_model(loader)
@@ -302,7 +302,7 @@ class TestSaveModel:
             V2CheckpointLoader,
             WeightTransferStats,
         )
-        from scripts.initialize_v3_from_v2 import create_v3_config, save_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config, save_model
 
         # Create minimal mock model
         model = nn.Linear(768, 768)
@@ -330,7 +330,7 @@ class TestSaveModel:
             V2CheckpointLoader,
             WeightTransferStats,
         )
-        from scripts.initialize_v3_from_v2 import create_v3_config, save_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config, save_model
 
         model = nn.Linear(768, 768)
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
@@ -354,7 +354,7 @@ class TestSaveModel:
             V2CheckpointLoader,
             WeightTransferStats,
         )
-        from scripts.initialize_v3_from_v2 import create_v3_config, save_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config, save_model
 
         model = nn.Linear(768, 768)
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
@@ -383,7 +383,7 @@ class TestSaveModel:
             V2CheckpointLoader,
             WeightTransferStats,
         )
-        from scripts.initialize_v3_from_v2 import create_v3_config, save_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config, save_model
 
         model = nn.Linear(768, 768)
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
@@ -415,7 +415,7 @@ class TestSaveModel:
             WeightTransferStats,
         )
         from modeling_studio.models.verification_v3 import VerificationResult
-        from scripts.initialize_v3_from_v2 import create_v3_config, save_model
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config, save_model
 
         model = nn.Linear(768, 768)
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
@@ -459,7 +459,7 @@ class TestMainFunction:
 
     def test_returns_error_for_missing_checkpoint(self, output_dir):
         """Test main returns 1 for missing checkpoint."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -477,7 +477,7 @@ class TestMainFunction:
 
     def test_returns_success_for_valid_checkpoint(self, mock_v2_checkpoint, output_dir):
         """Test main returns 0 for valid checkpoint."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -495,7 +495,7 @@ class TestMainFunction:
 
     def test_creates_output_files(self, mock_v2_checkpoint, output_dir):
         """Test main creates all expected output files."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -524,7 +524,7 @@ class TestIssue423AcceptanceCriteria:
 
     def test_ac1_cli_with_all_necessary_arguments(self):
         """AC1: CLI with all necessary arguments."""
-        from scripts.initialize_v3_from_v2 import parse_args
+        from scripts.v3_scripts.initialize_v3_from_v2 import parse_args
 
         # All these arguments should be recognized
         with patch(
@@ -564,7 +564,7 @@ class TestIssue423AcceptanceCriteria:
 
     def test_ac2_validates_v2_checkpoint_exists(self, output_dir):
         """AC2: Validates v2 checkpoint exists."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -585,7 +585,7 @@ class TestIssue423AcceptanceCriteria:
     def test_ac3_creates_v3_config_from_v2_info(self, mock_v2_checkpoint):
         """AC3: Creates v3 config from v2 info."""
         from modeling_studio.models.initialization_v3 import V2CheckpointLoader
-        from scripts.initialize_v3_from_v2 import create_v3_config
+        from scripts.v3_scripts.initialize_v3_from_v2 import create_v3_config
 
         loader = V2CheckpointLoader(str(mock_v2_checkpoint))
         config = create_v3_config(loader)
@@ -601,7 +601,7 @@ class TestIssue423AcceptanceCriteria:
 
     def test_ac4_runs_complete_initialization_pipeline(self, mock_v2_checkpoint, output_dir):
         """AC4: Runs complete initialization pipeline."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -628,7 +628,7 @@ class TestIssue423AcceptanceCriteria:
         self, mock_v2_checkpoint, output_dir
     ):
         """AC5: Optional verification with configurable tolerance."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -659,7 +659,7 @@ class TestIssue423AcceptanceCriteria:
 
     def test_ac6_saves_model_weights_config_and_metadata(self, mock_v2_checkpoint, output_dir):
         """AC6: Saves model weights, config, and metadata."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -695,7 +695,7 @@ class TestIssue423AcceptanceCriteria:
 
     def test_ac7_clear_progress_output_and_summary(self, mock_v2_checkpoint, output_dir, capsys):
         """AC7: Clear progress output and summary."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         with patch(
             "sys.argv",
@@ -720,7 +720,7 @@ class TestIssue423AcceptanceCriteria:
 
     def test_ac8_proper_error_handling_and_exit_codes(self, output_dir):
         """AC8: Proper error handling and exit codes."""
-        from scripts.initialize_v3_from_v2 import main
+        from scripts.v3_scripts.initialize_v3_from_v2 import main
 
         # Missing checkpoint should return 1
         with patch(

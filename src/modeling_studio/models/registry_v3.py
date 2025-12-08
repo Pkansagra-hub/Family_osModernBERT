@@ -643,7 +643,7 @@ class TaskRegistry:
         label count, and loss weight information.
         """
         print("\n" + "=" * 80)
-        print("📋 v3 Task Registry")
+        print("[REGISTRY] v3 Task Registry")
         print("=" * 80)
 
         # Group by hub token

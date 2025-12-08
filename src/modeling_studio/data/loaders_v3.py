@@ -236,13 +236,20 @@ class RelationTriple:
     object: str
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> RelationTriple:
-        """Create RelationTriple from dictionary."""
+    def from_dict(cls, data: dict[str, str]) -> "RelationTriple | None":
+        """Create RelationTriple from dictionary. Returns None if malformed."""
+        # Handle malformed entries gracefully
+        subject = data.get("subject")
+        predicate = data.get("predicate")
+        obj = data.get("object")
+
+        if not all([subject, predicate, obj]):
+            return None
 
         return cls(
-            subject=str(data["subject"]),
-            predicate=str(data["predicate"]),
-            object=str(data["object"]),
+            subject=str(subject),
+            predicate=str(predicate),
+            object=str(obj),
         )
 
 
@@ -268,6 +275,13 @@ class UnifiedSample:
 
         tasks = data.get("tasks", {})
 
+        # Filter out None values from malformed relation triples
+        relations = [
+            r
+            for r in (RelationTriple.from_dict(triple) for triple in tasks.get("relations", []))
+            if r is not None
+        ]
+
         return cls(
             id=str(data["id"]),
             text=str(data["text"]),
@@ -278,7 +292,7 @@ class UnifiedSample:
             ingress=tasks.get("ingress"),
             ner_family=[SpanAnnotation.from_dict(span) for span in tasks.get("ner_family", [])],
             temporal=[SpanAnnotation.from_dict(span) for span in tasks.get("temporal", [])],
-            relations=[RelationTriple.from_dict(triple) for triple in tasks.get("relations", [])],
+            relations=relations,
             hub_routing=HubRouting.from_dict(data.get("hub_routing", {})),
         )
 

@@ -65,6 +65,12 @@ Date: December 2025
 
 from __future__ import annotations
 
+# Suppress noisy warnings before any other imports
+import warnings
+
+warnings.filterwarnings("ignore", message="The pynvml package is deprecated")
+warnings.filterwarnings("ignore", category=FutureWarning, module="torch.cuda")
+
 import argparse
 import json
 import logging
@@ -231,10 +237,15 @@ except ImportError:
 # Logging Configuration
 # =============================================================================
 
+# Ensure unbuffered output for Colab/Jupyter compatibility
+import os
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
+    force=True,  # Override any existing config (needed for Colab)
 )
 logger = logging.getLogger(__name__)
 
@@ -353,6 +364,7 @@ class Phase1Config:
     familyos_shard_pattern: str = "shard_*.jsonl"
     healing_data_path: str = "data/healing/healing_enhanced.jsonl"
     replay_ratio: float = 0.15  # 15% healing replay
+    max_samples: int | None = None  # Limit samples for debug (None = all)
     num_workers: int = 4
     pin_memory: bool = True
 
@@ -1539,7 +1551,7 @@ def train_phase_1(
         task_labels = batch["task_labels"]
 
         # Forward pass
-        with torch.cuda.amp.autocast(dtype=torch.bfloat16 if config.bf16 else torch.float32):
+        with torch.amp.autocast("cuda", dtype=torch.bfloat16 if config.bf16 else torch.float32):
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -1795,6 +1807,7 @@ Examples:
 
     # Training overrides
     parser.add_argument("--max-steps", type=int, help="Maximum training steps")
+    parser.add_argument("--max-samples", type=int, help="Maximum samples to load (debug)")
     parser.add_argument("--learning-rate", type=float, help="Base learning rate")
     parser.add_argument("--replay-ratio", type=float, help="Healing replay ratio")
     parser.add_argument("--batch-size", type=int, help="Training batch size")
@@ -1859,6 +1872,8 @@ def load_config_from_args(args: argparse.Namespace) -> Phase1Config:
         config.model_path = args.model_path
     if args.max_steps:
         config.max_steps = args.max_steps
+    if args.max_samples:
+        config.max_samples = args.max_samples
     if args.learning_rate:
         config.base_lr = args.learning_rate
     if args.replay_ratio is not None:
@@ -1875,7 +1890,6 @@ def load_config_from_args(args: argparse.Namespace) -> Phase1Config:
         config.device = args.device
     if args.no_bf16:
         config.bf16 = False
-
     # Handle test modes
     if args.smoke_test:
         config.max_steps = 10
@@ -1895,7 +1909,8 @@ def load_config_from_args(args: argparse.Namespace) -> Phase1Config:
         config.log_grad_norms = True
         config.grad_log_every = 1
         config.warmup_steps = 2  # Scale warmup for debug mode
-        logger.info("Debug mode: 5 steps with verbose logging")
+        config.max_samples = 500  # Limit samples for speed
+        logger.info("Debug mode: 5 steps, 500 samples, verbose logging")
 
     return config
 

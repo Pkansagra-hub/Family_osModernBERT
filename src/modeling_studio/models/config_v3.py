@@ -176,6 +176,18 @@ class ModernBERTv3Config:
             "attention_probs_dropout_prob": self.attention_probs_dropout_prob,
         }
 
+    @classmethod
+    def from_dict(cls, config_dict: dict) -> "ModernBERTv3Config":
+        """Create config from dictionary.
+
+        Args:
+            config_dict: Dictionary containing config parameters
+
+        Returns:
+            ModernBERTv3Config instance
+        """
+        return cls(**config_dict)
+
 
 # Layer Source Mapping for Function Preserving Growth
 

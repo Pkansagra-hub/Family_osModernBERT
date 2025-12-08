@@ -227,9 +227,9 @@ class ModernBERTEncoderV3(nn.Module):
             if 1 <= idx <= self.num_layers:
                 self.layers[idx - 1].freeze_base_weights()  # type: ignore # Convert to 0-indexed
             else:
-                print(f"⚠️ Invalid layer index: {idx} (valid: 1-{self.num_layers})")
+                print(f"[WARN] Invalid layer index: {idx} (valid: 1-{self.num_layers})")
 
-        print(f"❄️ Froze {len(layer_indices)} layers: {layer_indices}")
+        print(f"[FREEZE] Froze {len(layer_indices)} layers: {layer_indices}")
 
     def unfreeze_layers(self, layer_indices: list[int]) -> None:
         """
@@ -246,9 +246,9 @@ class ModernBERTEncoderV3(nn.Module):
             if 1 <= idx <= self.num_layers:
                 self.layers[idx - 1].unfreeze_base_weights()  # type: ignore # Convert to 0-indexed
             else:
-                print(f"⚠️ Invalid layer index: {idx} (valid: 1-{self.num_layers})")
+                print(f"[WARN] Invalid layer index: {idx} (valid: 1-{self.num_layers})")
 
-        print(f"🔥 Unfroze {len(layer_indices)} layers: {layer_indices}")
+        print(f"[UNFREEZE] Unfroze {len(layer_indices)} layers: {layer_indices}")
 
     def freeze_by_band(self, bands: list[str]) -> None:
         """
@@ -268,11 +268,11 @@ class ModernBERTEncoderV3(nn.Module):
                 # Convert 0-indexed to 1-indexed
                 layer_indices.extend([i + 1 for i in self.layer_bands[band_name]])
             else:
-                print(f"⚠️ Unknown band: {band_name}")
+                print(f"[WARN] Unknown band: {band_name}")
 
         if layer_indices:
             self.freeze_layers(sorted(layer_indices))
-            print(f"❄️ Froze bands: {', '.join(bands)} ({len(layer_indices)} layers)")
+            print(f"[FREEZE] Froze bands: {', '.join(bands)} ({len(layer_indices)} layers)")
 
     def unfreeze_by_band(self, bands: list[str]) -> None:
         """
@@ -292,11 +292,11 @@ class ModernBERTEncoderV3(nn.Module):
                 # Convert 0-indexed to 1-indexed
                 layer_indices.extend([i + 1 for i in self.layer_bands[band_name]])
             else:
-                print(f"⚠️ Unknown band: {band_name}")
+                print(f"[WARN] Unknown band: {band_name}")
 
         if layer_indices:
             self.unfreeze_layers(sorted(layer_indices))
-            print(f"🔥 Unfroze bands: {', '.join(bands)} ({len(layer_indices)} layers)")
+            print(f"[UNFREEZE] Unfroze bands: {', '.join(bands)} ({len(layer_indices)} layers)")
 
     def get_layers_by_band(self, band: str) -> list[nn.Module]:
         """

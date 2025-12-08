@@ -156,7 +156,7 @@ class ModernBERTv3Ultra(nn.Module):
         # Initialize weights
         self.apply(self._init_weights)
 
-        print("\n✓ ModernBERTv3Ultra initialized:")
+        print("\n[OK] ModernBERTv3Ultra initialized:")
         print(f"  - Layers: {config.num_layers}")
         print(f"  - Hidden: {config.hidden_size}")
         print(f"  - Heads: {config.num_attention_heads}")
@@ -327,9 +327,9 @@ class ModernBERTv3Ultra(nn.Module):
             # Unfreeze Semantic + Family bands (L19-28)
             self.encoder.unfreeze_layers(list(range(19, 29)))
 
-            print(f"✓ Model configured for {phase}:")
-            print("  ❄️ Frozen: Embeddings, L1-18")
-            print("  🔥 Trainable: L19-28")
+            print(f"[OK] Model configured for {phase}:")
+            print("  [FROZEN] Frozen: Embeddings, L1-18")
+            print("  [TRAIN] Trainable: L19-28")
 
     def merge_lora_weights(self) -> None:
         """
@@ -344,7 +344,7 @@ class ModernBERTv3Ultra(nn.Module):
         for layer in self.encoder.layers:
             if hasattr(layer, "merge_lora_weights") and callable(layer.merge_lora_weights):
                 layer.merge_lora_weights()
-        print("✓ LoRA weights merged into base model")
+        print("[OK] LoRA weights merged into base model")
 
     def get_input_embeddings(self) -> nn.Embedding:
         """
@@ -413,7 +413,7 @@ class ModernBERTv3Ultra(nn.Module):
               ...
         """
         print("\n" + "=" * 70)
-        print("📊 ModernBERT v3.3 Ultra - Model Summary")
+        print("ModernBERT v3.3 Ultra - Model Summary")
         print("=" * 70)
         print(f"  Total parameters:     {self.num_parameters:,}")
         print(f"  Trainable parameters: {self.num_trainable_parameters:,}")
@@ -423,6 +423,128 @@ class ModernBERTv3Ultra(nn.Module):
         print(f"  Hub tokens: {list(self.hub_positions.keys())}")
         print("=" * 70)
         self.encoder.print_layer_summary()
+
+    def save_pretrained(self, save_directory: str) -> None:
+        """
+        Save model weights and config to a directory.
+
+        Args:
+            save_directory: Directory to save the model to.
+
+        Example:
+            >>> model.save_pretrained("./my_model")
+            # Creates:
+            #   ./my_model/pytorch_model.bin
+            #   ./my_model/model_config.json
+        """
+        import json
+        from pathlib import Path
+
+        save_path = Path(save_directory)
+        save_path.mkdir(parents=True, exist_ok=True)
+
+        # Save model weights
+        torch.save(self.state_dict(), save_path / "pytorch_model.bin")
+
+        # Save config
+        config_dict = self.config.to_dict()
+        with open(save_path / "model_config.json", "w") as f:
+            json.dump(config_dict, f, indent=2)
+
+        print(f"[OK] Model saved to {save_path}")
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        pretrained_model_name_or_path: str,
+        device: str | None = None,
+        strict: bool = False,
+    ) -> "ModernBERTv3Ultra":
+        """
+        Load a pretrained model from a directory.
+
+        Args:
+            pretrained_model_name_or_path: Path to the directory containing
+                pytorch_model.bin and model_config.json
+            device: Device to load the model to (default: auto-detect)
+            strict: Whether to strictly enforce that the keys in state_dict
+                match the keys returned by this module's state_dict()
+
+        Returns:
+            Loaded ModernBERTv3Ultra model
+
+        Example:
+            >>> model = ModernBERTv3Ultra.from_pretrained("./my_model")
+        """
+        import json
+        from pathlib import Path
+
+        load_path = Path(pretrained_model_name_or_path)
+
+        # Determine device
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # Load config
+        config_path = load_path / "model_config.json"
+        if config_path.exists():
+            with open(config_path) as f:
+                config_dict = json.load(f)
+            config = ModernBERTv3Config.from_dict(config_dict)
+        else:
+            # Try to load from config.json (HuggingFace format)
+            hf_config_path = load_path / "config.json"
+            if hf_config_path.exists():
+                with open(hf_config_path) as f:
+                    config_dict = json.load(f)
+                config = ModernBERTv3Config.from_dict(config_dict)
+            else:
+                print(f"[WARN] No config found at {load_path}, using defaults")
+                config = ModernBERTv3Config()
+
+        # Create model
+        model = cls(config)
+
+        # Load weights
+        weights_path = load_path / "pytorch_model.bin"
+        if weights_path.exists():
+            state_dict = torch.load(weights_path, map_location=device)
+
+            # Handle wrapped models (e.g., Phase1TrainingModel wraps ModernBERTv3Ultra)
+            # If keys start with "model.", strip that prefix
+            if any(k.startswith("model.") for k in state_dict.keys()):
+                # This is a wrapped model, extract the inner model weights
+                inner_state_dict = {}
+                for k, v in state_dict.items():
+                    if k.startswith("model."):
+                        inner_state_dict[k[6:]] = v  # Strip "model." prefix
+                state_dict = inner_state_dict
+                print("[INFO] Loaded from wrapped model checkpoint (stripped 'model.' prefix)")
+
+            # Check if embedding size in weights differs from config
+            emb_key = "embeddings.word_embeddings.weight"
+            if emb_key in state_dict:
+                actual_vocab_size = state_dict[emb_key].shape[0]
+                if actual_vocab_size != config.vocab_size:
+                    print(
+                        f"[INFO] Adjusting vocab_size from {config.vocab_size} to {actual_vocab_size} (from weights)"
+                    )
+                    config.vocab_size = actual_vocab_size
+                    # Recreate model with correct vocab size
+                    model = cls(config)
+
+            # Load with optional strictness
+            missing, unexpected = model.load_state_dict(state_dict, strict=strict)
+            if missing:
+                print(f"[WARN] Missing keys: {len(missing)}")
+            if unexpected:
+                print(f"[WARN] Unexpected keys: {len(unexpected)}")
+            print(f"[OK] Model loaded from {weights_path}")
+        else:
+            print(f"[WARN] No weights found at {weights_path}")
+
+        model.to(device)
+        return model
 
 
 def create_modernbert_v3_ultra(
@@ -451,7 +573,7 @@ def create_modernbert_v3_ultra(
 
     # Initialize from v2 if provided
     if from_v2_checkpoint:
-        print(f"⚠️  v2 checkpoint loading not yet implemented: {from_v2_checkpoint}")
+        print(f"[WARN] v2 checkpoint loading not yet implemented: {from_v2_checkpoint}")
         # from .initialization_v3 import initialize_from_v2
         # initialize_from_v2(model, from_v2_checkpoint)
 
@@ -507,7 +629,7 @@ class ModernBERTv3ForMultiTask(ModernBERTv3Ultra):
             for task_name, head in task_heads.items():
                 self.register_task_head(task_name, head)
 
-        print("\n✓ ModernBERTv3ForMultiTask initialized:")
+        print("\n[OK] ModernBERTv3ForMultiTask initialized:")
         print(f"  - Base layers: {config.num_layers}")
         print("  - Hub router: enabled")
         print(f"  - Task heads: {len(self.task_heads)} registered")
@@ -537,7 +659,10 @@ class ModernBERTv3ForMultiTask(ModernBERTv3Ultra):
 
         routing_info = create_hub_routing_info(task_name)
         hub_display = routing_info["hub_token"] or "N/A (token-level)"
-        print(f"  ✓ Registered head: {task_name} → {hub_display} " f"({routing_info['pool_type']})")
+        print(
+            f"  [OK] Registered head: {task_name} -> {hub_display} "
+            f"({routing_info['pool_type']})"
+        )
 
     def forward_for_task(
         self,
@@ -785,7 +910,7 @@ class ModernBERTv3ForMultiTask(ModernBERTv3Ultra):
         if task not in self.task_heads:
             raise ValueError(f"Unknown task: {task}")
         self.task_loss_weights[task] = weight
-        print(f"✓ Loss weight for '{task}' set to {weight}")
+        print(f"[OK] Loss weight for '{task}' set to {weight}")
 
     def print_routing_table(self) -> None:
         """
@@ -803,7 +928,7 @@ class ModernBERTv3ForMultiTask(ModernBERTv3Ultra):
         """
         from .routing_v3 import create_hub_routing_info
 
-        print("\n📊 Hub Routing Table:")
+        print("\n[ROUTING] Hub Routing Table:")
         print("-" * 60)
         print(f"{'Task':<20} {'Pool Type':<12} {'Hub Token':<12}")
         print("-" * 60)
