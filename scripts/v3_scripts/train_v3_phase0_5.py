@@ -1387,7 +1387,14 @@ class Phase05TrainingModel(nn.Module):
 
                 if labels is not None:
                     # Simplified: use binary classification as placeholder
-                    loss = self.ce_loss(logits.unsqueeze(0), labels[i : i + 1].long() % 2)
+                    # Handle multi-dimensional labels (e.g., QA with start/end)
+                    if labels.dim() > 1:
+                        # Use first element of label sequence
+                        label_val = labels[i, 0] if labels.shape[1] > 0 else labels[i].flatten()[0]
+                    else:
+                        label_val = labels[i]
+                    target = (label_val.long() % 2).unsqueeze(0)
+                    loss = self.ce_loss(logits.unsqueeze(0), target)
                     weighted_loss = loss.mean() * self.task_weights.get("qa", 1.0)
                     total_loss = total_loss + weighted_loss
                     if return_task_losses:
