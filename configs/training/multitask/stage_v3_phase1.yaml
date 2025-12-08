@@ -1,0 +1,263 @@
+# configs/training/multitask/stage_v3_phase1.yaml
+#
+# Phase 1 Training Configuration for ModernBERT v3
+# "Multi-Task FamilyOS" - Train on all 8 FamilyOS capabilities with hub routing
+#
+# Training Focus:
+#   - Train L19-28 on FamilyOS multi-task data
+#   - Keep L1-18 frozen (preserve foundation)
+#   - Hub token routing for task specialization
+#   - 15% replay from healing data to prevent forgetting
+#
+# Prerequisites:
+#   - Phase 0.5 completed (outputs/v3_phase0_5/best_model)
+#   - FamilyOS data healed (data/familyos/unified/output_healed_merged)
+
+model:
+  name: "modernbert_v3_ultra"
+  pretrained_path: "outputs/v3_phase0_5/best_model"
+  config:
+    num_layers: 28
+    hidden_size: 768
+    num_attention_heads: 12
+    num_hub_tokens: 4
+    vocab_size: 50372
+
+training:
+  phase: "phase_1"
+  phase_name: "Multi-Task FamilyOS"
+
+  max_steps: 10000
+  warmup_steps: 1000
+  warmup_ratio: 0.1
+
+  per_device_train_batch_size: 32
+  per_device_eval_batch_size: 64
+  gradient_accumulation_steps: 2
+  effective_batch_size: 64
+
+  eval_steps: 500
+  eval_strategy: "steps"
+  save_steps: 1000
+  save_total_limit: 3
+
+  logging_steps: 100
+  logging_first_step: true
+
+  fp16: false
+  bf16: true
+
+  seed: 42
+  data_seed: 42
+
+# Layer Freezing - Same as Phase 0.5
+layer_freezing:
+  phase: "phase_1"
+
+  frozen_bands:
+    - foundation  # L1-6: frozen
+    - core        # L7-18: frozen
+
+  trainable_bands:
+    - semantic    # L19-22: trainable
+    - family      # L23-28: trainable + LoRA
+
+  freeze_embeddings: true
+  freeze_hub_tokens: false  # Hub tokens still learning task routing
+
+  expected_frozen_params: "~100M"
+  expected_trainable_params: "~80M"
+
+# Zipper Learning Rate - Lower than Phase 0.5
+learning_rate:
+  strategy: "zipper"
+
+  # Lower base LR for Phase 1 (2e-5 vs 3e-5)
+  base_lr: 2e-5
+
+  # Frozen layers
+  layers_1_18: 0.0
+
+  # Semantic band - gentle training
+  layers_19_22: 8e-6
+
+  # Family band - graduated decay (highest at interface)
+  layer_23: 4e-5  # Interface layer - highest
+  layers_24_28: 2e-5
+
+  family_graduated: true
+  family_decay: 0.85
+
+  # Embeddings frozen
+  embeddings_lr: 0.0
+
+  # Hub tokens - continue learning
+  hub_tokens_lr: 8e-6
+
+  # Task heads - match family band
+  task_heads_lr: 2e-5
+
+scheduler:
+  type: "cosine"
+  warmup_steps: 1000
+  min_lr_ratio: 0.01
+
+gradient:
+  max_grad_norm: 1.0
+
+  per_layer_clip: true
+  interface_clip: 0.5
+  semantic_clip: 1.0
+  family_clip: 1.0
+
+  log_grad_norms: true
+  log_every_n_steps: 200
+  explosion_threshold: 10.0
+
+  nan_check: true
+  zero_nan_grads: true
+
+hub_tokens:
+  gradient_masking: true
+  freeze_original_vocab: true
+  train_hub_tokens:
+    - "[EMO]"
+    - "[MEM]"
+    - "[REL]"
+    - "[TASK]"
+  hub_token_grad_scale: 1.0
+
+# FamilyOS Data Configuration
+data:
+  # FamilyOS unified data (healed)
+  familyos_config: "configs/data/multitask/familyos_unified.yaml"
+  data_dir: "data/familyos/unified/output_healed_merged"
+
+  # Healing replay to prevent forgetting
+  replay:
+    enabled: true
+    healing_data: "data/healing/healing_enhanced.jsonl"
+    ratio: 0.15  # 15% of batches are replay
+    task_balanced: true
+    dynamic_ratio: true
+    loss_threshold: 0.5
+    max_ratio: 0.25  # Can increase up to 25% if forgetting detected
+
+  # DataLoader settings
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+
+optimizer:
+  type: "adamw"
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  eps: 1e-8
+
+# Hub-Weighted Multi-Task Loss
+loss:
+  # Hub weighting for active vs inactive hubs
+  hub_active_weight: 1.0
+  hub_inactive_weight: 0.3
+
+  # Safety always trained with higher weight
+  safety_multiplier: 2.0
+  always_train_safety: true
+
+  # Label smoothing for robustness
+  label_smoothing: 0.1
+
+  use_task_weights: true
+  normalize_losses: true
+
+  # Per-task weights
+  task_weights:
+    emotions: 1.0
+    sentiment: 1.0
+    safety_familyos: 2.0  # Critical task
+    intent: 0.8
+    ingress: 0.8
+    ner_family: 1.0
+    temporal: 1.0
+    relations: 1.2
+
+  use_uncertainty_weighting: false
+
+# LoRA for Family Band
+lora:
+  enabled: true
+  rank: 16
+  alpha: 16.0  # alpha = rank for stable training
+  dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+  target_layers: [22, 23, 24, 25, 26, 27]  # L23-28 (0-indexed: 22-27)
+
+checkpointing:
+  output_dir: "outputs/v3_phase1"
+  save_strategy: "steps"
+  save_steps: 1000
+  save_total_limit: 3
+  load_best_model_at_end: true
+
+  save_optimizer_state: true
+  save_scheduler_state: true
+  save_rng_state: true
+
+logging:
+  use_wandb: true
+  wandb_project: "modernbert-v3"
+  wandb_run_name: "phase1_multitask_familyos"
+  wandb_tags:
+    - "phase_1"
+    - "multitask"
+    - "familyos"
+    - "v3"
+
+  logging_steps: 100
+  log_level: "info"
+
+  track_metrics:
+    - train_loss
+    - eval_loss
+    - learning_rate
+    - grad_norm
+    - hub_emo_loss
+    - hub_mem_loss
+    - hub_rel_loss
+    - hub_task_loss
+    - replay_ratio
+    - forgetting_score
+
+early_stopping:
+  enabled: true
+  patience: 10
+  threshold: 0.001
+  metric: "eval_loss"
+  greater_is_better: false
+
+# Forgetting prevention checkpoints
+verification:
+  # Check forgetting at these steps
+  checkpoints: [2000, 5000, 7500, 10000]
+
+  # Forgetting thresholds (max allowed drop)
+  forgetting_thresholds:
+    sst2_accuracy: 0.02
+    conll_f1: 0.02
+    mnli_accuracy: 0.02
+
+  # If forgetting detected, increase replay ratio
+  auto_adjust_replay: true
+  replay_increase_step: 0.05
+
+  metrics:
+    - name: "per_hub_loss"
+      description: "Loss per hub token"
+    - name: "task_accuracy"
+      description: "Per-task accuracy metrics"
+    - name: "forgetting_score"
+      description: "Comparison to Phase 0.5 baseline"

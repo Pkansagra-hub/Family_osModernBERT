@@ -1,0 +1,246 @@
+# configs/training/multitask/stage_v3_phase2.yaml
+#
+# Phase 2 Training Configuration for ModernBERT v3
+# "Fine-Tuning" - Optional refinement phase with very low learning rate
+#
+# Training Focus:
+#   - Fine-tune only Family band (L23-28)
+#   - Very low LR for stability
+#   - Higher replay ratio (20%) for forgetting prevention
+#   - Focus on hard samples and edge cases
+#
+# Prerequisites:
+#   - Phase 1 completed (outputs/v3_phase1/final_model)
+#   - Phase 1.5 forgetting gate passed
+
+model:
+  name: "modernbert_v3_ultra"
+  pretrained_path: "outputs/v3_phase1/final_model"
+  config:
+    num_layers: 28
+    hidden_size: 768
+    num_attention_heads: 12
+    num_hub_tokens: 4
+    vocab_size: 50372
+
+training:
+  phase: "phase_2"
+  phase_name: "Fine-Tuning"
+
+  max_steps: 5000
+  warmup_steps: 500
+  warmup_ratio: 0.1
+
+  per_device_train_batch_size: 32
+  per_device_eval_batch_size: 64
+  gradient_accumulation_steps: 1
+  effective_batch_size: 32
+
+  eval_steps: 250
+  eval_strategy: "steps"
+  save_steps: 500
+  save_total_limit: 2
+
+  logging_steps: 50
+  logging_first_step: true
+
+  fp16: false
+  bf16: true
+
+  seed: 42
+  data_seed: 42
+
+# Layer Freezing - More aggressive than Phase 1
+layer_freezing:
+  phase: "phase_2"
+
+  frozen_bands:
+    - foundation  # L1-6: frozen
+    - core        # L7-18: frozen
+    - semantic    # L19-22: ALSO frozen in Phase 2
+
+  trainable_bands:
+    - family      # L23-28: only family band trainable
+
+  freeze_embeddings: true
+  freeze_hub_tokens: true  # Hub tokens frozen in Phase 2
+
+  expected_frozen_params: "~140M"
+  expected_trainable_params: "~40M"
+
+# Zipper Learning Rate - Very low for fine-tuning
+learning_rate:
+  strategy: "zipper"
+
+  # Very low base LR (5e-6)
+  base_lr: 5e-6
+
+  # All frozen up to L22
+  layers_1_22: 0.0
+
+  # Family band - graduated decay
+  layer_23: 1e-5  # Interface layer
+  layers_24_28: 5e-6
+
+  family_graduated: true
+  family_decay: 0.9
+
+  # All embeddings frozen
+  embeddings_lr: 0.0
+
+  # Hub tokens frozen
+  hub_tokens_lr: 0.0
+
+  # Task heads - match family band
+  task_heads_lr: 5e-6
+
+scheduler:
+  type: "cosine"
+  warmup_steps: 500
+  min_lr_ratio: 0.1  # Higher min ratio for stability
+
+gradient:
+  max_grad_norm: 0.5  # Tighter clipping for stability
+
+  per_layer_clip: true
+  interface_clip: 0.3
+  semantic_clip: 0.5
+  family_clip: 0.5
+
+  log_grad_norms: true
+  log_every_n_steps: 100
+  explosion_threshold: 5.0
+
+  nan_check: true
+  zero_nan_grads: true
+
+hub_tokens:
+  gradient_masking: true
+  freeze_original_vocab: true
+  train_hub_tokens: []  # All hub tokens frozen in Phase 2
+  hub_token_grad_scale: 0.0
+
+# FamilyOS Data - Focus on hard samples
+data:
+  familyos_config: "configs/data/multitask/familyos_unified.yaml"
+  data_dir: "data/familyos/unified/output_healed_merged"
+
+  # Sampling strategy - focus on errors
+  sample_strategy: "hard_mining"
+  focus_on_errors: true
+  error_sample_ratio: 0.3  # 30% of batch from previously misclassified
+
+  # Higher replay for stability
+  replay:
+    enabled: true
+    healing_data: "data/healing/healing_enhanced.jsonl"
+    ratio: 0.20  # 20% replay (higher than Phase 1)
+    task_balanced: true
+    dynamic_ratio: false  # Fixed ratio in Phase 2
+
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+
+optimizer:
+  type: "adamw"
+  weight_decay: 0.005  # Lower weight decay for fine-tuning
+  betas: [0.9, 0.999]
+  eps: 1e-8
+
+# Loss Configuration
+loss:
+  hub_active_weight: 1.0
+  hub_inactive_weight: 0.5  # Higher inactive weight for stability
+
+  safety_multiplier: 2.0
+  always_train_safety: true
+
+  label_smoothing: 0.05  # Less smoothing in fine-tuning
+
+  use_task_weights: true
+  normalize_losses: true
+
+  task_weights:
+    emotions: 1.0
+    sentiment: 1.0
+    safety_familyos: 2.0
+    intent: 1.0
+    ingress: 1.0
+    ner_family: 1.0
+    temporal: 1.0
+    relations: 1.0
+
+  use_uncertainty_weighting: false
+
+# LoRA - Merge before Phase 2 or continue with merged weights
+lora:
+  enabled: false  # LoRA weights merged before Phase 2
+  # If continuing with LoRA:
+  # rank: 8  # Reduced rank
+  # alpha: 8.0
+  # dropout: 0.02
+
+checkpointing:
+  output_dir: "outputs/v3_phase2"
+  save_strategy: "steps"
+  save_steps: 500
+  save_total_limit: 2
+  load_best_model_at_end: true
+
+  save_optimizer_state: true
+  save_scheduler_state: true
+  save_rng_state: true
+
+logging:
+  use_wandb: true
+  wandb_project: "modernbert-v3"
+  wandb_run_name: "phase2_finetuning"
+  wandb_tags:
+    - "phase_2"
+    - "finetuning"
+    - "v3"
+
+  logging_steps: 50
+  log_level: "info"
+
+  track_metrics:
+    - train_loss
+    - eval_loss
+    - learning_rate
+    - grad_norm
+    - per_task_accuracy
+    - forgetting_score
+
+early_stopping:
+  enabled: true
+  patience: 5
+  threshold: 0.0005
+  metric: "eval_loss"
+  greater_is_better: false
+
+# Final validation before production
+verification:
+  # Check at end of training
+  checkpoints: [5000]
+
+  # Final forgetting check
+  forgetting_thresholds:
+    sst2_accuracy: 0.02
+    conll_f1: 0.02
+    mnli_accuracy: 0.02
+
+  # Production readiness metrics
+  production_thresholds:
+    min_emotions_f1: 0.65
+    min_sentiment_accuracy: 0.90
+    min_safety_recall: 0.95
+    min_intent_accuracy: 0.85
+
+  metrics:
+    - name: "production_readiness"
+      description: "Final model quality check"
+    - name: "latency_check"
+      description: "Inference latency validation"
+    - name: "memory_footprint"
+      description: "Model size verification"

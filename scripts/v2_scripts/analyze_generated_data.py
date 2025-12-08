@@ -13,7 +13,6 @@ def analyze_generated_data(
     if output_dirs is None:
         output_dirs = [
             "D:/Modeling_studio/data/familyos/unified/output",
-            "D:/Modeling_studio/data/familyos/unified/output_synthetic",
         ]
 
     # Load all samples from all directories

@@ -349,7 +349,7 @@ class Phase1Config:
     # =========================================================================
     # Data Configuration
     # =========================================================================
-    familyos_data_dir: str = "data/familyos/unified/output"
+    familyos_data_dir: str = "data/familyos/unified/output_healed_merged"
     familyos_shard_pattern: str = "shard_*.jsonl"
     healing_data_path: str = "data/healing/healing_enhanced.jsonl"
     replay_ratio: float = 0.15  # 15% healing replay

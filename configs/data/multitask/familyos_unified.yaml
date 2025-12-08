@@ -21,9 +21,8 @@ dataset:
 paths:
   # Directories containing shard_*.jsonl files
   data_dirs:
-    - "data/familyos/unified/output"
-    - "data/familyos/unified/output_synthetic"
-  data_dir: "data/familyos/unified/output"
+    - "data/familyos/unified/output_healed_merged"
+  data_dir: "data/familyos/unified/output_healed_merged"
   shard_pattern: "shard_*.jsonl"
 
   # Cache and indexing
