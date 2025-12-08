@@ -1346,7 +1346,9 @@ class Phase05TrainingModel(nn.Module):
                 all_logits.append(logits)
 
                 if labels is not None:
-                    loss = self.ce_loss(logits.unsqueeze(0), labels[i : i + 1].long())
+                    # Handle multi-dimensional labels (from mixed-task batches)
+                    label_val = labels[i, 0] if labels.dim() > 1 else labels[i]
+                    loss = self.ce_loss(logits.unsqueeze(0), label_val.long().unsqueeze(0))
                     weighted_loss = loss.mean() * self.task_weights.get("sentiment", 1.0)
                     total_loss = total_loss + weighted_loss
                     if return_task_losses:
@@ -1359,7 +1361,9 @@ class Phase05TrainingModel(nn.Module):
                 all_logits.append(logits)
 
                 if labels is not None:
-                    loss = self.ce_loss(logits.unsqueeze(0), labels[i : i + 1].long())
+                    # Handle multi-dimensional labels (from mixed-task batches)
+                    label_val = labels[i, 0] if labels.dim() > 1 else labels[i]
+                    loss = self.ce_loss(logits.unsqueeze(0), label_val.long().unsqueeze(0))
                     weighted_loss = loss.mean() * self.task_weights.get("nli", 1.0)
                     total_loss = total_loss + weighted_loss
                     if return_task_losses:
@@ -1372,7 +1376,9 @@ class Phase05TrainingModel(nn.Module):
                 all_logits.append(logits.unsqueeze(0))  # Keep shape consistent
 
                 if labels is not None:
-                    target = labels[i : i + 1].float()
+                    # Handle multi-dimensional labels (from mixed-task batches)
+                    label_val = labels[i, 0] if labels.dim() > 1 else labels[i]
+                    target = label_val.float().unsqueeze(0)
                     loss = self.mse_loss(logits.unsqueeze(0), target)
                     weighted_loss = loss.mean() * self.task_weights.get("similarity", 1.0)
                     total_loss = total_loss + weighted_loss
