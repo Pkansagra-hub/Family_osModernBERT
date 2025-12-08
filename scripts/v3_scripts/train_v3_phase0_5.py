@@ -1121,6 +1121,10 @@ class HealingCollator(V3BaseCollator):
         """
         Collate batch with hub token insertion.
 
+        Handles mixed-task batches by using a uniform 2D label tensor format:
+        - labels[:, 0] contains scalar labels for classification/regression
+        - For NER, labels[:, :seq_len] contains token-level labels
+
         Args:
             batch: List of sample dictionaries with 'input_ids', 'task', 'label'
 
@@ -1128,7 +1132,7 @@ class HealingCollator(V3BaseCollator):
             Dictionary with:
                 - input_ids: [batch_size, max_length]
                 - attention_mask: [batch_size, max_length]
-                - labels: [batch_size] or [batch_size, seq_len] for NER
+                - labels: [batch_size, max_length] - uniform format for all tasks
                 - tasks: List of task names
         """
         batch_input_ids = []
@@ -1151,37 +1155,58 @@ class HealingCollator(V3BaseCollator):
             batch_labels.append(sample["label"])
             batch_tasks.append(sample.get("task", "sentiment"))
 
-        # Determine label type based on batch composition
-        # Mixed batches use first task's type
-        primary_task = batch_tasks[0] if batch_tasks else "sentiment"
+        # Check if batch has any NER samples (they need 2D labels)
+        has_ner = any(t == "ner" for t in batch_tasks)
+        max_label_len = self.config.max_length
 
-        if primary_task == "similarity":
-            # Regression task: float labels
-            labels_tensor = torch.tensor(
-                [float(lbl) if isinstance(lbl, (int, float)) else 0.0 for lbl in batch_labels],
-                dtype=torch.float,
-            )
-        elif primary_task == "ner":
-            # Token classification: pad label sequences
-            max_label_len = self.config.max_length
+        if has_ner:
+            # Use 2D labels to accommodate NER token-level labels
+            # Other tasks use only labels[:, 0]
             padded_labels = []
-            for lbl in batch_labels:
-                if isinstance(lbl, list):
-                    # Add -100 for hub tokens + CLS, then labels, then -100 for rest
+            for lbl, task in zip(batch_labels, batch_tasks):
+                if task == "ner" and isinstance(lbl, list):
+                    # NER: Add -100 for hub tokens + CLS, then labels, then -100 for rest
                     aligned = [-100] * V3_SPECIAL_PREFIX_LEN + lbl[
                         : max_label_len - V3_SPECIAL_PREFIX_LEN - 1
                     ]
                     aligned = aligned + [-100] * (max_label_len - len(aligned))
                     padded_labels.append(aligned)
+                elif task == "similarity":
+                    # Similarity regression: store float in first position, rest -100
+                    score = float(lbl) if isinstance(lbl, (int, float)) else 0.0
+                    # Scale to avoid confusion with label IDs (multiply by 100)
+                    # Model will divide by 100 when reading
+                    aligned = [int(score * 100)] + [-100] * (max_label_len - 1)
+                    padded_labels.append(aligned)
                 else:
-                    padded_labels.append([-100] * max_label_len)
+                    # Classification: store int label in first position, rest -100
+                    label_val = int(lbl) if isinstance(lbl, (int, float)) else 0
+                    aligned = [label_val] + [-100] * (max_label_len - 1)
+                    padded_labels.append(aligned)
             labels_tensor = torch.tensor(padded_labels, dtype=torch.long)
         else:
-            # Classification tasks: integer labels
-            labels_tensor = torch.tensor(
-                [int(lbl) if isinstance(lbl, (int, float)) else 0 for lbl in batch_labels],
-                dtype=torch.long,
-            )
+            # No NER in batch - can use simpler 1D or 2D format
+            # Check for similarity to use appropriate dtype
+            has_similarity = any(t == "similarity" for t in batch_tasks)
+
+            if has_similarity:
+                # Mixed batch with similarity: use 2D float tensor
+                padded_labels = []
+                for lbl, task in zip(batch_labels, batch_tasks):
+                    if task == "similarity":
+                        score = float(lbl) if isinstance(lbl, (int, float)) else 0.0
+                        padded_labels.append([score] + [-100.0] * (max_label_len - 1))
+                    else:
+                        label_val = float(int(lbl) if isinstance(lbl, (int, float)) else 0)
+                        padded_labels.append([label_val] + [-100.0] * (max_label_len - 1))
+                labels_tensor = torch.tensor(padded_labels, dtype=torch.float)
+            else:
+                # Classification only: use 2D long tensor for consistency
+                padded_labels = []
+                for lbl in batch_labels:
+                    label_val = int(lbl) if isinstance(lbl, (int, float)) else 0
+                    padded_labels.append([label_val] + [-100] * (max_label_len - 1))
+                labels_tensor = torch.tensor(padded_labels, dtype=torch.long)
 
         return {
             "input_ids": torch.tensor(batch_input_ids, dtype=torch.long),
@@ -1405,7 +1430,12 @@ class Phase05TrainingModel(nn.Module):
                 if labels is not None:
                     # Handle multi-dimensional labels (from mixed-task batches)
                     label_val = labels[i, 0] if labels.dim() > 1 else labels[i]
-                    target = label_val.float().unsqueeze(0)
+                    # Check if label was scaled (in long tensor with NER)
+                    if labels.dtype == torch.long:
+                        # Label was scaled by 100 to fit in long tensor
+                        target = (label_val.float() / 100.0).unsqueeze(0)
+                    else:
+                        target = label_val.float().unsqueeze(0)
                     loss = self.mse_loss(logits.unsqueeze(0), target)
                     weighted_loss = loss.mean() * self.task_weights.get("similarity", 1.0)
                     total_loss = total_loss + weighted_loss
