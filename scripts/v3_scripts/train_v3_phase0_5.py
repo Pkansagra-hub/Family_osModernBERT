@@ -1686,7 +1686,17 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
             map_location="cpu",
             weights_only=True,
         )
-        model.load_state_dict(state_dict)
+        # Use strict=False to ignore LoRA weights if checkpoint was saved with LoRA
+        missing, unexpected = model.load_state_dict(state_dict, strict=False)
+        if unexpected:
+            lora_keys = [k for k in unexpected if "lora" in k.lower()]
+            other_keys = [k for k in unexpected if "lora" not in k.lower()]
+            if lora_keys:
+                logger.info(f"Ignored {len(lora_keys)} LoRA weights from checkpoint (LoRA disabled for Phase 0.5)")
+            if other_keys:
+                logger.warning(f"Unexpected non-LoRA keys in checkpoint: {other_keys}")
+        if missing:
+            logger.warning(f"Missing keys when loading: {missing}")
         logger.info(f"Loaded {sum(p.numel() for p in model.parameters()):,} parameters")
         return model
 
@@ -1701,7 +1711,12 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
             from safetensors.torch import load_file
 
             state_dict = load_file(model_path / "model.safetensors")
-            model.load_state_dict(state_dict)
+            # Use strict=False to ignore LoRA weights if checkpoint was saved with LoRA
+            missing, unexpected = model.load_state_dict(state_dict, strict=False)
+            if unexpected:
+                lora_keys = [k for k in unexpected if "lora" in k.lower()]
+                if lora_keys:
+                    logger.info(f"Ignored {len(lora_keys)} LoRA weights from checkpoint (LoRA disabled)")
             logger.info(f"Loaded {sum(p.numel() for p in model.parameters()):,} parameters")
             return model
         except ImportError:
