@@ -180,13 +180,23 @@ class ModernBERTv3Config:
     def from_dict(cls, config_dict: dict) -> "ModernBERTv3Config":
         """Create config from dictionary.
 
+        Filters out any keys that are not valid ModernBERTv3Config fields.
+        This allows loading configs that may have extra training-specific fields.
+
         Args:
             config_dict: Dictionary containing config parameters
 
         Returns:
             ModernBERTv3Config instance
         """
-        return cls(**config_dict)
+        # Get valid field names from the dataclass
+        import dataclasses
+        valid_fields = {f.name for f in dataclasses.fields(cls)}
+
+        # Filter to only valid fields
+        filtered_dict = {k: v for k, v in config_dict.items() if k in valid_fields}
+
+        return cls(**filtered_dict)
 
 
 # Layer Source Mapping for Function Preserving Growth
