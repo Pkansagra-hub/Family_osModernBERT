@@ -340,6 +340,8 @@ class Phase05Config:
     data_config_path: str = "configs/data/multitask/healing_enhanced.yaml"
     tasks: list = field(default_factory=lambda: ["sentiment", "ner", "nli", "qa", "similarity"])
     max_samples: int | None = None  # Limit samples for debug (None = all)
+    max_train_samples: int | None = None  # Max training samples (None = use default 10000)
+    max_eval_samples: int | None = None  # Max eval samples (None = use default 1000)
     num_workers: int = 4
     pin_memory: bool = True
 
