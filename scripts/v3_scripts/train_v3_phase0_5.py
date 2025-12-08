@@ -407,6 +407,10 @@ class Phase05Config:
             task_heads_lr=float(self.lr_task_heads),
         )
 
+    def get_active_tasks(self) -> list[str]:
+        """Get list of tasks with non-zero weights (actually being trained)."""
+        return [task for task in self.tasks if self.task_weights.get(task, 1.0) > 0]
+
     def get_gradient_config(self) -> GradientClipConfig:
         """Create GradientClipConfig from this config."""
         return GradientClipConfig(
@@ -1853,6 +1857,9 @@ def setup_hub_gradient_masking(
     This prevents catastrophic forgetting of the original embeddings
     while allowing the new hub tokens to learn their representations.
 
+    IMPORTANT: This only works when embeddings are trainable (requires_grad=True).
+    In Phase 0.5 with frozen embeddings, hub tokens are trained via task heads only.
+
     Args:
         model: Model containing embeddings to mask
         config: Phase05Config with gradient masking settings
@@ -1866,6 +1873,20 @@ def setup_hub_gradient_masking(
 
     # Get base model
     base_model = model.model if hasattr(model, "model") else model
+
+    # Check if embeddings require gradient - cannot register hook on frozen params
+    embedding_weight = None
+    if hasattr(base_model, "embeddings"):
+        embeddings = base_model.embeddings
+        if hasattr(embeddings, "word_embeddings"):
+            embedding_weight = embeddings.word_embeddings.weight
+
+    if embedding_weight is not None and not embedding_weight.requires_grad:
+        logger.info(
+            "Embeddings are frozen (requires_grad=False); skipping hub gradient masking.\n"
+            "  Hub tokens will be trained indirectly through task heads."
+        )
+        return None
 
     try:
         hook = setup_hub_token_gradient_masking(
@@ -2146,13 +2167,18 @@ def create_dataloaders(
         train_samples = config.max_train_samples or 10000
         val_samples = config.max_eval_samples or 1000
 
+    # CRITICAL: Only load tasks with non-zero weights
+    # This prevents loading QA samples when QA weight is 0 (disabled)
+    active_tasks = config.get_active_tasks()
+    logger.info(f"Loading data for active tasks only: {active_tasks}")
+
     # Create datasets
     train_dataset = HealingDataset(
         tokenizer,
         split="train",
         max_samples=train_samples,
         max_length=config.max_length,
-        tasks=config.tasks,
+        tasks=active_tasks,  # Use active tasks, not all tasks
         seed=config.seed,
     )
 
@@ -2161,7 +2187,7 @@ def create_dataloaders(
         split="validation",
         max_samples=val_samples,
         max_length=config.max_length,
-        tasks=config.tasks,
+        tasks=active_tasks,  # Use active tasks, not all tasks
         seed=config.seed,
     )
 
