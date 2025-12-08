@@ -24,13 +24,13 @@ training:
   phase_name: "Enhanced Healing"
 
   max_steps: 4000  # Slightly more steps with lower LR
-  warmup_steps: 800  # CRITICAL: Longer warmup for LoRA stability
-  warmup_ratio: 0.27
+  warmup_steps: 2000  # INCREASED: Much longer warmup for cloned layer stability (was 800)
+  warmup_ratio: 0.5   # 50% of training is warmup
 
-  per_device_train_batch_size: 32
+  per_device_train_batch_size: 24  # REDUCED: Was 32, for gradient stability
   per_device_eval_batch_size: 64
-  gradient_accumulation_steps: 4  # CRITICAL: Effective batch 128 for stability
-  effective_batch_size: 128
+  gradient_accumulation_steps: 8  # INCREASED: Effective batch 192 for stability (was 4)
+  effective_batch_size: 192
 
   eval_steps: 250
   eval_strategy: "steps"
@@ -66,34 +66,34 @@ layer_freezing:
 learning_rate:
   strategy: "zipper_reversed"  # 2025 best practice: semantic > family
 
-  # CRITICAL: Much lower base LR to prevent explosions
-  base_lr: 6e-6  # Was 3e-5, reduced 5x
+  # CRITICAL: Ultra-low LR for stable healing of cloned layers
+  base_lr: 2e-6  # LOWERED: Was 6e-6, now 3x lower
   layers_1_18: 0.0
 
   # REVERSED: Semantic band gets HIGHEST LR (it's pretrained, can handle it)
-  layers_19_22: 8e-6  # Semantic - highest, most stable
-  layer_23: 6e-6      # Interface layer - slightly lower
-  layers_24_28: 4e-6  # Family layers - lowest (they're cloned, fragile)
+  layers_19_22: 3e-6  # LOWERED: Was 8e-6 (semantic - highest, most stable)
+  layer_23: 2e-6      # LOWERED: Was 6e-6 (interface layer)
+  layers_24_28: 1.5e-6  # LOWERED: Was 4e-6 (family layers - lowest, fragile)
 
   family_graduated: true
-  family_decay: 0.9  # Gentler decay: L24=4e-6, L25=3.6e-6, etc.
+  family_decay: 0.9  # Gentler decay: L24=1.5e-6, L25=1.35e-6, etc.
 
   embeddings_lr: 0.0
-  hub_tokens_lr: 5e-6  # Lower hub token LR
-  task_heads_lr: 1e-5  # Heads can be slightly higher
+  hub_tokens_lr: 2e-6  # LOWERED: Was 5e-6
+  task_heads_lr: 5e-6  # LOWERED: Was 1e-5
 
 scheduler:
   type: "cosine"
-  warmup_steps: 800  # Match training.warmup_steps
-  min_lr_ratio: 0.05  # Higher min LR ratio for stability
+  warmup_steps: 2000  # Match training.warmup_steps (updated)
+  min_lr_ratio: 0.1  # INCREASED: Higher min LR ratio for stability (was 0.05)
 
 gradient:
-  max_grad_norm: 1.0
+  max_grad_norm: 0.5  # LOWERED: More aggressive clipping (was 1.0)
 
   per_layer_clip: true
-  interface_clip: 0.5
-  semantic_clip: 1.0
-  family_clip: 1.0
+  interface_clip: 0.3  # LOWERED: Was 0.5
+  semantic_clip: 0.5   # LOWERED: Was 1.0
+  family_clip: 0.5     # LOWERED: Was 1.0
 
   log_grad_norms: true
   log_every_n_steps: 100
@@ -136,15 +136,16 @@ optimizer:
 loss:
   use_task_weights: true
   normalize_losses: true
-  loss_clamp_max: 10.0  # NEW: Clamp extreme loss values
+  loss_clamp_max: 3.0  # LOWERED: More aggressive clamping (was 10.0)
 
-  # Rebalanced task weights to reduce QA dominance
+  # Phase 0.5 task weights - DISABLE QA entirely, it's too unstable
+  # QA requires proper span extraction which we don't have yet
   task_weights:
-    sentiment: 0.8   # Slightly lower (easy task)
-    ner: 1.0
-    nli: 1.2         # Slightly higher (important)
-    qa: 0.8          # LOWER: QA was causing spikes
-    similarity: 0.8  # Lower (easy regression)
+    sentiment: 1.0   # Primary healing task (simple, stable)
+    ner: 0.8         # Slightly lower (sequence labeling is harder)
+    nli: 1.0         # Important for family reasoning
+    qa: 0.0          # DISABLED: QA is causing constant loss spikes
+    similarity: 0.6  # Lower (regression task, less critical)
 
   use_uncertainty_weighting: false
 

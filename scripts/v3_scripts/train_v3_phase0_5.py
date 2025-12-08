@@ -278,16 +278,17 @@ class Phase05Config:
 
     # =========================================================================
     # Zipper Learning Rate Strategy (from zipper_lr_v3.py)
+    # CRITICAL: These defaults are conservative. YAML should override.
     # =========================================================================
     lr_strategy: str = "zipper"
-    base_lr: float = 3e-5
+    base_lr: float = 2e-6  # LOWERED: Was 3e-5, now 15x lower
     lr_layers_1_18: float = 0.0  # Frozen
-    lr_layers_19_22: float = 1e-5  # Semantic band
-    lr_layer_23: float = 5e-5  # Interface layer (maximum plasticity)
-    lr_layers_24_28: float = 3e-5  # Family band
+    lr_layers_19_22: float = 3e-6  # LOWERED: Was 1e-5 (semantic band)
+    lr_layer_23: float = 2e-6  # LOWERED: Was 5e-5, now 25x lower (interface)
+    lr_layers_24_28: float = 1.5e-6  # LOWERED: Was 3e-5, now 20x lower (family)
     lr_embeddings: float = 0.0  # Frozen (except hub tokens)
-    lr_hub_tokens: float = 1e-5  # Hub token embeddings
-    lr_task_heads: float = 3e-5  # Task heads
+    lr_hub_tokens: float = 2e-6  # LOWERED: Was 1e-5 (hub token embeddings)
+    lr_task_heads: float = 5e-6  # LOWERED: Was 3e-5 (task heads)
     family_graduated: bool = True  # Graduated decay in Family band
     family_decay: float = 0.85  # Decay factor per layer
 
@@ -1835,7 +1836,13 @@ def setup_hub_gradient_masking(
         )
         return hook
     except Exception as e:
-        logger.warning(f"Failed to setup hub gradient masking: {e}")
+        # Hub gradient masking is optional - training can proceed without it
+        # The hub token embeddings will still train, just without the selective masking
+        logger.warning(
+            f"Hub gradient masking not available: {e}\n"
+            f"  Training will proceed without selective embedding masking.\n"
+            f"  Hub token embeddings will be trained along with task heads."
+        )
         return None
 
 
@@ -2325,7 +2332,13 @@ def evaluate(
                         pred = outputs.logits[i].argmax().item()
                     else:
                         pred = 0
-                    label_val = labels[i].item() if labels.dim() == 1 else 0
+                    # FIX: Handle multi-dimensional labels correctly
+                    if labels.dim() == 1:
+                        label_val = labels[i].item()
+                    elif labels.dim() == 2 and labels.size(1) > 0:
+                        label_val = labels[i, 0].item()  # First element of sequence
+                    else:
+                        label_val = 0  # Fallback
                     correct = int(pred == label_val)
                     total_correct += correct
 
@@ -2993,6 +3006,19 @@ def run_full_training(
 
     # Setup W&B
     setup_wandb(config)
+
+    # DEBUG: Log actual LR values being used (critical for debugging)
+    logger.info("=" * 60)
+    logger.info("ACTUAL LEARNING RATES BEING USED:")
+    logger.info(f"  base_lr:         {config.base_lr:.2e}")
+    logger.info(f"  lr_layers_19_22: {config.lr_layers_19_22:.2e} (semantic)")
+    logger.info(f"  lr_layer_23:     {config.lr_layer_23:.2e} (interface)")
+    logger.info(f"  lr_layers_24_28: {config.lr_layers_24_28:.2e} (family)")
+    logger.info(f"  lr_hub_tokens:   {config.lr_hub_tokens:.2e}")
+    logger.info(f"  lr_task_heads:   {config.lr_task_heads:.2e}")
+    logger.info(f"  warmup_steps:    {config.warmup_steps}")
+    logger.info(f"  max_steps:       {config.max_steps}")
+    logger.info("=" * 60)
 
     # Setup tokenizer
     tokenizer = AutoTokenizer.from_pretrained(config.tokenizer_name)
