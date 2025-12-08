@@ -135,7 +135,7 @@ class V2CheckpointLoader:
     v3 Architecture (28 layers):
         - Foundation Band: L1-6 (window=64) ← COPY from v2 L1-6
         - Core Band: L7-18 (window=128) ← COPY from v2 L7-18
-        - Feeder Band: L19-22 (window=256) ← COPY from v2 L19-22
+        - semantic Band: L19-22 (window=256) ← COPY from v2 L19-22
         - Family Band: L23-28 (window=512) ← CLONE from v2 L15-20
 
     Features:
@@ -181,7 +181,7 @@ class V2CheckpointLoader:
         15: 15,
         16: 16,
         17: 17,
-        # Feeder Band: Direct copy from v2 Family Band
+        # semantic Band: Direct copy from v2 Family Band
         18: 18,
         19: 19,
         20: 20,
@@ -706,7 +706,7 @@ class LayerCopier:
     Layer Mapping (v3 ← v2):
         - L1-6 (Foundation) ← L1-6: Direct copy (window 64)
         - L7-18 (Core) ← L7-18: Direct copy (window 128)
-        - L19-22 (Feeder) ← L19-22: Direct copy (window 256)
+        - L19-22 (semantic) ← L19-22: Direct copy (window 256)
 
     This preserves all learned representations from v2 exactly,
     ensuring function-preserving growth.
@@ -1218,7 +1218,7 @@ def clone_layers_for_growth(
 V3_LAYER_BANDS: dict[str, list[int]] = {
     "foundation": list(range(0, 6)),  # L1-6: window=64, frozen in Phase 1
     "core": list(range(6, 18)),  # L7-18: window=128, frozen in Phase 1
-    "feeder": list(range(18, 22)),  # L19-22: window=256, trainable
+    "semantic": list(range(18, 22)),  # L19-22: window=256, trainable
     "family": list(range(22, 28)),  # L23-28: window=512, LoRA trainable
 }
 
@@ -1253,7 +1253,7 @@ def get_band_for_layer(v3_layer_idx: int) -> str:
         v3_layer_idx: v3 layer index (0-indexed)
 
     Returns:
-        Band name: 'foundation', 'core', 'feeder', or 'family'
+        Band name: 'foundation', 'core', 'semantic', or 'family'
 
     Raises:
         ValueError: If layer index is out of range
@@ -1277,7 +1277,7 @@ def get_layers_in_band(band_name: str) -> list[int]:
     Get all layer indices in a band.
 
     Args:
-        band_name: One of 'foundation', 'core', 'feeder', 'family'
+        band_name: One of 'foundation', 'core', 'semantic', 'family'
 
     Returns:
         List of layer indices (0-indexed)
@@ -1304,14 +1304,14 @@ def print_layer_band_summary() -> None:
         ══════════════════════════════════════════════════════════════
         Foundation (L1-6):   [0, 1, 2, 3, 4, 5]      window=64
         Core (L7-18):        [6, 7, ..., 17]         window=128
-        Feeder (L19-22):     [18, 19, 20, 21]        window=256
+        semantic (L19-22):     [18, 19, 20, 21]        window=256
         Family (L23-28):     [22, 23, 24, 25, 26, 27] window=512
         ══════════════════════════════════════════════════════════════
     """
     window_sizes = {
         "foundation": 64,
         "core": 128,
-        "feeder": 256,
+        "semantic": 256,
         "family": 512,
     }
 

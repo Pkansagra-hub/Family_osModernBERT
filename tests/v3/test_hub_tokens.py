@@ -44,10 +44,10 @@ def test_hub_token_positions():
 
 def test_hub_token_ids():
     """Test that hub token IDs are correctly defined."""
-    assert HUB_TOKEN_IDS["[EMO]"] == 50265
-    assert HUB_TOKEN_IDS["[MEM]"] == 50266
-    assert HUB_TOKEN_IDS["[REL]"] == 50267
-    assert HUB_TOKEN_IDS["[TASK]"] == 50268
+    assert HUB_TOKEN_IDS["[EMO]"] == 50368
+    assert HUB_TOKEN_IDS["[MEM]"] == 50369
+    assert HUB_TOKEN_IDS["[REL]"] == 50370
+    assert HUB_TOKEN_IDS["[TASK]"] == 50371
 
 
 def test_emo_hub_capabilities():
@@ -274,22 +274,22 @@ def test_get_semantic_seeds_invalid():
 
 def test_get_hub_token_id_emo():
     """Test getting token ID for [EMO]."""
-    assert get_hub_token_id("[EMO]") == 50265
+    assert get_hub_token_id("[EMO]") == 50368
 
 
 def test_get_hub_token_id_mem():
     """Test getting token ID for [MEM]."""
-    assert get_hub_token_id("[MEM]") == 50266
+    assert get_hub_token_id("[MEM]") == 50369
 
 
 def test_get_hub_token_id_rel():
     """Test getting token ID for [REL]."""
-    assert get_hub_token_id("[REL]") == 50267
+    assert get_hub_token_id("[REL]") == 50370
 
 
 def test_get_hub_token_id_task():
     """Test getting token ID for [TASK]."""
-    assert get_hub_token_id("[TASK]") == 50268
+    assert get_hub_token_id("[TASK]") == 50371
 
 
 def test_get_hub_token_id_invalid():
@@ -404,10 +404,10 @@ def test_initialize_hub_tokens_semantic(mock_model, mock_tokenizer, mock_embeddi
 
     # Check that hub token embeddings were updated
     for _hub_token, hub_id in [
-        ("[EMO]", 50265),
-        ("[MEM]", 50266),
-        ("[REL]", 50267),
-        ("[TASK]", 50268),
+        ("[EMO]", 50368),
+        ("[MEM]", 50369),
+        ("[REL]", 50370),
+        ("[TASK]", 50371),
     ]:
         # Embedding should no longer be the default value (all zeros)
         hub_embedding = mock_model.embeddings.word_embeddings.weight[hub_id]
@@ -532,7 +532,7 @@ def test_resize_token_embeddings_aligned():
     class MockModel:
         class Embeddings:
             def __init__(self):
-                self.word_embeddings = nn.Embedding(50269, 768)  # After add_special_tokens
+                self.word_embeddings = nn.Embedding(50372, 768)  # After add_special_tokens
 
         def __init__(self):
             self.embeddings = self.Embeddings()
@@ -540,7 +540,7 @@ def test_resize_token_embeddings_aligned():
     model = MockModel()  # type: ignore
     original_weights = model.embeddings.word_embeddings.weight.clone()
 
-    # Resize to 50432 (next multiple of 256 after 50269)
+    # Resize to 50432 (next multiple of 256 after 50372)
     resize_token_embeddings_aligned(model, new_vocab_size=50432, alignment=256)  # type: ignore
 
     # Verify new size
@@ -549,7 +549,7 @@ def test_resize_token_embeddings_aligned():
 
     # Verify original embeddings preserved
     assert torch.allclose(
-        model.embeddings.word_embeddings.weight[:50269], original_weights, atol=1e-6
+        model.embeddings.word_embeddings.weight[:50372], original_weights, atol=1e-6
     )
 
 
@@ -585,7 +585,7 @@ def test_resize_token_embeddings_aligned_invalid_alignment():
     class MockModel:
         class Embeddings:
             def __init__(self):
-                self.word_embeddings = nn.Embedding(50269, 768)
+                self.word_embeddings = nn.Embedding(50372, 768)
 
         def __init__(self):
             self.embeddings = self.Embeddings()
@@ -594,7 +594,7 @@ def test_resize_token_embeddings_aligned_invalid_alignment():
 
     # Should raise ValueError for non-aligned size
     with pytest.raises(ValueError, match="must be divisible by"):
-        resize_token_embeddings_aligned(model, new_vocab_size=50269)  # type: ignore
+        resize_token_embeddings_aligned(model, new_vocab_size=50372)  # type: ignore
 
 
 def test_resize_token_embeddings_aligned_shrink():
@@ -622,21 +622,21 @@ def test_get_aligned_vocab_size():
     """Test calculating aligned vocab size."""
     from modeling_studio.models.hub_initialization_v3 import get_aligned_vocab_size
 
-    # ModernBERT-base (50265) + 4 hub tokens = 50269
-    # Next multiple of 128 is 50304 (128 * 393)
-    assert get_aligned_vocab_size(50269, alignment=128) == 50304
+    # ModernBERT v2 (50368) + 4 hub tokens = 50372
+    # Next multiple of 128 is 50432 (128 * 394)
+    assert get_aligned_vocab_size(50372, alignment=128) == 50432
 
     # For 256 alignment (config uses this for better efficiency)
-    assert get_aligned_vocab_size(50269, alignment=256) == 50432
+    assert get_aligned_vocab_size(50372, alignment=256) == 50432
 
     # Already aligned
     assert get_aligned_vocab_size(50432, alignment=256) == 50432
 
     # Smaller alignment
-    assert get_aligned_vocab_size(50269, alignment=64) == 50304
+    assert get_aligned_vocab_size(50372, alignment=64) == 50432
 
     # Edge case: exact multiple
-    assert get_aligned_vocab_size(50304, alignment=128) == 50304
+    assert get_aligned_vocab_size(50432, alignment=128) == 50432
 
 
 def test_get_aligned_vocab_size_config_value():
@@ -646,7 +646,7 @@ def test_get_aligned_vocab_size_config_value():
     # Config uses 50432 which is 256-aligned (better than 128 for some accelerators)
     assert 50432 % 256 == 0  # Is 256-aligned
     assert 50432 % 128 == 0  # Also 128-aligned
-    assert get_aligned_vocab_size(50269, alignment=256) == 50432
+    assert get_aligned_vocab_size(50372, alignment=256) == 50432
 
 
 def test_verify_padding_tokens_unreachable():
@@ -678,11 +678,11 @@ def test_verify_padding_tokens_unreachable_smaller_model():
 
     tokenizer = HubTokenizer()
 
-    # Model with 50304 vocab (128-aligned)
-    safety_checks = verify_padding_tokens_unreachable(tokenizer, model_vocab_size=50304)
+    # Model with 50432 vocab (128-aligned)
+    safety_checks = verify_padding_tokens_unreachable(tokenizer, model_vocab_size=50432)
 
     assert all(safety_checks.values())  # Should still be safe
-    # Padding range: 50269-50303 (35 tokens)
+    # Padding range: 50372-50431 (60 tokens)
 
 
 # ============================================================================
@@ -722,7 +722,7 @@ def mock_model():
             self.word_embeddings = nn.Embedding(50400, 768)
             # Initialize hub token embeddings to zero for testing
             with torch.no_grad():
-                self.word_embeddings.weight[50265:50269] = 0.0
+                self.word_embeddings.weight[50368:50372] = 0.0
 
     class MockModel:
         def __init__(self):

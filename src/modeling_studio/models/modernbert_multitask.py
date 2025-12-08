@@ -146,7 +146,7 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.SENTIMENT: SequenceClassificationHead,
     Capability.EMOTIONS: HierarchicalEmotionHead,  # FIXED: Use enhanced head with 44 emotions
     Capability.SAFETY_GENERIC: SequenceClassificationHead,  # Stage A: Multi-label with ASL
-    Capability.SAFETY_FAMILYOS: EnhancedSafetyHead,  # Stage B: Band-based with keyword override
+    Capability.SAFETY_FAMILYOS: SafetyHead,  # Stage B: Band-based classification (4 bands, 13 subcats)
     Capability.INGRESS: SequenceClassificationHead,
     Capability.INTENT: IntentHead,  # NEW
     # Special heads
@@ -370,15 +370,14 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     normalize=True,
                 )
             elif capability == Capability.SAFETY_FAMILYOS:
-                # EnhancedSafetyHead: 4 bands with 12 subcategories and keyword override
+                # SafetyHead: 4 bands with 13 subcategories (indices 0-12)
                 # Used for Stage B FamilyOS domain adaptation
                 head = head_cls(
                     hidden_size=hidden_size,
                     num_bands=4,  # GREEN, AMBER, RED, CRISIS
-                    num_subcategories=12,
+                    num_subcategories=13,  # 13 subcategories: none(0) + 4 AMBER + 4 RED + 4 CRISIS
                     dropout=self.head_dropout,
                     use_hierarchical=True,
-                    keyword_override=True,  # Critical safety feature
                 )
             elif capability == Capability.EMOTIONS:
                 # HierarchicalEmotionHead: 44 FamilyOS emotions
@@ -658,9 +657,6 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
         )
 
-        # Initialize encoder first
-        model.encoder = AutoModel.from_config(config)
-
         # Load state dict - try safetensors first, then pytorch format
         safetensors_path = checkpoint_path / "model.safetensors"
         pytorch_path = checkpoint_path / "pytorch_model.bin"
@@ -694,12 +690,27 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             elif key.startswith("shared_pooler."):
                 pooler_state[key] = value
 
-        # Load encoder
-        missing, unexpected = model.encoder.load_state_dict(encoder_state, strict=False)  # type: ignore
-        if missing:
-            logger.warning(f"Encoder missing keys: {len(missing)}")
-        if unexpected:
-            logger.warning(f"Encoder unexpected keys: {len(unexpected)}")
+        # Initialize encoder - from checkpoint if available, else from pretrained
+        if encoder_state:
+            # Full checkpoint with encoder weights
+            model.encoder = AutoModel.from_config(config)
+            missing, unexpected = model.encoder.load_state_dict(encoder_state, strict=False)
+            if missing:
+                logger.warning(f"Encoder missing keys: {len(missing)}")
+            if unexpected:
+                logger.warning(f"Encoder unexpected keys: {len(unexpected)}")
+        else:
+            # Heads-only checkpoint - load encoder from pretrained base model
+            # Note: _name_or_path may be set to the checkpoint path itself, so we
+            # explicitly use the known base model for ModernBERT
+            base_model_name = "answerdotai/ModernBERT-base"
+            logger.info(f"No encoder weights in checkpoint, loading from: {base_model_name}")
+            try:
+                model.encoder = AutoModel.from_pretrained(base_model_name)
+            except Exception as e:
+                # Fallback to local config
+                logger.warning(f"Could not load pretrained encoder ({e}), using random init")
+                model.encoder = AutoModel.from_config(config)
 
         # Load heads and Epic 5.0 components
         components_state = {**head_state, **adapter_state, **pair_encoder_state, **pooler_state}

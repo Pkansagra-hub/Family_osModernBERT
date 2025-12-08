@@ -68,7 +68,7 @@ class TrainingConfig:
         logging_steps: Log metrics every N steps
         learning_rate: Base learning rate
         lr_layers_1_18: Learning rate for frozen layers (usually 0)
-        lr_layers_19_22: Learning rate for Feeder band
+        lr_layers_19_22: Learning rate for Semantic band
         lr_layer_23: Learning rate for interface layer L23
         lr_layers_24_28: Learning rate for Family band clones
         weight_decay: Weight decay for AdamW
@@ -105,7 +105,7 @@ class TrainingConfig:
     # Learning rates (per layer group)
     learning_rate: float = 3e-5
     lr_layers_1_18: float = 0.0  # Frozen in Phase 0.5/1
-    lr_layers_19_22: float = 1e-5  # Feeders
+    lr_layers_19_22: float = 1e-5  # Semantics
     lr_layer_23: float = 5e-5  # Interface
     lr_layers_24_28: float = 3e-5  # Clones
 
@@ -316,7 +316,7 @@ class ModernBERTv3Trainer:
 
         Groups:
             - layers_1_18: Foundation + Core (frozen or very low LR)
-            - layers_19_22: Feeder band
+            - layers_19_22: Semantic band
             - layer_23: Interface layer (highest LR)
             - layers_24_28: Family band clones
             - embeddings: Usually frozen
@@ -362,7 +362,7 @@ class ModernBERTv3Trainer:
                     }
                 )
 
-        # Layers 19-22 (Feeder) - indices 18-21
+        # Layers 19-22 (Semantic) - indices 18-21
         if num_layers >= 22:
             layers_19_22_params = []
             for i in range(18, min(22, num_layers)):

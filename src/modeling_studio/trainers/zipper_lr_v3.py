@@ -7,7 +7,7 @@ effect" at L22-L23 transition.
 
 Layer Band Architecture:
     L1-18:  Foundation + Core (frozen, lr=0)
-    L19-22: Feeder band (low lr, interface preparation)
+    L19-22: Semantic band (low lr, interface preparation)
     L23:    Interface layer (highest lr, maximum plasticity)
     L24-28: Family band (moderate lr, learning new tasks)
 
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 # Layer band boundaries (0-indexed)
 FOUNDATION_END = 6  # L1-6 (indices 0-5)
 CORE_END = 18  # L7-18 (indices 6-17)
-FEEDER_END = 22  # L19-22 (indices 18-21)
+SEMANTIC_END = 22  # L19-22 (indices 18-21)
 INTERFACE_LAYER = 22  # L23 (index 22)
 FAMILY_END = 28  # L24-28 (indices 23-27)
 
@@ -61,13 +61,13 @@ class ZipperLRConfig:
 
     Layer Layout:
         L1-18:  Foundation + Core (frozen, lr=0)
-        L19-22: Feeder band (low lr, interface preparation)
+        L19-22: Semantic band (low lr, interface preparation)
         L23:    Interface layer (highest lr, maximum plasticity)
         L24-28: Family band (moderate lr, learning new tasks)
 
     LR Profile (Phase 0.5):
         L19: 1e-5 --+
-        L20: 1e-5   | Feeder: gentle adaptation
+        L20: 1e-5   | Semantic: gentle adaptation
         L21: 1e-5   |
         L22: 1e-5 --+
         L23: 5e-5 <-- Interface: highest plasticity
@@ -79,7 +79,7 @@ class ZipperLRConfig:
 
     Attributes:
         base_lr: Base learning rate (reference point)
-        feeder_lr: Learning rate for Feeder band (L19-22)
+        semantic_lr: Learning rate for Semantic band (L19-22)
         interface_lr: Learning rate for Interface layer (L23)
         family_lr: Learning rate for Family band (L24-28)
         family_graduated: Whether to decrease LR toward output
@@ -92,8 +92,8 @@ class ZipperLRConfig:
     # Base learning rate (reference point)
     base_lr: float = 3e-5
 
-    # Feeder band (L19-22) - uniform low LR
-    feeder_lr: float = 1e-5
+    # Semantic band (L19-22) - uniform low LR
+    semantic_lr: float = 1e-5
 
     # Interface layer (L23) - maximum plasticity
     interface_lr: float = 5e-5
@@ -124,8 +124,8 @@ class ZipperLRConfig:
             # Foundation + Core: frozen
             return self.frozen_lr
         elif layer_idx < 22:
-            # Feeder (L19-22, indices 18-21)
-            return self.feeder_lr
+            # Semantic (L19-22, indices 18-21)
+            return self.semantic_lr
         elif layer_idx == 22:
             # Interface (L23, index 22)
             return self.interface_lr
@@ -176,10 +176,10 @@ class ZipperLRConfig:
                 "lr": self.frozen_lr,
                 "status": "frozen" if self.frozen_lr == 0 else "trainable",
             },
-            "feeder": {
+            "semantic": {
                 "layers": "L19-22",
                 "indices": list(range(18, 22)),
-                "lr": self.feeder_lr,
+                "lr": self.semantic_lr,
                 "status": "trainable",
             },
             "interface": {
@@ -206,7 +206,7 @@ class ZipperLRConfig:
 ZIPPER_PRESETS: dict[str, ZipperLRConfig] = {
     "phase_0.5_healing": ZipperLRConfig(
         base_lr=3e-5,
-        feeder_lr=1e-5,
+        semantic_lr=1e-5,
         interface_lr=5e-5,
         family_lr=3e-5,
         family_graduated=True,
@@ -214,7 +214,7 @@ ZIPPER_PRESETS: dict[str, ZipperLRConfig] = {
     ),
     "phase_1_multitask": ZipperLRConfig(
         base_lr=2e-5,
-        feeder_lr=1e-5,
+        semantic_lr=1e-5,
         interface_lr=4e-5,
         family_lr=2e-5,
         family_graduated=True,
@@ -222,21 +222,21 @@ ZIPPER_PRESETS: dict[str, ZipperLRConfig] = {
     ),
     "phase_2_polish": ZipperLRConfig(
         base_lr=1e-5,
-        feeder_lr=5e-6,
+        semantic_lr=5e-6,
         interface_lr=2e-5,
         family_lr=1e-5,
         family_graduated=False,
     ),
     "conservative": ZipperLRConfig(
         base_lr=1e-5,
-        feeder_lr=5e-6,
+        semantic_lr=5e-6,
         interface_lr=3e-5,
         family_lr=1e-5,
         family_graduated=False,
     ),
     "aggressive": ZipperLRConfig(
         base_lr=5e-5,
-        feeder_lr=2e-5,
+        semantic_lr=2e-5,
         interface_lr=1e-4,
         family_lr=5e-5,
         family_graduated=True,
@@ -475,7 +475,7 @@ class ZipperLROptimizer:
             elif layer_idx < 18:
                 band = "Core"
             elif layer_idx < 22:
-                band = "Feeder"
+                band = "Semantic"
             elif layer_idx == 22:
                 band = "Interface *"
             else:
@@ -598,7 +598,7 @@ def print_zipper_lr_profile(config: ZipperLRConfig) -> None:
         elif layer_idx < 18:
             band = "Core"
         elif layer_idx < 22:
-            band = "Feeder"
+            band = "Semantic"
         elif layer_idx == 22:
             band = "Interface *"
         else:
@@ -622,7 +622,7 @@ def compare_zipper_presets() -> dict[str, dict[str, float]]:
     comparison: dict[str, dict[str, float]] = {}
     for name, config in ZIPPER_PRESETS.items():
         comparison[name] = {
-            "feeder_lr": config.feeder_lr,
+            "semantic_lr": config.semantic_lr,
             "interface_lr": config.interface_lr,
             "family_lr_start": config.get_layer_lr(23),
             "family_lr_end": config.get_layer_lr(27),
@@ -645,13 +645,13 @@ def validate_zipper_config(config: ZipperLRConfig) -> list[str]:
 
     # Check that interface LR is highest
     interface_lr = config.get_layer_lr(22)
-    feeder_lr = config.feeder_lr
+    semantic_lr = config.semantic_lr
     family_start_lr = config.get_layer_lr(23)
 
-    if interface_lr <= feeder_lr:
+    if interface_lr <= semantic_lr:
         warnings.append(
             f"Interface LR ({interface_lr:.2e}) should be higher than "
-            f"Feeder LR ({feeder_lr:.2e})"
+            f"Semantic LR ({semantic_lr:.2e})"
         )
 
     if interface_lr < family_start_lr:

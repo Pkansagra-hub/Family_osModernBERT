@@ -4224,6 +4224,7 @@ def load_familyos_unified(
             "safety_familyos",
             "intent",
             "ingress",
+            "relation",
             "temporal",
         ]
 
@@ -4304,16 +4305,22 @@ def _extract_task_data(
 
     Converts the unified format to task-specific format expected by trainers.
     """
+    # Map task names to data keys (handles singular/plural mismatches)
+    TASK_TO_DATA_KEY = {
+        "relation": "relations",  # Model uses singular, data uses plural
+    }
+
     task_data = []
+    data_key = TASK_TO_DATA_KEY.get(task, task)
 
     for sample in samples:
         text = sample.get("text", "")
         task_labels = sample.get("tasks", {})
 
-        if task not in task_labels:
+        if data_key not in task_labels:
             continue
 
-        label_value = task_labels[task]
+        label_value = task_labels[data_key]
 
         # Skip samples with empty/None labels
         if label_value is None:
@@ -4383,10 +4390,11 @@ def _extract_task_data(
             if tokens:
                 task_data.append({"tokens": tokens, "temporal_tags": temporal_tags, "task": task})
 
-        elif task == "relations":
+        elif task == "relation":
             # Sentence-level relation classification
             # Extract predicate types as multi-label (can have multiple relations)
             # NOTE: Data uses "relations" (plural), but Capability enum uses "relation" (singular)
+            # The data_key mapping above handles the lookup, we use "relation" as task name
             if not label_value or not isinstance(label_value, list):
                 continue
 
@@ -4394,7 +4402,6 @@ def _extract_task_data(
             try:
                 labels = _relations_to_multihot(label_value)
                 if sum(labels) > 0:  # At least one valid relation
-                    # Use "relation" (singular) to match Capability.RELATION
                     task_data.append({"text": text, "labels": labels, "task": "relation"})
             except Exception as e:
                 logger.debug(f"Error processing relations: {e}")

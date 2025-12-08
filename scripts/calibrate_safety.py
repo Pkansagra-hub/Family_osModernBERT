@@ -211,13 +211,13 @@ def save_calibration_results(
 
     # Save YAML (deployment config)
     yaml_path = output_dir / "safety_thresholds.yaml"
-    with open(yaml_path, "w") as f:
+    with open(yaml_path, "w", encoding="utf-8") as f:
         f.write(result.to_yaml())
     logger.info(f"Saved deployment config to {yaml_path}")
 
     # Save text report
     report_path = output_dir / "calibration_report.txt"
-    with open(report_path, "w") as f:
+    with open(report_path, "w", encoding="utf-8") as f:
         f.write(generate_report(result))
     logger.info(f"Saved report to {report_path}")
 
@@ -264,7 +264,8 @@ def generate_report(result: CalibrationResult) -> str:
     if cr.get("failures"):
         lines.append("  Failed Patterns:")
         for f in cr["failures"][:5]:  # Show first 5
-            lines.append(f"    - '{f['text']}' → {f['predicted']}")
+            pred = f.get("prediction", f.get("predicted", "UNKNOWN"))
+            lines.append(f"    - '{f['text']}' → {pred}")
 
     lines.extend(["", "=" * 70])
 
@@ -362,7 +363,7 @@ def calibrate_safety(
         "patterns_tested": cultural_fp_result.total_safe_examples,
         "passed": cultural_fp_result.total_safe_examples - cultural_fp_result.false_positives,
         "failed": cultural_fp_result.false_positives,
-        "pass_rate": 1.0 - cultural_fp_result.fp_rate,
+        "pass_rate": 1.0 - cultural_fp_result.false_positive_rate,
         "failures": cultural_fp_result.failed_examples[:10],  # First 10
     }
 

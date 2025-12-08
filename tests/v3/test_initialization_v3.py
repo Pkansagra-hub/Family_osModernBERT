@@ -1433,7 +1433,7 @@ class TestV3LayerBands:
 
         assert V3_LAYER_BANDS["foundation"] == list(range(0, 6))
         assert V3_LAYER_BANDS["core"] == list(range(6, 18))
-        assert V3_LAYER_BANDS["feeder"] == list(range(18, 22))
+        assert V3_LAYER_BANDS["semantic"] == list(range(18, 22))
         assert V3_LAYER_BANDS["family"] == list(range(22, 28))
 
 
@@ -1488,12 +1488,12 @@ class TestGetBandForLayer:
         for layer_idx in range(6, 18):
             assert get_band_for_layer(layer_idx) == "core"
 
-    def test_feeder_band(self):
-        """Test layers 18-21 are in feeder band."""
+    def test_semantic_band(self):
+        """Test layers 18-21 are in semantic band."""
         from modeling_studio.models.initialization_v3 import get_band_for_layer
 
         for layer_idx in range(18, 22):
-            assert get_band_for_layer(layer_idx) == "feeder"
+            assert get_band_for_layer(layer_idx) == "semantic"
 
     def test_family_band(self):
         """Test layers 22-27 are in family band."""

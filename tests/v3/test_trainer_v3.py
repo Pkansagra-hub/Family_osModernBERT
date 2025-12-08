@@ -108,9 +108,9 @@ class TestLayerBandEnum:
         """Test CORE band value."""
         assert LayerBand.CORE.value == "core"
 
-    def test_feeder_band_value(self):
-        """Test FEEDER band value."""
-        assert LayerBand.FEEDER.value == "feeder"
+    def test_semantic_band_value(self):
+        """Test SEMANTIC band value."""
+        assert LayerBand.SEMANTIC.value == "semantic"
 
     def test_family_band_value(self):
         """Test FAMILY band value."""
@@ -163,9 +163,9 @@ class TestLayerBandMapping:
         expected = list(range(6, 18))
         assert LAYER_BANDS[LayerBand.CORE] == expected
 
-    def test_feeder_layers(self):
-        """Test FEEDER band has correct layer indices."""
-        assert LAYER_BANDS[LayerBand.FEEDER] == [18, 19, 20, 21]
+    def test_SEMANTIC_layers(self):
+        """Test SEMANTIC band has correct layer indices."""
+        assert LAYER_BANDS[LayerBand.SEMANTIC] == [18, 19, 20, 21]
 
     def test_family_layers(self):
         """Test FAMILY band has correct layer indices."""
@@ -302,10 +302,10 @@ class TestLayerFreezerBands:
             for param in layer.parameters():
                 assert not param.requires_grad
 
-    def test_freeze_feeder_band(self, freezer):
-        """Test freezing FEEDER band."""
-        freezer.freeze_band(LayerBand.FEEDER)
-        for idx in LAYER_BANDS[LayerBand.FEEDER]:
+    def test_freeze_SEMANTIC_band(self, freezer):
+        """Test freezing SEMANTIC band."""
+        freezer.freeze_band(LayerBand.SEMANTIC)
+        for idx in LAYER_BANDS[LayerBand.SEMANTIC]:
             layer = freezer.get_layer(idx)
             for param in layer.parameters():
                 assert not param.requires_grad
@@ -526,10 +526,10 @@ class TestHelperFunctions:
         for idx in range(6, 18):
             assert get_band_for_layer(idx) == LayerBand.CORE
 
-    def test_get_band_for_layer_feeder(self):
-        """Test get_band_for_layer for feeder layers."""
+    def test_get_band_for_layer_SEMANTIC(self):
+        """Test get_band_for_layer for SEMANTIC layers."""
         for idx in range(18, 22):
-            assert get_band_for_layer(idx) == LayerBand.FEEDER
+            assert get_band_for_layer(idx) == LayerBand.SEMANTIC
 
     def test_get_band_for_layer_family(self):
         """Test get_band_for_layer for family layers."""
@@ -549,7 +549,7 @@ class TestHelperFunctions:
     def test_get_trainable_bands_for_phase_enum(self):
         """Test get_trainable_bands_for_phase with enum."""
         bands = get_trainable_bands_for_phase(TrainingPhase.PHASE_1)
-        assert LayerBand.FEEDER in bands
+        assert LayerBand.SEMANTIC in bands
         assert LayerBand.FAMILY in bands
         assert LayerBand.FOUNDATION not in bands
         assert LayerBand.CORE not in bands
@@ -557,7 +557,7 @@ class TestHelperFunctions:
     def test_get_trainable_bands_for_phase_string(self):
         """Test get_trainable_bands_for_phase with string."""
         bands = get_trainable_bands_for_phase("phase_1")
-        assert LayerBand.FEEDER in bands
+        assert LayerBand.SEMANTIC in bands
         assert LayerBand.FAMILY in bands
 
 
@@ -573,7 +573,7 @@ class TestIssue511AcceptanceCriteria:
         """AC1: LayerBand enum defines all 4 bands correctly."""
         assert LayerBand.FOUNDATION.value == "foundation"
         assert LayerBand.CORE.value == "core"
-        assert LayerBand.FEEDER.value == "feeder"
+        assert LayerBand.SEMANTIC.value == "semantic"
         assert LayerBand.FAMILY.value == "family"
         print("AC1: LayerBand enum defines all 4 bands correctly [PASS]")
 
@@ -1952,7 +1952,7 @@ class TestLayerGroupLRConfig:
         assert config.base_lr == 3e-5
         assert config.foundation_mult == 0.0
         assert config.core_mult == 0.0
-        assert config.feeder_mult == 0.33
+        assert config.semantic_mult == 0.33
         assert config.interface_mult == 1.67
         assert config.family_mult == 1.0
         assert config.embeddings_mult == 0.1
@@ -1969,7 +1969,7 @@ class TestLayerGroupLRConfig:
             base_lr=1e-4,
             foundation_mult=0.1,
             core_mult=0.2,
-            feeder_mult=0.5,
+            semantic_mult=0.5,
             interface_mult=2.0,
             family_mult=1.5,
         )
@@ -1977,7 +1977,7 @@ class TestLayerGroupLRConfig:
         assert config.base_lr == 1e-4
         assert config.foundation_mult == 0.1
         assert config.core_mult == 0.2
-        assert config.feeder_mult == 0.5
+        assert config.semantic_mult == 0.5
         assert config.interface_mult == 2.0
         assert config.family_mult == 1.5
 
@@ -2001,11 +2001,11 @@ class TestLayerGroupLRConfig:
             lr = config.get_layer_lr(layer_idx)
             assert lr == 0.0, f"Layer {layer_idx} should have 0 LR"
 
-    def test_get_layer_lr_feeder(self):
-        """Test get_layer_lr for Feeder band (L19-22)."""
+    def test_get_layer_lr_SEMANTIC(self):
+        """Test get_layer_lr for SEMANTIC band (L19-22)."""
         from modeling_studio.trainers.lr_groups_v3 import LayerGroupLRConfig
 
-        config = LayerGroupLRConfig(base_lr=3e-5, feeder_mult=0.33)
+        config = LayerGroupLRConfig(base_lr=3e-5, semantic_mult=0.33)
 
         expected_lr = 3e-5 * 0.33
         for layer_idx in range(18, 22):
@@ -2057,7 +2057,7 @@ class TestLayerGroupLRConfig:
 
         assert config.get_band_lr("foundation") == 0.0
         assert config.get_band_lr("core") == 0.0
-        assert abs(config.get_band_lr("feeder") - 3e-5 * 0.33) < 1e-12
+        assert abs(config.get_band_lr("semantic") - 3e-5 * 0.33) < 1e-12
         assert abs(config.get_band_lr("interface") - 3e-5 * 1.67) < 1e-12
         assert abs(config.get_band_lr("family") - 3e-5 * 1.0) < 1e-12
 
@@ -2095,11 +2095,11 @@ class TestLayerGroupLRConfig:
         """Test from_dict class method."""
         from modeling_studio.trainers.lr_groups_v3 import LayerGroupLRConfig
 
-        d = {"base_lr": 1e-4, "feeder_mult": 0.5, "interface_mult": 2.0}
+        d = {"base_lr": 1e-4, "semantic_mult": 0.5, "interface_mult": 2.0}
         config = LayerGroupLRConfig.from_dict(d)
 
         assert config.base_lr == 1e-4
-        assert config.feeder_mult == 0.5
+        assert config.semantic_mult == 0.5
         assert config.interface_mult == 2.0
         # Other fields should have defaults
         assert config.foundation_mult == 0.0
@@ -2125,7 +2125,7 @@ class TestPhaseLRConfigs:
         assert config.base_lr == 3e-5
         assert config.foundation_mult == 0.0  # Frozen
         assert config.core_mult == 0.0  # Frozen
-        assert config.feeder_mult == 0.33
+        assert config.semantic_mult == 0.33
         assert config.interface_mult == 1.67
         assert config.family_mult == 1.0
 
@@ -2138,7 +2138,7 @@ class TestPhaseLRConfigs:
         assert config.base_lr == 2e-5
         assert config.foundation_mult == 0.0  # Frozen
         assert config.core_mult == 0.0  # Frozen
-        assert config.feeder_mult == 0.5
+        assert config.semantic_mult == 0.5
         assert config.interface_mult == 1.5
 
     def test_phase_2_config(self):
@@ -2150,7 +2150,7 @@ class TestPhaseLRConfigs:
         assert config.base_lr == 1e-5
         assert config.foundation_mult == 0.1  # Trainable but low
         assert config.core_mult == 0.2  # Trainable but low
-        assert config.feeder_mult == 0.5
+        assert config.semantic_mult == 0.5
         assert config.interface_mult == 1.0
 
     def test_phase_05_foundation_core_frozen(self):
@@ -2177,17 +2177,17 @@ class TestPhaseLRConfigs:
                 other_lr = config.get_layer_lr(layer_idx)
                 assert interface_lr > other_lr, f"Interface LR should be > Layer {layer_idx + 1}"
 
-    def test_feeder_lower_than_family(self):
-        """Test that Feeder band has lower LR than Family band."""
+    def test_SEMANTIC_lower_than_family(self):
+        """Test that SEMANTIC band has lower LR than Family band."""
         from modeling_studio.trainers.lr_groups_v3 import PHASE_LR_CONFIGS
 
         for phase in ["phase_0.5", "phase_1"]:
             config = PHASE_LR_CONFIGS[phase]
 
-            feeder_lr = config.get_band_lr("feeder")
+            semantic_lr = config.get_band_lr("semantic")
             family_lr = config.get_band_lr("family")
 
-            assert feeder_lr < family_lr, f"Feeder should have lower LR than Family in {phase}"
+            assert semantic_lr < family_lr, f"SEMANTIC should have lower LR than Family in {phase}"
 
 
 class TestLayerGroupOptimizer:
@@ -2254,7 +2254,7 @@ class TestLayerGroupOptimizer:
         param_groups = group_optimizer.get_param_groups()
 
         group_names = [g["name"] for g in param_groups]
-        assert "feeder" in group_names
+        assert "semantic" in group_names
         assert "interface" in group_names
         assert "family" in group_names
 
@@ -2273,20 +2273,20 @@ class TestLayerGroupOptimizer:
         expected_lr = 3e-5 * 1.67
         assert abs(interface_group["lr"] - expected_lr) < 1e-10
 
-    def test_feeder_lr_correct(self, model_for_lr_groups):
-        """Test that feeder group has correct LR."""
+    def test_semantic_lr_correct(self, model_for_lr_groups):
+        """Test that SEMANTIC group has correct LR."""
         from modeling_studio.trainers.lr_groups_v3 import (
             LayerGroupLRConfig,
             LayerGroupOptimizer,
         )
 
-        config = LayerGroupLRConfig(base_lr=3e-5, feeder_mult=0.33)
+        config = LayerGroupLRConfig(base_lr=3e-5, semantic_mult=0.33)
         group_optimizer = LayerGroupOptimizer(model_for_lr_groups, config)
         param_groups = group_optimizer.get_param_groups()
 
-        feeder_group = next(g for g in param_groups if g["name"] == "feeder")
+        SEMANTIC_group = next(g for g in param_groups if g["name"] == "semantic")
         expected_lr = 3e-5 * 0.33
-        assert abs(feeder_group["lr"] - expected_lr) < 1e-10
+        assert abs(SEMANTIC_group["lr"] - expected_lr) < 1e-10
 
     def test_embeddings_group_created(self, model_for_lr_groups):
         """Test that embeddings group is created."""
@@ -2464,7 +2464,7 @@ class TestIssue514AcceptanceCriteria:
         # All bands should be configurable
         assert hasattr(config, "foundation_mult")
         assert hasattr(config, "core_mult")
-        assert hasattr(config, "feeder_mult")
+        assert hasattr(config, "semantic_mult")
         assert hasattr(config, "interface_mult")
         assert hasattr(config, "family_mult")
 
@@ -2508,19 +2508,19 @@ class TestIssue514AcceptanceCriteria:
 
         print("AC3: Interface layer (L23) gets highest LR [PASS]")
 
-    def test_ac4_feeder_lower_than_family(self):
-        """AC4: Feeder band gets lower LR than Family."""
+    def test_ac4_SEMANTIC_lower_than_family(self):
+        """AC4: SEMANTIC band gets lower LR than Family."""
         from modeling_studio.trainers.lr_groups_v3 import PHASE_LR_CONFIGS
 
         for phase in ["phase_0.5", "phase_1", "phase_2"]:
             config = PHASE_LR_CONFIGS[phase]
 
-            feeder_lr = config.get_band_lr("feeder")
+            semantic_lr = config.get_band_lr("semantic")
             family_lr = config.get_band_lr("family")
 
-            assert feeder_lr <= family_lr, f"Feeder should be <= Family in {phase}"
+            assert semantic_lr <= family_lr, f"SEMANTIC should be <= Family in {phase}"
 
-        print("AC4: Feeder band gets lower LR than Family [PASS]")
+        print("AC4: SEMANTIC band gets lower LR than Family [PASS]")
 
     def test_ac5_create_optimizer_valid_adamw(self, model_for_ac):
         """AC5: create_optimizer() creates valid AdamW."""
@@ -2553,7 +2553,7 @@ class TestIssue514AcceptanceCriteria:
 
         # Check logging output
         assert "Layer Group Learning Rates" in captured.out
-        assert "feeder" in captured.out
+        assert "semantic" in captured.out
         assert "interface" in captured.out
         assert "family" in captured.out
         assert "lr=" in captured.out
@@ -3385,7 +3385,7 @@ class TestZipperLRConfig:
         config = ZipperLRConfig()
 
         assert config.base_lr == 3e-5
-        assert config.feeder_lr == 1e-5
+        assert config.semantic_lr == 1e-5
         assert config.interface_lr == 5e-5
         assert config.family_lr == 3e-5
         assert config.family_graduated is True
@@ -3400,7 +3400,7 @@ class TestZipperLRConfig:
 
         config = ZipperLRConfig(
             base_lr=5e-5,
-            feeder_lr=2e-5,
+            semantic_lr=2e-5,
             interface_lr=1e-4,
             family_lr=4e-5,
             family_graduated=False,
@@ -3408,7 +3408,7 @@ class TestZipperLRConfig:
         )
 
         assert config.base_lr == 5e-5
-        assert config.feeder_lr == 2e-5
+        assert config.semantic_lr == 2e-5
         assert config.interface_lr == 1e-4
         assert config.family_lr == 4e-5
         assert config.family_graduated is False
@@ -3427,13 +3427,13 @@ class TestZipperLRConfig:
         for idx in range(6, 18):
             assert config.get_layer_lr(idx) == 0.0
 
-    def test_get_layer_lr_feeder_band(self):
-        """Test LR for Feeder band (L19-22)."""
+    def test_get_layer_lr_SEMANTIC_band(self):
+        """Test LR for SEMANTIC band (L19-22)."""
         from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
 
-        config = ZipperLRConfig(feeder_lr=1e-5)
+        config = ZipperLRConfig(semantic_lr=1e-5)
 
-        # Feeder (L19-22, indices 18-21)
+        # SEMANTIC (L19-22, indices 18-21)
         for idx in range(18, 22):
             assert config.get_layer_lr(idx) == 1e-5
 
@@ -3504,7 +3504,7 @@ class TestZipperLRConfig:
         assert len(all_lrs) == 28
         assert all_lrs[0] == 0.0  # Foundation frozen
         assert all_lrs[17] == 0.0  # Core frozen
-        assert all_lrs[18] == config.feeder_lr  # Feeder
+        assert all_lrs[18] == config.semantic_lr  # SEMANTIC
         assert all_lrs[22] == config.interface_lr  # Interface
 
     def test_get_trainable_layer_lrs(self):
@@ -3518,7 +3518,7 @@ class TestZipperLRConfig:
         assert len(trainable_lrs) == 10
         assert 0 not in trainable_lrs  # Frozen
         assert 17 not in trainable_lrs  # Frozen
-        assert 18 in trainable_lrs  # Feeder
+        assert 18 in trainable_lrs  # SEMANTIC
         assert 22 in trainable_lrs  # Interface
 
     def test_get_band_summary(self):
@@ -3530,12 +3530,12 @@ class TestZipperLRConfig:
 
         assert "foundation" in summary
         assert "core" in summary
-        assert "feeder" in summary
+        assert "semantic" in summary
         assert "interface" in summary
         assert "family" in summary
 
         assert summary["interface"]["lr"] == config.interface_lr
-        assert summary["feeder"]["lr"] == config.feeder_lr
+        assert summary["semantic"]["lr"] == config.semantic_lr
 
 
 class TestZipperPresets:
@@ -3653,7 +3653,7 @@ class TestZipperLROptimizer:
         )
 
         config = ZipperLRConfig(
-            feeder_lr=1e-5,
+            semantic_lr=1e-5,
             interface_lr=5e-5,
             family_graduated=False,
             family_lr=3e-5,
@@ -3856,8 +3856,8 @@ class TestZipperUtilityFunctions:
         )
 
         config = ZipperLRConfig(
-            feeder_lr=1e-4,
-            interface_lr=1e-5,  # Lower than feeder
+            semantic_lr=1e-4,
+            interface_lr=1e-5,  # Lower than SEMANTIC
         )
         warnings = validate_zipper_config(config)
 
@@ -3943,17 +3943,17 @@ class TestIssue516AcceptanceCriteria:
 
         print("AC3: Graduated decay in Family band works correctly [PASS]")
 
-    def test_ac4_feeder_band_uniform_low_lr(self):
-        """AC4: Feeder band gets uniform low LR."""
+    def test_ac4_SEMANTIC_band_uniform_low_lr(self):
+        """AC4: SEMANTIC band gets uniform low LR."""
         from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
 
-        config = ZipperLRConfig(feeder_lr=1e-5)
+        config = ZipperLRConfig(semantic_lr=1e-5)
 
-        # All feeder layers should have same LR
+        # All SEMANTIC layers should have same LR
         for idx in range(18, 22):  # L19-22
             assert config.get_layer_lr(idx) == 1e-5
 
-        print("AC4: Feeder band gets uniform low LR [PASS]")
+        print("AC4: SEMANTIC band gets uniform low LR [PASS]")
 
     def test_ac5_create_optimizer_creates_valid_adamw(self, model_for_ac):
         """AC5: create_optimizer() creates valid AdamW."""
@@ -4832,7 +4832,7 @@ class TestIssue517AcceptanceCriteria:
         optimizer = torch.optim.AdamW(
             [
                 {"params": model1.parameters(), "lr": 5e-5},  # Interface
-                {"params": model2.parameters(), "lr": 1e-5},  # Feeder
+                {"params": model2.parameters(), "lr": 1e-5},  # SEMANTIC
             ]
         )
 
@@ -4871,7 +4871,7 @@ class TestGradientClipConfig:
         assert config.per_layer_clip is False
         assert config.interface_clip == 0.5
         assert config.family_clip == 1.0
-        assert config.feeder_clip == 1.0
+        assert config.semantic_clip == 1.0
         assert config.log_grad_norms is True
         assert config.log_every_n_steps == 100
         assert config.explosion_threshold == 10.0
@@ -5035,7 +5035,7 @@ class TestGradientClipper:
             per_layer_clip=True,
             interface_clip=0.5,
             family_clip=1.0,
-            feeder_clip=1.0,
+            semantic_clip=1.0,
             log_grad_norms=False,
         )
         clipper = GradientClipper(mock_encoder_model, config)
@@ -5582,7 +5582,7 @@ class TestIssue518AcceptanceCriteria:
             per_layer_clip=True,
             interface_clip=0.5,
             family_clip=1.0,
-            feeder_clip=1.0,
+            semantic_clip=1.0,
             log_grad_norms=False,
         )
         clipper = GradientClipper(mock_encoder_model, config)

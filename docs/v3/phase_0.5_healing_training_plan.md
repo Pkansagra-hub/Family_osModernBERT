@@ -149,7 +149,7 @@ Phase 0.5 solves this by:
 | **Data** | 12,000 samples (5 tasks) |
 | **Batch Size** | 32 |
 | **Frozen Layers** | L1-18 (Foundation + Core) |
-| **Trainable Layers** | L19-28 (Feeder + Family) |
+| **Trainable Layers** | L19-28 (SEMANTIC + Family) |
 | **LR Strategy** | Zipper (L23 at 5e-5, graduated decay) |
 | **Expected Time** | ~30 mins on A100 |
 
@@ -171,7 +171,7 @@ Phase 0.5 solves this by:
 
 3. **Preserve L1-22 Capabilities**
    - Foundation (L1-6) and Core (L7-18) frozen
-   - Feeder (L19-22) trainable with low LR
+   - SEMANTIC (L19-22) trainable with low LR
    - v2 NLU capabilities must be intact
 
 4. **Initialize Hub Token Semantics**
@@ -226,7 +226,7 @@ Phase 0.5 solves this by:
 │  └─────────────────────────────────────────────────────────┘   │
 │                              ↓                                  │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │  FEEDER BAND (L19-22)      | Window: 256 | TRAINABLE    │   │
+│  │  SEMANTIC BAND (L19-22)      | Window: 256 | TRAINABLE    │   │
 │  │  Copied from v2 L19-22     | LR: 1e-5    | Params: ~25M │   │
 │  │  Purpose: Prepare for L23 interface                      │   │
 │  └─────────────────────────────────────────────────────────┘   │
@@ -499,7 +499,7 @@ model:
   sliding_window_sizes:
     foundation: 64   # L1-6
     core: 128        # L7-18
-    feeder: 256      # L19-22
+    SEMANTIC: 256      # L19-22
     family: 512      # L23-28
   global_attention_positions: [0, 1, 2, 3, 4]  # CLS + hub tokens
 
@@ -557,13 +557,13 @@ def initialize_hub_tokens_semantic(model, tokenizer, v2_embeddings):
 class LayerBand(Enum):
     FOUNDATION = "foundation"  # L1-6 (indices 0-5)
     CORE = "core"              # L7-18 (indices 6-17)
-    FEEDER = "feeder"          # L19-22 (indices 18-21)
+    SEMANTIC = "SEMANTIC"          # L19-22 (indices 18-21)
     FAMILY = "family"          # L23-28 (indices 22-27)
 
 LAYER_BANDS = {
     LayerBand.FOUNDATION: list(range(0, 6)),   # Frozen
     LayerBand.CORE: list(range(6, 18)),        # Frozen
-    LayerBand.FEEDER: list(range(18, 22)),     # Trainable
+    LayerBand.SEMANTIC: list(range(18, 22)),     # Trainable
     LayerBand.FAMILY: list(range(22, 28)),     # Trainable
 }
 ```
@@ -579,8 +579,8 @@ class LayerFreezer:
             # Freeze Foundation + Core (L1-18)
             self.freeze_bands([LayerBand.FOUNDATION, LayerBand.CORE])
 
-            # Trainable: Feeder + Family (L19-28)
-            self.unfreeze_bands([LayerBand.FEEDER, LayerBand.FAMILY])
+            # Trainable: SEMANTIC + Family (L19-28)
+            self.unfreeze_bands([LayerBand.SEMANTIC, LayerBand.FAMILY])
 
             # Freeze embeddings except hub tokens
             self.freeze_embeddings(except_hub_tokens=True)
@@ -592,7 +592,7 @@ class LayerFreezer:
 |-----------|-----------|--------|
 | Foundation (L1-6) | ~20M | Frozen |
 | Core (L7-18) | ~80M | Frozen |
-| Feeder (L19-22) | ~25M | Trainable |
+| SEMANTIC (L19-22) | ~25M | Trainable |
 | Family (L23-28) | ~40M | Trainable |
 | Embeddings (0-50367) | ~38M | Frozen |
 | Hub Tokens (50368-50371) | ~3K | Trainable |
@@ -615,7 +615,7 @@ LR Profile (Phase 0.5):
            │                         ╱
      3e-5 ─┼─────────────────────────●─●─● L26-28
            │
-     1e-5 ─┼───●───●───●───●  L19-22 (Feeder)
+     1e-5 ─┼───●───●───●───●  L19-22 (SEMANTIC)
            │
        0 ──┼───────────────────────────────  L1-18 (Frozen)
            │
@@ -630,8 +630,8 @@ LR Profile (Phase 0.5):
 class ZipperLRConfig:
     base_lr: float = 3e-5
 
-    # Feeder band (L19-22) - uniform low LR
-    feeder_lr: float = 1e-5
+    # SEMANTIC band (L19-22) - uniform low LR
+    SEMANTIC_lr: float = 1e-5
 
     # Interface layer (L23) - maximum plasticity
     interface_lr: float = 5e-5
@@ -663,10 +663,10 @@ def create_zipper_optimizer(model, config: ZipperLRConfig):
         params = list(model.encoder.layers[i].parameters())
         param_groups.append({"params": params, "lr": 0.0})
 
-    # Feeder (L19-22)
+    # SEMANTIC (L19-22)
     for i in range(18, 22):
         params = list(model.encoder.layers[i].parameters())
-        param_groups.append({"params": params, "lr": config.feeder_lr})
+        param_groups.append({"params": params, "lr": config.SEMANTIC_lr})
 
     # Interface (L23)
     params = list(model.encoder.layers[22].parameters())
@@ -693,7 +693,7 @@ class GradientClipConfig:
     per_layer_clip: bool = True
     interface_clip: float = 0.5       # L23: tighter clip
     family_clip: float = 1.0          # L24-28
-    feeder_clip: float = 1.0          # L19-22
+    SEMANTIC_clip: float = 1.0          # L19-22
 
     log_grad_norms: bool = True
     log_every_n_steps: int = 100
@@ -818,7 +818,7 @@ Phase 0.5 Enhanced Healing Training Script for ModernBERT v3
 
 Training Strategy:
     - Freeze: L1-18 (Foundation + Core bands)
-    - Train: L19-28 (Feeder + Family bands), Hub tokens
+    - Train: L19-28 (SEMANTIC + Family bands), Hub tokens
     - LR: Zipper strategy with L23 at maximum plasticity
     - Data: Enhanced healing (SST-2, CoNLL, MNLI, SQuAD, STS-B)
 

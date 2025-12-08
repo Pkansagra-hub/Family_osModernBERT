@@ -112,8 +112,12 @@ def load_model_and_tokenizer(
 
     logger.info(f"Loading model from: {checkpoint_path}")
 
-    model = ModernBertMultiTaskModel.from_pretrained(str(checkpoint_path))
-    model = model.to(DEVICE)
+    # Use load_checkpoint for properly loading custom checkpoints
+    # This handles encoder + heads + adapters correctly
+    model = ModernBertMultiTaskModel.load_checkpoint(
+        checkpoint_path=checkpoint_path,
+        device=DEVICE,
+    )
     model.eval()
 
     tokenizer = AutoTokenizer.from_pretrained(str(checkpoint_path))
@@ -271,10 +275,10 @@ def evaluate_classification(
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                task=task,
+                capability=task,
             )
 
-            logits = outputs.get("logits", outputs.get(f"{task}_logits"))
+            logits = outputs.logits
             if logits is None:
                 continue
 
@@ -314,10 +318,10 @@ def evaluate_multilabel(
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                task=task,
+                capability=task,
             )
 
-            logits = outputs.get("logits", outputs.get(f"{task}_logits"))
+            logits = outputs.logits
             if logits is None:
                 continue
 
@@ -353,7 +357,7 @@ def evaluate_sequence_labeling(
     model: ModernBertMultiTaskModel,
     dataloader: DataLoader,
     task: str,
-    label_list: list[str],
+    label_schema,
 ) -> dict[str, float]:
     """Evaluate sequence labeling task (NER, temporal)."""
     all_preds = []
@@ -368,10 +372,10 @@ def evaluate_sequence_labeling(
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                task=task,
+                capability=task,
             )
 
-            logits = outputs.get("logits", outputs.get(f"{task}_logits"))
+            logits = outputs.logits
             if logits is None:
                 continue
 
@@ -386,10 +390,10 @@ def evaluate_sequence_labeling(
                 label_seq = labels_np[i, :seq_len].tolist()
 
                 # Filter -100 (ignored tokens)
-                for p, l in zip(pred_seq, label_seq):
-                    if l != -100:
+                for p, lbl in zip(pred_seq, label_seq):
+                    if lbl != -100:
                         all_preds.append(p)
-                        all_labels.append(l)
+                        all_labels.append(lbl)
 
     # Compute metrics (excluding O tag for NER-style tasks)
     # For simplicity, compute overall F1

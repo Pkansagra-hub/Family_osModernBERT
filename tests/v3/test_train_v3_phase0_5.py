@@ -442,7 +442,7 @@ class TestIssue541AcceptanceCriteria:
 
         # Check Zipper LR layer-specific rates
         assert config.lr_layers_1_18 == 0.0  # Frozen
-        assert config.lr_layers_19_22 == 1e-5  # Feeder
+        assert config.lr_layers_19_22 == 1e-5  # Semantic
         assert config.lr_layer_23 == 5e-5  # Interface (highest)
         assert config.lr_layers_24_28 == 3e-5  # Family
 

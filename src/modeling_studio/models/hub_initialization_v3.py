@@ -46,15 +46,15 @@ Constants:
     None
 
 Deployment Note:
-    ModernBERT-base has vocab_size=50265. After add_special_tokens() adds
-    4 hub tokens, the tokenizer vocab becomes 50269. However, for GPU/TPU
-    efficiency, embeddings should be resized to a multiple of 128 (e.g., 50368
-    or 50432). Use resize_token_embeddings_aligned() to handle this alignment.
+    ModernBERT v2 has vocab_size=50368. After add_special_tokens() adds
+    4 hub tokens, the tokenizer vocab becomes 50372. However, for GPU/TPU
+    efficiency, embeddings should be resized to a multiple of 128 (e.g., 50432).
+    Use resize_token_embeddings_aligned() to handle this alignment.
 
     Recommended initialization sequence:
     1. Load v2 model and tokenizer
-    2. Add hub tokens via tokenizer.add_special_tokens() → vocab_size=50269
-    3. Resize model embeddings to aligned size (50368 or 50432)
+    2. Add hub tokens via tokenizer.add_special_tokens() → vocab_size=50372
+    3. Resize model embeddings to aligned size (50432)
     4. Initialize hub tokens with semantic centroids
     5. Proceed with Phase 0.5 healing and training
 
@@ -85,12 +85,12 @@ def resize_token_embeddings_aligned(
     """
     Resize token embeddings to align with hardware efficiency requirements.
 
-    ModernBERT-base has vocab_size=50265. After adding 4 hub tokens via
-    add_special_tokens(), the tokenizer will have vocab_size=50269. However,
+    ModernBERT v2 has vocab_size=50368. After adding 4 hub tokens via
+    add_special_tokens(), the tokenizer will have vocab_size=50372. However,
     for GPU/TPU efficiency, we need vocab_size to be a multiple of 128.
 
     This function resizes the embedding matrix to the target vocab_size
-    (e.g., 50368 = 128 * 393) by padding with random initialization.
+    (e.g., 50432 = 128 * 394) by padding with random initialization.
 
     Args:
         model: Model with embeddings.word_embeddings attribute
@@ -113,12 +113,12 @@ def resize_token_embeddings_aligned(
         - Call this AFTER add_special_tokens() but BEFORE semantic init
 
     Safety:
-        Padding tokens (e.g., IDs 50269-50431 when resizing to 50432) are
+        Padding tokens (e.g., IDs 50372-50431 when resizing to 50432) are
         NEVER produced by the tokenizer because:
-        1. Base tokenizer knows vocab IDs 0-50264 only
-        2. Hub tokens explicitly added get IDs 50265-50268
+        1. Base tokenizer knows vocab IDs 0-50367 only
+        2. Hub tokens explicitly added get IDs 50368-50371
         3. HubTokenizer only uses base_tokenizer + 4 hub token IDs
-        4. No tokenization path can produce IDs >= 50269
+        4. No tokenization path can produce IDs >= 50372
         Therefore, padding embeddings receive no gradient flow and exist
         purely for hardware alignment.
     """

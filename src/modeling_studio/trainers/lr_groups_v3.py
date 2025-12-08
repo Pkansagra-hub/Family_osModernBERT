@@ -8,7 +8,7 @@ whether they're transferred vs cloned.
 Layer Band Architecture:
     - Foundation (L1-6): Very low or frozen - preserve v2 knowledge
     - Core (L7-18): Very low or frozen - preserve v2 knowledge
-    - Feeder (L19-22): Low LR - gentle refinement of interface
+    - Semantic (L19-22): Low LR - gentle refinement of interface
     - Interface (L23): Highest LR - needs most adaptation
     - Family (L24-28): Moderate LR - learning new capabilities
 
@@ -37,7 +37,7 @@ class LayerGroupLRConfig:
 
     Rationale:
         - Foundation/Core (L1-18): Very low or frozen - preserve v2 knowledge
-        - Feeder (L19-22): Low LR - gentle refinement of interface
+        - Semantic (L19-22): Low LR - gentle refinement of interface
         - Interface (L23): Highest LR - needs most adaptation
         - Family (L24-28): Moderate LR - learning new capabilities
 
@@ -45,7 +45,7 @@ class LayerGroupLRConfig:
         base_lr: Base learning rate (reference point for multipliers)
         foundation_mult: Multiplier for Foundation band (L1-6)
         core_mult: Multiplier for Core band (L7-18)
-        feeder_mult: Multiplier for Feeder band (L19-22)
+        semantic_mult: Multiplier for Semantic band (L19-22)
         interface_mult: Multiplier for Interface layer (L23)
         family_mult: Multiplier for Family band (L24-28)
         embeddings_mult: Multiplier for embedding layer
@@ -61,7 +61,7 @@ class LayerGroupLRConfig:
     # Layer band multipliers (relative to base_lr)
     foundation_mult: float = 0.0  # L1-6: Frozen or no training
     core_mult: float = 0.0  # L7-18: Frozen or no training
-    feeder_mult: float = 0.33  # L19-22: 1/3 of base LR
+    semantic_mult: float = 0.33  # L19-22: 1/3 of base LR
     interface_mult: float = 1.67  # L23: 5/3 of base LR (highest)
     family_mult: float = 1.0  # L24-28: Base LR
 
@@ -88,8 +88,8 @@ class LayerGroupLRConfig:
             return self.base_lr * self.foundation_mult
         elif layer_idx < 18:  # Core (L7-18)
             return self.base_lr * self.core_mult
-        elif layer_idx < 22:  # Feeder (L19-22)
-            return self.base_lr * self.feeder_mult
+        elif layer_idx < 22:  # Semantic (L19-22)
+            return self.base_lr * self.semantic_mult
         elif layer_idx == 22:  # Interface (L23, 0-indexed)
             return self.base_lr * self.interface_mult
         else:  # Family (L24-28)
@@ -119,7 +119,7 @@ class LayerGroupLRConfig:
         Get learning rate for a layer band.
 
         Args:
-            band: Band name (foundation, core, feeder, interface, family)
+            band: Band name (foundation, core, semantic, interface, family)
 
         Returns:
             Learning rate for the band
@@ -127,7 +127,7 @@ class LayerGroupLRConfig:
         band_mults = {
             "foundation": self.foundation_mult,
             "core": self.core_mult,
-            "feeder": self.feeder_mult,
+            "semantic": self.semantic_mult,
             "interface": self.interface_mult,
             "family": self.family_mult,
         }
@@ -161,7 +161,7 @@ class LayerGroupLRConfig:
             "base_lr": self.base_lr,
             "foundation_mult": self.foundation_mult,
             "core_mult": self.core_mult,
-            "feeder_mult": self.feeder_mult,
+            "semantic_mult": self.semantic_mult,
             "interface_mult": self.interface_mult,
             "family_mult": self.family_mult,
             "embeddings_mult": self.embeddings_mult,
@@ -183,7 +183,7 @@ PHASE_LR_CONFIGS: dict[str, LayerGroupLRConfig] = {
         base_lr=3e-5,
         foundation_mult=0.0,
         core_mult=0.0,
-        feeder_mult=0.33,
+        semantic_mult=0.33,
         interface_mult=1.67,
         family_mult=1.0,
         warmup_ratio=0.1,
@@ -193,7 +193,7 @@ PHASE_LR_CONFIGS: dict[str, LayerGroupLRConfig] = {
         base_lr=2e-5,
         foundation_mult=0.0,
         core_mult=0.0,
-        feeder_mult=0.5,
+        semantic_mult=0.5,
         interface_mult=1.5,
         family_mult=1.0,
         warmup_ratio=0.1,
@@ -203,7 +203,7 @@ PHASE_LR_CONFIGS: dict[str, LayerGroupLRConfig] = {
         base_lr=1e-5,
         foundation_mult=0.1,
         core_mult=0.2,
-        feeder_mult=0.5,
+        semantic_mult=0.5,
         interface_mult=1.0,
         family_mult=1.0,
         warmup_ratio=0.05,
@@ -216,7 +216,7 @@ PHASE_LR_CONFIGS: dict[str, LayerGroupLRConfig] = {
 LAYER_BAND_RANGES: dict[str, range] = {
     "foundation": range(0, 6),  # L1-6
     "core": range(6, 18),  # L7-18
-    "feeder": range(18, 22),  # L19-22
+    "semantic": range(18, 22),  # L19-22
     "interface": range(22, 23),  # L23 only
     "family": range(23, 28),  # L24-28
 }
@@ -340,7 +340,7 @@ class LayerGroupOptimizer:
         layer_groups = {
             "foundation": (range(0, 6), self.config.foundation_mult),
             "core": (range(6, 18), self.config.core_mult),
-            "feeder": (range(18, 22), self.config.feeder_mult),
+            "semantic": (range(18, 22), self.config.semantic_mult),
             "interface": ([22], self.config.interface_mult),
             "family": (range(23, 28), self.config.family_mult),
         }
@@ -572,7 +572,9 @@ def print_lr_summary(config: LayerGroupLRConfig) -> None:
         f"  Foundation (L1-6):   {config.get_band_lr('foundation'):.2e} ({config.foundation_mult:.2f}x)"
     )
     print(f"  Core (L7-18):        {config.get_band_lr('core'):.2e} ({config.core_mult:.2f}x)")
-    print(f"  Feeder (L19-22):     {config.get_band_lr('feeder'):.2e} ({config.feeder_mult:.2f}x)")
+    print(
+        f"  Semantic (L19-22):   {config.get_band_lr('semantic'):.2e} ({config.semantic_mult:.2f}x)"
+    )
     print(
         f"  Interface (L23):     {config.get_band_lr('interface'):.2e} ({config.interface_mult:.2f}x)"
     )

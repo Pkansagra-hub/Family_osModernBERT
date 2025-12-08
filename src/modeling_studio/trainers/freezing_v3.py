@@ -8,7 +8,7 @@ capabilities while training new layers.
 Layer Bands:
     Foundation (L1-6):   window=64,  frozen in Phase 0.5/1
     Core (L7-18):        window=128, frozen in Phase 0.5/1
-    Feeder (L19-22):     window=256, trainable in Phase 0.5/1
+    Semantic (L19-22):   window=256, trainable in Phase 0.5/1
     Family (L23-28):     window=512, trainable in Phase 0.5/1
 
 Training Phases:
@@ -34,7 +34,7 @@ class LayerBand(Enum):
 
     FOUNDATION = "foundation"  # L1-6: window=64
     CORE = "core"  # L7-18: window=128
-    FEEDER = "feeder"  # L19-22: window=256
+    SEMANTIC = "semantic"  # L19-22: window=256
     FAMILY = "family"  # L23-28: window=512
 
 
@@ -42,7 +42,7 @@ class LayerBand(Enum):
 LAYER_BANDS: dict[LayerBand, list[int]] = {
     LayerBand.FOUNDATION: list(range(0, 6)),  # L1-6
     LayerBand.CORE: list(range(6, 18)),  # L7-18
-    LayerBand.FEEDER: list(range(18, 22)),  # L19-22
+    LayerBand.SEMANTIC: list(range(18, 22)),  # L19-22
     LayerBand.FAMILY: list(range(22, 28)),  # L23-28
 }
 
@@ -58,12 +58,12 @@ class TrainingPhase(Enum):
 
 # Which bands are trainable in each phase
 PHASE_TRAINABLE_BANDS: dict[TrainingPhase, list[LayerBand]] = {
-    TrainingPhase.PHASE_0_5: [LayerBand.FEEDER, LayerBand.FAMILY],
-    TrainingPhase.PHASE_1: [LayerBand.FEEDER, LayerBand.FAMILY],
+    TrainingPhase.PHASE_0_5: [LayerBand.SEMANTIC, LayerBand.FAMILY],
+    TrainingPhase.PHASE_1: [LayerBand.SEMANTIC, LayerBand.FAMILY],
     TrainingPhase.PHASE_2: [
         LayerBand.FOUNDATION,
         LayerBand.CORE,
-        LayerBand.FEEDER,
+        LayerBand.SEMANTIC,
         LayerBand.FAMILY,
     ],
     TrainingPhase.INFERENCE: [],
@@ -77,7 +77,7 @@ class LayerFreezer:
     Freeze Strategy:
         Phase 0.5 (Healing):
             - Frozen: L1-18 (Foundation + Core)
-            - Trainable: L19-28 (Feeder + Family)
+            - Trainable: L19-28 (Semantic + Family)
             - Purpose: Heal cloned layers without forgetting
 
         Phase 1 (Multi-task):

@@ -978,12 +978,12 @@ Args:
     v3_layer_idx: v3 layer index (0-indexed)
 
 Returns:
-    Band name: 'foundation', 'core', 'feeder', o...
+    Band name: 'foundation', 'core', 'SEMANTIC', o...
 - `get_layers_in_band(band_name)` (line 1128)
   > Get all layer indices in a band.
 
 Args:
-    band_name: One of 'foundation', 'core', 'feeder', 'family'
+    band_name: One of 'foundation', 'core', 'SEMANTIC', 'family'
 
 Returns:
     List of layer indices (0-indexed)...
@@ -2027,7 +2027,7 @@ Returns:
 Freeze Strategy:
     Phase 0.5 (Healing):
         - Frozen: L1-18 (Foundation + Core)
-        - Trainable: L19-28 (Feeder + Family)
+        - Trainable: L19-28 (SEMANTIC + Family)
         - Purpose:...
 
 Methods:
@@ -2340,7 +2340,7 @@ Args:
 
 Rationale:
     - Foundation/Core (L1-18): Very low or frozen - preserve v2 knowledge
-    - Feeder (L19-22): Low LR - gentle refinement of interface
+    - SEMANTIC (L19-22): Low LR - gentle refinement of interface
     -...
 
 Methods:
@@ -2586,7 +2586,7 @@ Methods:
 **Constants:**
 - `FOUNDATION_END`
 - `CORE_END`
-- `FEEDER_END`
+- `SEMANTIC_END`
 - `INTERFACE_LAYER`
 - `FAMILY_END`
 - `V3_LAYER_COUNT`

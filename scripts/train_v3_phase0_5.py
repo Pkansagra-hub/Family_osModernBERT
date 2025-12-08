@@ -7,7 +7,7 @@ This script implements the "healing" phase that repairs the cloned layers
 
 Training Strategy:
     - Freeze: L1-18 (Foundation + Core bands)
-    - Train: L19-28 (Feeder + Family bands), Hub tokens
+    - Train: L19-28 (Semantic + Family bands), Hub tokens
     - LR: Zipper strategy with L23 at maximum plasticity
     - Data: Enhanced healing (SST-2, CoNLL, MNLI, SQuAD, STS-B)
 
@@ -64,6 +64,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import shutil
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -124,9 +125,16 @@ from modeling_studio.trainers.gradient_masking_v3 import (
 # =============================================================================
 
 from modeling_studio.data.collators_v3 import (
+    V3BaseCollator,
     V3CollatorConfig,
-    V3MultiTaskCollator,
-    create_v3_collator,
+    # Position constants from v3 infrastructure
+    POSITION_CLS,
+    POSITION_EMO,
+    POSITION_MEM,
+    POSITION_REL,
+    POSITION_TASK,
+    POSITION_TEXT_START,
+    V3_SPECIAL_PREFIX_LEN,
 )
 
 # =============================================================================
@@ -262,7 +270,7 @@ class Phase05Config:
     lr_strategy: str = "zipper"
     base_lr: float = 3e-5
     lr_layers_1_18: float = 0.0  # Frozen
-    lr_layers_19_22: float = 1e-5  # Feeder band
+    lr_layers_19_22: float = 1e-5  # Semantic band
     lr_layer_23: float = 5e-5  # Interface layer (maximum plasticity)
     lr_layers_24_28: float = 3e-5  # Family band
     lr_embeddings: float = 0.0  # Frozen (except hub tokens)
@@ -285,7 +293,7 @@ class Phase05Config:
     max_grad_norm: float = 1.0
     per_layer_clip: bool = True
     interface_clip: float = 0.5  # Tighter clip at L23
-    feeder_clip: float = 1.0
+    semantic_clip: float = 1.0
     family_clip: float = 1.0
     log_grad_norms: bool = True
     grad_log_every: int = 100
@@ -303,7 +311,7 @@ class Phase05Config:
     # Layer Freezing Configuration (from freezing_v3.py)
     # =========================================================================
     frozen_bands: list = field(default_factory=lambda: ["foundation", "core"])
-    trainable_bands: list = field(default_factory=lambda: ["feeder", "family"])
+    trainable_bands: list = field(default_factory=lambda: ["semantic", "family"])
     freeze_embeddings: bool = True
     freeze_hub_tokens: bool = False
 
@@ -373,7 +381,7 @@ class Phase05Config:
         """Create ZipperLRConfig from this config."""
         return ZipperLRConfig(
             base_lr=float(self.base_lr),
-            feeder_lr=float(self.lr_layers_19_22),
+            semantic_lr=float(self.lr_layers_19_22),
             interface_lr=float(self.lr_layer_23),
             family_lr=float(self.lr_layers_24_28),
             family_graduated=bool(self.family_graduated),
@@ -389,7 +397,7 @@ class Phase05Config:
             max_grad_norm=self.max_grad_norm,
             per_layer_clip=self.per_layer_clip,
             interface_clip=self.interface_clip,
-            feeder_clip=self.feeder_clip,
+            semantic_clip=self.semantic_clip,
             family_clip=self.family_clip,
             log_grad_norms=self.log_grad_norms,
             log_every_n_steps=self.grad_log_every,
@@ -442,30 +450,99 @@ class Phase05Config:
 
 @dataclass
 class TrainingState:
-    """Tracks training state for checkpointing and resumption."""
+    """
+    Tracks training state for checkpointing and resumption.
+
+    Maintains comprehensive training history including loss trajectory,
+    learning rate schedule, and evaluation metrics for Phase 0.5 healing.
+
+    Attributes:
+        global_step: Total training steps completed
+        epoch: Current epoch number (0-indexed)
+        best_metric: Best validation metric achieved (lower is better)
+        best_step: Step at which best metric was achieved
+        phase: Training phase identifier
+        losses: Rolling window of recent loss values
+        metrics_history: History of evaluation metrics
+        lr_history: Learning rate at each evaluation point
+    """
 
     global_step: int = 0
     epoch: int = 0
     best_metric: float = float("inf")
+    best_step: int = 0
     phase: str = "phase_0.5"
-    losses: list = field(default_factory=list)
-    metrics_history: list = field(default_factory=list)
+    losses: list[float] = field(default_factory=list)
+    metrics_history: list[dict[str, Any]] = field(default_factory=list)
+    lr_history: list[float] = field(default_factory=list)
+
+    def update_loss(self, loss: float) -> None:
+        """Add loss to history, maintaining rolling window."""
+        self.losses.append(loss)
+        # Keep last 500 losses for plotting
+        if len(self.losses) > 500:
+            self.losses = self.losses[-500:]
+
+    def update_metrics(self, metrics: dict[str, Any], lr: float | None = None) -> None:
+        """Add evaluation metrics to history."""
+        metrics_with_step = {"step": self.global_step, **metrics}
+        self.metrics_history.append(metrics_with_step)
+        if lr is not None:
+            self.lr_history.append(lr)
+        # Keep last 50 evaluations
+        if len(self.metrics_history) > 50:
+            self.metrics_history = self.metrics_history[-50:]
+
+    def update_best(self, metric_value: float) -> bool:
+        """
+        Update best metric if improved.
+
+        Args:
+            metric_value: Current validation metric (lower is better)
+
+        Returns:
+            True if this is a new best, False otherwise
+        """
+        if metric_value < self.best_metric:
+            self.best_metric = metric_value
+            self.best_step = self.global_step
+            return True
+        return False
+
+    def get_average_loss(self, window: int = 100) -> float:
+        """Get average loss over recent window."""
+        if not self.losses:
+            return 0.0
+        recent = self.losses[-window:]
+        return sum(recent) / len(recent)
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert state to dictionary."""
+        """Convert state to dictionary for serialization."""
         return {
             "global_step": self.global_step,
             "epoch": self.epoch,
             "best_metric": self.best_metric,
+            "best_step": self.best_step,
             "phase": self.phase,
-            "losses": self.losses[-100:],  # Keep last 100 losses
-            "metrics_history": self.metrics_history[-10:],  # Keep last 10 evals
+            "losses": self.losses[-100:],  # Keep last 100 for checkpoint size
+            "metrics_history": self.metrics_history[-10:],
+            "lr_history": self.lr_history[-10:],
         }
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> TrainingState:
         """Create state from dictionary."""
-        return cls(**d)
+        # Handle missing fields for backward compatibility
+        return cls(
+            global_step=d.get("global_step", 0),
+            epoch=d.get("epoch", 0),
+            best_metric=d.get("best_metric", float("inf")),
+            best_step=d.get("best_step", 0),
+            phase=d.get("phase", "phase_0.5"),
+            losses=d.get("losses", []),
+            metrics_history=d.get("metrics_history", []),
+            lr_history=d.get("lr_history", []),
+        )
 
 
 # =============================================================================
@@ -473,22 +550,59 @@ class TrainingState:
 # =============================================================================
 
 
+@dataclass
+class TaskStats:
+    """Statistics for a single task in the healing dataset."""
+
+    name: str
+    count: int = 0
+    avg_length: float = 0.0
+    min_length: int = 0
+    max_length: int = 0
+
+    def update(self, seq_length: int) -> None:
+        """Update stats with a new sample."""
+        if self.count == 0:
+            self.min_length = seq_length
+            self.max_length = seq_length
+        else:
+            self.min_length = min(self.min_length, seq_length)
+            self.max_length = max(self.max_length, seq_length)
+
+        # Running average
+        self.avg_length = (self.avg_length * self.count + seq_length) / (self.count + 1)
+        self.count += 1
+
+
 class HealingDataset(Dataset):
     """
     Healing dataset for Phase 0.5 using public benchmarks.
 
-    Loads from HuggingFace datasets:
-        - SST-2: Sentiment classification (binary)
-        - CoNLL-2003: NER (token classification)
-        - MNLI: Natural Language Inference (3-way)
-        - SQuAD: Question Answering (span extraction)
-        - STS-B: Semantic Textual Similarity (regression)
+    Loads from HuggingFace datasets to heal the cloned layers (L23-28):
+        - SST-2: Sentiment classification (binary) -> uses [EMO] hub
+        - MNLI: Natural Language Inference (3-way) -> uses [REL] hub
+        - STS-B: Semantic Textual Similarity (regression) -> uses [MEM] hub
+        - CoNLL-2003: NER (token classification) -> sequence tagging
+        - SQuAD: Question Answering (span extraction) -> uses [TASK] hub
+
+    The dataset samples are tokenized but NOT padded - padding is handled
+    by the HealingCollator which also inserts hub tokens.
 
     Attributes:
-        tokenizer: HuggingFace tokenizer
-        max_length: Maximum sequence length
+        tokenizer: HuggingFace tokenizer (with v3 hub tokens)
+        max_length: Maximum sequence length (default 512)
         samples: List of processed samples
+        task_stats: Per-task statistics
     """
+
+    # Supported tasks and their hub token associations
+    TASK_HUB_MAP = {
+        "sentiment": "[EMO]",  # Position 1
+        "similarity": "[MEM]",  # Position 2
+        "nli": "[REL]",  # Position 3
+        "qa": "[TASK]",  # Position 4
+        "ner": "[CLS]",  # Uses full sequence
+    }
 
     def __init__(
         self,
@@ -497,43 +611,96 @@ class HealingDataset(Dataset):
         max_samples: int | None = None,
         max_length: int = 512,
         tasks: list[str] | None = None,
+        seed: int = 42,
     ):
-        """Initialize HealingDataset."""
+        """
+        Initialize HealingDataset.
+
+        Args:
+            tokenizer: HuggingFace tokenizer with v3 hub tokens
+            split: Data split ('train' or 'validation')
+            max_samples: Maximum total samples (divided among tasks)
+            max_length: Maximum sequence length after tokenization
+            tasks: List of tasks to load (default: ['sentiment', 'nli'])
+            seed: Random seed for shuffling
+        """
         self.tokenizer = tokenizer
         self.max_length = max_length
-        self.samples: list[dict] = []
+        self.split = split
+        self.seed = seed
+        self.samples: list[dict[str, Any]] = []
+        self.task_stats: dict[str, TaskStats] = {}
 
         if tasks is None:
             tasks = ["sentiment", "nli"]
 
+        # Validate tasks
+        for task in tasks:
+            if task not in self.TASK_HUB_MAP:
+                logger.warning(f"Unknown task: {task}, skipping")
+                continue
+            self.task_stats[task] = TaskStats(name=task)
+
         if not HF_AVAILABLE:
             logger.warning("HuggingFace datasets not available, using synthetic data")
-            self._create_synthetic_samples(max_samples or 1000)
+            self._create_synthetic_samples(max_samples or 1000, tasks)
             return
 
-        # Calculate samples per task
+        # Calculate samples per task (balanced distribution)
         samples_per_task = (max_samples // len(tasks)) if max_samples else None
 
-        # Load each task
-        if "sentiment" in tasks:
-            self._load_sst2(split, samples_per_task)
+        # Load each task with error handling
+        loaders = {
+            "sentiment": self._load_sst2,
+            "nli": self._load_mnli,
+            "ner": self._load_conll2003,
+            "qa": self._load_squad,
+            "similarity": self._load_stsb,
+        }
 
-        if "nli" in tasks:
-            self._load_mnli(split, samples_per_task)
+        for task in tasks:
+            if task in loaders:
+                loaders[task](split, samples_per_task)
 
-        if "ner" in tasks:
-            self._load_conll2003(split, samples_per_task)
+        # Log summary statistics
+        self._log_stats()
 
-        if "qa" in tasks:
-            self._load_squad(split, samples_per_task)
+    def _log_stats(self) -> None:
+        """Log dataset statistics."""
+        total = len(self.samples)
+        logger.info(f"Loaded {total} healing samples for {self.split}")
+        for task, stats in self.task_stats.items():
+            if stats.count > 0:
+                logger.info(
+                    f"  {task}: {stats.count} samples, "
+                    f"avg_len={stats.avg_length:.1f}, "
+                    f"range=[{stats.min_length}, {stats.max_length}]"
+                )
 
-        if "similarity" in tasks:
-            self._load_stsb(split, samples_per_task)
+    def _add_sample(
+        self,
+        input_ids: list[int],
+        attention_mask: list[int],
+        task: str,
+        label: int | float | list[int],
+        **extra_fields,
+    ) -> None:
+        """Add a sample and update statistics."""
+        sample = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "task": task,
+            "label": label,
+            **extra_fields,
+        }
+        self.samples.append(sample)
 
-        logger.info(f"Loaded {len(self.samples)} healing samples for {split}")
+        # Update stats
+        if task in self.task_stats:
+            self.task_stats[task].update(len(input_ids))
 
     def _load_sst2(self, split: str, max_samples: int | None) -> None:
-        """Load SST-2 sentiment data."""
+        """Load SST-2 sentiment data (binary classification)."""
         try:
             ds_split = "validation" if split == "validation" else "train"
             ds = load_dataset("glue", "sst2", split=ds_split, trust_remote_code=True)
@@ -543,30 +710,31 @@ class HealingDataset(Dataset):
                 if max_samples and count >= max_samples:
                     break
 
+                sentence = item["sentence"]
+                label = item["label"]
+
                 encoding = self.tokenizer(
-                    item["sentence"],
-                    max_length=self.max_length - 5,  # Reserve space for hub tokens
+                    sentence,
+                    max_length=self.max_length - 6,  # Reserve for hub tokens + SEP
                     truncation=True,
                     padding=False,
                     return_tensors=None,
                 )
 
-                self.samples.append(
-                    {
-                        "input_ids": encoding["input_ids"],
-                        "attention_mask": encoding["attention_mask"],
-                        "task": "sentiment",
-                        "label": item["label"],
-                    }
+                self._add_sample(
+                    input_ids=encoding["input_ids"],
+                    attention_mask=encoding["attention_mask"],
+                    task="sentiment",
+                    label=int(label),
                 )
                 count += 1
 
-            logger.info(f"Loaded {count} SST-2 samples")
+            logger.debug(f"Loaded {count} SST-2 samples")
         except Exception as e:
             logger.warning(f"Failed to load SST-2: {e}")
 
     def _load_mnli(self, split: str, max_samples: int | None) -> None:
-        """Load MNLI NLI data."""
+        """Load MNLI NLI data (3-way classification)."""
         try:
             ds_split = "validation_matched" if split == "validation" else "train"
             ds = load_dataset("glue", "mnli", split=ds_split, trust_remote_code=True)
@@ -576,33 +744,35 @@ class HealingDataset(Dataset):
                 if max_samples and count >= max_samples:
                     break
 
-                # Combine premise and hypothesis
-                text = f"{item['premise']} [SEP] {item['hypothesis']}"
+                # Tokenize premise and hypothesis together
+                premise = item["premise"]
+                hypothesis = item["hypothesis"]
+                label = item["label"]
 
+                # Use tokenizer's built-in pair encoding
                 encoding = self.tokenizer(
-                    text,
-                    max_length=self.max_length - 5,
+                    premise,
+                    hypothesis,
+                    max_length=self.max_length - 6,
                     truncation=True,
                     padding=False,
                     return_tensors=None,
                 )
 
-                self.samples.append(
-                    {
-                        "input_ids": encoding["input_ids"],
-                        "attention_mask": encoding["attention_mask"],
-                        "task": "nli",
-                        "label": item["label"],
-                    }
+                self._add_sample(
+                    input_ids=encoding["input_ids"],
+                    attention_mask=encoding["attention_mask"],
+                    task="nli",
+                    label=int(label),
                 )
                 count += 1
 
-            logger.info(f"Loaded {count} MNLI samples")
+            logger.debug(f"Loaded {count} MNLI samples")
         except Exception as e:
             logger.warning(f"Failed to load MNLI: {e}")
 
     def _load_conll2003(self, split: str, max_samples: int | None) -> None:
-        """Load CoNLL-2003 NER data."""
+        """Load CoNLL-2003 NER data (token classification)."""
         try:
             ds_split = "validation" if split == "validation" else "train"
             ds = load_dataset("conll2003", split=ds_split, trust_remote_code=True)
@@ -615,37 +785,50 @@ class HealingDataset(Dataset):
                 tokens = item["tokens"]
                 ner_tags = item["ner_tags"]
 
-                # Join tokens for encoding
-                text = " ".join(tokens)
+                # Tokenize with is_split_into_words for proper word-piece handling
                 encoding = self.tokenizer(
-                    text,
-                    max_length=self.max_length - 5,
+                    tokens,
+                    is_split_into_words=True,
+                    max_length=self.max_length - 6,
                     truncation=True,
                     padding=False,
                     return_tensors=None,
                 )
 
-                # Align labels (simplified - use first token label)
-                # Note: Full implementation would use word_ids() for proper alignment
-                aligned_labels = ner_tags[: len(encoding["input_ids"]) - 2]  # -2 for CLS/SEP
+                # Align labels to word-pieces
+                word_ids = encoding.word_ids() if hasattr(encoding, "word_ids") else None
+                if word_ids is not None:
+                    aligned_labels = []
+                    previous_word_idx = None
+                    for word_idx in word_ids:
+                        if word_idx is None:
+                            aligned_labels.append(-100)  # Special tokens
+                        elif word_idx != previous_word_idx:
+                            aligned_labels.append(
+                                ner_tags[word_idx] if word_idx < len(ner_tags) else -100
+                            )
+                        else:
+                            aligned_labels.append(-100)  # Subword continuation
+                        previous_word_idx = word_idx
+                else:
+                    # Fallback: simple truncation
+                    aligned_labels = ner_tags[: len(encoding["input_ids"]) - 2]
 
-                self.samples.append(
-                    {
-                        "input_ids": encoding["input_ids"],
-                        "attention_mask": encoding["attention_mask"],
-                        "task": "ner",
-                        "label": aligned_labels,
-                        "ner_tags": ner_tags,
-                    }
+                self._add_sample(
+                    input_ids=encoding["input_ids"],
+                    attention_mask=encoding["attention_mask"],
+                    task="ner",
+                    label=aligned_labels,
+                    original_tokens=tokens,
                 )
                 count += 1
 
-            logger.info(f"Loaded {count} CoNLL-2003 samples")
+            logger.debug(f"Loaded {count} CoNLL-2003 samples")
         except Exception as e:
             logger.warning(f"Failed to load CoNLL-2003: {e}")
 
     def _load_squad(self, split: str, max_samples: int | None) -> None:
-        """Load SQuAD QA data."""
+        """Load SQuAD QA data (span extraction)."""
         try:
             ds_split = "validation" if split == "validation" else "train"
             ds = load_dataset("squad", split=ds_split, trust_remote_code=True)
@@ -655,40 +838,40 @@ class HealingDataset(Dataset):
                 if max_samples and count >= max_samples:
                     break
 
-                # Combine question and context
-                text = f"{item['question']} [SEP] {item['context']}"
+                question = item["question"]
+                context = item["context"]
+                answers = item["answers"]
 
+                # Get first answer
+                answer_text = answers["text"][0] if answers["text"] else ""
+                answer_start = answers["answer_start"][0] if answers["answer_start"] else 0
+
+                # Tokenize question and context together
                 encoding = self.tokenizer(
-                    text,
-                    max_length=self.max_length - 5,
-                    truncation=True,
+                    question,
+                    context,
+                    max_length=self.max_length - 6,
+                    truncation="only_second",  # Truncate context, keep question
                     padding=False,
                     return_tensors=None,
                 )
 
-                # Get answer info
-                answers = item["answers"]
-                answer_text = answers["text"][0] if answers["text"] else ""
-                answer_start = answers["answer_start"][0] if answers["answer_start"] else 0
-
-                self.samples.append(
-                    {
-                        "input_ids": encoding["input_ids"],
-                        "attention_mask": encoding["attention_mask"],
-                        "task": "qa",
-                        "label": 0,  # Placeholder for QA
-                        "answer_text": answer_text,
-                        "answer_start": answer_start,
-                    }
+                self._add_sample(
+                    input_ids=encoding["input_ids"],
+                    attention_mask=encoding["attention_mask"],
+                    task="qa",
+                    label=0,  # Placeholder - actual span finding in forward pass
+                    answer_text=answer_text,
+                    answer_start=answer_start,
                 )
                 count += 1
 
-            logger.info(f"Loaded {count} SQuAD samples")
+            logger.debug(f"Loaded {count} SQuAD samples")
         except Exception as e:
             logger.warning(f"Failed to load SQuAD: {e}")
 
     def _load_stsb(self, split: str, max_samples: int | None) -> None:
-        """Load STS-B similarity data."""
+        """Load STS-B similarity data (regression 0-5)."""
         try:
             ds_split = "validation" if split == "validation" else "train"
             ds = load_dataset("glue", "stsb", split=ds_split, trust_remote_code=True)
@@ -698,73 +881,81 @@ class HealingDataset(Dataset):
                 if max_samples and count >= max_samples:
                     break
 
-                # Combine sentence pairs
-                text = f"{item['sentence1']} [SEP] {item['sentence2']}"
+                sentence1 = item["sentence1"]
+                sentence2 = item["sentence2"]
+                score = item["label"]  # 0-5 similarity score
 
+                # Tokenize sentence pair
                 encoding = self.tokenizer(
-                    text,
-                    max_length=self.max_length - 5,
+                    sentence1,
+                    sentence2,
+                    max_length=self.max_length - 6,
                     truncation=True,
                     padding=False,
                     return_tensors=None,
                 )
 
-                # Normalize similarity score to 0-1
-                similarity_score = item["label"] / 5.0
+                # Normalize to 0-1 range
+                normalized_score = float(score) / 5.0
 
-                self.samples.append(
-                    {
-                        "input_ids": encoding["input_ids"],
-                        "attention_mask": encoding["attention_mask"],
-                        "task": "similarity",
-                        "label": similarity_score,
-                        "raw_score": item["label"],
-                    }
+                self._add_sample(
+                    input_ids=encoding["input_ids"],
+                    attention_mask=encoding["attention_mask"],
+                    task="similarity",
+                    label=normalized_score,
+                    raw_score=score,
                 )
                 count += 1
 
-            logger.info(f"Loaded {count} STS-B samples")
+            logger.debug(f"Loaded {count} STS-B samples")
         except Exception as e:
             logger.warning(f"Failed to load STS-B: {e}")
 
-    def _create_synthetic_samples(self, num_samples: int) -> None:
-        """Create synthetic samples when HF not available."""
-        for i in range(num_samples):
-            # Random token IDs (avoiding special tokens)
-            seq_len = 64 + (i % 64)
-            input_ids = torch.randint(5, 50368, (seq_len,)).tolist()
+    def _create_synthetic_samples(self, num_samples: int, tasks: list[str]) -> None:
+        """Create synthetic samples when HuggingFace datasets not available."""
+        import random
 
-            task_idx = i % 5
-            tasks = ["sentiment", "nli", "ner", "qa", "similarity"]
-            task = tasks[task_idx]
+        random.seed(self.seed)
+
+        for i in range(num_samples):
+            # Random sequence length
+            seq_len = random.randint(32, 128)
+            input_ids = [random.randint(100, 50000) for _ in range(seq_len)]
+
+            # Round-robin task assignment
+            task = tasks[i % len(tasks)]
 
             # Task-specific labels
             if task == "sentiment":
-                label = i % 2
+                label = random.randint(0, 1)
             elif task == "nli":
-                label = i % 3
+                label = random.randint(0, 2)
             elif task == "ner":
-                label = [i % 9 for _ in range(seq_len)]
+                label = [random.randint(0, 8) for _ in range(seq_len)]
             elif task == "qa":
                 label = 0
-            else:  # similarity
-                label = (i % 50) / 50.0
+            elif task == "similarity":
+                label = random.random()
+            else:
+                label = 0
 
-            self.samples.append(
-                {
-                    "input_ids": input_ids,
-                    "attention_mask": [1] * seq_len,
-                    "task": task,
-                    "label": label,
-                }
+            self._add_sample(
+                input_ids=input_ids,
+                attention_mask=[1] * seq_len,
+                task=task,
+                label=label,
             )
 
         logger.info(f"Created {num_samples} synthetic samples")
 
+    def get_task_distribution(self) -> dict[str, int]:
+        """Get count of samples per task."""
+        return {task: stats.count for task, stats in self.task_stats.items()}
+
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> dict:
+    def __getitem__(self, idx: int) -> dict[str, Any]:
         return self.samples[idx]
 
 
@@ -773,30 +964,131 @@ class HealingDataset(Dataset):
 # =============================================================================
 
 
-class HealingCollator:
+class HealingCollator(V3BaseCollator):
     """
-    Collator for healing data that adds hub tokens.
+    Data collator for Phase 0.5 healing that inserts v3 hub tokens.
 
-    Token layout: [CLS] [EMO] [MEM] [REL] [TASK] <text> [SEP] [PAD]...
+    Extends V3BaseCollator to handle HuggingFace dataset format with
+    separate 'input_ids', 'task', 'label' fields.
+
+    Transforms standard tokenized input into v3 format:
+        Input:  [CLS] <text tokens> [SEP]
+        Output: [CLS] [EMO] [MEM] [REL] [TASK] <text tokens> [SEP] [PAD]...
+
+    The hub tokens enable task-specific routing:
+        - Position 1 [EMO]: Sentiment/emotion classification
+        - Position 2 [MEM]: Similarity/embedding tasks
+        - Position 3 [REL]: NLI/relation tasks
+        - Position 4 [TASK]: Intent/QA tasks
+
+    Note:
+        Uses HUB_TOKEN_IDS from modeling_studio.models.hub_tokens module
+        and position constants from modeling_studio.data.collators_v3 module.
     """
 
-    HUB_TOKENS = {
-        "[EMO]": 50368,
-        "[MEM]": 50369,
-        "[REL]": 50370,
-        "[TASK]": 50371,
-    }
+    def __init__(
+        self,
+        tokenizer,
+        max_length: int = 512,
+        hub_token_ids: dict[str, int] | None = None,
+    ):
+        """
+        Initialize HealingCollator.
 
-    def __init__(self, tokenizer, max_length: int = 512):
-        """Initialize HealingCollator."""
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-        self.pad_token_id = tokenizer.pad_token_id or 0
-        self.cls_token_id = tokenizer.cls_token_id or 0
-        self.sep_token_id = tokenizer.sep_token_id or 2
+        Args:
+            tokenizer: HuggingFace tokenizer with v3 hub tokens
+            max_length: Maximum sequence length (default 512)
+            hub_token_ids: Custom hub token IDs (uses imported HUB_TOKEN_IDS if None)
+        """
+        # Initialize base collator with config
+        config = V3CollatorConfig(max_length=max_length)
+        super().__init__(tokenizer, config)
 
-    def __call__(self, batch: list[dict]) -> dict[str, torch.Tensor]:
-        """Collate batch with hub token insertion."""
+        # Use imported HUB_TOKEN_IDS from hub_tokens module
+        self.hub_token_ids = hub_token_ids or HUB_TOKEN_IDS
+
+        # Get special token IDs from tokenizer
+        self.pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
+        self.cls_token_id = tokenizer.cls_token_id if tokenizer.cls_token_id is not None else 0
+        self.sep_token_id = tokenizer.sep_token_id if tokenizer.sep_token_id is not None else 2
+
+        # Build hub token prefix: [CLS] [EMO] [MEM] [REL] [TASK]
+        self.hub_prefix = [
+            self.cls_token_id,
+            self.hub_token_ids["[EMO]"],
+            self.hub_token_ids["[MEM]"],
+            self.hub_token_ids["[REL]"],
+            self.hub_token_ids["[TASK]"],
+        ]
+
+    def _strip_special_tokens(self, input_ids: list[int]) -> list[int]:
+        """Remove CLS and SEP tokens from the sequence."""
+        if not input_ids:
+            return input_ids
+
+        # Remove leading CLS
+        if input_ids[0] == self.cls_token_id:
+            input_ids = input_ids[1:]
+
+        # Remove trailing SEP (may have multiple from sentence pairs)
+        while input_ids and input_ids[-1] == self.sep_token_id:
+            input_ids = input_ids[:-1]
+
+        # Remove internal SEP tokens but keep track for sentence pairs
+        # (We keep them as they mark sentence boundaries)
+
+        return input_ids
+
+    def _build_v3_sequence(
+        self,
+        input_ids: list[int],
+    ) -> tuple[list[int], list[int]]:
+        """
+        Build v3 token sequence with hub tokens.
+
+        Args:
+            input_ids: Text token IDs (may include CLS/SEP)
+
+        Returns:
+            Tuple of (padded_input_ids, attention_mask)
+        """
+        # Strip existing special tokens
+        text_ids = self._strip_special_tokens(list(input_ids))
+
+        # Calculate available space for text
+        # Layout: [CLS][EMO][MEM][REL][TASK]<text>[SEP][PAD...]
+        max_text_len = self.config.max_length - V3_SPECIAL_PREFIX_LEN - 1  # -1 for [SEP]
+
+        # Truncate text if needed
+        if len(text_ids) > max_text_len:
+            text_ids = text_ids[:max_text_len]
+
+        # Build sequence: hub_prefix + text + SEP
+        v3_ids = self.hub_prefix + text_ids + [self.sep_token_id]
+
+        # Create attention mask (1 for real tokens, 0 for padding)
+        seq_len = len(v3_ids)
+        pad_len = self.config.max_length - seq_len
+
+        attention_mask = [1] * seq_len + [0] * pad_len
+        v3_ids = v3_ids + [self.pad_token_id] * pad_len
+
+        return v3_ids, attention_mask
+
+    def __call__(self, batch: list[dict[str, Any]]) -> dict[str, torch.Tensor | list[str]]:
+        """
+        Collate batch with hub token insertion.
+
+        Args:
+            batch: List of sample dictionaries with 'input_ids', 'task', 'label'
+
+        Returns:
+            Dictionary with:
+                - input_ids: [batch_size, max_length]
+                - attention_mask: [batch_size, max_length]
+                - labels: [batch_size] or [batch_size, seq_len] for NER
+                - tasks: List of task names
+        """
         batch_input_ids = []
         batch_attention_mask = []
         batch_labels = []
@@ -804,45 +1096,48 @@ class HealingCollator:
 
         for sample in batch:
             input_ids = sample["input_ids"]
+
+            # Handle tensor inputs
             if isinstance(input_ids, torch.Tensor):
                 input_ids = input_ids.tolist()
 
-            # Remove existing CLS/SEP if present
-            if input_ids and input_ids[0] == self.cls_token_id:
-                input_ids = input_ids[1:]
-            if input_ids and input_ids[-1] == self.sep_token_id:
-                input_ids = input_ids[:-1]
-
-            # Build v3 token sequence: [CLS] [EMO] [MEM] [REL] [TASK] <text> [SEP]
-            v3_ids = (
-                [
-                    self.cls_token_id,
-                    self.HUB_TOKENS["[EMO]"],
-                    self.HUB_TOKENS["[MEM]"],
-                    self.HUB_TOKENS["[REL]"],
-                    self.HUB_TOKENS["[TASK]"],
-                ]
-                + input_ids[: self.max_length - 6]
-                + [self.sep_token_id]
-            )
-
-            # Pad to max_length
-            pad_len = self.max_length - len(v3_ids)
-            attention_mask = [1] * len(v3_ids) + [0] * pad_len
-            v3_ids = v3_ids + [self.pad_token_id] * pad_len
+            # Build v3 sequence with hub tokens
+            v3_ids, attention_mask = self._build_v3_sequence(input_ids)
 
             batch_input_ids.append(v3_ids)
             batch_attention_mask.append(attention_mask)
             batch_labels.append(sample["label"])
             batch_tasks.append(sample.get("task", "sentiment"))
 
-        # Handle different label types (int vs float for similarity)
-        if batch_tasks and batch_tasks[0] == "similarity":
-            labels_tensor = torch.tensor(batch_labels, dtype=torch.float)
-        else:
-            # For classification tasks, labels should be integers
+        # Determine label type based on batch composition
+        # Mixed batches use first task's type
+        primary_task = batch_tasks[0] if batch_tasks else "sentiment"
+
+        if primary_task == "similarity":
+            # Regression task: float labels
             labels_tensor = torch.tensor(
-                [lbl if isinstance(lbl, int) else 0 for lbl in batch_labels],
+                [float(lbl) if isinstance(lbl, (int, float)) else 0.0 for lbl in batch_labels],
+                dtype=torch.float,
+            )
+        elif primary_task == "ner":
+            # Token classification: pad label sequences
+            max_label_len = self.config.max_length
+            padded_labels = []
+            for lbl in batch_labels:
+                if isinstance(lbl, list):
+                    # Add -100 for hub tokens + CLS, then labels, then -100 for rest
+                    aligned = [-100] * V3_SPECIAL_PREFIX_LEN + lbl[
+                        : max_label_len - V3_SPECIAL_PREFIX_LEN - 1
+                    ]
+                    aligned = aligned + [-100] * (max_label_len - len(aligned))
+                    padded_labels.append(aligned)
+                else:
+                    padded_labels.append([-100] * max_label_len)
+            labels_tensor = torch.tensor(padded_labels, dtype=torch.long)
+        else:
+            # Classification tasks: integer labels
+            labels_tensor = torch.tensor(
+                [int(lbl) if isinstance(lbl, (int, float)) else 0 for lbl in batch_labels],
                 dtype=torch.long,
             )
 
@@ -861,62 +1156,130 @@ class HealingCollator:
 
 @dataclass
 class Phase05Output:
-    """Output container for Phase 0.5 training forward pass."""
+    """
+    Output container for Phase 0.5 training forward pass.
+
+    Attributes:
+        loss: Scalar loss tensor (None if no labels provided)
+        logits: Task-specific logits [batch_size, num_classes]
+        hidden_states: Last layer hidden states [batch_size, seq_len, hidden_size]
+        task_losses: Per-task loss breakdown (optional)
+    """
 
     loss: torch.Tensor | None
     logits: torch.Tensor
     hidden_states: torch.Tensor
+    task_losses: dict[str, float] | None = None
 
 
 class Phase05TrainingModel(nn.Module):
     """
-    Wrapper that adds task heads to ModernBERTv3Ultra for Phase 0.5.
+    Training wrapper for ModernBERTv3Ultra in Phase 0.5 healing.
 
-    Uses hub tokens for task-specific classification:
-        - [EMO] at position 1 for sentiment/safety
-        - [MEM] at position 2 for embedding/similarity
-        - [REL] at position 3 for NLI
-        - [TASK] at position 4 for intent/ingress
+    Adds task-specific classification heads that read from hub tokens:
+        - [EMO] (pos 1): Sentiment/emotion classification (2 classes)
+        - [MEM] (pos 2): Similarity regression (cosine-like 0-1)
+        - [REL] (pos 3): NLI classification (3 classes)
+        - [TASK] (pos 4): Intent/QA routing
+
+    The goal of Phase 0.5 is to heal the cloned family layers (L23-28)
+    so they learn to process hub tokens correctly while the frozen
+    foundation/core layers (L1-18) provide stable representations.
+
+    Architecture:
+        - Wraps ModernBERTv3Ultra backbone
+        - Adds lightweight task heads (single Linear layers)
+        - Computes task-weighted loss for multi-task training
+
+    Attributes:
+        model: Underlying ModernBERTv3Ultra model
+        sentiment_head: Binary sentiment classifier
+        nli_head: 3-way NLI classifier
+        similarity_head: Similarity regression head
+        qa_head: QA start/end position head
+        task_weights: Optional per-task loss weights
+
+    Note:
+        Uses position constants from modeling_studio.data.collators_v3:
+        POSITION_CLS, POSITION_EMO, POSITION_MEM, POSITION_REL, POSITION_TASK
     """
 
-    # Hub token positions in the sequence
-    POS_CLS = 0
-    POS_EMO = 1
-    POS_MEM = 2
-    POS_REL = 3
-    POS_TASK = 4
+    def __init__(
+        self,
+        model: ModernBERTv3Ultra,
+        task_weights: dict[str, float] | None = None,
+    ):
+        """
+        Initialize Phase05TrainingModel.
 
-    def __init__(self, model: ModernBERTv3Ultra):
-        """Initialize Phase05TrainingModel."""
+        Args:
+            model: ModernBERTv3Ultra backbone
+            task_weights: Per-task loss weights (default: equal weights)
+        """
         super().__init__()
         self.model = model
 
         hidden_size = model.config.hidden_size
 
-        # Task-specific heads
-        self.sentiment_head = nn.Linear(hidden_size, 2)  # Binary sentiment
-        self.nli_head = nn.Linear(hidden_size, 3)  # 3-way NLI
+        # Task-specific classification heads
+        # Each head reads from its designated hub token position
+        self.sentiment_head = nn.Linear(hidden_size, 2)  # Binary
+        self.nli_head = nn.Linear(hidden_size, 3)  # Entailment/Neutral/Contradiction
         self.similarity_head = nn.Linear(hidden_size, 1)  # Regression
         self.qa_head = nn.Linear(hidden_size, 2)  # Start/end logits
 
+        # For NER (token classification), we use a sequence head
+        self.ner_head = nn.Linear(hidden_size, 9)  # CoNLL-2003 has 9 NER tags
+
         # Loss functions
-        self.ce_loss = nn.CrossEntropyLoss()
-        self.mse_loss = nn.MSELoss()
+        self.ce_loss = nn.CrossEntropyLoss(reduction="none")
+        self.mse_loss = nn.MSELoss(reduction="none")
+
+        # Task weights for loss aggregation
+        self.task_weights = task_weights or {
+            "sentiment": 1.0,
+            "nli": 1.0,
+            "similarity": 1.0,
+            "qa": 1.0,
+            "ner": 1.0,
+        }
 
     @property
     def encoder(self):
-        """Expose encoder for LayerFreezer."""
+        """Expose encoder for LayerFreezer compatibility."""
         return self.model.encoder
 
     @property
     def embeddings(self):
-        """Expose embeddings for LayerFreezer."""
+        """Expose embeddings for LayerFreezer compatibility."""
         return self.model.embeddings
 
     @property
     def config(self):
-        """Expose config."""
+        """Expose config from underlying model."""
         return self.model.config
+
+    def get_task_head(self, task: str) -> nn.Module:
+        """Get the classification head for a task."""
+        heads = {
+            "sentiment": self.sentiment_head,
+            "nli": self.nli_head,
+            "similarity": self.similarity_head,
+            "qa": self.qa_head,
+            "ner": self.ner_head,
+        }
+        return heads.get(task, self.sentiment_head)
+
+    def get_task_position(self, task: str) -> int:
+        """Get the hub token position for a task."""
+        positions = {
+            "sentiment": POSITION_EMO,
+            "nli": POSITION_REL,
+            "similarity": POSITION_MEM,
+            "qa": POSITION_TASK,
+            "ner": -1,  # NER uses all positions
+        }
+        return positions.get(task, POSITION_CLS)
 
     def forward(
         self,
@@ -924,9 +1287,23 @@ class Phase05TrainingModel(nn.Module):
         attention_mask: torch.Tensor,
         labels: torch.Tensor | None = None,
         tasks: list[str] | None = None,
+        return_task_losses: bool = False,
         **kwargs,
     ) -> Phase05Output:
-        """Forward pass with task-specific loss computation."""
+        """
+        Forward pass with task-specific loss computation.
+
+        Args:
+            input_ids: Token IDs [batch_size, seq_len]
+            attention_mask: Attention mask [batch_size, seq_len]
+            labels: Task labels (shape depends on task type)
+            tasks: List of task names for each sample
+            return_task_losses: Whether to return per-task loss breakdown
+            **kwargs: Additional arguments (ignored)
+
+        Returns:
+            Phase05Output with loss, logits, and hidden states
+        """
         # Get encoder outputs
         outputs = self.model(
             input_ids=input_ids,
@@ -936,102 +1313,141 @@ class Phase05TrainingModel(nn.Module):
 
         batch_size = input_ids.size(0)
         hidden_states = outputs.last_hidden_state
+        device = input_ids.device
+        dtype = hidden_states.dtype
 
-        total_loss = torch.tensor(0.0, device=input_ids.device, dtype=hidden_states.dtype)
+        # Accumulate losses and logits
+        total_loss = torch.tensor(0.0, device=device, dtype=dtype)
         all_logits = []
+        task_loss_accum: dict[str, list[float]] = {}
 
         for i in range(batch_size):
             task = tasks[i] if tasks else "sentiment"
 
             if task == "sentiment":
-                # Use [EMO] hub token at position 1
-                pooled = hidden_states[i, self.POS_EMO, :]
+                # Use [EMO] hub token for sentiment
+                pooled = hidden_states[i, POSITION_EMO, :]
                 logits = self.sentiment_head(pooled)
                 all_logits.append(logits)
 
                 if labels is not None:
                     loss = self.ce_loss(logits.unsqueeze(0), labels[i : i + 1].long())
-                    total_loss = total_loss + loss
+                    weighted_loss = loss.mean() * self.task_weights.get("sentiment", 1.0)
+                    total_loss = total_loss + weighted_loss
+                    if return_task_losses:
+                        task_loss_accum.setdefault("sentiment", []).append(loss.item())
 
             elif task == "nli":
-                # Use [REL] hub token at position 3
-                pooled = hidden_states[i, self.POS_REL, :]
+                # Use [REL] hub token for NLI
+                pooled = hidden_states[i, POSITION_REL, :]
                 logits = self.nli_head(pooled)
                 all_logits.append(logits)
 
                 if labels is not None:
                     loss = self.ce_loss(logits.unsqueeze(0), labels[i : i + 1].long())
-                    total_loss = total_loss + loss
+                    weighted_loss = loss.mean() * self.task_weights.get("nli", 1.0)
+                    total_loss = total_loss + weighted_loss
+                    if return_task_losses:
+                        task_loss_accum.setdefault("nli", []).append(loss.item())
 
             elif task == "similarity":
-                # Use [MEM] hub token at position 2
-                pooled = hidden_states[i, self.POS_MEM, :]
+                # Use [MEM] hub token for similarity
+                pooled = hidden_states[i, POSITION_MEM, :]
                 logits = self.similarity_head(pooled).squeeze(-1)
                 all_logits.append(logits.unsqueeze(0))  # Keep shape consistent
 
                 if labels is not None:
                     target = labels[i : i + 1].float()
                     loss = self.mse_loss(logits.unsqueeze(0), target)
-                    total_loss = total_loss + loss
+                    weighted_loss = loss.mean() * self.task_weights.get("similarity", 1.0)
+                    total_loss = total_loss + weighted_loss
+                    if return_task_losses:
+                        task_loss_accum.setdefault("similarity", []).append(loss.item())
 
             elif task == "qa":
-                # Use full sequence for QA (start/end positions)
-                # Simplified: just use [TASK] hub token for now
-                pooled = hidden_states[i, self.POS_TASK, :]
+                # Use [TASK] hub token for QA
+                pooled = hidden_states[i, POSITION_TASK, :]
                 logits = self.qa_head(pooled)
                 all_logits.append(logits)
 
-                # QA loss would require start/end positions - placeholder
                 if labels is not None:
-                    # Use cross-entropy on first position as placeholder
+                    # Simplified: use binary classification as placeholder
                     loss = self.ce_loss(logits.unsqueeze(0), labels[i : i + 1].long() % 2)
-                    total_loss = total_loss + loss
+                    weighted_loss = loss.mean() * self.task_weights.get("qa", 1.0)
+                    total_loss = total_loss + weighted_loss
+                    if return_task_losses:
+                        task_loss_accum.setdefault("qa", []).append(loss.item())
 
             elif task == "ner":
-                # NER uses all token positions - simplified for healing
-                # Just use [CLS] for sequence-level representation
-                pooled = hidden_states[i, self.POS_CLS, :]
-                logits = self.sentiment_head(pooled)  # Reuse head
+                # NER: sequence labeling (simplified for healing)
+                # For now, just use [CLS] as sequence representation
+                pooled = hidden_states[i, POSITION_CLS, :]
+                logits = self.sentiment_head(pooled)  # Binary as placeholder
                 all_logits.append(logits)
 
                 if labels is not None:
-                    # Simplified: treat as binary classification
-                    label_val = labels[i] if isinstance(labels[i], int) else 0
+                    # Handle sequence labels by taking first non-padding label
+                    if labels.dim() > 1:
+                        label_seq = labels[i]
+                        valid_labels = label_seq[label_seq != -100]
+                        label_val = (
+                            valid_labels[0]
+                            if len(valid_labels) > 0
+                            else torch.tensor(0, device=device)
+                        )
+                    else:
+                        label_val = labels[i]
+
                     loss = self.ce_loss(
                         logits.unsqueeze(0),
-                        torch.tensor([label_val % 2], device=input_ids.device),
+                        (label_val.long() % 2).unsqueeze(0),
                     )
-                    total_loss = total_loss + loss
+                    weighted_loss = loss.mean() * self.task_weights.get("ner", 1.0)
+                    total_loss = total_loss + weighted_loss
+                    if return_task_losses:
+                        task_loss_accum.setdefault("ner", []).append(loss.item())
 
             else:
-                # Default: use [CLS]
-                pooled = hidden_states[i, self.POS_CLS, :]
+                # Unknown task: default to sentiment-like
+                pooled = hidden_states[i, POSITION_CLS, :]
                 logits = self.sentiment_head(pooled)
                 all_logits.append(logits)
 
         # Average loss over batch
-        if labels is not None:
+        if labels is not None and batch_size > 0:
             total_loss = total_loss / batch_size
 
-        # Stack logits (may have different shapes, use first for reference)
-        try:
-            logits_tensor = torch.stack(all_logits)
-        except RuntimeError:
-            # If shapes don't match, pad to largest
-            max_size = max(lg.numel() for lg in all_logits)
-            padded = []
-            for lg in all_logits:
-                if lg.numel() < max_size:
-                    pad = torch.zeros(max_size - lg.numel(), device=lg.device, dtype=lg.dtype)
-                    padded.append(torch.cat([lg.flatten(), pad]))
-                else:
-                    padded.append(lg.flatten()[:max_size])
-            logits_tensor = torch.stack(padded)
+        # Stack logits (handle variable shapes)
+        if all_logits:
+            try:
+                logits_tensor = torch.stack(all_logits)
+            except RuntimeError:
+                # Different shapes: pad to maximum
+                max_size = max(lg.numel() for lg in all_logits)
+                padded = []
+                for lg in all_logits:
+                    flat = lg.flatten()
+                    if flat.numel() < max_size:
+                        pad = torch.zeros(max_size - flat.numel(), device=device, dtype=dtype)
+                        padded.append(torch.cat([flat, pad]))
+                    else:
+                        padded.append(flat[:max_size])
+                logits_tensor = torch.stack(padded)
+        else:
+            logits_tensor = torch.zeros(1, 2, device=device, dtype=dtype)
+
+        # Aggregate per-task losses
+        task_losses = None
+        if return_task_losses and task_loss_accum:
+            task_losses = {
+                task: sum(losses) / len(losses) for task, losses in task_loss_accum.items()
+            }
 
         return Phase05Output(
             loss=total_loss if labels is not None else None,
             logits=logits_tensor,
             hidden_states=hidden_states,
+            task_losses=task_losses,
         )
 
 
@@ -1041,25 +1457,60 @@ class Phase05TrainingModel(nn.Module):
 
 
 def load_config(config_path: str | Path) -> dict[str, Any]:
-    """Load configuration from YAML file."""
+    """
+    Load configuration from YAML file.
+
+    Supports hierarchical YAML configuration files with nested sections
+    for training, learning_rate, gradient, optimizer, checkpointing, logging.
+
+    Args:
+        config_path: Path to YAML configuration file
+
+    Returns:
+        Parsed configuration dictionary (empty if file not found)
+
+    Example:
+        >>> config_dict = load_config("configs/training/phase05.yaml")
+        >>> config = Phase05Config.from_dict(config_dict)
+    """
     config_path = Path(config_path)
     if not config_path.exists():
         logger.warning(f"Config file not found: {config_path}")
         return {}
 
     if not YAML_AVAILABLE:
-        logger.warning("YAML/OmegaConf not available, cannot load config")
+        logger.warning("YAML not available, cannot load config (install pyyaml)")
         return {}
 
-    with open(config_path, encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    logger.info(f"Loaded config from {config_path}")
-    return config or {}
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+        logger.info(f"Loaded config from {config_path}")
+        return config or {}
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing YAML config: {e}")
+        return {}
 
 
 def apply_overrides(config: dict[str, Any], overrides: list[str]) -> dict[str, Any]:
-    """Apply CLI overrides to config (e.g., --learning-rate=3e-5)."""
+    """
+    Apply CLI overrides to configuration dictionary.
+
+    Supports dotted key notation for nested values and automatic
+    type inference (bool, int, float, string).
+
+    Args:
+        config: Base configuration dictionary
+        overrides: List of "key=value" or "key.subkey=value" strings
+
+    Returns:
+        Updated configuration dictionary
+
+    Example:
+        >>> config = {"training": {"lr": 1e-4}}
+        >>> apply_overrides(config, ["training.lr=5e-5", "seed=123"])
+        {'training': {'lr': 5e-5}, 'seed': 123}
+    """
     result = config.copy()
 
     for override in overrides:
@@ -1096,12 +1547,24 @@ def apply_overrides(config: dict[str, Any], overrides: list[str]) -> dict[str, A
 
 
 def merge_configs(base_config: Phase05Config, yaml_config: dict[str, Any]) -> Phase05Config:
-    """Merge YAML config into base config."""
+    """
+    Merge YAML configuration into Phase05Config.
+
+    Maps hierarchical YAML keys to flat config attributes using
+    a predefined mapping. Direct matches are also applied.
+
+    Args:
+        base_config: Base Phase05Config with default values
+        yaml_config: Dictionary from YAML file
+
+    Returns:
+        New Phase05Config with merged values
+    """
     config_dict = base_config.to_dict()
 
     # Flatten nested YAML config and apply
     def flatten_dict(d: dict, parent_key: str = "") -> dict:
-        items = {}
+        items: dict[str, Any] = {}
         for k, v in d.items():
             new_key = f"{parent_key}.{k}" if parent_key else k
             if isinstance(v, dict):
@@ -1162,16 +1625,28 @@ def merge_configs(base_config: Phase05Config, yaml_config: dict[str, Any]) -> Ph
 
 def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
     """
-    Setup v3 model from checkpoint or initialize from v2.
+    Load or initialize ModernBERTv3Ultra model for Phase 0.5 training.
 
-    Priority:
-        1. Load from model_path if exists
-        2. Initialize from v2_checkpoint if available
-        3. Create with random initialization (warning)
+    Model Loading Priority:
+        1. Load from model_path if checkpoint exists (preferred)
+        2. Initialize from v2_checkpoint via weight transfer
+        3. Create with random initialization (NOT recommended)
+
+    The expected scenario for Phase 0.5 is loading a v3 model that was
+    initialized from v2 in a previous step (via initialize_v3_from_v2.py).
+
+    Args:
+        config: Phase05Config with model_path and v2_checkpoint
+
+    Returns:
+        ModernBERTv3Ultra model ready for training
+
+    Raises:
+        RuntimeError: If model cannot be loaded (in strict mode)
     """
     model_path = Path(config.model_path)
 
-    # Try loading from existing v3 checkpoint
+    # Try loading from existing v3 checkpoint (pytorch_model.bin)
     if model_path.exists() and (model_path / "pytorch_model.bin").exists():
         logger.info(f"Loading v3 model from {model_path}")
         v3_config = ModernBERTv3Config()
@@ -1186,7 +1661,7 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
         logger.info(f"Loaded {sum(p.numel() for p in model.parameters()):,} parameters")
         return model
 
-    # Try loading from safetensors
+    # Try loading from safetensors format
     if model_path.exists() and (model_path / "model.safetensors").exists():
         logger.info(f"Loading v3 model from safetensors: {model_path}")
         v3_config = ModernBERTv3Config()
@@ -1200,9 +1675,9 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
             logger.info(f"Loaded {sum(p.numel() for p in model.parameters()):,} parameters")
             return model
         except ImportError:
-            logger.warning("safetensors not available")
+            logger.warning("safetensors package not available")
 
-    # Try initializing from v2 checkpoint
+    # Try initializing from v2 checkpoint (weight transfer + cloning)
     v2_path = Path(config.v2_checkpoint)
     if v2_path.exists() and V2_INIT_AVAILABLE:
         logger.info(f"Initializing v3 model from v2 checkpoint: {v2_path}")
@@ -1211,15 +1686,19 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
 
         stats = initialize_from_v2(model, str(v2_path))
         logger.info(
-            f"Initialized from v2: {stats.transferred_params:,} transferred, "
-            f"{stats.cloned_params:,} cloned"
+            f"Initialized from v2:\n"
+            f"  Transferred: {stats.transferred_params:,} parameters\n"
+            f"  Cloned: {stats.cloned_params:,} parameters\n"
+            f"  Source layers: L1-22 -> Target: L1-28"
         )
         return model
 
-    # Fall back to random initialization with warning
+    # Fall back to random initialization (NOT recommended for Phase 0.5)
     logger.warning(
-        "No checkpoint found, creating model with random initialization. "
-        "This is NOT recommended for Phase 0.5 training!"
+        "No checkpoint found - creating model with RANDOM initialization.\n"
+        "This is NOT recommended for Phase 0.5 training!\n"
+        f"  Checked: {model_path}\n"
+        f"  Checked: {v2_path}"
     )
     v3_config = ModernBERTv3Config()
     model = ModernBERTv3Ultra(v3_config)
@@ -1229,26 +1708,41 @@ def setup_model(config: Phase05Config) -> ModernBERTv3Ultra:
 
 def setup_layer_freezing(model: nn.Module, config: Phase05Config) -> LayerFreezer:
     """
-    Configure layer freezing for Phase 0.5.
+    Configure layer freezing for Phase 0.5 healing strategy.
 
-    Freezes: L1-18 (Foundation + Core bands)
-    Trains: L19-28 (Feeder + Family bands)
+    Phase 0.5 Freezing Strategy:
+        - Frozen: L1-18 (Foundation + Core bands) - preserved v2 knowledge
+        - Trainable: L19-28 (Semantic + Family bands) - layers to heal
+
+    The goal is to heal the cloned family layers (L23-28) while keeping
+    the foundation stable. Semantic layers (L19-22) also train to adapt
+    their output for the new family layers.
+
+    Args:
+        model: Phase05TrainingModel or ModernBERTv3Ultra
+        config: Phase05Config (for future customization)
+
+    Returns:
+        Configured LayerFreezer instance
     """
-    # Get base model if wrapped
+    # Get base model if wrapped in Phase05TrainingModel
     base_model = model.model if hasattr(model, "model") else model
 
     # Create freezer and configure for Phase 0.5
     freezer = LayerFreezer(base_model)
     freezer.configure_for_phase(TrainingPhase.PHASE_0_5)
 
-    # Log stats
+    # Log comprehensive freeze stats
     stats = freezer.get_freeze_stats()
+    frozen_layers = freezer.get_frozen_layers()
+    trainable_layers = freezer.get_trainable_layers()
+
     logger.info(
         f"Layer freezing configured for Phase 0.5:\n"
-        f"  Frozen: {stats['frozen_params']:,} parameters\n"
-        f"  Trainable: {stats['trainable_params']:,} parameters\n"
-        f"  Frozen layers: {freezer.get_frozen_layers()}\n"
-        f"  Trainable layers: {freezer.get_trainable_layers()}"
+        f"  Frozen parameters: {stats['frozen_params']:,}\n"
+        f"  Trainable parameters: {stats['trainable_params']:,}\n"
+        f"  Frozen layers: {frozen_layers}\n"
+        f"  Trainable layers: {trainable_layers}"
     )
 
     return freezer
@@ -1258,12 +1752,24 @@ def setup_hub_gradient_masking(
     model: nn.Module, config: Phase05Config
 ) -> EmbeddingGradientHook | None:
     """
-    Setup hub token gradient masking.
+    Setup selective gradient masking for hub token embeddings.
 
-    Freezes original vocabulary embeddings, enables hub token gradients.
+    Hub Token Training Strategy:
+        - Original vocabulary (50368 tokens): Frozen
+        - Hub tokens [EMO], [MEM], [REL], [TASK]: Trainable
+
+    This prevents catastrophic forgetting of the original embeddings
+    while allowing the new hub tokens to learn their representations.
+
+    Args:
+        model: Model containing embeddings to mask
+        config: Phase05Config with gradient masking settings
+
+    Returns:
+        EmbeddingGradientHook if enabled, None otherwise
     """
     if not config.freeze_original_vocab:
-        logger.info("Hub gradient masking disabled")
+        logger.info("Hub gradient masking disabled (freeze_original_vocab=False)")
         return None
 
     # Get base model
@@ -1293,14 +1799,32 @@ def setup_hub_gradient_masking(
 
 def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.AdamW:
     """
-    Create optimizer with Zipper LR strategy.
+    Create AdamW optimizer with Zipper LR layer-group learning rates.
 
-    Uses layer-group learning rates from zipper_lr_v3.py.
+    Zipper LR Strategy for Phase 0.5:
+        The "zipper" metaphor describes how learning rates are configured
+        across the model layers, with maximum plasticity at the interface
+        layer (L23) and graduated rates radiating outward.
+
+    Layer Groups:
+        - Frozen (L1-18): lr=0 (handled by LayerFreezer)
+        - Semantic (L19-22): lr=semantic_lr (1e-5 default)
+        - Interface (L23): lr=interface_lr (5e-5 default) - MAXIMUM
+        - Family (L24-28): lr=family_lr with optional decay
+        - Task heads: lr=task_heads_lr (3e-4 default)
+        - Hub embeddings: lr=lr_hub_tokens (3e-4 default)
+
+    Args:
+        model: Phase05TrainingModel with task heads
+        config: Phase05Config with learning rate settings
+
+    Returns:
+        Configured AdamW optimizer with parameter groups
     """
     zipper_config = config.get_zipper_lr_config()
     base_model = model.model if hasattr(model, "model") else model
 
-    param_groups = []
+    param_groups: list[dict[str, Any]] = []
 
     # Get encoder layers
     encoder = getattr(base_model, "encoder", base_model)
@@ -1309,20 +1833,20 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
     if layers is not None:
         num_layers = len(layers)
 
-        # Feeder layers (L19-22, indices 18-21)
-        feeder_params = []
+        # Semantic layers (L19-22, indices 18-21)
+        semantic_params = []
         for i in range(18, min(22, num_layers)):
-            feeder_params.extend([p for p in layers[i].parameters() if p.requires_grad])
-        if feeder_params:
+            semantic_params.extend([p for p in layers[i].parameters() if p.requires_grad])
+        if semantic_params:
             param_groups.append(
                 {
-                    "params": feeder_params,
-                    "lr": zipper_config.feeder_lr,
-                    "name": "feeder_L19-22",
+                    "params": semantic_params,
+                    "lr": zipper_config.semantic_lr,
+                    "name": "semantic_L19-22",
                 }
             )
 
-        # Interface layer (L23, index 22) - maximum plasticity
+        # Interface layer (L23, index 22) - MAXIMUM plasticity point
         if num_layers > 22:
             interface_params = [p for p in layers[22].parameters() if p.requires_grad]
             if interface_params:
@@ -1334,12 +1858,13 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
                     }
                 )
 
-        # Family layers (L24-28, indices 23-27) with graduated LR
+        # Family layers (L24-28, indices 23-27) with optional graduated decay
         for layer_idx in range(23, min(28, num_layers)):
             layer_params = [p for p in layers[layer_idx].parameters() if p.requires_grad]
             if layer_params:
-                # Graduated decay from interface
+                # Calculate layer-specific LR
                 if zipper_config.family_graduated:
+                    # Exponential decay from interface
                     steps_from_interface = layer_idx - 22
                     layer_lr = zipper_config.interface_lr * (
                         zipper_config.family_decay**steps_from_interface
@@ -1355,9 +1880,10 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
                     }
                 )
 
-    # Task heads (from wrapper model)
+    # Task heads (from Phase05TrainingModel wrapper)
     head_params = []
-    for head_name in ["sentiment_head", "nli_head", "similarity_head", "qa_head"]:
+    head_names = ["sentiment_head", "nli_head", "similarity_head", "qa_head", "ner_head"]
+    for head_name in head_names:
         if hasattr(model, head_name):
             head_params.extend(list(getattr(model, head_name).parameters()))
     if head_params:
@@ -1369,7 +1895,7 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
             }
         )
 
-    # Embeddings (hub tokens only if configured)
+    # Embeddings (hub tokens if gradient masking is NOT applied)
     if hasattr(base_model, "embeddings"):
         emb_params = [p for p in base_model.embeddings.parameters() if p.requires_grad]
         if emb_params:
@@ -1381,7 +1907,7 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
                 }
             )
 
-    # Collect any remaining trainable parameters
+    # Collect any remaining trainable parameters not yet assigned
     assigned_ids = set()
     for group in param_groups:
         for p in group["params"]:
@@ -1397,11 +1923,14 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
             }
         )
 
-    # Log parameter groups
-    logger.info("Optimizer parameter groups (Zipper LR):")
+    # Log parameter group summary
+    total_params = 0
+    logger.info("Optimizer parameter groups (Zipper LR strategy):")
     for group in param_groups:
         num_params = sum(p.numel() for p in group["params"])
+        total_params += num_params
         logger.info(f"  {group['name']}: {num_params:,} params, lr={group['lr']:.2e}")
+    logger.info(f"  Total trainable: {total_params:,} parameters")
 
     return torch.optim.AdamW(
         param_groups,
@@ -1416,10 +1945,25 @@ def create_lr_scheduler(
     config: Phase05Config,
 ) -> torch.optim.lr_scheduler.LRScheduler:
     """
-    Create learning rate scheduler.
+    Create learning rate scheduler with warmup.
 
-    Warmup + Cosine decay from schedulers_v3.py.
+    Scheduler Types:
+        - "cosine": Warmup + cosine annealing (default, recommended)
+        - "linear": Warmup + linear decay to min_lr_ratio
+        - "constant": Warmup only, then constant LR
+
+    The scheduler applies uniformly to all parameter groups, preserving
+    the relative learning rate ratios from the Zipper LR strategy.
+
+    Args:
+        optimizer: Configured optimizer with parameter groups
+        config: Phase05Config with scheduler settings
+
+    Returns:
+        Learning rate scheduler
     """
+    scheduler: torch.optim.lr_scheduler.LRScheduler
+
     if config.scheduler_type == "cosine":
         try:
             from transformers import get_cosine_schedule_with_warmup
@@ -1430,7 +1974,10 @@ def create_lr_scheduler(
                 num_training_steps=config.max_steps,
             )
         except ImportError:
-            # Fallback to PyTorch scheduler
+            # Fallback to PyTorch scheduler (no warmup)
+            logger.warning(
+                "transformers not available, using PyTorch CosineAnnealingLR (no warmup)"
+            )
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer,
                 T_max=config.max_steps - config.warmup_steps,
@@ -1446,6 +1993,7 @@ def create_lr_scheduler(
                 num_training_steps=config.max_steps,
             )
         except ImportError:
+            logger.warning("transformers not available, using PyTorch LinearLR (no warmup)")
             scheduler = torch.optim.lr_scheduler.LinearLR(
                 optimizer,
                 start_factor=1.0,
@@ -1453,15 +2001,18 @@ def create_lr_scheduler(
                 total_iters=config.max_steps,
             )
     else:
-        # Default: constant LR with warmup (manual)
-        scheduler = torch.optim.lr_scheduler.LambdaLR(
-            optimizer,
-            lr_lambda=lambda step: min(1.0, step / max(1, config.warmup_steps)),
-        )
+        # Default: warmup-only scheduler (constant after warmup)
+        def warmup_lambda(step: int) -> float:
+            if step < config.warmup_steps:
+                return float(step) / max(1, config.warmup_steps)
+            return 1.0
+
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_lambda)
 
     logger.info(
-        f"Created {config.scheduler_type} scheduler: "
-        f"{config.warmup_steps} warmup, {config.max_steps} total steps"
+        f"Created {config.scheduler_type} scheduler:\n"
+        f"  Warmup steps: {config.warmup_steps}\n"
+        f"  Total steps: {config.max_steps}"
     )
     return scheduler
 
@@ -1476,14 +2027,27 @@ def create_dataloaders(
     tokenizer,
     synthetic: bool = False,
 ) -> tuple[DataLoader, DataLoader]:
-    """Create training and validation dataloaders."""
-    # Determine sample counts
+    """
+    Create training and validation DataLoaders for Phase 0.5.
+
+    Uses HealingDataset to load public benchmarks (SST-2, MNLI, STS-B, etc.)
+    and HealingCollator to insert hub tokens into the v3 token layout.
+
+    Args:
+        config: Phase05Config with batch sizes, tasks, and max_length
+        tokenizer: HuggingFace tokenizer with v3 hub tokens
+        synthetic: If True, use smaller synthetic data for testing
+
+    Returns:
+        Tuple of (train_loader, val_loader)
+    """
+    # Determine sample counts based on mode
     if synthetic:
         train_samples = 1000
         val_samples = 100
     else:
-        train_samples = 10000
-        val_samples = 1000
+        train_samples = config.max_train_samples or 10000
+        val_samples = config.max_eval_samples or 1000
 
     # Create datasets
     train_dataset = HealingDataset(
@@ -1492,6 +2056,7 @@ def create_dataloaders(
         max_samples=train_samples,
         max_length=config.max_length,
         tasks=config.tasks,
+        seed=config.seed,
     )
 
     val_dataset = HealingDataset(
@@ -1500,9 +2065,10 @@ def create_dataloaders(
         max_samples=val_samples,
         max_length=config.max_length,
         tasks=config.tasks,
+        seed=config.seed,
     )
 
-    # Create collator
+    # Create collator with hub token insertion
     collator = HealingCollator(tokenizer, max_length=config.max_length)
 
     # Create dataloaders
@@ -1510,7 +2076,7 @@ def create_dataloaders(
         train_dataset,
         batch_size=config.train_batch_size,
         shuffle=True,
-        num_workers=0,  # Avoid multiprocessing issues
+        num_workers=0,  # Avoid multiprocessing issues on Windows
         drop_last=True,
         collate_fn=collator,
         pin_memory=config.pin_memory and torch.cuda.is_available(),
@@ -1541,18 +2107,37 @@ def create_dataloaders(
 
 def train_step(
     model: nn.Module,
-    batch: dict,
+    batch: dict[str, Any],
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler.LRScheduler,
     clipper: GradientClipper,
     config: Phase05Config,
     step: int = 0,
-) -> tuple[float, dict]:
+) -> tuple[float, dict[str, Any]]:
     """
-    Single training step.
+    Execute a single training step.
+
+    Performs forward pass, loss computation, backward pass, gradient clipping
+    with the GradientClipper, and optimizer/scheduler steps.
+
+    Mixed Precision:
+        - BF16 (bfloat16): Recommended for Ampere+ GPUs
+        - FP16 (float16): For older GPUs (requires gradient scaling)
+        - FP32: Fallback for CPU or debugging
+
+    Args:
+        model: Phase05TrainingModel in training mode
+        batch: Dictionary with input_ids, attention_mask, labels, tasks
+        optimizer: AdamW optimizer with Zipper LR parameter groups
+        scheduler: Learning rate scheduler
+        clipper: GradientClipper for per-layer gradient clipping
+        config: Phase05Config for mixed precision settings
+        step: Current global step (for logging)
 
     Returns:
-        Tuple of (loss_value, gradient_stats)
+        Tuple of (loss_value, gradient_stats_dict)
+            - loss_value: Scalar loss (float("nan") if NaN detected)
+            - gradient_stats: dict with total_norm, has_nan, has_inf, clipped
     """
     model.train()
     device = next(model.parameters()).device
@@ -1567,7 +2152,7 @@ def train_step(
     optimizer.zero_grad()
 
     # Forward pass with mixed precision
-    if config.bf16:
+    if config.bf16 and device.type == "cuda":
         with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             outputs = model(
                 input_ids=input_ids,
@@ -1576,7 +2161,7 @@ def train_step(
                 tasks=tasks,
             )
             loss = outputs.loss
-    elif config.fp16:
+    elif config.fp16 and device.type == "cuda":
         with torch.autocast(device_type="cuda", dtype=torch.float16):
             outputs = model(
                 input_ids=input_ids,
@@ -1594,9 +2179,9 @@ def train_step(
         )
         loss = outputs.loss
 
-    # Check for NaN loss
-    if torch.isnan(loss):
-        logger.warning(f"NaN loss detected at step {step}")
+    # Check for NaN loss (critical for debugging)
+    if loss is None or torch.isnan(loss):
+        logger.warning(f"NaN/None loss detected at step {step}")
         return float("nan"), {
             "total_norm": 0.0,
             "has_nan": True,
@@ -1607,10 +2192,10 @@ def train_step(
     # Backward pass
     loss.backward()
 
-    # Gradient clipping using GradientClipper
+    # Gradient clipping using GradientClipper (per-layer aware)
     grad_stats = clipper.clip_gradients()
 
-    # Optimizer step
+    # Optimizer and scheduler step
     optimizer.step()
     scheduler.step()
 
@@ -1627,14 +2212,28 @@ def evaluate(
     dataloader: DataLoader,
     config: Phase05Config,
 ) -> dict[str, float]:
-    """Run evaluation on validation set."""
+    """
+    Run evaluation on validation set.
+
+    Computes loss and accuracy metrics for each task type.
+    Classification tasks (sentiment, NLI) report accuracy.
+    Regression tasks (similarity) report MSE.
+
+    Args:
+        model: Phase05TrainingModel
+        dataloader: Validation DataLoader
+        config: Phase05Config for mixed precision
+
+    Returns:
+        Dictionary with eval_loss, eval_accuracy, and per-task metrics
+    """
     model.eval()
     device = next(model.parameters()).device
 
     total_loss = 0.0
     total_correct = 0
     total_samples = 0
-    task_metrics: dict[str, dict] = {}
+    task_metrics: dict[str, dict[str, int]] = {}
 
     with torch.no_grad():
         for batch in dataloader:
@@ -1643,7 +2242,8 @@ def evaluate(
             labels = batch["labels"].to(device)
             tasks = batch.get("tasks", ["sentiment"] * len(labels))
 
-            if config.bf16:
+            # Forward with optional mixed precision
+            if config.bf16 and device.type == "cuda":
                 with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
                     outputs = model(
                         input_ids=input_ids,
@@ -1659,17 +2259,19 @@ def evaluate(
                     tasks=tasks,
                 )
 
+            # Accumulate loss
             if outputs.loss is not None:
                 total_loss += outputs.loss.item() * len(labels)
 
             # Compute accuracy for classification tasks
             for i, task in enumerate(tasks):
                 if task in ["sentiment", "nli"]:
-                    if outputs.logits.dim() > 1:
+                    if outputs.logits.dim() > 1 and i < outputs.logits.size(0):
                         pred = outputs.logits[i].argmax().item()
                     else:
-                        pred = outputs.logits[i].item() > 0.5
-                    correct = int(pred == labels[i].item())
+                        pred = 0
+                    label_val = labels[i].item() if labels.dim() == 1 else 0
+                    correct = int(pred == label_val)
                     total_correct += correct
 
                     if task not in task_metrics:
@@ -1712,21 +2314,43 @@ def save_checkpoint(
     state: TrainingState,
     config: Phase05Config,
     is_best: bool = False,
-) -> None:
-    """Save training checkpoint."""
-    import shutil
+) -> Path:
+    """
+    Save training checkpoint.
 
+    Saves complete training state including:
+        - Model weights (pytorch_model.bin)
+        - Task heads (task_heads.pt)
+        - Optimizer and scheduler state (training_state.pt)
+        - Training state JSON (trainer_state.json)
+        - Config JSON (config.json)
+
+    If is_best=True, also copies to 'best/' directory.
+    Automatically removes oldest checkpoints beyond save_total_limit.
+
+    Args:
+        model: Phase05TrainingModel to save
+        optimizer: Current optimizer state
+        scheduler: Current scheduler state
+        state: TrainingState with step, epoch, metrics
+        config: Phase05Config
+        is_best: Whether this is the best model so far
+
+    Returns:
+        Path to saved checkpoint directory
+    """
     output_path = Path(config.output_dir)
     checkpoint_dir = output_path / f"checkpoint-{state.global_step}"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save base model
+    # Save base model (encoder + embeddings)
     base_model = model.model if hasattr(model, "model") else model
     torch.save(base_model.state_dict(), checkpoint_dir / "pytorch_model.bin")
 
-    # Save task heads if present
+    # Save task heads separately (for easy loading without full model)
     heads_state = {}
-    for head_name in ["sentiment_head", "nli_head", "similarity_head", "qa_head"]:
+    head_names = ["sentiment_head", "nli_head", "similarity_head", "qa_head", "ner_head"]
+    for head_name in head_names:
         if hasattr(model, head_name):
             heads_state[head_name] = getattr(model, head_name).state_dict()
     if heads_state:
@@ -1750,7 +2374,7 @@ def save_checkpoint(
 
     logger.info(f"Saved checkpoint: {checkpoint_dir}")
 
-    # Save best model
+    # Save best model copy
     if is_best:
         best_dir = output_path / "best"
         if best_dir.exists():
@@ -1758,27 +2382,52 @@ def save_checkpoint(
         shutil.copytree(checkpoint_dir, best_dir)
         logger.info(f"Saved best model: {best_dir}")
 
-    # Cleanup old checkpoints if needed
+    # Cleanup old checkpoints beyond limit
     if config.save_total_limit > 0:
         checkpoints = sorted(
             output_path.glob("checkpoint-*"),
-            key=lambda x: int(x.name.split("-")[1]),
+            key=lambda x: int(x.name.split("-")[1]) if x.name.split("-")[1].isdigit() else 0,
         )
         while len(checkpoints) > config.save_total_limit:
             oldest = checkpoints.pop(0)
             shutil.rmtree(oldest)
             logger.info(f"Removed old checkpoint: {oldest}")
 
+    return checkpoint_dir
+
 
 def load_checkpoint(
     model: nn.Module,
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler.LRScheduler,
-    checkpoint_path: Path,
+    checkpoint_path: Path | str,
     config: Phase05Config,
 ) -> TrainingState:
-    """Load training checkpoint."""
+    """
+    Load training checkpoint for resumption.
+
+    Restores complete training state:
+        - Model weights
+        - Task heads
+        - Optimizer state (including per-parameter states)
+        - Scheduler state
+        - Training state (step, epoch, best_metric, etc.)
+
+    Args:
+        model: Phase05TrainingModel to restore
+        optimizer: Optimizer to restore
+        scheduler: Scheduler to restore
+        checkpoint_path: Path to checkpoint directory
+        config: Phase05Config (unused but kept for consistency)
+
+    Returns:
+        TrainingState restored from checkpoint
+    """
     checkpoint_path = Path(checkpoint_path)
+
+    if not checkpoint_path.exists():
+        logger.warning(f"Checkpoint not found: {checkpoint_path}")
+        return TrainingState()
 
     # Load model weights
     model_path = checkpoint_path / "pytorch_model.bin"
@@ -1805,13 +2454,13 @@ def load_checkpoint(
         scheduler.load_state_dict(training_state["scheduler"])
         logger.info(f"Loaded optimizer/scheduler from {training_state_path}")
 
-    # Load trainer state
+    # Load trainer state JSON
     trainer_state_path = checkpoint_path / "trainer_state.json"
     if trainer_state_path.exists():
         with open(trainer_state_path) as f:
             state_dict = json.load(f)
         state = TrainingState.from_dict(state_dict)
-        logger.info(f"Loaded trainer state: step {state.global_step}")
+        logger.info(f"Restored training state: step={state.global_step}, epoch={state.epoch}")
         return state
 
     return TrainingState()
@@ -1822,47 +2471,75 @@ def load_checkpoint(
 # =============================================================================
 
 
-def setup_wandb(config: Phase05Config) -> None:
-    """Initialize Weights & Biases logging."""
+def setup_wandb(config: Phase05Config) -> bool:
+    """
+    Initialize Weights & Biases logging.
+
+    Creates a W&B run with Phase 0.5 training configuration including
+    layer freezing strategy, Zipper LR parameters, and gradient settings.
+
+    Args:
+        config: Phase05Config with wandb settings
+
+    Returns:
+        True if W&B was initialized, False otherwise
+    """
     if not config.use_wandb:
-        return
+        return False
 
     if not WANDB_AVAILABLE:
-        logger.warning("wandb not available, disabling logging")
+        logger.warning("wandb package not available, disabling logging")
         config.use_wandb = False
-        return
+        return False
 
     run_name = config.wandb_run_name or f"phase0.5_{config.max_steps}steps"
 
     wandb.init(
         project=config.wandb_project,
         name=run_name,
+        tags=config.wandb_tags,
         config={
             "phase": "0.5",
             "description": "Enhanced Healing Training",
             "max_steps": config.max_steps,
             "batch_size": config.train_batch_size,
             "base_lr": config.base_lr,
+            "semantic_lr": config.lr_layers_19_22,
             "interface_lr": config.lr_layer_23,
+            "family_lr": config.lr_layers_24_28,
             "frozen_layers": "L1-18",
             "trainable_layers": "L19-28",
             "warmup_steps": config.warmup_steps,
+            "scheduler": config.scheduler_type,
+            "max_grad_norm": config.max_grad_norm,
             "bf16": config.bf16,
             "seed": config.seed,
         },
     )
 
     logger.info(f"W&B initialized: {run_name}")
+    return True
 
 
 def log_training_step(
     step: int,
     loss: float,
-    grad_stats: dict,
+    grad_stats: dict[str, Any],
     lr: float,
     config: Phase05Config,
 ) -> None:
-    """Log training step metrics."""
+    """
+    Log training step metrics.
+
+    Logs to console at configured intervals and to W&B on every step.
+
+    Args:
+        step: Current training step (0-indexed)
+        loss: Training loss value
+        grad_stats: Gradient statistics from GradientClipper
+        lr: Current learning rate
+        config: Phase05Config for logging settings
+    """
     # Console logging at configured intervals
     if (step + 1) % config.logging_steps == 0:
         logger.info(
@@ -1879,7 +2556,7 @@ def log_training_step(
             "train/step": step + 1,
         }
 
-        # Add gradient stats
+        # Add gradient statistics
         if grad_stats:
             metrics["gradients/total_norm"] = grad_stats.get("total_norm", 0)
             metrics["gradients/clipped"] = 1 if grad_stats.get("clipped", False) else 0
@@ -1894,7 +2571,14 @@ def log_evaluation(
     metrics: dict[str, float],
     config: Phase05Config,
 ) -> None:
-    """Log evaluation metrics."""
+    """
+    Log evaluation metrics.
+
+    Args:
+        step: Current training step
+        metrics: Dictionary of evaluation metrics
+        config: Phase05Config for logging settings
+    """
     # Console logging
     metrics_str = ", ".join(f"{k}={v:.4f}" for k, v in metrics.items())
     logger.info(f"Eval @ step {step}: {metrics_str}")
@@ -1943,7 +2627,7 @@ def run_dry_run(config: Phase05Config) -> bool:
     checks_total += 1
     zipper_config = config.get_zipper_lr_config()
     print("[OK] Zipper LR configuration:")
-    print(f"    Feeder (L19-22):   {zipper_config.feeder_lr}")
+    print(f"    Semantic (L19-22):   {zipper_config.semantic_lr}")
     print(f"    Interface (L23):   {zipper_config.interface_lr}")
     print(f"    Family (L24-28):   {zipper_config.family_lr}")
     checks_passed += 1
@@ -2196,15 +2880,33 @@ def run_full_training(
     resume_from: str | None = None,
 ) -> dict[str, Any]:
     """
-    Run full Phase 0.5 training.
+    Run full Phase 0.5 healing training.
 
-    Training loop with:
-        - Zipper LR strategy
-        - Gradient clipping
-        - Hub token gradient masking
-        - Periodic evaluation
-        - Checkpointing
-        - W&B logging
+    Complete training pipeline with:
+        - Model initialization from v2 or checkpoint
+        - Layer freezing (L1-18 frozen, L19-28 trainable)
+        - Zipper LR strategy (maximum plasticity at L23)
+        - Per-layer gradient clipping
+        - Hub token gradient masking (optional)
+        - Periodic evaluation on validation set
+        - Checkpoint saving with best model tracking
+        - W&B logging (optional)
+
+    The goal of Phase 0.5 is to "heal" the cloned family layers (L23-28)
+    that were duplicated from L17-22 during v2->v3 initialization. After
+    healing, these layers should properly integrate with the frozen
+    foundation/core layers.
+
+    Args:
+        config: Phase05Config with all training parameters
+        resume_from: Optional path to checkpoint for resumption
+
+    Returns:
+        Dictionary with:
+            - final_step: Last training step completed
+            - final_loss: Final training loss
+            - final_metrics: Evaluation metrics from last eval
+            - best_metric: Best validation metric achieved
     """
     print("\n" + "=" * 60)
     print("Phase 0.5 Full Training")
@@ -2252,7 +2954,7 @@ def run_full_training(
     state = TrainingState()
     start_step = 0
     if resume_from:
-        state = load_checkpoint(model, optimizer, scheduler, resume_from, device)
+        state = load_checkpoint(model, optimizer, scheduler, resume_from, config)
         start_step = state.global_step
         logger.info(f"Resumed from step {start_step}")
 
@@ -2297,15 +2999,15 @@ def run_full_training(
             if eval_loss < best_metric:
                 best_metric = eval_loss
                 state.best_metric = best_metric
-                save_checkpoint(model, optimizer, scheduler, state, config.output_dir, is_best=True)
+                save_checkpoint(model, optimizer, scheduler, state, config, is_best=True)
                 logger.info(f"New best model saved (loss: {eval_loss:.4f})")
 
         # Regular checkpoint
         if (step + 1) % config.save_steps == 0:
-            save_checkpoint(model, optimizer, scheduler, state, config.output_dir, is_best=False)
+            save_checkpoint(model, optimizer, scheduler, state, config, is_best=False)
 
     # Final checkpoint
-    save_checkpoint(model, optimizer, scheduler, state, config.output_dir, is_best=False)
+    save_checkpoint(model, optimizer, scheduler, state, config, is_best=False)
 
     # Final evaluation
     final_metrics = evaluate(model, val_loader, config)
@@ -2339,7 +3041,20 @@ def run_full_training(
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
+    """
+    Parse command line arguments for Phase 0.5 training.
+
+    Supports multiple execution modes:
+        --dry-run: Validate configuration without training
+        --smoke-test: Run 10-step quick validation
+        --debug: Run 5 steps with verbose gradient logging
+        (default): Full training run
+
+    Configuration can be loaded from YAML and overridden via CLI.
+
+    Returns:
+        Parsed argparse.Namespace
+    """
     parser = argparse.ArgumentParser(
         description="Phase 0.5 Enhanced Healing Training for ModernBERT v3",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2484,8 +3199,25 @@ def parse_args() -> argparse.Namespace:
 # =============================================================================
 
 
-def main():
-    """Main entry point for Phase 0.5 training."""
+def main() -> None:
+    """
+    Main entry point for Phase 0.5 healing training.
+
+    Execution Flow:
+        1. Parse command line arguments
+        2. Load YAML config (if available)
+        3. Apply CLI overrides
+        4. Set random seeds for reproducibility
+        5. Execute selected mode:
+           - --dry-run: Validate configuration
+           - --smoke-test: Quick 10-step test
+           - --debug: Verbose gradient debugging
+           - (default): Full training run
+
+    Exit Codes:
+        0: Success
+        1: Failure or validation error
+    """
     args = parse_args()
 
     # Create base config

@@ -1,24 +1,32 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Phase 0.5 Enhanced Healing Training Script for ModernBERT v3
 
-This script implements the Phase 0.5 healing training that repairs the cloned
-layers (L23-28) and establishes smooth activation flow across the L22->L23
-interface boundary.
+This script implements the "healing" phase that repairs the cloned layers
+(L23-28) and establishes smooth activation flow across the L22->L23 interface.
 
-Uses the FULL v3 infrastructure:
-    - Data: UnifiedFamilyOSDataset, V3MultiTaskCollator, ReplaySampler
-    - Model: ModernBERTv3Ultra with hub routing
-    - Loss: HubAwareLossComputer
-    - LR: ZipperLRConfig with layer-wise learning rates
-    - Gradients: GradientClipper, GradientClipConfig
-    - Freezing: LayerFreezer with TrainingPhase
+Phase 0.5 Objectives:
+    1. Heal L23-28 (cloned from L15-20) to work coherently
+    2. Smooth the L22->L23 interface transition
+    3. Preserve L1-22 frozen capabilities
+    4. Train hub tokens for routing semantics
 
 Training Strategy:
     - Freeze: L1-18 (Foundation + Core bands)
-    - Train: L19-28 (Feeder + Family bands)
+    - Train: L19-22 (SEMANTIC), L23-28 (Family), Hub tokens
     - LR: Zipper strategy with L23 at maximum plasticity
-    - Data: Enhanced healing (SST-2, MNLI from HuggingFace)
+    - Data: Enhanced healing (SST-2, CoNLL, MNLI, SQuAD, STS-B)
+
+Layer Band Architecture (v3.3 Ultra - 28 layers):
+    - Foundation (L1-6):   window=64,  FROZEN in Phase 0.5
+    - Core (L7-18):        window=128, FROZEN in Phase 0.5
+    - SEMANTIC (L19-22):     window=256, trainable (low LR)
+    - Family (L23-28):     window=512, trainable (L23 highest LR)
+
+Zipper LR Strategy:
+    L19-22 (SEMANTIC):   1e-5   - gentle adaptation
+    L23 (Interface):   5e-5   - maximum plasticity
+    L24-28 (Family):   3e-5   - graduated decay
 
 Usage:
     # Dry run (validate configuration)
@@ -31,17 +39,40 @@ Usage:
     python scripts/v3_scripts/train_v3_phase0_5.py --debug
 
     # Full training
-    python scripts/v3_scripts/train_v3_phase0_5.py \
-        --model-path checkpoints/v3-initialized-from-v2 \
+    python scripts/v3_scripts/train_v3_phase0_5.py \\
+        --config configs/training/multitask/stage_v3_phase0_5_enhanced.yaml \\
+        --model-path checkpoints/v3-initialized-from-v2 \\
         --output-dir outputs/v3_phase0_5
 
     # Resume from checkpoint
-    python scripts/v3_scripts/train_v3_phase0_5.py \
-        --resume-from outputs/v3_phase0_5/step_1000
+    python scripts/v3_scripts/train_v3_phase0_5.py \\
+        --resume-from outputs/v3_phase0_5/checkpoint-1000
+
+    # With overrides
+    python scripts/v3_scripts/train_v3_phase0_5.py \\
+        --learning-rate 3e-5 \\
+        --max-steps 3000 \\
+        --wandb-run-name "phase0_5_experiment_1"
+
+Environment:
+    - GPU: 24GB+ VRAM recommended (16GB with gradient checkpointing)
+    - RAM: 32GB+ recommended
+    - Python: 3.10+
+    - PyTorch: 2.0+
+
+Outputs:
+    - outputs/v3_phase0_5/: Checkpoints and final model
+    - outputs/v3_phase0_5/best/: Best model by validation loss
+    - wandb/: W&B logs (if enabled)
+
+Post-Training:
+    After Phase 0.5, proceed to Phase 1:
+    python scripts/v3_scripts/train_v3_phase1.py \\
+        --model-path outputs/v3_phase0_5/best
 
 Author: FamilyOS Team
 Date: December 2025
-Version: 2.0 (Using full v3 infrastructure)
+Version: 3.0 (Production Quality)
 Epic: 5.4.1 - Phase 0.5 Healing Training Script
 """
 
@@ -50,15 +81,19 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
+import shutil
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
+import yaml
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -74,7 +109,7 @@ from modeling_studio.models.modernbert_v3 import ModernBERTv3Ultra
 
 # Trainers
 from modeling_studio.trainers.freezing_v3 import LayerFreezer, TrainingPhase
-from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig
+from modeling_studio.trainers.zipper_lr_v3 import ZipperLRConfig, ZIPPER_PRESETS
 from modeling_studio.trainers.gradient_utils_v3 import GradientClipConfig, GradientClipper
 
 # Optional: v2 initialization
@@ -85,20 +120,65 @@ try:
 except ImportError:
     V2_INIT_AVAILABLE = False
 
+# Optional: W&B logging
+try:
+    import wandb
+
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 # Transformers for public datasets
 try:
     from datasets import load_dataset
-    from transformers import AutoTokenizer
+    from transformers import AutoTokenizer, set_seed
 
     HF_AVAILABLE = True
 except ImportError:
     HF_AVAILABLE = False
+    set_seed = None
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Constants
+# =============================================================================
+
+# Hub token IDs for v3 architecture
+HUB_TOKEN_IDS = {
+    "[EMO]": 50368,
+    "[MEM]": 50369,
+    "[REL]": 50370,
+    "[TASK]": 50371,
+}
+
+# Layer band boundaries (0-indexed)
+LAYER_BANDS = {
+    "foundation": list(range(0, 6)),  # L1-6
+    "core": list(range(6, 18)),  # L7-18
+    "SEMANTIC": list(range(18, 22)),  # L19-22
+    "family": list(range(22, 28)),  # L23-28
+}
 
 
 # =============================================================================
@@ -111,8 +191,42 @@ class Phase05Config:
     """
     Configuration for Phase 0.5 healing training.
 
-    Uses ZipperLRConfig for layer-wise learning rates and
-    GradientClipConfig for gradient management.
+    This configuration integrates:
+        - ZipperLRConfig for layer-wise learning rates
+        - GradientClipConfig for gradient management
+        - Layer freezing for Phase 0.5
+        - Training hyperparameters
+
+    Attributes:
+        model_path: Path to initialized v3 model checkpoint
+        v2_checkpoint: Path to v2 checkpoint for initialization
+        tokenizer_name: Tokenizer to use
+        max_steps: Maximum training steps
+        warmup_steps: Number of warmup steps
+        eval_steps: Evaluate every N steps
+        save_steps: Save checkpoint every N steps
+        logging_steps: Log metrics every N steps
+        train_batch_size: Training batch size
+        eval_batch_size: Evaluation batch size
+        gradient_accumulation_steps: Gradient accumulation steps
+        max_length: Maximum sequence length
+        lr_frozen: LR for frozen layers (L1-18)
+        lr_SEMANTIC: LR for SEMANTIC layers (L19-22)
+        lr_interface: LR for interface layer (L23)
+        lr_family: LR for family layers (L24-28)
+        lr_embeddings: LR for embeddings
+        lr_heads: LR for task heads
+        weight_decay: Weight decay for AdamW
+        max_grad_norm: Maximum gradient norm (global)
+        interface_clip: Tighter clip at L23 interface
+        per_layer_clip: Whether to use per-layer clipping
+        output_dir: Output directory for checkpoints
+        device: Device to use (cuda/cpu)
+        bf16: Whether to use bf16 mixed precision
+        use_wandb: Whether to use W&B logging
+        wandb_project: W&B project name
+        wandb_run_name: W&B run name
+        seed: Random seed
     """
 
     # Model paths
@@ -136,8 +250,13 @@ class Phase05Config:
     max_length: int = 512
 
     # Zipper LR strategy (from zipper_lr_v3.py)
+    # Phase 0.5 Zipper Profile:
+    #   L1-18:  0.0    (frozen)
+    #   L19-22: 1e-5   (SEMANTIC - gentle adaptation)
+    #   L23:    5e-5   (interface - maximum plasticity)
+    #   L24-28: 3e-5   (family - learning new patterns)
     lr_frozen: float = 0.0  # L1-18 frozen
-    lr_feeder: float = 1e-5  # L19-22 feeder
+    lr_SEMANTIC: float = 1e-5  # L19-22 SEMANTIC
     lr_interface: float = 5e-5  # L23 interface (max plasticity)
     lr_family: float = 3e-5  # L24-28 family
     lr_embeddings: float = 0.0  # Embeddings frozen
@@ -158,16 +277,24 @@ class Phase05Config:
 
     # Output
     output_dir: str = "outputs/v3_phase0_5"
+    checkpoint_dir: str = "checkpoints/v3_phase0_5"
 
     # Device settings
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     bf16: bool = True
     fp16: bool = False
+    gradient_checkpointing: bool = False
 
     # Logging
     use_wandb: bool = False
     wandb_project: str = "modernbert-v3"
     wandb_run_name: str | None = None
+
+    # Data
+    healing_data_path: str = "data/healing/healing_enhanced.jsonl"
+    use_synthetic_data: bool = False
+    max_train_samples: int | None = None
+    max_eval_samples: int | None = None
 
     # Seed
     seed: int = 42
@@ -176,7 +303,7 @@ class Phase05Config:
         """Create ZipperLRConfig from this config."""
         return ZipperLRConfig(
             base_lr=self.lr_family,
-            feeder_lr=self.lr_feeder,
+            SEMANTIC_lr=self.lr_SEMANTIC,
             interface_lr=self.lr_interface,
             family_lr=self.lr_family,
             frozen_lr=self.lr_frozen,
@@ -193,6 +320,321 @@ class Phase05Config:
             log_grad_norms=self.log_grad_norms,
             log_every_n_steps=self.grad_log_every,
         )
+
+    def to_dict(self) -> dict:
+        """Convert config to dictionary for saving."""
+        return {
+            "model_path": self.model_path,
+            "v2_checkpoint": self.v2_checkpoint,
+            "tokenizer_name": self.tokenizer_name,
+            "max_steps": self.max_steps,
+            "warmup_steps": self.warmup_steps,
+            "eval_steps": self.eval_steps,
+            "save_steps": self.save_steps,
+            "logging_steps": self.logging_steps,
+            "train_batch_size": self.train_batch_size,
+            "eval_batch_size": self.eval_batch_size,
+            "gradient_accumulation_steps": self.gradient_accumulation_steps,
+            "max_length": self.max_length,
+            "lr_frozen": self.lr_frozen,
+            "lr_SEMANTIC": self.lr_SEMANTIC,
+            "lr_interface": self.lr_interface,
+            "lr_family": self.lr_family,
+            "lr_embeddings": self.lr_embeddings,
+            "lr_heads": self.lr_heads,
+            "weight_decay": self.weight_decay,
+            "max_grad_norm": self.max_grad_norm,
+            "interface_clip": self.interface_clip,
+            "per_layer_clip": self.per_layer_clip,
+            "output_dir": self.output_dir,
+            "checkpoint_dir": self.checkpoint_dir,
+            "device": self.device,
+            "bf16": self.bf16,
+            "use_wandb": self.use_wandb,
+            "wandb_project": self.wandb_project,
+            "wandb_run_name": self.wandb_run_name,
+            "seed": self.seed,
+        }
+
+
+def load_config_from_yaml(config_path: str | Path) -> dict:
+    """Load configuration from YAML file."""
+    config_path = Path(config_path)
+    if not config_path.exists():
+        logger.warning(f"Config file not found: {config_path}")
+        return {}
+
+    with open(config_path, encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    logger.info(f"Loaded config from {config_path}")
+    return config or {}
+
+
+def apply_config_overrides(config: Phase05Config, yaml_config: dict) -> Phase05Config:
+    """Apply YAML config overrides to Phase05Config."""
+    # Training section
+    training = yaml_config.get("training", {})
+    if "max_steps" in training:
+        config.max_steps = training["max_steps"]
+    if "warmup_steps" in training:
+        config.warmup_steps = training["warmup_steps"]
+    if "eval_steps" in training:
+        config.eval_steps = training["eval_steps"]
+    if "save_steps" in training:
+        config.save_steps = training["save_steps"]
+    if "logging_steps" in training:
+        config.logging_steps = training["logging_steps"]
+    if "per_device_train_batch_size" in training:
+        config.train_batch_size = training["per_device_train_batch_size"]
+    if "per_device_eval_batch_size" in training:
+        config.eval_batch_size = training["per_device_eval_batch_size"]
+    if "gradient_accumulation_steps" in training:
+        config.gradient_accumulation_steps = training["gradient_accumulation_steps"]
+    if "seed" in training:
+        config.seed = training["seed"]
+    if "bf16" in training:
+        config.bf16 = training["bf16"]
+    if "gradient_checkpointing" in training:
+        config.gradient_checkpointing = training["gradient_checkpointing"]
+
+    # Learning rate section
+    lr_config = yaml_config.get("learning_rate", {})
+    if "SEMANTIC_lr" in lr_config:
+        config.lr_SEMANTIC = float(lr_config["SEMANTIC_lr"])
+    if "interface_lr" in lr_config:
+        config.lr_interface = float(lr_config["interface_lr"])
+    if "family_lr" in lr_config:
+        config.lr_family = float(lr_config["family_lr"])
+    if "embeddings_lr" in lr_config:
+        config.lr_embeddings = float(lr_config["embeddings_lr"])
+    if "task_heads_lr" in lr_config:
+        config.lr_heads = float(lr_config["task_heads_lr"])
+
+    # Gradient section
+    gradient = yaml_config.get("gradient", {})
+    if "max_grad_norm" in gradient:
+        config.max_grad_norm = float(gradient["max_grad_norm"])
+    if "interface_clip" in gradient:
+        config.interface_clip = float(gradient["interface_clip"])
+    if "per_layer_clip" in gradient:
+        config.per_layer_clip = gradient["per_layer_clip"]
+
+    # Optimizer section
+    optimizer = yaml_config.get("optimizer", {})
+    if "weight_decay" in optimizer:
+        config.weight_decay = float(optimizer["weight_decay"])
+
+    # Data section
+    data = yaml_config.get("data", {})
+    if "healing_data_path" in data:
+        config.healing_data_path = data["healing_data_path"]
+
+    # Output section
+    output = yaml_config.get("checkpointing", {})
+    if "output_dir" in output:
+        config.output_dir = output["output_dir"]
+    if "checkpoint_dir" in output:
+        config.checkpoint_dir = output["checkpoint_dir"]
+
+    # Logging section
+    logging_cfg = yaml_config.get("logging", {})
+    wandb_cfg = logging_cfg.get("wandb", {})
+    if "enabled" in wandb_cfg:
+        config.use_wandb = wandb_cfg["enabled"]
+    if "project" in wandb_cfg:
+        config.wandb_project = wandb_cfg["project"]
+    if "run_name" in wandb_cfg:
+        config.wandb_run_name = wandb_cfg["run_name"]
+
+    return config
+
+
+# =============================================================================
+# Argument Parsing
+# =============================================================================
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Phase 0.5 Enhanced Healing Training for ModernBERT v3",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    # Dry run (validate configuration)
+    python scripts/v3_scripts/train_v3_phase0_5.py --dry-run
+
+    # Smoke test (10 steps)
+    python scripts/v3_scripts/train_v3_phase0_5.py --smoke-test
+
+    # Debug mode (5 steps with gradient logging)
+    python scripts/v3_scripts/train_v3_phase0_5.py --debug
+
+    # Full training with config file
+    python scripts/v3_scripts/train_v3_phase0_5.py \\
+        --config configs/training/multitask/stage_v3_phase0_5_enhanced.yaml
+
+    # Full training with overrides
+    python scripts/v3_scripts/train_v3_phase0_5.py \\
+        --model-path checkpoints/v3-initialized-from-v2 \\
+        --output-dir outputs/v3_phase0_5 \\
+        --learning-rate 5e-5 \\
+        --max-steps 3000
+
+    # Resume from checkpoint
+    python scripts/v3_scripts/train_v3_phase0_5.py \\
+        --resume-from outputs/v3_phase0_5/checkpoint-1000
+""",
+    )
+
+    # Mode selection (mutually exclusive)
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate configuration without training",
+    )
+    mode_group.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Run 10-step smoke test",
+    )
+    mode_group.add_argument(
+        "--debug",
+        action="store_true",
+        help="Run 5 steps with verbose gradient logging",
+    )
+
+    # Config file
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to training config YAML file",
+    )
+
+    # Model paths
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        default="checkpoints/v3-initialized-from-v2",
+        help="Path to initialized v3 model checkpoint",
+    )
+    parser.add_argument(
+        "--v2-checkpoint",
+        type=str,
+        default="checkpoints/modernbert-v2-for-v3-transfer/checkpoint-4000/model.safetensors",
+        help="Path to v2 checkpoint for initialization if model not found",
+    )
+    parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help="Resume training from checkpoint directory",
+    )
+
+    # Output
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="outputs/v3_phase0_5",
+        help="Output directory for checkpoints and final model",
+    )
+
+    # Training overrides
+    parser.add_argument(
+        "--max-steps",
+        type=int,
+        default=None,
+        help="Maximum training steps (overrides config)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=None,
+        help="Training batch size (overrides config)",
+    )
+    parser.add_argument(
+        "--learning-rate",
+        "--lr",
+        type=float,
+        default=None,
+        dest="learning_rate",
+        help="Interface layer learning rate (L23)",
+    )
+
+    # Logging
+    parser.add_argument(
+        "--wandb",
+        action="store_true",
+        help="Enable W&B logging",
+    )
+    parser.add_argument(
+        "--wandb-run-name",
+        type=str,
+        default=None,
+        help="W&B run name",
+    )
+
+    # Device
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=None,
+        help="Device (cuda/cpu)",
+    )
+    parser.add_argument(
+        "--no-bf16",
+        action="store_true",
+        help="Disable bf16 mixed precision",
+    )
+
+    # Seed
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed (overrides config)",
+    )
+
+    return parser.parse_args()
+
+
+def create_config_from_args(args: argparse.Namespace) -> Phase05Config:
+    """Create Phase05Config from parsed arguments."""
+    config = Phase05Config()
+
+    # Load YAML config if provided
+    if args.config:
+        yaml_config = load_config_from_yaml(args.config)
+        config = apply_config_overrides(config, yaml_config)
+
+    # Apply CLI overrides (take precedence over YAML)
+    if args.model_path:
+        config.model_path = args.model_path
+    if args.v2_checkpoint:
+        config.v2_checkpoint = args.v2_checkpoint
+    if args.output_dir:
+        config.output_dir = args.output_dir
+    if args.max_steps is not None:
+        config.max_steps = args.max_steps
+    if args.batch_size is not None:
+        config.train_batch_size = args.batch_size
+    if args.learning_rate is not None:
+        config.lr_interface = args.learning_rate
+    if args.wandb:
+        config.use_wandb = True
+    if args.wandb_run_name:
+        config.wandb_run_name = args.wandb_run_name
+    if args.device:
+        config.device = args.device
+    if args.no_bf16:
+        config.bf16 = False
+    if args.seed is not None:
+        config.seed = args.seed
+
+    return config
 
 
 # =============================================================================
@@ -309,7 +751,7 @@ class HealingDataset(Dataset):
     def _create_synthetic_samples(self, num_samples: int) -> None:
         """Create synthetic samples when HF not available."""
         for i in range(num_samples):
-            input_ids = torch.randint(5, 50265, (128,)).tolist()
+            input_ids = torch.randint(5, 50368, (128,)).tolist()
             self.samples.append(
                 {
                     "input_ids": input_ids,
@@ -334,10 +776,10 @@ class HealingCollator:
     """
 
     HUB_TOKENS = {
-        "[EMO]": 50265,
-        "[MEM]": 50266,
-        "[REL]": 50267,
-        "[TASK]": 50268,
+        "[EMO]": 50368,
+        "[MEM]": 50369,
+        "[REL]": 50370,
+        "[TASK]": 50371,
     }
 
     def __init__(self, tokenizer, max_length: int = 512):
@@ -548,21 +990,21 @@ def create_optimizer_with_zipper_lr(
 
     param_groups = []
 
-    # Feeder layers (L19-22, indices 18-21)
-    feeder_params = []
+    # SEMANTIC layers (L19-22, indices 18-21)
+    SEMANTIC_params = []
     for i in range(18, 22):
         if hasattr(base_model, "encoder") and hasattr(base_model.encoder, "layers"):
             if len(base_model.encoder.layers) > i:
-                feeder_params.extend(
+                SEMANTIC_params.extend(
                     [p for p in base_model.encoder.layers[i].parameters() if p.requires_grad]
                 )
 
-    if feeder_params:
+    if SEMANTIC_params:
         param_groups.append(
             {
-                "params": feeder_params,
-                "lr": zipper_config.feeder_lr,
-                "name": "feeder_L19-22",
+                "params": SEMANTIC_params,
+                "lr": zipper_config.SEMANTIC_lr,
+                "name": "SEMANTIC_L19-22",
             }
         )
 
@@ -906,7 +1348,7 @@ def run_dry_run(config: Phase05Config) -> bool:
     checks_total += 1
     zipper_config = config.get_zipper_lr_config()
     print("[OK] Zipper LR configuration:")
-    print(f"    Feeder (L19-22):   {zipper_config.feeder_lr}")
+    print(f"    SEMANTIC (L19-22):   {zipper_config.SEMANTIC_lr}")
     print(f"    Interface (L23):   {zipper_config.interface_lr}")
     print(f"    Family (L24-28):   {zipper_config.family_lr}")
     checks_passed += 1

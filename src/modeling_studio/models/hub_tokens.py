@@ -218,9 +218,9 @@ def get_hub_token_id(hub_token: str) -> int:
 
     Examples:
         >>> get_hub_token_id("[EMO]")
-        50265
+        50368
         >>> get_hub_token_id("[MEM]")
-        50266
+        50369
     """
     if hub_token not in HUB_TOKEN_IDS:
         raise KeyError(f"Hub token {hub_token} not found in registry")

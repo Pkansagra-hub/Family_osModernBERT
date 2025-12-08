@@ -41,7 +41,7 @@ class ModernBERTEmbeddingsV3(nn.Module):
     via semantic centroid initialization from v2 embeddings.
 
     Args:
-        vocab_size: Total vocabulary size including hub tokens (default: 50268)
+        vocab_size: Total vocabulary size including hub tokens (default: 50372)
         hidden_size: Hidden dimension (default: 768)
         max_position_embeddings: Maximum sequence length (default: 8192)
         hidden_dropout_prob: Dropout probability (default: 0.1)
@@ -49,8 +49,8 @@ class ModernBERTEmbeddingsV3(nn.Module):
         use_rotary_embeddings: Whether to use RoPE (position added in attention)
 
     Example:
-        >>> embeddings = ModernBERTEmbeddingsV3(vocab_size=50268)
-        >>> input_ids = torch.randint(0, 50268, (2, 128))
+        >>> embeddings = ModernBERTEmbeddingsV3(vocab_size=50372)
+        >>> input_ids = torch.randint(0, 50372, (2, 128))
         >>> embeds = embeddings(input_ids)
         >>> embeds.shape
         torch.Size([2, 128, 768])
@@ -58,7 +58,7 @@ class ModernBERTEmbeddingsV3(nn.Module):
 
     def __init__(
         self,
-        vocab_size: int = 50268,  # v2 vocab (50264) + 4 hub tokens
+        vocab_size: int = 50372,  # v2 vocab (50368) + 4 hub tokens
         hidden_size: int = 768,
         max_position_embeddings: int = 8192,
         hidden_dropout_prob: float = 0.1,
@@ -177,12 +177,12 @@ class ModernBERTEmbeddingsV3(nn.Module):
         Used when adding hub tokens to v2 vocabulary.
 
         Args:
-            new_vocab_size: New vocabulary size (e.g., 50268 for v2 + 4 hubs)
+            new_vocab_size: New vocabulary size (e.g., 50372 for v2 + 4 hubs)
 
         Example:
-            >>> embeddings = ModernBERTEmbeddingsV3(vocab_size=50264)
-            >>> embeddings.resize_token_embeddings(50268)
-            ✓ Resized embeddings: 50264 → 50268
+            >>> embeddings = ModernBERTEmbeddingsV3(vocab_size=50368)
+            >>> embeddings.resize_token_embeddings(50372)
+            ✓ Resized embeddings: 50368 → 50372
         """
         old_vocab_size = self.word_embeddings.num_embeddings
         if new_vocab_size == old_vocab_size:

@@ -27,7 +27,7 @@
 |---------|---------------|---------------------------|------------|
 | **Data Scope** | 3 Tasks (Sentiment, NER, NLI) | **5 Tasks (+SQuAD, +STS-B)** | Prevents overfitting to classification; forces context understanding |
 | **Learning Rate** | Constant `1e-5` | **Linear Warmup + Cosine Decay** | Prevents "shock" at step 1; settles weights gently |
-| **Layer Strategy** | Train L19-28 equally | **Zipper LR (differential by layer)** | L23 (interface) needs more plasticity than L19 (feeder) |
+| **Layer Strategy** | Train L19-28 equally | **Zipper LR (differential by layer)** | L23 (interface) needs more plasticity than L19 (SEMANTIC) |
 | **Batching** | Standard | **Gradient Clipping (1.0)** | Prevents exploding gradients at L22→L23 interface |
 
 ### Zipper Layer Strategy (Differential Learning Rates)
@@ -35,7 +35,7 @@
 | Layers | Role | Learning Rate | Rationale |
 |--------|------|---------------|-----------|
 | 1-18 | Foundation | ❄️ Frozen | Core v2 knowledge preserved |
-| 19-22 | Feeders | `1e-5` (Low) | Nudge outputs to match L23 expectations |
+| 19-22 | SEMANTICs | `1e-5` (Low) | Nudge outputs to match L23 expectations |
 | **23** | **Interface** | **`5e-5` (High)** | Maximum plasticity to fix the "scar tissue" |
 | 24-28 | Clones | `3e-5` (Medium) | Adapt to new signals from L23 |
 
@@ -200,7 +200,7 @@ phase_0_5:
   gradient_clipping: 1.0   # ← MANDATORY - prevents explosion
 
   learning_rate:
-    layers_19_22: 1e-5     # Feeders: gentle
+    layers_19_22: 1e-5     # SEMANTICs: gentle
     layer_23: 5e-5         # Interface: HIGH plasticity (the fix!)
     layers_24_28: 3e-5     # Clones: moderate
 
@@ -6764,7 +6764,7 @@ class V2CheckpointLoader:
     v3 Architecture (28 layers):
         - Foundation Band: L1-6 (window=64) ← COPY from v2 L1-6
         - Core Band: L7-18 (window=128) ← COPY from v2 L7-18
-        - Feeder Band: L19-22 (window=256) ← COPY from v2 L19-22
+        - SEMANTIC Band: L19-22 (window=256) ← COPY from v2 L19-22
         - Family Band: L23-28 (window=512) ← CLONE from v2 L15-20
     """
 
@@ -6778,7 +6778,7 @@ class V2CheckpointLoader:
         # Core Band: Direct copy
         6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11,
         12: 12, 13: 13, 14: 14, 15: 15, 16: 16, 17: 17,
-        # Feeder Band: Direct copy from v2 Family Band
+        # SEMANTIC Band: Direct copy from v2 Family Band
         18: 18, 19: 19, 20: 20, 21: 21,
         # Family Band: Clone from v2 Core/Family layers 15-20
         22: 14, 23: 15, 24: 16, 25: 17, 26: 18, 27: 19,
@@ -6996,7 +6996,7 @@ def load_v2_checkpoint(path: str) -> V2CheckpointLoader:
 **Dependencies:** Issue 4.1.1
 
 **Description:**
-Implement direct weight copying from v2 layers 1-22 to v3 layers 1-22. This preserves all learned representations from the Foundation, Core, and Feeder bands exactly.
+Implement direct weight copying from v2 layers 1-22 to v3 layers 1-22. This preserves all learned representations from the Foundation, Core, and SEMANTIC bands exactly.
 
 **Implementation:**
 
@@ -7010,7 +7010,7 @@ class LayerCopier:
     Layer Mapping (v3 ← v2):
         L1-6 (Foundation) ← L1-6: Direct copy (window 64)
         L7-18 (Core) ← L7-18: Direct copy (window 128)
-        L19-22 (Feeder) ← L19-22: Direct copy (window 256)
+        L19-22 (SEMANTIC) ← L19-22: Direct copy (window 256)
     """
 
     def __init__(
@@ -7347,7 +7347,7 @@ def clone_layers_for_growth(
 V3_LAYER_BANDS = {
     "foundation": list(range(0, 6)),    # L1-6: window=64
     "core": list(range(6, 18)),         # L7-18: window=128
-    "feeder": list(range(18, 22)),      # L19-22: window=256
+    "SEMANTIC": list(range(18, 22)),      # L19-22: window=256
     "family": list(range(22, 28)),      # L23-28: window=512
 }
 
@@ -9000,7 +9000,7 @@ class LayerBand(Enum):
     """Layer bands in v3 architecture."""
     FOUNDATION = "foundation"  # L1-6: window=64
     CORE = "core"              # L7-18: window=128
-    FEEDER = "feeder"          # L19-22: window=256
+    SEMANTIC = "SEMANTIC"          # L19-22: window=256
     FAMILY = "family"          # L23-28: window=512
 
 
@@ -9008,7 +9008,7 @@ class LayerBand(Enum):
 LAYER_BANDS: Dict[LayerBand, List[int]] = {
     LayerBand.FOUNDATION: list(range(0, 6)),    # L1-6
     LayerBand.CORE: list(range(6, 18)),         # L7-18
-    LayerBand.FEEDER: list(range(18, 22)),      # L19-22
+    LayerBand.SEMANTIC: list(range(18, 22)),      # L19-22
     LayerBand.FAMILY: list(range(22, 28)),      # L23-28
 }
 
@@ -9023,10 +9023,10 @@ class TrainingPhase(Enum):
 
 # Which bands are trainable in each phase
 PHASE_TRAINABLE_BANDS: Dict[TrainingPhase, List[LayerBand]] = {
-    TrainingPhase.PHASE_0_5: [LayerBand.FEEDER, LayerBand.FAMILY],
-    TrainingPhase.PHASE_1: [LayerBand.FEEDER, LayerBand.FAMILY],
+    TrainingPhase.PHASE_0_5: [LayerBand.SEMANTIC, LayerBand.FAMILY],
+    TrainingPhase.PHASE_1: [LayerBand.SEMANTIC, LayerBand.FAMILY],
     TrainingPhase.PHASE_2: [LayerBand.FOUNDATION, LayerBand.CORE,
-                            LayerBand.FEEDER, LayerBand.FAMILY],
+                            LayerBand.SEMANTIC, LayerBand.FAMILY],
     TrainingPhase.INFERENCE: [],
 }
 
@@ -9038,7 +9038,7 @@ class LayerFreezer:
     Freeze Strategy:
         Phase 0.5 (Healing):
             - Frozen: L1-18 (Foundation + Core)
-            - Trainable: L19-28 (Feeder + Family)
+            - Trainable: L19-28 (SEMANTIC + Family)
             - Purpose: Heal cloned layers without forgetting
 
         Phase 1 (Multi-task):
@@ -9305,7 +9305,7 @@ class TrainingConfig:
     # Learning rates (per layer group)
     learning_rate: float = 3e-5
     lr_layers_1_18: float = 0.0      # Frozen in Phase 0.5/1
-    lr_layers_19_22: float = 1e-5    # Feeders
+    lr_layers_19_22: float = 1e-5    # SEMANTICs
     lr_layer_23: float = 5e-5        # Interface
     lr_layers_24_28: float = 3e-5    # Clones
 
@@ -9428,7 +9428,7 @@ class ModernBERTv3Trainer:
 
         Groups:
             - layers_1_18: Foundation + Core (frozen or very low LR)
-            - layers_19_22: Feeder band
+            - layers_19_22: SEMANTIC band
             - layer_23: Interface layer (highest LR)
             - layers_24_28: Family band clones
             - embeddings: Usually frozen
@@ -9448,7 +9448,7 @@ class ModernBERTv3Trainer:
                 "name": "layers_1_18",
             })
 
-        # Layers 19-22 (Feeder)
+        # Layers 19-22 (SEMANTIC)
         layers_19_22_params = []
         for i in range(18, 22):
             layers_19_22_params.extend(self.model.encoder.layers[i].parameters())
@@ -10123,7 +10123,7 @@ class LayerGroupLRConfig:
 
     Rationale:
         - Foundation/Core (L1-18): Very low or frozen - preserve v2 knowledge
-        - Feeder (L19-22): Low LR - gentle refinement of interface
+        - SEMANTIC (L19-22): Low LR - gentle refinement of interface
         - Interface (L23): Highest LR - needs most adaptation
         - Family (L24-28): Moderate LR - learning new capabilities
     """
@@ -10133,7 +10133,7 @@ class LayerGroupLRConfig:
     # Layer band multipliers (relative to base_lr)
     foundation_mult: float = 0.0     # L1-6: Frozen or no training
     core_mult: float = 0.0           # L7-18: Frozen or no training
-    feeder_mult: float = 0.33        # L19-22: 1/3 of base LR
+    SEMANTIC_mult: float = 0.33        # L19-22: 1/3 of base LR
     interface_mult: float = 1.67     # L23: 5/3 of base LR (highest)
     family_mult: float = 1.0         # L24-28: Base LR
 
@@ -10152,8 +10152,8 @@ class LayerGroupLRConfig:
             return self.base_lr * self.foundation_mult
         elif layer_idx < 18:  # Core
             return self.base_lr * self.core_mult
-        elif layer_idx < 22:  # Feeder
-            return self.base_lr * self.feeder_mult
+        elif layer_idx < 22:  # SEMANTIC
+            return self.base_lr * self.SEMANTIC_mult
         elif layer_idx == 22:  # Interface (L23, 0-indexed)
             return self.base_lr * self.interface_mult
         else:  # Family
@@ -10166,7 +10166,7 @@ PHASE_LR_CONFIGS = {
         base_lr=3e-5,
         foundation_mult=0.0,
         core_mult=0.0,
-        feeder_mult=0.33,
+        SEMANTIC_mult=0.33,
         interface_mult=1.67,
         family_mult=1.0,
     ),
@@ -10174,7 +10174,7 @@ PHASE_LR_CONFIGS = {
         base_lr=2e-5,
         foundation_mult=0.0,
         core_mult=0.0,
-        feeder_mult=0.5,
+        SEMANTIC_mult=0.5,
         interface_mult=1.5,
         family_mult=1.0,
     ),
@@ -10182,7 +10182,7 @@ PHASE_LR_CONFIGS = {
         base_lr=1e-5,
         foundation_mult=0.1,
         core_mult=0.2,
-        feeder_mult=0.5,
+        SEMANTIC_mult=0.5,
         interface_mult=1.0,
         family_mult=1.0,
     ),
@@ -10240,7 +10240,7 @@ class LayerGroupOptimizer:
         layer_groups = {
             "foundation": (range(0, 6), self.config.foundation_mult),
             "core": (range(6, 18), self.config.core_mult),
-            "feeder": (range(18, 22), self.config.feeder_mult),
+            "SEMANTIC": (range(18, 22), self.config.SEMANTIC_mult),
             "interface": ([22], self.config.interface_mult),
             "family": (range(23, 28), self.config.family_mult),
         }
@@ -10360,7 +10360,7 @@ def create_layer_group_optimizer(
 - [ ] `LayerGroupLRConfig` supports all layer bands
 - [ ] Foundation/Core get 0 LR in Phase 0.5/1
 - [ ] Interface layer (L23) gets highest LR
-- [ ] Feeder band gets lower LR than Family
+- [ ] SEMANTIC band gets lower LR than Family
 - [ ] `create_optimizer()` creates valid AdamW
 - [ ] Parameter groups logged clearly
 - [ ] Preset configs for all phases
@@ -10715,13 +10715,13 @@ class ZipperLRConfig:
 
     Layer Layout:
         L1-18:  Foundation + Core (frozen, lr=0)
-        L19-22: Feeder band (low lr, interface preparation)
+        L19-22: SEMANTIC band (low lr, interface preparation)
         L23:    Interface layer (highest lr, maximum plasticity)
         L24-28: Family band (moderate lr, learning new tasks)
 
     LR Profile (Phase 0.5):
         L19: 1e-5 ─┐
-        L20: 1e-5  │ Feeder: gentle adaptation
+        L20: 1e-5  │ SEMANTIC: gentle adaptation
         L21: 1e-5  │
         L22: 1e-5 ─┘
         L23: 5e-5 ← Interface: highest plasticity
@@ -10734,8 +10734,8 @@ class ZipperLRConfig:
     # Base learning rate (reference point)
     base_lr: float = 3e-5
 
-    # Feeder band (L19-22) - uniform low LR
-    feeder_lr: float = 1e-5
+    # SEMANTIC band (L19-22) - uniform low LR
+    SEMANTIC_lr: float = 1e-5
 
     # Interface layer (L23) - maximum plasticity
     interface_lr: float = 5e-5
@@ -10758,8 +10758,8 @@ class ZipperLRConfig:
             # Foundation + Core: frozen
             return self.frozen_lr
         elif layer_idx < 22:
-            # Feeder (L19-22)
-            return self.feeder_lr
+            # SEMANTIC (L19-22)
+            return self.SEMANTIC_lr
         elif layer_idx == 22:
             # Interface (L23)
             return self.interface_lr
@@ -10777,7 +10777,7 @@ class ZipperLRConfig:
 ZIPPER_PRESETS = {
     "phase_0.5_healing": ZipperLRConfig(
         base_lr=3e-5,
-        feeder_lr=1e-5,
+        SEMANTIC_lr=1e-5,
         interface_lr=5e-5,
         family_lr=3e-5,
         family_graduated=True,
@@ -10785,7 +10785,7 @@ ZIPPER_PRESETS = {
     ),
     "phase_1_multitask": ZipperLRConfig(
         base_lr=2e-5,
-        feeder_lr=1e-5,
+        SEMANTIC_lr=1e-5,
         interface_lr=4e-5,
         family_lr=2e-5,
         family_graduated=True,
@@ -10793,21 +10793,21 @@ ZIPPER_PRESETS = {
     ),
     "phase_2_polish": ZipperLRConfig(
         base_lr=1e-5,
-        feeder_lr=5e-6,
+        SEMANTIC_lr=5e-6,
         interface_lr=2e-5,
         family_lr=1e-5,
         family_graduated=False,
     ),
     "conservative": ZipperLRConfig(
         base_lr=1e-5,
-        feeder_lr=5e-6,
+        SEMANTIC_lr=5e-6,
         interface_lr=3e-5,
         family_lr=1e-5,
         family_graduated=False,
     ),
     "aggressive": ZipperLRConfig(
         base_lr=5e-5,
-        feeder_lr=2e-5,
+        SEMANTIC_lr=2e-5,
         interface_lr=1e-4,
         family_lr=5e-5,
         family_graduated=True,
@@ -10945,7 +10945,7 @@ class ZipperLROptimizer:
             elif layer_idx < 18:
                 band = "Core"
             elif layer_idx < 22:
-                band = "Feeder"
+                band = "SEMANTIC"
             elif layer_idx == 22:
                 band = "Interface ★"
             else:
@@ -11023,7 +11023,7 @@ ZIPPER_LR_QUICK_REF = """
 - [ ] `ZipperLRConfig` defines all layer LRs
 - [ ] Interface layer (L23) gets highest LR
 - [ ] Graduated decay in Family band works correctly
-- [ ] Feeder band gets uniform low LR
+- [ ] SEMANTIC band gets uniform low LR
 - [ ] `create_optimizer()` creates valid AdamW
 - [ ] ASCII visualization shows LR profile clearly
 - [ ] Presets for all phases available
@@ -11399,7 +11399,7 @@ class GradientClipConfig:
     per_layer_clip: bool = False
     interface_clip: float = 0.5      # L23: tighter clip at interface
     family_clip: float = 1.0         # L24-28
-    feeder_clip: float = 1.0         # L19-22
+    SEMANTIC_clip: float = 1.0         # L19-22
 
     # Gradient monitoring
     log_grad_norms: bool = True
@@ -11566,8 +11566,8 @@ class GradientClipper:
                 max_norm = self.config.interface_clip
             elif layer_idx >= 23:  # Family band (L24-28)
                 max_norm = self.config.family_clip
-            elif layer_idx >= 18:  # Feeder band (L19-22)
-                max_norm = self.config.feeder_clip
+            elif layer_idx >= 18:  # SEMANTIC band (L19-22)
+                max_norm = self.config.SEMANTIC_clip
             else:  # Foundation/Core (should be frozen)
                 max_norm = self.config.max_grad_norm
 
@@ -13892,7 +13892,7 @@ layer_freezing:
 
   # Trainable bands (L19-28)
   trainable_bands:
-    - feeder      # L19-22: Interface preparation
+    - SEMANTIC      # L19-22: Interface preparation
     - family      # L23-28: New cloned layers
 
   # Component freezing
@@ -13912,7 +13912,7 @@ learning_rate:
   # Layer-specific rates
   base_lr: 3e-5
   layers_1_18: 0.0        # Frozen
-  layers_19_22: 1e-5      # Feeder: gentle adaptation
+  layers_19_22: 1e-5      # SEMANTIC: gentle adaptation
   layer_23: 5e-5          # Interface: maximum plasticity
   layers_24_28: 3e-5      # Family: moderate adaptation
 
@@ -13948,7 +13948,7 @@ gradient:
   # Per-layer clipping (more fine-grained)
   per_layer_clip: true
   interface_clip: 0.5     # L23: tighter clip at interface
-  feeder_clip: 1.0        # L19-22
+  SEMANTIC_clip: 1.0        # L19-22
   family_clip: 1.0        # L24-28
 
   # Gradient monitoring
@@ -16938,7 +16938,7 @@ and establishes smooth activation flow across the L22→L23 interface.
 
 Training Strategy:
     - Freeze: L1-18 (Foundation + Core bands)
-    - Train: L19-22 (Feeder), L23-28 (Family), Hub tokens
+    - Train: L19-22 (SEMANTIC), L23-28 (Family), Hub tokens
     - LR: Zipper strategy with L23 at maximum plasticity
     - Data: Enhanced healing (SST-2, CoNLL, MNLI, SQuAD, STS-B)
 
@@ -17276,8 +17276,8 @@ def train_phase_0_5(
     # Freeze L1-18 (Foundation + Core)
     freezer.freeze_bands([LayerBand.FOUNDATION, LayerBand.CORE])
 
-    # Trainable: L19-22 (Feeder), L23-28 (Family)
-    freezer.unfreeze_bands([LayerBand.FEEDER, LayerBand.FAMILY])
+    # Trainable: L19-22 (SEMANTIC), L23-28 (Family)
+    freezer.unfreeze_bands([LayerBand.SEMANTIC, LayerBand.FAMILY])
 
     # Freeze embeddings (except hub tokens)
     freezer.freeze_embeddings(except_hub_tokens=True)
@@ -18050,7 +18050,7 @@ def train_phase_1(
 
     # Freeze L1-18, train L19-28
     freezer.freeze_bands([LayerBand.FOUNDATION, LayerBand.CORE])
-    freezer.unfreeze_bands([LayerBand.FEEDER, LayerBand.FAMILY])
+    freezer.unfreeze_bands([LayerBand.SEMANTIC, LayerBand.FAMILY])
     freezer.freeze_embeddings(except_hub_tokens=True)
 
     frozen_count, trainable_count = freezer.get_param_counts()
@@ -18838,7 +18838,7 @@ layer_freezing:
     - foundation
     - core
   trainable_bands:
-    - feeder
+    - SEMANTIC
     - family
   freeze_embeddings: true
   freeze_hub_tokens: false
@@ -18956,7 +18956,7 @@ layer_freezing:
   frozen_bands:
     - foundation
     - core
-    - feeder  # Also freeze feeder in Phase 2
+    - SEMANTIC  # Also freeze SEMANTIC in Phase 2
   trainable_bands:
     - family  # Only family band trainable
   freeze_embeddings: true
@@ -19097,7 +19097,7 @@ output:
 - [ ] Phase 1 config inherits from Phase 0.5 style
 - [ ] Phase 1 has lower base LR (2e-5 vs 3e-5)
 - [ ] Phase 1 includes replay with dynamic ratio
-- [ ] Phase 2 freezes feeder band additionally
+- [ ] Phase 2 freezes SEMANTIC band additionally
 - [ ] Phase 2 has very low LR (5e-6)
 - [ ] Forgetting gate defines max 2% drop per benchmark
 - [ ] Forgetting gate suggests remediation on failure

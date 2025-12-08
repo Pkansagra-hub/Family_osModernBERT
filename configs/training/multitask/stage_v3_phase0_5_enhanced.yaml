@@ -54,7 +54,7 @@ layer_freezing:
     - core
 
   trainable_bands:
-    - feeder
+    - semantic
     - family
 
   freeze_embeddings: true
@@ -89,7 +89,7 @@ gradient:
 
   per_layer_clip: true
   interface_clip: 0.5
-  feeder_clip: 1.0
+  semantic_clip: 1.0
   family_clip: 1.0
 
   log_grad_norms: true

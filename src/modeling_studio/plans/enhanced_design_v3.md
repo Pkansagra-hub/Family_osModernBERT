@@ -1361,7 +1361,7 @@ Phase 0.5 – Enhanced Healing Warmup (v3.3 Ultra CRITICAL):
 
   # Zipper Learning Rate Strategy (differential by layer position)
   learning_rate:
-    layers_19_22: 1e-5    # Feeders: gentle nudge to match L23 expectations
+    layers_19_22: 1e-5    # Semantic: gentle nudge to match L23 expectations
     layer_23: 5e-5        # Interface: MAXIMUM plasticity (fix the scar!)
     layers_24_28: 3e-5    # Clones: moderate adaptation to new signals
 
@@ -1447,7 +1447,7 @@ Final – Calibration & Export:
 - **Total: 12,000 samples, ~2,500 steps @ batch=5**
 
 **Zipper LR Rationale:**
-- L19-22 (1e-5): "Feeders" - gentle nudge to match L23 expectations
+- L19-22 (1e-5): "Semantic" - gentle nudge to match L23 expectations
 - L23 (5e-5): "Interface" - MAXIMUM plasticity to heal the scar
 - L24-28 (3e-5): "Clones" - moderate adaptation to new signals from L23
 
@@ -1510,7 +1510,7 @@ training:
 
     # Zipper Learning Rate Strategy (differential by layer position)
     learning_rate:
-      layers_19_22: 1e-5          # Feeders: gentle nudge
+      layers_19_22: 1e-5          # Semantic: gentle nudge
       layer_23: 5e-5              # Interface: MAX plasticity (heal the scar!)
       layers_24_28: 3e-5          # Clones: moderate adaptation
 

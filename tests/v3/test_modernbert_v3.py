@@ -1429,9 +1429,9 @@ class TestEmbeddingsV3Integration:
         """Test that embeddings use correct vocab indices for hub tokens."""
         embeddings = ModernBERTEmbeddingsV3()
 
-        # Create input with hub tokens (0-indexed: 50368-50267)
+        # Create input with hub tokens (0-indexed: 50368-50371)
         input_ids = torch.tensor(
-            [[0, 50368, 50265, 50266, 50267, 100, 200, 300, 1]]
+            [[0, 50368, 50369, 50370, 50371, 100, 200, 300, 1]]
         )  # [CLS] [EMO] [MEM] [REL] [TASK] <text> [SEP]
 
         output = embeddings(input_ids)

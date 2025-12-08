@@ -45,7 +45,7 @@ class GradientClipConfig:
         per_layer_clip: Whether to apply per-layer clipping
         interface_clip: Clip threshold for L23 (interface layer)
         family_clip: Clip threshold for L24-28 (Family band)
-        feeder_clip: Clip threshold for L19-22 (Feeder band)
+        semantic_clip: Clip threshold for L19-22 (Semantic band)
         log_grad_norms: Whether to log gradient norms
         log_every_n_steps: How often to log gradient stats
         explosion_threshold: Threshold for gradient explosion warning
@@ -59,7 +59,7 @@ class GradientClipConfig:
     per_layer_clip: bool = False
     interface_clip: float = 0.5  # L23: tighter clip at interface
     family_clip: float = 1.0  # L24-28
-    feeder_clip: float = 1.0  # L19-22
+    semantic_clip: float = 1.0  # L19-22
 
     # Gradient monitoring
     log_grad_norms: bool = True
@@ -297,7 +297,7 @@ class GradientClipper:
         Uses different clip thresholds for different layer bands:
         - L23 (interface): tighter clip (0.5)
         - L24-28 (family): standard clip (1.0)
-        - L19-22 (feeder): standard clip (1.0)
+        - L19-22 (semantic): standard clip (1.0)
 
         Args:
             stats: GradientStats to update
@@ -319,8 +319,8 @@ class GradientClipper:
                 max_norm = self.config.interface_clip
             elif layer_idx >= 23:  # Family band (L24-28)
                 max_norm = self.config.family_clip
-            elif layer_idx >= 18:  # Feeder band (L19-22)
-                max_norm = self.config.feeder_clip
+            elif layer_idx >= 18:  # Semantic band (L19-22)
+                max_norm = self.config.semantic_clip
             else:  # Foundation/Core (should be frozen)
                 max_norm = self.config.max_grad_norm
 

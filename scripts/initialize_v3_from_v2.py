@@ -138,7 +138,7 @@ def create_v3_config(v2_loader: V2CheckpointLoader) -> ModernBERTv3Config:
     info = v2_loader.get_info()
 
     # v3 vocab size: v2 vocab + 4 hub tokens, aligned to 256
-    # ModernBERT-base: 50265 tokens -> 50265 + 4 + 163 padding = 50432 (256 aligned)
+    # ModernBERT v2: 50368 tokens -> 50368 + 4 + 60 padding = 50432 (256 aligned)
     v3_vocab_size = 50432  # 256-aligned
 
     return ModernBERTv3Config(
