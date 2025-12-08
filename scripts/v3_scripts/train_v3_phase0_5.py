@@ -449,8 +449,30 @@ class Phase05Config:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Phase05Config:
-        """Create config from dictionary."""
-        return cls(**{k: v for k, v in d.items() if k in cls.__dataclass_fields__})
+        """Create config from dictionary with type coercion for floats."""
+        # Fields that must be float (learning rates, etc.)
+        float_fields = {
+            "base_lr", "lr_layers_1_18", "lr_layers_19_22", "lr_layer_23",
+            "lr_layers_24_28", "lr_embeddings", "lr_hub_tokens", "lr_task_heads",
+            "family_decay", "weight_decay", "adam_beta1", "adam_beta2",
+            "adam_epsilon", "max_grad_norm", "interface_clip", "semantic_clip",
+            "family_clip", "min_lr_ratio",
+        }
+
+        cleaned = {}
+        for k, v in d.items():
+            if k not in cls.__dataclass_fields__:
+                continue
+            # Ensure float fields are actually floats
+            if k in float_fields and v is not None:
+                try:
+                    cleaned[k] = float(v)
+                except (ValueError, TypeError):
+                    cleaned[k] = v
+            else:
+                cleaned[k] = v
+
+        return cls(**cleaned)
 
     @classmethod
     def load(cls, path: Path | str) -> Phase05Config:
