@@ -165,15 +165,33 @@ datasets:
     name: data/familyos/emotions/silver
     label_schema: emotions_familyos
     format: jsonl
+    enabled: false  # Disabled for Stage A - use super-labels version below
     splits:
       train: train
 
+  # Stage A: Super-labels (7 classes) - SINGLE-LABEL classification
+  # Pre-consolidated from 44 granular emotions - see scripts/consolidate_labels.py
+  # Format: {"text": "...", "label": 0}  (integer class index)
+  emotions_super:
+    task: emotions
+    source: local
+    name: data/familyos/emotions/silver_super
+    label_schema: emotions_super
+    format: jsonl
+    problem_type: single_label_classification  # Uses CrossEntropyLoss
+    splits:
+      train: train
+      validation: validation
+
+  # DISABLED for Stage A - uses 44-label format, incompatible with 7 super-labels
+  # Re-enable for Stage B when training on full 44 labels
   emotions_familyos_gold:
     task: emotions
     source: local
     name: data/familyos/emotions/gold
     label_schema: emotions_familyos
     format: jsonl
+    enabled: false
     splits:
       train: train
       validation: validation
@@ -282,6 +300,7 @@ datasets:
     name: sentence-transformers/all-nli
     config: pair-score  # Required: pick from ['pair', 'pair-class', 'pair-score', 'triplet']
     loss_type: pairs  # Format for loader: pairs or triplets
+    max_samples: 100000  # Reduced from 557K - quality over quantity
     splits:
       train: train
       validation: dev  # Uses 'dev' split, not 'validation'
@@ -290,6 +309,67 @@ datasets:
       anchor: anchor
       positive: positive
       # Negatives sampled in-batch
+
+  # SICK-R: Entailment-based similarity - good for relational/narrative text
+  # 9,927 pairs - bridges to family emotions domain
+  embedding_sick:
+    task: embedding
+    source: huggingface
+    name: mteb/sickr-sts  # Correct MTEB name
+    loss_type: pairs
+    enabled: true
+    splits:
+      train: test  # SICK-R only has test split
+    column_mapping:
+      sentence1: sentence1
+      sentence2: sentence2
+      score: score  # 0-5 similarity
+
+  # STS 2012-2016: Annual SemEval competitions - diverse domains (headlines, emails, forums)
+  # Using STS12, STS13, STS14 for ~15K additional pairs with temporal diversity
+  embedding_sts12:
+    task: embedding
+    source: huggingface
+    name: mteb/sts12-sts
+    loss_type: pairs
+    enabled: true
+    splits:
+      train: test  # STS12-16 only have test splits - use as training data
+    column_mapping:
+      sentence1: sentence1
+      sentence2: sentence2
+      score: score
+
+  embedding_sts13:
+    task: embedding
+    source: huggingface
+    name: mteb/sts13-sts
+    loss_type: pairs
+    enabled: true
+    splits:
+      train: test
+    column_mapping:
+      sentence1: sentence1
+      sentence2: sentence2
+      score: score
+
+  embedding_sts14:
+    task: embedding
+    source: huggingface
+    name: mteb/sts14-sts
+    loss_type: pairs
+    enabled: true
+    splits:
+      train: test
+    column_mapping:
+      sentence1: sentence1
+      sentence2: sentence2
+      score: score
+
+  # NOTE: ArguAna (mteb/arguana) is retrieval format, not STS pairs - disabled
+  # Would need code changes to support query/corpus retrieval format
+  # embedding_arguana:
+  #   enabled: false  # Retrieval format incompatible with pairs loader
 
   # ============================================
   # Temporal Expression Recognition

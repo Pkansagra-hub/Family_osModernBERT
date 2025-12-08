@@ -73,7 +73,7 @@ TASK_PROBLEM_TYPES: dict[str, str] = {
     "safety_familyos": "single_label_classification",
     "intent": "single_label_classification",
     "nli": "single_label_classification",
-    "relation": "single_label_classification",
+    "relation": "multi_label_classification",
     # Multi-label classification
     "emotions": "multi_label_classification",
     "safety_generic": "multi_label_classification",
@@ -94,7 +94,7 @@ TASK_PRIMARY_METRICS: dict[str, str] = {
     "nli": "accuracy",
     "relation": "f1",
     "emotions": "macro_f1",
-    "embedding": "spearman",
+    "embedding": "triplet_accuracy",  # For triplet contrastive learning
 }
 
 
@@ -261,7 +261,7 @@ def compute_classification_metrics(
 def compute_multilabel_metrics(
     predictions: np.ndarray | list,
     labels: np.ndarray | list,
-    threshold: float = 0.3,
+    threshold: float = 0.5,
 ) -> dict[str, float]:
     """
     Compute multi-label classification metrics.
@@ -270,7 +270,7 @@ def compute_multilabel_metrics(
         predictions: Predicted logits/probabilities (2D: samples x labels)
         labels: True multi-hot labels (2D: samples x labels)
         threshold: Threshold for converting probabilities to predictions
-                   Default 0.3 (lower than 0.5 to catch more positives during early training)
+                   Default 0.5 (standard sigmoid threshold)
 
     Returns:
         Dictionary with micro_f1, macro_f1, hamming_loss, subset_accuracy
@@ -335,6 +335,10 @@ def compute_embedding_metrics(
     labels = labels[valid_mask]
 
     if len(predictions) < 2:
+        return {"spearman": 0.0, "pearson": 0.0}
+
+    # Guard against constant inputs which trigger scipy warnings and undefined correlations
+    if np.all(predictions == predictions[0]) or np.all(labels == labels[0]):
         return {"spearman": 0.0, "pearson": 0.0}
 
     spearman_corr, _ = spearmanr(predictions, labels)
@@ -1113,6 +1117,17 @@ def compute_metrics_for_task(
     """
     problem_type = TASK_PROBLEM_TYPES.get(task, "single_label_classification")
 
+    # Auto-detect single-label vs multi-label based on label format
+    # This handles Stage A emotions (7 super-labels, single-label) vs Stage B (44 labels, multi-label)
+    if problem_type == "multi_label_classification":
+        labels_arr = np.asarray(labels)
+        # Single-label: labels are 1D array of integers (class indices)
+        # Multi-label: labels are 2D array of floats (multi-hot vectors)
+        if labels_arr.ndim == 1 or (labels_arr.ndim == 2 and labels_arr.shape[1] == 1):
+            # Single-label classification format detected
+            problem_type = "single_label_classification"
+            logger.debug(f"Auto-detected single-label format for {task}")
+
     if problem_type == "token_classification":
         if label_list is None:
             logger.warning(f"label_list not provided for {task}, using fallback metrics")
@@ -1183,6 +1198,9 @@ def aggregate_metrics(
         primary_metric = get_task_primary_metric(task)
         if primary_metric in metrics:
             primary_scores[task] = metrics[primary_metric]
+        # For embedding task, also check triplet_accuracy if spearman not found
+        elif task == "embedding" and "triplet_accuracy" in metrics:
+            primary_scores[task] = metrics["triplet_accuracy"]
         elif "f1" in metrics:
             primary_scores[task] = metrics["f1"]
         elif "accuracy" in metrics:

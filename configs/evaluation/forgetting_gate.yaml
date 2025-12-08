@@ -1,0 +1,207 @@
+# configs/evaluation/forgetting_gate.yaml
+#
+# Phase 1.5 Forgetting Evaluation Gate Configuration
+# Evaluates model on healing benchmarks to detect capability loss
+#
+# Purpose:
+#   - Run after Phase 1 multi-task training
+#   - Compare against Phase 0.5 baseline
+#   - Block Phase 2 if forgetting exceeds thresholds
+#   - Suggest remediation actions
+#
+# Usage:
+#   python scripts/evaluate_forgetting.py --config configs/evaluation/forgetting_gate.yaml
+
+evaluation:
+  phase: "phase_1.5"
+  phase_name: "Forgetting Evaluation Gate"
+
+  # Model to evaluate (Phase 1 output)
+  model_path: "outputs/v3_phase1/final_model"
+
+  # Baseline for comparison (Phase 0.5 output)
+  baseline_path: "outputs/v3_phase0_5/best_model"
+
+  # Device settings
+  device: "cuda"
+  bf16: true
+  batch_size: 64
+
+# Benchmark configurations
+benchmarks:
+  sst2:
+    name: "SST-2 Sentiment"
+    dataset: "glue"
+    subset: "sst2"
+    split: "validation"
+    metric: "accuracy"
+    baseline_score: null  # Will be computed from Phase 0.5
+    max_drop: 0.02  # 2% max allowed drop
+    priority: "critical"
+    hub_token: "[EMO]"
+
+  mnli:
+    name: "MNLI Entailment"
+    dataset: "glue"
+    subset: "mnli"
+    split: "validation_matched"
+    metric: "accuracy"
+    baseline_score: null
+    max_drop: 0.02
+    priority: "critical"
+    hub_token: "[REL]"
+
+  conll:
+    name: "CoNLL-2003 NER"
+    dataset: "conll2003"
+    subset: null
+    split: "validation"
+    metric: "f1"
+    baseline_score: null
+    max_drop: 0.02
+    priority: "critical"
+    hub_token: null  # Token-level task
+
+  squad:
+    name: "SQuAD QA"
+    dataset: "squad"
+    subset: null
+    split: "validation"
+    metric: "f1"
+    baseline_score: null
+    max_drop: 0.03  # Slightly more lenient for QA
+    priority: "high"
+    hub_token: null
+
+  stsb:
+    name: "STS-B Similarity"
+    dataset: "glue"
+    subset: "stsb"
+    split: "validation"
+    metric: "spearman"
+    baseline_score: null
+    max_drop: 0.03
+    priority: "high"
+    hub_token: "[MEM]"
+
+# Forgetting Gate Configuration
+gate:
+  # All critical benchmarks must pass
+  require_all_critical: true
+
+  # High priority - allow 1 failure
+  max_high_priority_failures: 1
+
+  # Maximum allowed drop per benchmark
+  default_max_drop: 0.02
+
+  # Overall average drop threshold
+  max_average_drop: 0.015
+
+  # Actions on gate result
+  on_pass:
+    - action: "log_success"
+      message: "All forgetting gates passed - proceeding to Phase 2"
+    - action: "save_report"
+      path: "outputs/v3_phase1/forgetting_report.json"
+
+  on_failure:
+    - action: "log_error"
+      message: "Forgetting gate failed - Phase 2 blocked"
+    - action: "save_report"
+      path: "outputs/v3_phase1/forgetting_report_FAILED.json"
+    - action: "suggest_remediation"
+    - action: "block_next_phase"
+
+# Remediation strategies
+remediation:
+  # Option 1: Increase replay ratio
+  increase_replay:
+    trigger: "any_critical_failure"
+    current_value: 0.15
+    suggested_value: 0.25
+    max_value: 0.40
+    description: "Increase Stage A replay ratio in Phase 1 training"
+
+  # Option 2: Add benchmark samples to training
+  add_benchmark_samples:
+    trigger: "specific_benchmark_failure"
+    sample_count: 500
+    per_benchmark: true
+    description: "Add failing benchmark samples to training data"
+
+  # Option 3: Reduce LoRA rank
+  reduce_lora_rank:
+    trigger: "multiple_failures"
+    current_value: 16
+    suggested_value: 8
+    description: "Reduce LoRA rank to limit parameter updates"
+
+  # Option 4: Freeze more layers
+  freeze_more_layers:
+    trigger: "severe_forgetting"
+    current_frozen: "L1-18"
+    suggested_frozen: "L1-20"
+    description: "Extend frozen layers to preserve more v2 knowledge"
+
+  # Option 5: Retrain from Phase 0.5
+  retrain_phase1:
+    trigger: "catastrophic_forgetting"
+    threshold: 0.10  # >10% drop
+    description: "Catastrophic forgetting detected - retrain Phase 1 with adjusted hyperparameters"
+
+# Output configuration
+output:
+  # Results file
+  results_file: "outputs/v3_phase1/forgetting_results.json"
+
+  # Generate detailed report
+  generate_report: true
+  report_format: "markdown"
+  report_path: "outputs/v3_phase1/forgetting_report.md"
+
+  # Comparison visualization
+  generate_plots: true
+  plots_dir: "outputs/v3_phase1/forgetting_plots"
+
+  # Metrics to include in report
+  include_metrics:
+    - per_benchmark_scores
+    - per_benchmark_drops
+    - pass_fail_status
+    - remediation_suggestions
+    - baseline_comparison
+    - confidence_intervals
+
+# Logging
+logging:
+  use_wandb: true
+  wandb_project: "modernbert-v3"
+  wandb_run_name: "phase1_5_forgetting_gate"
+  wandb_tags:
+    - "phase_1.5"
+    - "forgetting"
+    - "evaluation"
+    - "gate"
+
+  log_level: "info"
+  verbose: true
+
+# Advanced settings
+advanced:
+  # Number of evaluation runs for confidence
+  num_seeds: 1  # Increase for statistical significance
+
+  # Subset evaluation for speed (null = full)
+  max_samples_per_benchmark: null
+
+  # Use cached baseline scores if available
+  use_cached_baseline: true
+  baseline_cache_file: "outputs/v3_phase0_5/baseline_scores.json"
+
+  # Timeout per benchmark (seconds)
+  timeout_per_benchmark: 600
+
+  # Memory optimization
+  gradient_checkpointing: false
+  empty_cache_between_benchmarks: true

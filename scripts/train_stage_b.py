@@ -2,14 +2,22 @@
 """
 Stage B Training Script: FamilyOS Domain Adaptation
 
-This script fine-tunes modernbert-multitask-v0 with FamilyOS-specific data
-using LoRA adapters to preserve generic capabilities.
-Output: familyos-modernbert-unified-v1
+This script fine-tunes modernbert-multitask-v0 with FamilyOS-specific data.
+Supports two modes:
+    1. LoRA adapters (default) - preserves generic capabilities
+    2. Full fine-tuning (v3 prep) - trains encoder layers for v3 transfer
+
+Output: familyos-modernbert-unified-v1 (or modernbert-v2-for-v3-transfer)
 
 Epic 5.0 Enhancements:
     - Shared CLSMeanPooler for consistent sequence pooling
     - CrossAttentionPairEncoder for NLI and Relation heads
     - Task-group adapters (optional, alongside PEFT LoRA)
+
+v3 Preparation Mode:
+    - Full fine-tuning of encoder layers (no LoRA)
+    - Layer-wise learning rates (higher for layers 15-20)
+    - Trains encoder weights that will transfer to v3
 
 New tasks added:
     - ner_family: Family-specific NER (kinship, nicknames)
@@ -22,22 +30,21 @@ Existing tasks (replay for anti-forgetting):
     - ner_general, sentiment, emotions, safety_generic, nli, embedding, temporal
 
 Usage:
+    # Standard LoRA training
     python scripts/train_stage_b.py --config configs/training/multitask/stage_b_familyos.yaml
+
+    # v3 Preparation (full fine-tuning)
+    python scripts/train_stage_b.py --config configs/training/multitask/stage_b_for_v3_prep.yaml
+
+    # Use unified FamilyOS synthetic data
+    python scripts/train_stage_b.py \
+        --config configs/training/multitask/stage_b_for_v3_prep.yaml \
+        --use_unified_loader
 
     # Start from specific Stage A checkpoint
     python scripts/train_stage_b.py \
         --config configs/training/multitask/stage_b_familyos.yaml \
         --model.name_or_path outputs/modernbert-multitask-v0/best
-
-    # Adjust LoRA rank
-    python scripts/train_stage_b.py \
-        --config configs/training/multitask/stage_b_familyos.yaml \
-        --peft.lora.r 64
-
-    # Enable Epic 5.0 pair encoder for NLI/Relation
-    python scripts/train_stage_b.py \
-        --config configs/training/multitask/stage_b_familyos.yaml \
-        --epic5.use_pair_encoder true
 
     # Debug mode (smaller batches, subset of data)
     python scripts/train_stage_b.py \
@@ -45,13 +52,14 @@ Usage:
         --debug
 
 Environment:
-    - GPU: Single GPU sufficient due to LoRA (16GB+ VRAM for A100)
+    - GPU: Single GPU sufficient for LoRA (16GB+ VRAM)
+    - GPU: Full fine-tune needs 24GB+ VRAM (or gradient checkpointing)
     - RAM: 32GB+ recommended
 
 Outputs:
-    - checkpoints/familyos-modernbert-unified-v1/: Training checkpoints
-    - outputs/familyos-modernbert-unified-v1/: Final merged model
-    - outputs/familyos-modernbert-unified-v1-lora/: LoRA adapters only
+    - checkpoints/...: Training checkpoints
+    - outputs/...: Final model (merged if LoRA, direct if full FT)
+    - outputs/...-lora/: LoRA adapters only (if LoRA mode)
 
 Post-Training:
     After training, run threshold calibration:
@@ -60,6 +68,7 @@ Post-Training:
 
 import argparse
 import json
+import re
 import logging
 import sys
 from datetime import datetime
@@ -70,15 +79,23 @@ import torch
 import yaml
 from omegaconf import OmegaConf
 from peft import LoraConfig, PeftModel, TaskType, get_peft_model
-from transformers import AutoTokenizer, TrainingArguments
+from transformers import AutoTokenizer, TrainingArguments, TrainerCallback
+
+from datasets import load_dataset
 
 # Add src to path for local imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from modeling_studio.data import load_stage_b_datasets
 from modeling_studio.data.labels import Capability
+from modeling_studio.data.loaders import (
+    load_embedding_triplets,
+    load_familyos_unified,
+    load_familyos_unified_for_training,
+)
 from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 from modeling_studio.trainers.multitask_trainer import MultiTaskTrainer, MultiTaskTrainingArguments
+from modeling_studio.evaluation.evaluator import Evaluator
 
 # Epic 5.0 imports (optional enhancements)
 try:
@@ -143,7 +160,7 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     logger.info(f"Loaded config from {config_path}")
@@ -166,6 +183,412 @@ def apply_overrides(config: dict[str, Any], overrides: list[str]) -> dict[str, A
             OmegaConf.update(omega_conf, key, parsed_value, merge=True)
 
     return OmegaConf.to_container(omega_conf, resolve=True)
+
+
+# =============================================================================
+# Forgetting Evaluation & v3 Verification Utilities
+# =============================================================================
+
+
+def _load_stage_a_baseline_metrics(model_path: str | Path) -> dict[str, float]:
+    """Load Stage A baseline metrics if available."""
+
+    metrics_path = Path(model_path) / "eval_results.json"
+    if not metrics_path.exists():
+        logger.warning(f"Stage A baseline metrics not found at {metrics_path}")
+        return {}
+
+    try:
+        with open(metrics_path, encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return data
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Failed to load baseline metrics from {metrics_path}: {exc}")
+
+    return {}
+
+
+def _load_forgetting_benchmark_datasets(
+    tokenizer: AutoTokenizer, max_samples: int = 500
+) -> dict[str, Any]:
+    """Load small eval datasets for CoNLL-2003 (NER), SST-2 (sentiment), MNLI (NLI)."""
+
+    datasets: dict[str, Any] = {}
+
+    # CoNLL-2003 → ner_general
+    try:
+        conll = load_dataset("conll2003", split="validation")
+
+        def tokenize_ner(batch: dict[str, Any]) -> dict[str, Any]:
+            tokenized = tokenizer(
+                batch["tokens"],
+                is_split_into_words=True,
+                truncation=True,
+                max_length=256,
+                padding=False,
+            )
+
+            labels: list[list[int]] = []
+            for i, label in enumerate(batch["ner_tags"]):
+                word_ids = tokenized.word_ids(batch_index=i)
+                aligned: list[int] = []
+                previous_word_idx: int | None = None
+                for word_idx in word_ids:
+                    if word_idx is None:
+                        aligned.append(-100)
+                    elif word_idx != previous_word_idx:
+                        aligned.append(label[word_idx] if word_idx < len(label) else -100)
+                    else:
+                        aligned.append(-100)
+                    previous_word_idx = word_idx
+                labels.append(aligned)
+            tokenized["labels"] = labels
+            return tokenized
+
+        conll = conll.select(range(min(max_samples, len(conll))))
+        conll = conll.rename_column("ner_tags", "labels")
+        conll = conll.map(
+            tokenize_ner, batched=True, remove_columns=["tokens", "pos_tags", "chunk_tags", "id"]
+        )
+        datasets["ner_general"] = conll
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Skipping CoNLL forgetting eval (load error): {exc}")
+
+    # SST-2 → sentiment (map to 5-class schema used in Stage A)
+    try:
+        sst2 = load_dataset("glue", "sst2", split="validation")
+
+        def map_sst2_to_five_class(example: dict[str, Any]) -> dict[str, Any]:
+            example["labels"] = 1 if example["label"] == 0 else 3  # neg->1, pos->3
+            return example
+
+        sst2 = sst2.map(map_sst2_to_five_class, remove_columns=["label", "idx"])
+        sst2 = sst2.select(range(min(max_samples, len(sst2))))
+        sst2 = sst2.map(
+            lambda batch: tokenizer(
+                batch["sentence"], truncation=True, max_length=256, padding=False
+            ),
+            batched=True,
+            remove_columns=(
+                ["sentence", "original_label"]
+                if "original_label" in sst2.column_names
+                else ["sentence"]
+            ),
+        )
+        datasets["sentiment"] = sst2
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Skipping SST-2 forgetting eval (load error): {exc}")
+
+    # MNLI → nli
+    try:
+        mnli = load_dataset("glue", "mnli", split="validation_matched")
+        mnli = mnli.select(range(min(max_samples, len(mnli))))
+        mnli = mnli.rename_column("label", "labels")
+        mnli = mnli.map(
+            lambda batch: tokenizer(
+                batch["premise"],
+                batch["hypothesis"],
+                truncation=True,
+                max_length=256,
+                padding=False,
+            ),
+            batched=True,
+            remove_columns=(
+                ["premise", "hypothesis", "idx"]
+                if "idx" in mnli.column_names
+                else ["premise", "hypothesis"]
+            ),
+        )
+        datasets["nli"] = mnli
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(f"Skipping MNLI forgetting eval (load error): {exc}")
+
+    return datasets
+
+
+def _compute_metric_drop(baseline: float | None, current: float | None) -> float:
+    """Compute drop between baseline and current metrics."""
+    if baseline is None or current is None:
+        return 0.0
+    return float(baseline) - float(current)
+
+
+def run_forgetting_evaluation(
+    model: ModernBertMultiTaskModel,
+    tokenizer: AutoTokenizer,
+    config: dict[str, Any],
+    device: str,
+    datasets_cache: dict[str, Any] | None = None,
+) -> None:
+    """Run forgetting evaluation on Stage A benchmarks if configured."""
+
+    fe_config = config.get("forgetting_evaluation", {})
+    if not fe_config.get("enabled", False):
+        return
+
+    benchmarks = fe_config.get("benchmarks", [])
+    if not benchmarks:
+        logger.warning("Forgetting evaluation enabled but no benchmarks specified")
+        return
+
+    datasets = datasets_cache or _load_forgetting_benchmark_datasets(tokenizer, max_samples=500)
+    if not datasets:
+        logger.warning("No forgetting benchmark datasets loaded; skipping")
+        return
+
+    evaluator = Evaluator(
+        model=model, tokenizer=tokenizer, capabilities=list(datasets.keys()), device=device
+    )
+    results = evaluator.evaluate_all(
+        datasets=datasets, batch_size=16, num_workers=0, show_progress=False
+    )
+
+    baseline_metrics = _load_stage_a_baseline_metrics(
+        config.get("model", {}).get("name_or_path", "")
+    )
+
+    benchmark_metric_map = {
+        "CoNLL-2003": ("ner_general", "f1", "eval_ner_general_f1"),
+        "SST-2": ("sentiment", "accuracy", "eval_sentiment_accuracy"),
+        "MNLI": ("nli", "accuracy", "eval_nli_accuracy"),
+    }
+
+    for bench in benchmarks:
+        name = bench.get("name")
+        max_drop = float(bench.get("max_drop", 0.0))
+        task, _, baseline_key = benchmark_metric_map.get(name, (None, None, None))
+        if task is None:
+            logger.warning(f"Unknown benchmark '{name}' in forgetting_evaluation; skipping")
+            continue
+
+        task_results = results.task_results.get(task)
+        current_primary = task_results.primary_metric if task_results else None
+        baseline_value = baseline_metrics.get(baseline_key)
+        drop = _compute_metric_drop(baseline_value, current_primary)
+
+        logger.info(
+            f"Forgetting check [{name}]: baseline={baseline_value}, current={current_primary}, drop={drop:.4f}, max_drop={max_drop}"
+        )
+
+        if drop > max_drop:
+            action = fe_config.get("action_on_failure")
+            logger.warning(
+                f"Forgetting guard triggered for {name} (drop {drop:.4f} > {max_drop}). Action: {action}"
+            )
+            # Action hook: currently only logs. Can be extended to adjust optimizer LR if training is ongoing.
+
+
+def export_layers_15_20(encoder: Any, output_path: Path) -> None:
+    """Export encoder layers 15-20 (1-indexed) to a state_dict file."""
+
+    state_dict = encoder.state_dict()
+    selected: dict[str, Any] = {}
+    pattern = re.compile(r"(encoder\.(?:layer|layers)\.(\d+)\.)")
+
+    for key, value in state_dict.items():
+        match = pattern.search(key)
+        if match:
+            layer_idx = int(match.group(2))
+            if 14 <= layer_idx <= 19:  # 0-indexed layers 14-19 correspond to 15-20
+                selected[key] = value
+
+    if not selected:
+        logger.warning("Could not isolate layers 15-20; exporting full encoder as fallback")
+        selected = state_dict
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(selected, output_path)
+    logger.info(f"Exported encoder weights to {output_path}")
+
+
+def run_v3_transfer_verification(
+    model: ModernBertMultiTaskModel,
+    config: dict[str, Any],
+) -> None:
+    """Execute post-training v3 transfer verification steps (export layers)."""
+
+    v3_config = config.get("v3_transfer_verification", {})
+    if not v3_config.get("enabled", False):
+        return
+
+    steps = v3_config.get("steps", [])
+    if not steps:
+        logger.warning("v3_transfer_verification enabled but no steps provided")
+        return
+
+    for step in steps:
+        method = step.get("method")
+        if method == "export_layers_15_20":
+            output = step.get("output", "checkpoints/v2_layers_15_20_for_v3.pt")
+            encoder = model.get_encoder()
+            export_layers_15_20(encoder, Path(output))
+        else:
+            logger.info(f"Skipping verification step '{method}' (not implemented)")
+
+
+# =============================================================================
+# Forgetting Self-Heal Callback
+# =============================================================================
+
+
+class ForgettingSelfHealCallback(TrainerCallback):
+    """Respond to forgetting eval drops with non-blocking self-heal actions."""
+
+    def __init__(
+        self,
+        trainer_ref: Any,
+        fe_config: dict[str, Any],
+        tokenizer: AutoTokenizer,
+        baseline_metrics: dict[str, float],
+        forgetting_datasets: dict[str, Any],
+    ):
+        self.trainer_ref = trainer_ref
+        self.fe_config = fe_config
+        self.tokenizer = tokenizer
+        self.baseline_metrics = baseline_metrics
+        self.datasets = forgetting_datasets
+
+        # Self-heal settings
+        self.lr_backoff_factor = float(fe_config.get("lr_backoff_factor", 0.5))
+        self.replay_boost_factor = float(fe_config.get("replay_boost_factor", 2.0))
+        self.replay_boost_steps = int(fe_config.get("replay_boost_steps", 200))
+        self.quick_eval_after_steps = int(fe_config.get("quick_eval_after_steps", 200))
+
+        # Task mapping for benchmarks
+        self.benchmark_map = {
+            "CoNLL-2003": ("ner_general", "eval_ner_general_f1"),
+            "SST-2": ("sentiment", "eval_sentiment_accuracy"),
+            "MNLI": ("nli", "eval_nli_accuracy"),
+        }
+
+        # State
+        self.base_task_weights = dict(trainer_ref.task_sampler.task_weights)
+        self.boost_active_until: int | None = None
+        self.quick_eval_schedule: list[tuple[str, int]] = []
+
+    # Utilities
+    def _apply_lr_backoff(self) -> None:
+        optimizer = self.trainer_ref.optimizer
+        if optimizer is None:
+            return
+        for group in optimizer.param_groups:
+            name = group.get("name", "")
+            if name.startswith("layers_1-6") or name.startswith("layers_7-14"):
+                old_lr = group["lr"]
+                group["lr"] = old_lr * self.lr_backoff_factor
+                logger.warning(
+                    f"Forgetting self-heal: backoff LR for {name}: {old_lr:.2e} -> {group['lr']:.2e}"
+                )
+
+    def _apply_replay_boost(self, task: str, current_step: int) -> None:
+        sampler = self.trainer_ref.task_sampler
+        new_weights = dict(sampler.task_weights)
+
+        # Prefer replay variants if present
+        candidates = [f"{task}_replay", task]
+        boosted = []
+        for cand in candidates:
+            if cand in new_weights:
+                new_weights[cand] = new_weights[cand] * self.replay_boost_factor
+                boosted.append(cand)
+
+        if boosted:
+            sampler.update_weights(new_weights)
+            self.boost_active_until = current_step + self.replay_boost_steps
+            logger.warning(
+                f"Forgetting self-heal: boosted replay weights for {boosted} until step {self.boost_active_until}"
+            )
+
+    def _maybe_revert_replay_boost(self, current_step: int) -> None:
+        if self.boost_active_until is not None and current_step >= self.boost_active_until:
+            self.trainer_ref.task_sampler.update_weights(self.base_task_weights)
+            logger.info("Forgetting self-heal: replay boost window ended; weights restored")
+            self.boost_active_until = None
+
+    def _schedule_quick_eval(self, task: str, current_step: int) -> None:
+        target = current_step + self.quick_eval_after_steps
+        self.quick_eval_schedule.append((task, target))
+        logger.info(f"Forgetting self-heal: scheduled quick re-eval for {task} at step {target}")
+
+    def _run_quick_eval(self, task: str) -> None:
+        if task not in self.datasets:
+            return
+        evaluator = Evaluator(
+            model=self.trainer_ref.model,
+            tokenizer=self.tokenizer,
+            capabilities=[task],
+            device=str(self.trainer_ref.args.device),
+        )
+        res = evaluator.evaluate_all(
+            {task: self.datasets[task]}, batch_size=16, num_workers=0, show_progress=False
+        )
+        task_res = res.task_results.get(task)
+        if task_res:
+            logger.info(
+                f"Quick re-eval [{task}] primary={task_res.primary_metric:.4f} metrics={task_res.metrics}"
+            )
+
+    # HF callbacks
+    def on_evaluate(self, args, state, control, **kwargs):  # type: ignore[override]
+        if not self.datasets or not self.fe_config.get("enabled", False):
+            return control
+
+        benchmarks = self.fe_config.get("benchmarks", [])
+        if not benchmarks:
+            return control
+
+        evaluator = Evaluator(
+            model=self.trainer_ref.model,
+            tokenizer=self.tokenizer,
+            capabilities=list(self.datasets.keys()),
+            device=str(args.device),
+        )
+        results = evaluator.evaluate_all(
+            datasets=self.datasets,
+            batch_size=16,
+            num_workers=0,
+            show_progress=False,
+        )
+
+        for bench in benchmarks:
+            name = bench.get("name")
+            max_drop = float(bench.get("max_drop", 0.0))
+            task, baseline_key = self.benchmark_map.get(name, (None, None))
+            if task is None:
+                continue
+
+            task_res = results.task_results.get(task)
+            current_primary = task_res.primary_metric if task_res else None
+            baseline_value = self.baseline_metrics.get(baseline_key)
+            drop = _compute_metric_drop(baseline_value, current_primary)
+
+            logger.info(
+                f"Forgetting check [{name}]: baseline={baseline_value}, current={current_primary}, drop={drop:.4f}, max_drop={max_drop}"
+            )
+
+            if drop > max_drop:
+                self._apply_lr_backoff()
+                self._apply_replay_boost(task, state.global_step)
+                self._schedule_quick_eval(task, state.global_step)
+
+        return control
+
+    def on_step_end(self, args, state, control, **kwargs):  # type: ignore[override]
+        # Revert replay boost if window ended
+        self._maybe_revert_replay_boost(state.global_step)
+
+        # Run any due quick re-evals (non-blocking training)
+        due = [(t, step) for (t, step) in self.quick_eval_schedule if state.global_step >= step]
+        if due:
+            # remove due
+            self.quick_eval_schedule = [
+                (t, s) for (t, s) in self.quick_eval_schedule if s > state.global_step
+            ]
+            for task, _ in due:
+                self._run_quick_eval(task)
+
+        return control
 
 
 # =============================================================================
@@ -199,6 +622,91 @@ def load_stage_a_model(
 
     logger.info(f"Loaded model with capabilities: {[c.value for c in model.capabilities]}")
     return model
+
+
+def reinitialize_emotions_head_for_stage_b(
+    model: ModernBertMultiTaskModel,
+    heads_config: dict[str, Any],
+) -> None:
+    """
+    Reinitialize emotions head from Stage A (7 super-labels) to Stage B (44 labels).
+
+    Stage A trains with 7 super-labels for faster curriculum learning.
+    Stage B needs the full 44 FamilyOS emotion labels for fine-grained classification.
+
+    Args:
+        model: The multi-task model loaded from Stage A
+        heads_config: Head configuration from YAML (heads section)
+    """
+    from modeling_studio.data.labels import EMOTIONS_FAMILYOS_LABELS
+    from modeling_studio.models.heads import HierarchicalEmotionHead
+
+    emotions_cfg = heads_config.get("emotions", {})
+    if not emotions_cfg.get("enabled", True):
+        return
+
+    # Stage B expects 44 labels (or whatever is configured)
+    target_num_labels = emotions_cfg.get("num_labels", 44)
+
+    try:
+        current_head = model.get_head("emotions")
+        current_num_labels = getattr(
+            current_head, "num_emotions", getattr(current_head, "num_labels", 44)
+        )
+
+        if current_num_labels == target_num_labels:
+            logger.info(
+                f"Emotions head already has {target_num_labels} labels, no reinitialization needed"
+            )
+            return
+
+        logger.info(
+            f"Reinitializing emotions head for Stage B: {current_num_labels} -> {target_num_labels} labels"
+        )
+
+        # Get emotion labels for 44-class schema
+        emotion_labels = list(EMOTIONS_FAMILYOS_LABELS.label2id.keys())
+
+        # Stage B uses multi-label classification (44 emotions, BCE loss)
+        problem_type = emotions_cfg.get("problem_type", "multi_label_classification")
+
+        # Create new head with 44 labels
+        hidden_size = model.config.hidden_size
+        new_head = HierarchicalEmotionHead(
+            hidden_size=hidden_size,
+            num_emotions=target_num_labels,
+            num_secondary=emotions_cfg.get("num_secondary", 3),
+            dropout=emotions_cfg.get("dropout", 0.1),
+            pooling=emotions_cfg.get("pooling", "cls"),
+            use_intensity=emotions_cfg.get("use_intensity", True),
+            use_valence_arousal=emotions_cfg.get("use_valence_arousal", False),
+            use_familyos=True,  # Use FamilyOS 44-emotion schema
+            emotion_labels=emotion_labels,
+            problem_type=problem_type,
+            use_asl=emotions_cfg.get("use_asl", False),
+            use_hierarchical_loss=emotions_cfg.get("use_hierarchical_loss", False),
+            use_label_correlation=emotions_cfg.get("use_label_correlation", False),
+            use_emotion_attention=emotions_cfg.get("use_emotion_attention", False),
+            use_dynamic_thresholds=emotions_cfg.get("use_dynamic_thresholds", False),
+            use_mixup=emotions_cfg.get("use_mixup", False),
+            label_smoothing=emotions_cfg.get("label_smoothing", 0.0),
+        )
+
+        # Move to same device/dtype as old head
+        device = next(current_head.parameters()).device
+        dtype = next(current_head.parameters()).dtype
+        new_head = new_head.to(device=device, dtype=dtype)
+
+        # Replace head in model
+        model.heads["emotions"] = new_head
+
+        logger.info(
+            f"Emotions head reinitialized for Stage B with {target_num_labels} labels, "
+            f"problem_type={problem_type}"
+        )
+
+    except KeyError:
+        logger.warning("Emotions head not found in model, skipping reinitialization")
 
 
 def add_stage_b_heads(
@@ -325,23 +833,47 @@ def add_stage_b_heads(
 def apply_lora(
     model: ModernBertMultiTaskModel,
     config: dict[str, Any],
-) -> PeftModel:
+) -> PeftModel | ModernBertMultiTaskModel:
     """
-    Apply LoRA adapters to the model encoder.
+    Apply LoRA adapters to the model encoder, or return model for full fine-tuning.
 
-    Per v2 plan:
-        - r=32, alpha=64
-        - target: q, k, v, o projections
-        - Heads remain full-precision trainable
+    Supports two training modes:
+        1. LoRA (default): Applies parameter-efficient LoRA adapters
+        2. Full fine-tune: When peft.method="none", returns model directly
+
+    For v3 preparation, full fine-tuning is recommended to properly update
+    encoder layers 15-20 that will be cloned to v3's Family Band.
 
     Args:
         model: Multi-task model
         config: Configuration with peft settings
 
     Returns:
-        PeftModel with LoRA adapters
+        PeftModel with LoRA adapters, or original model for full fine-tuning
     """
     peft_config = config.get("peft", {})
+    method = peft_config.get("method", "lora")
+
+    # Full fine-tuning mode (no PEFT)
+    if method == "none" or method is None:
+        logger.info("=" * 60)
+        logger.info("FULL FINE-TUNING MODE")
+        logger.info("No LoRA adapters - all encoder parameters trainable")
+        logger.info("=" * 60)
+
+        # Enable input gradients for gradient checkpointing compatibility
+        model.enable_input_require_grads()
+
+        # Print trainable parameters
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        total_params = sum(p.numel() for p in model.parameters())
+        logger.info(
+            f"Trainable params: {trainable_params:,} / {total_params:,} ({100 * trainable_params / total_params:.2f}%)"
+        )
+
+        return model
+
+    # LoRA mode
     lora_config = peft_config.get("lora", peft_config)  # Handle nested or flat
 
     # Extract LoRA parameters
@@ -423,20 +955,226 @@ def load_datasets_for_stage_b(
     data_config_path: str | Path,
     tokenizer: AutoTokenizer,
     debug: bool = False,
+    use_unified_loader: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """
     Load Stage B datasets: FamilyOS + replay data.
+
+    Supports two loading modes:
+        1. Config-based: Uses stage_b_datasets.yaml (default)
+        2. Unified loader: Loads from synthetic data directories
 
     Args:
         config: Training config
         data_config_path: Path to Stage B data config
         tokenizer: Tokenizer for preprocessing
         debug: If True, use smaller subsets
+        use_unified_loader: If True, use unified FamilyOS loader
 
     Returns:
         Tuple of (train_datasets, eval_datasets)
     """
     logger.info("Loading Stage B datasets...")
+
+    # Check if config specifies unified loader
+    data_config = config.get("data", {})
+    loader_type = data_config.get("loader", "config")
+
+    if use_unified_loader or loader_type == "familyos_unified":
+        # Use unified FamilyOS loader for synthetic data
+        return _load_unified_familyos_data(config, tokenizer, debug)
+    else:
+        # Use config-based loader (original behavior)
+        return _load_config_based_data(config, data_config_path, tokenizer, debug)
+
+
+def _load_unified_familyos_data(
+    config: dict[str, Any],
+    tokenizer: AutoTokenizer,
+    debug: bool = False,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Load FamilyOS data using the unified loader.
+
+    This handles your 420K synthetic data format where each sample
+    contains labels for all tasks.
+    """
+    data_config = config.get("data", {})
+    safety_config = config.get("safety_oversampling", {})
+
+    # Get data directories
+    data_dirs = data_config.get(
+        "familyos_data_dirs",
+        [
+            "data/familyos/unified/output_synthetic",
+            "data/familyos/unified/output",
+        ],
+    )
+
+    # Get tasks to load
+    tasks = data_config.get(
+        "familyos_tasks",
+        [
+            "emotions",
+            "sentiment",
+            "ner_family",
+            "safety_familyos",
+            "intent",
+            "ingress",
+            "temporal",
+        ],
+    )
+
+    # Get split parameters
+    validation_ratio = data_config.get("validation_ratio", 0.1)
+    seed = data_config.get("seed", 42)
+
+    # Safety oversampling config
+    safety_oversampling = {
+        "CRISIS": safety_config.get("CRISIS", 20),
+        "RED": safety_config.get("RED", 5),
+        "AMBER": safety_config.get("AMBER", 1),
+        "GREEN": safety_config.get("GREEN", 1),
+    }
+
+    logger.info(f"Loading unified FamilyOS data from: {data_dirs}")
+    logger.info(f"Tasks: {tasks}")
+    logger.info(f"Safety oversampling: {safety_oversampling}")
+
+    # Limit samples in debug mode (pre-tokenization to reduce map time)
+    max_samples_tokenization = None
+    if debug:
+        max_samples_tokenization = data_config.get("tokenization_debug_max_samples", 2000)
+
+    # Get max length from training config
+    training_config = config.get("training", {})
+    max_length = training_config.get("max_length", 512)
+
+    # Load using unified loader with tokenization
+    train_datasets, eval_datasets = load_familyos_unified_for_training(
+        data_dirs=data_dirs,
+        tasks=tasks,
+        validation_ratio=validation_ratio,
+        seed=seed,
+        safety_oversampling=safety_oversampling if not debug else None,
+        tokenizer=tokenizer,
+        max_length=max_length,
+        max_samples_tokenization=max_samples_tokenization,
+    )
+
+    # Load embedding triplets if configured
+    embedding_config = data_config.get("embedding_familyos", {})
+    if embedding_config.get("enabled", False):
+        embedding_data_dir = embedding_config.get(
+            "data_dir", "data/familyos/embeddings/silver_synthetic"
+        )
+        logger.info(f"Loading embedding triplets from: {embedding_data_dir}")
+
+        # Load train and validation splits separately
+        embedding_train = load_embedding_triplets(
+            data_dir=embedding_data_dir,
+            split="train",
+            validation_ratio=validation_ratio,
+            seed=seed,
+            max_samples=embedding_config.get("max_samples_debug", 5000) if debug else None,
+        )
+        embedding_eval = load_embedding_triplets(
+            data_dir=embedding_data_dir,
+            split="validation",
+            validation_ratio=validation_ratio,
+            seed=seed,
+            max_samples=embedding_config.get("max_samples_debug", 1000) if debug else None,
+        )
+
+        # Tokenize the triplets
+        def tokenize_triplets(examples):
+            """Tokenize anchor, positive, and negative texts."""
+            anchor_enc = tokenizer(
+                examples["anchor"],
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+            )
+            positive_enc = tokenizer(
+                examples["positive"],
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+            )
+            negative_enc = tokenizer(
+                examples["negative"],
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+            )
+            return {
+                "input_ids": anchor_enc["input_ids"],
+                "attention_mask": anchor_enc["attention_mask"],
+                "positive_input_ids": positive_enc["input_ids"],
+                "positive_attention_mask": positive_enc["attention_mask"],
+                "negative_input_ids": negative_enc["input_ids"],
+                "negative_attention_mask": negative_enc["attention_mask"],
+                "task": examples["task"],
+            }
+
+        # Apply tokenization
+        embedding_train = embedding_train.map(
+            tokenize_triplets,
+            batched=True,
+            remove_columns=["anchor", "positive", "negative", "anchor_cluster"],
+            desc="Tokenizing embedding train triplets",
+        )
+        embedding_eval = embedding_eval.map(
+            tokenize_triplets,
+            batched=True,
+            remove_columns=["anchor", "positive", "negative", "anchor_cluster"],
+            desc="Tokenizing embedding eval triplets",
+        )
+
+        # NOTE: Don't set_format("torch") - the collator handles tensor conversion
+        # and expects Python lists
+
+        train_datasets["embedding"] = embedding_train
+        eval_datasets["embedding"] = embedding_eval
+        logger.info(
+            f"Loaded {len(embedding_train):,} train / {len(embedding_eval):,} eval embedding triplets"
+        )
+
+    # Apply post-tokenization sample caps in debug mode (smaller than pre-tokenization if desired)
+    if debug:
+        logger.info("=" * 60)
+        logger.info("DEBUG MODE: Using smaller dataset subsets")
+        logger.info("=" * 60)
+        train_cap = data_config.get("debug_train_cap", 500)
+        eval_cap = data_config.get("debug_eval_cap", 100)
+        for task in list(train_datasets.keys()):
+            if len(train_datasets[task]) > train_cap:
+                train_datasets[task] = train_datasets[task].select(range(train_cap))
+        for task in list(eval_datasets.keys()):
+            if len(eval_datasets[task]) > eval_cap:
+                eval_datasets[task] = eval_datasets[task].select(range(eval_cap))
+
+    # Load replay datasets if configured
+    replay_config = data_config.get("replay", {})
+    if replay_config.get("enabled", False):
+        train_datasets, eval_datasets = _add_replay_datasets(
+            train_datasets, eval_datasets, replay_config, tokenizer, debug
+        )
+
+    _log_dataset_stats(train_datasets, eval_datasets)
+
+    return train_datasets, eval_datasets
+
+
+def _load_config_based_data(
+    config: dict[str, Any],
+    data_config_path: str | Path,
+    tokenizer: AutoTokenizer,
+    debug: bool = False,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Load data using the config-based loader (original behavior).
+    """
     logger.info(f"Data config: {data_config_path}")
 
     # Load all Stage B datasets (FamilyOS + replay)
@@ -477,21 +1215,191 @@ def load_datasets_for_stage_b(
     else:
         logger.info("DEBUG MODE: Skipping safety oversampling")
 
+    _log_dataset_stats(train_datasets, eval_datasets)
+
+    return train_datasets, eval_datasets
+
+
+def _add_replay_datasets(
+    train_datasets: dict[str, Any],
+    eval_datasets: dict[str, Any],
+    replay_config: dict[str, Any],
+    tokenizer: AutoTokenizer,
+    debug: bool = False,
+    max_length: int = 512,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Add Stage A replay datasets to prevent forgetting.
+
+    Loads datasets from HuggingFace and tokenizes them to match
+    the expected format for training.
+    """
+    from datasets import load_dataset
+    from modeling_studio.data.tokenization import (
+        tokenize_for_nli,
+        tokenize_for_token_classification,
+    )
+
+    replay_ratio = replay_config.get("ratio", 0.15)
+    replay_datasets_config = replay_config.get("datasets", [])
+
+    logger.info(f"Adding {len(replay_datasets_config)} replay datasets (ratio={replay_ratio})")
+
+    # Task to tokenization type mapping
+    task_type_map = {
+        "sentiment": "classification",
+        "ner_general": "token_classification",
+        "nli": "nli",
+        "emotions": "multilabel",
+    }
+
+    for ds_config in replay_datasets_config:
+        name = ds_config.get("name")
+        task = ds_config.get("task")
+        config_name = ds_config.get("config", None)
+
+        if not name or not task:
+            continue
+
+        try:
+            logger.info(f"  Loading replay: {name} -> {task}")
+
+            # Load from HuggingFace
+            ds = load_dataset(name, config_name, split="train", trust_remote_code=True)
+
+            # Calculate how many samples to include based on ratio
+            if task in train_datasets:
+                target_size = int(len(train_datasets[task]) * replay_ratio)
+            else:
+                target_size = 10000  # Default
+
+            if debug:
+                target_size = min(target_size, 200)
+
+            if len(ds) > target_size:
+                ds = ds.shuffle(seed=42).select(range(target_size))
+
+            # Determine tokenization type
+            tok_type = task_type_map.get(task, "classification")
+
+            # Capture task in closure properly
+            current_task = task
+
+            # Create tokenization wrapper based on task type
+            if tok_type == "token_classification":
+
+                def tokenize_fn(example, _task=current_task, _tok=tokenizer, _ml=max_length):
+                    # CoNLL2003 format: tokens + ner_tags
+                    tags = example.get("ner_tags", [])
+                    tokens = example.get("tokens", [])
+                    tokenized = tokenize_for_token_classification(
+                        tokenizer=_tok,
+                        tokens=tokens,
+                        ner_tags=tags,
+                        max_length=_ml,
+                    )
+                    # Extract only required fields (BatchEncoding may have extra fields)
+                    result = {
+                        "input_ids": tokenized["input_ids"],
+                        "attention_mask": tokenized["attention_mask"],
+                        "labels": tokenized["labels"],
+                        "task": _task,
+                    }
+                    return result
+
+            elif tok_type == "nli":
+
+                def tokenize_fn(example, _task=current_task, _tok=tokenizer, _ml=max_length):
+                    result = tokenize_for_nli(
+                        tokenizer=_tok,
+                        premise=example.get("premise", ""),
+                        hypothesis=example.get("hypothesis", ""),
+                        max_length=_ml,
+                    )
+                    if "label" in example:
+                        result["labels"] = example["label"]
+                    result["task"] = _task
+                    return result
+
+            elif tok_type == "multilabel":
+
+                def tokenize_fn(example, _task=current_task, _tok=tokenizer, _ml=max_length):
+                    # For emotions datasets like dynasent
+                    text = example.get("text") or example.get("sentence") or ""
+                    encoded = _tok(
+                        text,
+                        max_length=_ml,
+                        truncation=True,
+                        padding=False,
+                    )
+                    result = {
+                        "input_ids": encoded["input_ids"],
+                        "attention_mask": encoded["attention_mask"],
+                        "task": _task,
+                    }
+                    if "label" in example:
+                        result["labels"] = example["label"]
+                    return result
+
+            else:  # classification
+
+                def tokenize_fn(example, _task=current_task, _tok=tokenizer, _ml=max_length):
+                    # SST2 format: sentence + label
+                    text = example.get("text") or example.get("sentence") or ""
+                    encoded = _tok(
+                        text,
+                        max_length=_ml,
+                        truncation=True,
+                        padding=False,
+                    )
+                    result = {
+                        "input_ids": encoded["input_ids"],
+                        "attention_mask": encoded["attention_mask"],
+                        "task": _task,
+                    }
+                    if "label" in example:
+                        result["labels"] = example["label"]
+                    return result
+
+            # Apply tokenization
+            column_names = list(ds.column_names) if hasattr(ds, "column_names") else None
+            ds = ds.map(
+                tokenize_fn,
+                remove_columns=column_names,
+            )
+
+            # Add to training data
+            replay_task_name = f"{task}_replay"
+            train_datasets[replay_task_name] = ds
+            logger.info(f"    Added {len(ds)} tokenized samples as {replay_task_name}")
+
+        except Exception as e:
+            logger.warning(f"    Failed to load {name}: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+    return train_datasets, eval_datasets
+
+
+def _log_dataset_stats(
+    train_datasets: dict[str, Any],
+    eval_datasets: dict[str, Any],
+) -> None:
+    """Log dataset statistics."""
     logger.info(f"Loaded {len(train_datasets)} training datasets:")
     total_train = 0
-    for task, ds in train_datasets.items():
+    for task, ds in sorted(train_datasets.items()):
         logger.info(f"  - {task}: {len(ds):,} samples")
         total_train += len(ds)
     logger.info(f"  TOTAL: {total_train:,} training samples")
 
     logger.info(f"Loaded {len(eval_datasets)} evaluation datasets:")
     total_eval = 0
-    for task, ds in eval_datasets.items():
+    for task, ds in sorted(eval_datasets.items()):
         logger.info(f"  - {task}: {len(ds):,} samples")
         total_eval += len(ds)
     logger.info(f"  TOTAL: {total_eval:,} evaluation samples")
-
-    return train_datasets, eval_datasets
 
 
 def apply_safety_oversampling(
@@ -541,6 +1449,207 @@ def apply_safety_oversampling(
         logger.warning(f"Could not apply safety oversampling: {e}")
 
     return datasets
+
+
+# =============================================================================
+# Layer-wise Learning Rate
+# =============================================================================
+
+
+def create_layer_wise_optimizer(
+    model: ModernBertMultiTaskModel | PeftModel,
+    config: dict[str, Any],
+    base_lr: float = 1e-4,
+    weight_decay: float = 0.01,
+) -> torch.optim.AdamW:
+    """
+    Create optimizer with layer-wise learning rates for v3 preparation.
+
+    The key insight: v3 will clone v2 layers 15-20 to layers 23-28.
+    So we want to train those layers STRONGLY on FamilyOS data.
+
+    Layer-wise LR Strategy:
+        - Layers 1-6 (Foundation):  5e-6  (preserve general understanding)
+        - Layers 7-14 (Context):    1e-5  (preserve context processing)
+        - Layers 15-20 (Target):    3e-5  (highest! will become v3 Family Band)
+        - Layers 21-22 (Semantic):  2e-5  (will become v3 upper semantic layers)
+        - Heads:                    1e-4  (high LR for heads)
+
+    Args:
+        model: The model to create optimizer for
+        config: Config with layer_wise_lr settings
+        base_lr: Base learning rate (used if layer-wise LR disabled)
+        weight_decay: Weight decay for AdamW
+
+    Returns:
+        AdamW optimizer with layer-wise param groups
+    """
+    from torch.optim import AdamW
+
+    layer_lr_config = config.get("layer_wise_lr", {})
+
+    if not layer_lr_config.get("enabled", False):
+        # Standard optimizer - all params same LR
+        logger.info(f"Layer-wise LR disabled. Using uniform LR: {base_lr}")
+        return AdamW(
+            [p for p in model.parameters() if p.requires_grad],
+            lr=base_lr,
+            weight_decay=weight_decay,
+        )
+
+    logger.info("=" * 60)
+    logger.info("LAYER-WISE LEARNING RATE ENABLED")
+    logger.info("Strategy: v3 preparation (train layers 15-20 strongly)")
+    logger.info("=" * 60)
+
+    # Extract learning rates from config (convert to float in case they're strings)
+    lr_1_6 = float(layer_lr_config.get("layers_1_6", {}).get("learning_rate", 5e-6))
+    lr_7_14 = float(layer_lr_config.get("layers_7_14", {}).get("learning_rate", 1e-5))
+    lr_15_20 = float(layer_lr_config.get("layers_15_20", {}).get("learning_rate", 3e-5))
+    lr_21_22 = float(layer_lr_config.get("layers_21_22", {}).get("learning_rate", 2e-5))
+    head_lr = float(layer_lr_config.get("head_lr", base_lr))
+
+    # Build param groups
+    param_groups = []
+    encoder_params_assigned = set()
+
+    # Get the base model (unwrap PEFT if needed)
+    base_model = model.base_model if hasattr(model, "base_model") else model
+
+    # Access encoder layers - try multiple paths
+    encoder_layers = None
+
+    # Path 1: model.encoder.layers (ModernBertMultiTaskModel)
+    if hasattr(base_model, "encoder") and hasattr(base_model.encoder, "layers"):
+        encoder_layers = list(base_model.encoder.layers)
+    # Path 2: model.model.layers (wrapped model)
+    elif hasattr(base_model, "model") and hasattr(base_model.model, "layers"):
+        encoder_layers = list(base_model.model.layers)
+    # Path 3: model.encoder.model.layers
+    elif hasattr(base_model, "encoder") and hasattr(base_model.encoder, "model"):
+        if hasattr(base_model.encoder.model, "layers"):
+            encoder_layers = list(base_model.encoder.model.layers)
+
+    if encoder_layers is None or len(encoder_layers) == 0:
+        logger.warning("Could not find encoder layers. Using uniform LR.")
+        return AdamW(
+            [p for p in model.parameters() if p.requires_grad],
+            lr=base_lr,
+            weight_decay=weight_decay,
+        )
+
+    num_layers = len(encoder_layers)
+    logger.info(f"Found {num_layers} encoder layers")
+
+    # Group 1: Layers 1-6 (Foundation Band) - indices 0-5
+    foundation_params = []
+    for i in range(min(6, num_layers)):
+        for p in encoder_layers[i].parameters():
+            if p.requires_grad:
+                foundation_params.append(p)
+                encoder_params_assigned.add(id(p))
+
+    if foundation_params:
+        param_groups.append(
+            {
+                "params": foundation_params,
+                "lr": lr_1_6,
+                "name": "layers_1-6_foundation",
+            }
+        )
+        logger.info(
+            f"  Layers 1-6 (Foundation):  {len(foundation_params):,} params @ lr={lr_1_6:.1e}"
+        )
+
+    # Group 2: Layers 7-14 (Context Band) - indices 6-13
+    context_params = []
+    for i in range(6, min(14, num_layers)):
+        for p in encoder_layers[i].parameters():
+            if p.requires_grad:
+                context_params.append(p)
+                encoder_params_assigned.add(id(p))
+
+    if context_params:
+        param_groups.append(
+            {
+                "params": context_params,
+                "lr": lr_7_14,
+                "name": "layers_7-14_context",
+            }
+        )
+        logger.info(
+            f"  Layers 7-14 (Context):    {len(context_params):,} params @ lr={lr_7_14:.1e}"
+        )
+
+    # Group 3: Layers 15-20 (Target for v3 cloning!) - indices 14-19
+    target_params = []
+    for i in range(14, min(20, num_layers)):
+        for p in encoder_layers[i].parameters():
+            if p.requires_grad:
+                target_params.append(p)
+                encoder_params_assigned.add(id(p))
+
+    if target_params:
+        param_groups.append(
+            {
+                "params": target_params,
+                "lr": lr_15_20,
+                "name": "layers_15-20_v3_target",
+            }
+        )
+        logger.info(
+            f"  Layers 15-20 (v3 Target): {len(target_params):,} params @ lr={lr_15_20:.1e} ⭐"
+        )
+
+    # Group 4: Layers 21-22 (Upper Semantic) - indices 20-21
+    semantic_params = []
+    for i in range(20, min(22, num_layers)):
+        for p in encoder_layers[i].parameters():
+            if p.requires_grad:
+                semantic_params.append(p)
+                encoder_params_assigned.add(id(p))
+
+    if semantic_params:
+        param_groups.append(
+            {
+                "params": semantic_params,
+                "lr": lr_21_22,
+                "name": "layers_21-22_semantic",
+            }
+        )
+        logger.info(
+            f"  Layers 21-22 (Semantic):  {len(semantic_params):,} params @ lr={lr_21_22:.1e}"
+        )
+
+    # Group 5: All heads and other parameters
+    other_params = []
+    for _, p in model.named_parameters():
+        if p.requires_grad and id(p) not in encoder_params_assigned:
+            other_params.append(p)
+
+    if other_params:
+        param_groups.append(
+            {
+                "params": other_params,
+                "lr": head_lr,
+                "name": "heads_and_other",
+            }
+        )
+        logger.info(f"  Heads & Other:            {len(other_params):,} params @ lr={head_lr:.1e}")
+
+    # Create optimizer
+    optimizer = AdamW(
+        param_groups,
+        lr=base_lr,  # Base LR (overridden by param groups)
+        weight_decay=weight_decay,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+    )
+
+    total_params = sum(len(g["params"]) for g in param_groups)
+    logger.info(f"  TOTAL: {total_params:,} trainable parameters in {len(param_groups)} groups")
+
+    return optimizer
 
 
 # =============================================================================
@@ -654,42 +1763,62 @@ def create_training_args(
 
 
 def save_merged_model(
-    peft_model: PeftModel,
+    peft_model: PeftModel | ModernBertMultiTaskModel,
     output_dir: str | Path,
     tokenizer: AutoTokenizer,
     config: dict[str, Any] | None = None,
 ) -> None:
     """
-    Merge LoRA adapters into base model and save.
+    Merge LoRA adapters into base model and save (or save full fine-tuned model).
+
+    Handles two cases:
+        1. PeftModel: Merge LoRA adapters and save merged model + adapters
+        2. ModernBertMultiTaskModel: Save directly (full fine-tuning mode)
 
     Saves:
-        - outputs/.../: Merged model (standalone)
-        - outputs/...-lora/: LoRA adapters only
+        - outputs/.../: Merged or full model (standalone)
+        - outputs/...-lora/: LoRA adapters only (if PeftModel)
         - capabilities.json: Capabilities + Epic 5.0 config
     """
+    from peft import PeftModel as PeftModelClass
+
     output_dir = Path(output_dir)
-
-    # Save LoRA adapters separately
-    lora_dir = output_dir.parent / f"{output_dir.name}-lora"
-    logger.info(f"Saving LoRA adapters to {lora_dir}")
-    peft_model.save_pretrained(str(lora_dir))
-
-    # Merge LoRA into base model
-    logger.info("Merging LoRA adapters into base model...")
-    merged_model = peft_model.merge_and_unload()
-
-    # Save merged model
-    logger.info(f"Saving merged model to {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
-    merged_model.save_pretrained(str(output_dir))
+
+    # Check if this is a PEFT model or full fine-tuned model
+    is_peft_model = isinstance(peft_model, PeftModelClass)
+
+    if is_peft_model:
+        # Save LoRA adapters separately
+        lora_dir = output_dir.parent / f"{output_dir.name}-lora"
+        logger.info(f"Saving LoRA adapters to {lora_dir}")
+        peft_model.save_pretrained(str(lora_dir))
+
+        # Merge LoRA into base model
+        logger.info("Merging LoRA adapters into base model...")
+        merged_model = peft_model.merge_and_unload()
+
+        # Save merged model
+        logger.info(f"Saving merged model to {output_dir}")
+        merged_model.save_pretrained(str(output_dir))
+    else:
+        # Full fine-tuned model - save directly
+        logger.info(f"Saving full fine-tuned model to {output_dir}")
+        peft_model.save_pretrained(str(output_dir))
+
+    # Save tokenizer
     tokenizer.save_pretrained(str(output_dir))
 
     # Build capabilities.json with Epic 5.0 config
     epic5_config = config.get("epic5", {}) if config else {}
+    peft_config = config.get("peft", {}) if config else {}
+
     caps_data = {
         "capabilities": [c.value for c in ALL_CAPABILITIES],
         "stage": "B",
         "base_model": "modernbert-multitask-v0",
+        "training_mode": "full_finetune" if peft_config.get("method") == "none" else "lora",
+        "v3_ready": peft_config.get("method") == "none",  # Full fine-tune prepares for v3
         "epic_5_0": {
             "use_shared_pooler": epic5_config.get("use_shared_pooler", False),
             "shared_pooler_type": epic5_config.get("shared_pooler_type", None),
@@ -703,7 +1832,11 @@ def save_merged_model(
     with open(caps_path, "w") as f:
         json.dump(caps_data, f, indent=2)
 
-    logger.info(f"Saved merged model with {len(ALL_CAPABILITIES)} capabilities")
+    logger.info(f"Saved model with {len(ALL_CAPABILITIES)} capabilities")
+    if is_peft_model:
+        logger.info("  → Training mode: LoRA (adapters merged)")
+    else:
+        logger.info("  → Training mode: Full fine-tuning (v3 ready)")
     if epic5_config.get("use_pair_encoder") or epic5_config.get("use_shared_pooler"):
         logger.info("  → Epic 5.0 enhancements: enabled")
 
@@ -785,6 +1918,10 @@ def train_stage_b(
     # Load Stage A model
     model = load_stage_a_model(stage_a_path)
 
+    # Reinitialize emotions head from 7 super-labels (Stage A) to 44 labels (Stage B)
+    heads_config = config.get("heads", {})
+    reinitialize_emotions_head_for_stage_b(model, heads_config)
+
     # Add Stage B heads
     model = add_stage_b_heads(model, config)
 
@@ -799,12 +1936,17 @@ def train_stage_b(
     peft_model.to(device)
     logger.info(f"Model on device: {device}")
 
+    # Check if unified loader should be used
+    data_config = config.get("data", {})
+    use_unified_loader = data_config.get("use_unified_loader", False)
+
     # Load datasets
     train_datasets, eval_datasets = load_datasets_for_stage_b(
         config=config,
         data_config_path=data_config_path,
         tokenizer=tokenizer,
         debug=debug,
+        use_unified_loader=use_unified_loader,
     )
 
     # Dry run: validate without training
@@ -871,6 +2013,61 @@ def train_stage_b(
         debug=debug,
     )
 
+    # Create layer-wise optimizer if configured (for v3 preparation)
+    layer_wise_config = config.get("layer_wise_lr", {})
+    if layer_wise_config.get("enabled", False):
+        training_config = config.get("training", {})
+        base_lr = float(training_config.get("learning_rate", 1e-4))
+        weight_decay = training_config.get("weight_decay", 0.01)
+
+        optimizer = create_layer_wise_optimizer(
+            model=peft_model,
+            config=config,
+            base_lr=base_lr,
+            weight_decay=weight_decay,
+        )
+
+        # Create scheduler
+        from transformers import get_scheduler
+
+        # CRITICAL FIX: Calculate total steps across ALL task datasets
+        # The multi-task trainer samples from all datasets, so we need total samples
+        total_train_samples = sum(len(ds) for ds in train_datasets.values())
+        steps_per_epoch = total_train_samples // (
+            training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps
+        )
+        num_training_steps = steps_per_epoch * training_args.num_train_epochs
+        warmup_steps = int(num_training_steps * training_args.warmup_ratio)
+
+        logger.info(
+            f"Scheduler: {total_train_samples:,} samples, {steps_per_epoch:,} steps/epoch, "
+            f"{num_training_steps:,} total steps, {warmup_steps:,} warmup steps"
+        )
+
+        # Build scheduler kwargs for cosine_with_restarts or other schedulers
+        lr_scheduler_kwargs = training_config.get("lr_scheduler_kwargs", {})
+        scheduler_specific_kwargs = {}
+        if training_args.lr_scheduler_type == "cosine_with_restarts":
+            # Default to 2 cycles for 8 epochs (restart at epoch 4)
+            num_cycles = lr_scheduler_kwargs.get("num_cycles", 2)
+            scheduler_specific_kwargs["num_cycles"] = num_cycles
+            logger.info(f"Using cosine_with_restarts with {num_cycles} cycles")
+
+        scheduler = get_scheduler(
+            name=training_args.lr_scheduler_type,
+            optimizer=optimizer,
+            num_warmup_steps=warmup_steps,
+            num_training_steps=num_training_steps,
+            scheduler_specific_kwargs=(
+                scheduler_specific_kwargs if scheduler_specific_kwargs else None
+            ),
+        )
+
+        optimizers = (optimizer, scheduler)
+        logger.info(f"Using layer-wise optimizer with {len(optimizer.param_groups)} param groups")
+    else:
+        optimizers = (None, None)
+
     # Create trainer
     trainer = MultiTaskTrainer(
         model=peft_model,
@@ -881,7 +2078,29 @@ def train_stage_b(
         sampling_strategy="temperature",
         sampling_temperature=2.0,
         tokenizer=tokenizer,
+        optimizers=optimizers,
     )
+
+    # Optional forgetting self-heal callback
+    fe_config = config.get("forgetting_evaluation", {})
+    forgetting_datasets_cache = (
+        _load_forgetting_benchmark_datasets(tokenizer, max_samples=500)
+        if fe_config.get("enabled", False)
+        else {}
+    )
+    baseline_metrics = _load_stage_a_baseline_metrics(
+        config.get("model", {}).get("name_or_path", "")
+    )
+    if fe_config.get("enabled", False):
+        trainer.add_callback(
+            ForgettingSelfHealCallback(
+                trainer_ref=trainer,
+                fe_config=fe_config,
+                tokenizer=tokenizer,
+                baseline_metrics=baseline_metrics,
+                forgetting_datasets=forgetting_datasets_cache,
+            )
+        )
 
     # Train
     logger.info("Starting Stage B training...")
@@ -906,6 +2125,17 @@ def train_stage_b(
     config_save_path = final_output_path / "training_config.json"
     with open(config_save_path, "w") as f:
         json.dump(config, f, indent=2, default=str)
+
+    # Post-training checks: forgetting evaluation and v3 transfer verification
+    run_forgetting_evaluation(
+        model=peft_model,
+        tokenizer=tokenizer,
+        config=config,
+        device=str(training_args.device),
+        datasets_cache=forgetting_datasets_cache,
+    )
+
+    run_v3_transfer_verification(model=peft_model, config=config)
 
     # Final summary
     logger.info("=" * 60)

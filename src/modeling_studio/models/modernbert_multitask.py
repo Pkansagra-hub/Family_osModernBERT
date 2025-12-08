@@ -146,7 +146,7 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.SENTIMENT: SequenceClassificationHead,
     Capability.EMOTIONS: HierarchicalEmotionHead,  # FIXED: Use enhanced head with 44 emotions
     Capability.SAFETY_GENERIC: SequenceClassificationHead,  # Stage A: Multi-label with ASL
-    Capability.SAFETY_FAMILYOS: EnhancedSafetyHead,  # Stage B: Band-based with keyword override
+    Capability.SAFETY_FAMILYOS: SafetyHead,  # Stage B: Band-based classification (4 bands, 13 subcats)
     Capability.INGRESS: SequenceClassificationHead,
     Capability.INTENT: IntentHead,  # NEW
     # Special heads
@@ -370,19 +370,19 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     normalize=True,
                 )
             elif capability == Capability.SAFETY_FAMILYOS:
-                # EnhancedSafetyHead: 4 bands with 12 subcategories and keyword override
+                # SafetyHead: 4 bands with 13 subcategories (indices 0-12)
                 # Used for Stage B FamilyOS domain adaptation
                 head = head_cls(
                     hidden_size=hidden_size,
                     num_bands=4,  # GREEN, AMBER, RED, CRISIS
-                    num_subcategories=12,
+                    num_subcategories=13,  # 13 subcategories: none(0) + 4 AMBER + 4 RED + 4 CRISIS
                     dropout=self.head_dropout,
                     use_hierarchical=True,
-                    keyword_override=True,  # Critical safety feature
                 )
             elif capability == Capability.EMOTIONS:
-                # HierarchicalEmotionHead: 44 FamilyOS emotions with SOTA enhancements
-                # All P0/P1/P2 improvements from heads.py are enabled by default
+                # HierarchicalEmotionHead: 44 FamilyOS emotions
+                # CRITICAL: Use plain BCE loss - ASL/Focal causes collapse!
+                # Expert advice: "Never use ASL, Focal, or class-balanced anything"
                 head = head_cls(
                     hidden_size=hidden_size,
                     num_emotions=num_labels,  # 44 emotions from labels.py
@@ -392,17 +392,17 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     use_intensity=True,
                     use_valence_arousal=False,
                     use_familyos=True,  # Enable FamilyOS 44-emotion schema
-                    # SOTA enhancements (P0-P2)
-                    use_asl=True,  # ICCV 2021 SOTA multi-label loss
-                    asl_gamma_neg=4.0,
-                    asl_gamma_pos=1.0,
-                    asl_clip=0.05,
-                    use_hierarchical_loss=True,  # Family coherence regularization
-                    use_label_correlation=True,  # GCN-style emotion co-occurrence
-                    use_emotion_attention=False,  # Disabled by default (more compute)
-                    use_dynamic_thresholds=True,  # Learnable per-emotion thresholds
-                    use_mixup=True,  # Latent space data augmentation
-                    label_smoothing=0.05,  # Regularization
+                    # DISABLED: All complex losses that caused collapse
+                    use_asl=False,  # ← DISABLED - use plain BCE instead
+                    asl_gamma_neg=0.0,  # Not used when use_asl=False
+                    asl_gamma_pos=0.0,  # Not used when use_asl=False
+                    asl_clip=0.0,  # Not used when use_asl=False
+                    use_hierarchical_loss=False,  # ← DISABLED for stability
+                    use_label_correlation=False,  # ← DISABLED for stability
+                    use_emotion_attention=False,  # Disabled (more compute)
+                    use_dynamic_thresholds=False,  # ← DISABLED for stability
+                    use_mixup=False,  # ← DISABLED for stability
+                    label_smoothing=0.0,  # ← DISABLED for stability
                 )
             elif capability == Capability.SAFETY_GENERIC:
                 # SOTA Multi-label safety head with ASL for Stage A
@@ -657,11 +657,19 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
         )
 
-        # Initialize encoder first
-        model.encoder = AutoModel.from_config(config)
+        # Load state dict - try safetensors first, then pytorch format
+        safetensors_path = checkpoint_path / "model.safetensors"
+        pytorch_path = checkpoint_path / "pytorch_model.bin"
 
-        # Load state dict from safetensors
-        state_dict = load_file(str(checkpoint_path / "model.safetensors"))  # type: ignore
+        if safetensors_path.exists():
+            state_dict = load_file(str(safetensors_path))  # type: ignore
+        elif pytorch_path.exists():
+            state_dict = torch.load(str(pytorch_path), map_location="cpu", weights_only=True)
+        else:
+            raise FileNotFoundError(
+                f"No model weights found at {checkpoint_path}. "
+                f"Expected 'model.safetensors' or 'pytorch_model.bin'"
+            )
 
         # Separate state dict by component
         encoder_state = {}
@@ -682,20 +690,57 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             elif key.startswith("shared_pooler."):
                 pooler_state[key] = value
 
-        # Load encoder
-        missing, unexpected = model.encoder.load_state_dict(encoder_state, strict=False)  # type: ignore
-        if missing:
-            logger.warning(f"Encoder missing keys: {len(missing)}")
-        if unexpected:
-            logger.warning(f"Encoder unexpected keys: {len(unexpected)}")
+        # Initialize encoder - from checkpoint if available, else from pretrained
+        if encoder_state:
+            # Full checkpoint with encoder weights
+            model.encoder = AutoModel.from_config(config)
+            missing, unexpected = model.encoder.load_state_dict(encoder_state, strict=False)
+            if missing:
+                logger.warning(f"Encoder missing keys: {len(missing)}")
+            if unexpected:
+                logger.warning(f"Encoder unexpected keys: {len(unexpected)}")
+        else:
+            # Heads-only checkpoint - load encoder from pretrained base model
+            # Note: _name_or_path may be set to the checkpoint path itself, so we
+            # explicitly use the known base model for ModernBERT
+            base_model_name = "answerdotai/ModernBERT-base"
+            logger.info(f"No encoder weights in checkpoint, loading from: {base_model_name}")
+            try:
+                model.encoder = AutoModel.from_pretrained(base_model_name)
+            except Exception as e:
+                # Fallback to local config
+                logger.warning(f"Could not load pretrained encoder ({e}), using random init")
+                model.encoder = AutoModel.from_config(config)
 
         # Load heads and Epic 5.0 components
         components_state = {**head_state, **adapter_state, **pair_encoder_state, **pooler_state}
         if components_state:
-            missing_h, unexpected_h = model.load_state_dict(components_state, strict=False)
-            loaded_count = (
-                len(head_state) + len(adapter_state) + len(pair_encoder_state) + len(pooler_state)
-            )
+            # Filter out keys with size mismatches (e.g., Stage A 7-label -> Stage B 44-label)
+            model_state = model.state_dict()
+            filtered_state = {}
+            skipped_keys = []
+            for key, value in components_state.items():
+                if key in model_state:
+                    if model_state[key].shape == value.shape:
+                        filtered_state[key] = value
+                    else:
+                        skipped_keys.append(
+                            f"{key}: checkpoint {value.shape} vs model {model_state[key].shape}"
+                        )
+                else:
+                    # Key not in model, let load_state_dict handle it
+                    filtered_state[key] = value
+
+            if skipped_keys:
+                logger.warning(
+                    f"Skipping {len(skipped_keys)} keys with size mismatch (will be reinitialized):"
+                )
+                for sk in skipped_keys:
+                    logger.warning(f"  - {sk}")
+
+            if filtered_state:
+                missing_h, unexpected_h = model.load_state_dict(filtered_state, strict=False)
+            loaded_count = len(filtered_state)
             logger.info(
                 f"Loaded {loaded_count} component parameters (heads, adapters, pair_encoder, pooler)"
             )
@@ -800,6 +845,12 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             - training_config.json: Training config including Epic 5.0 settings
         """
         os.makedirs(save_directory, exist_ok=True)
+
+        # Handle shared tensors (e.g., pair_encoder shared between model and heads)
+        # The pair_encoder is shared by reference, so we need to use safe_serialization=False
+        # or explicitly handle the shared weights
+        if "safe_serialization" not in kwargs:
+            kwargs["safe_serialization"] = False
 
         # Save using parent class method
         super().save_pretrained(save_directory, **kwargs)

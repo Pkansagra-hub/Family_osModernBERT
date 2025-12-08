@@ -243,22 +243,28 @@ class ForgettingEvaluator:
 
     def load_models(self) -> None:
         """Load both Stage A and Stage B models."""
-        from transformers import AutoModel, AutoTokenizer
+        from transformers import AutoTokenizer
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 
         logger.info(f"Loading Stage A model from {self.stage_a_checkpoint}")
         if self.stage_a_checkpoint and self.stage_a_checkpoint.exists():
-            self._stage_a_model = AutoModel.from_pretrained(str(self.stage_a_checkpoint))
-            self._stage_a_model.to(self.device)  # type: ignore[union-attr]
-            self._stage_a_model.eval()  # type: ignore[union-attr]
+            self._stage_a_model = ModernBertMultiTaskModel.load_checkpoint(
+                checkpoint_path=str(self.stage_a_checkpoint),
+                device=self.device,
+            )
+            self._stage_a_model.eval()
 
             if self.tokenizer is None:
                 self.tokenizer = AutoTokenizer.from_pretrained(str(self.stage_a_checkpoint))
 
         logger.info(f"Loading Stage B model from {self.stage_b_checkpoint}")
         if self.stage_b_checkpoint and self.stage_b_checkpoint.exists():
-            self._stage_b_model = AutoModel.from_pretrained(str(self.stage_b_checkpoint))
-            self._stage_b_model.to(self.device)  # type: ignore[union-attr]
-            self._stage_b_model.eval()  # type: ignore[union-attr]
+            self._stage_b_model = ModernBertMultiTaskModel.load_checkpoint(
+                checkpoint_path=str(self.stage_b_checkpoint),
+                device=self.device,
+            )
+            self._stage_b_model.eval()
 
     def _load_benchmark_dataset(self, task: str) -> Dataset | None:
         """Load benchmark dataset for a task."""
@@ -360,10 +366,12 @@ class ForgettingEvaluator:
                     input_ids = batch["input_ids"].to(self.device)
                     attention_mask = batch["attention_mask"].to(self.device)
 
-                    # Forward pass
+                    # Forward pass - need to specify capability for ModernBertMultiTaskModel
+                    capability = TASK_TO_CAPABILITY.get(task, task)
                     outputs = model(
                         input_ids=input_ids,
                         attention_mask=attention_mask,
+                        capability=capability,
                     )
 
                     # Get predictions based on task type
@@ -518,15 +526,19 @@ class ForgettingEvaluator:
             ... )
             >>> assert all(results[task]["regression"] <= 0.02 for task in results)
         """
-        from transformers import AutoModel, AutoTokenizer
+        from transformers import AutoTokenizer
+
+        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 
         # Load models if paths provided
         if isinstance(stage_a_model, (str, Path)):
             self.stage_a_checkpoint = Path(stage_a_model)
             if self.stage_a_checkpoint.exists():
-                self._stage_a_model = AutoModel.from_pretrained(str(self.stage_a_checkpoint))
-                self._stage_a_model.to(self.device)  # type: ignore[union-attr]
-                self._stage_a_model.eval()  # type: ignore[union-attr]
+                self._stage_a_model = ModernBertMultiTaskModel.load_checkpoint(
+                    checkpoint_path=str(self.stage_a_checkpoint),
+                    device=self.device,
+                )
+                self._stage_a_model.eval()
                 if self.tokenizer is None:
                     self.tokenizer = AutoTokenizer.from_pretrained(str(self.stage_a_checkpoint))
         else:
@@ -535,9 +547,11 @@ class ForgettingEvaluator:
         if isinstance(stage_b_model, (str, Path)):
             self.stage_b_checkpoint = Path(stage_b_model)
             if self.stage_b_checkpoint.exists():
-                self._stage_b_model = AutoModel.from_pretrained(str(self.stage_b_checkpoint))
-                self._stage_b_model.to(self.device)  # type: ignore[union-attr]
-                self._stage_b_model.eval()  # type: ignore[union-attr]
+                self._stage_b_model = ModernBertMultiTaskModel.load_checkpoint(
+                    checkpoint_path=str(self.stage_b_checkpoint),
+                    device=self.device,
+                )
+                self._stage_b_model.eval()
         else:
             self._stage_b_model = stage_b_model
 

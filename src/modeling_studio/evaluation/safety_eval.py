@@ -556,6 +556,23 @@ class SafetyEvaluator:
         if "task" not in dataset.column_names:
             dataset = dataset.map(add_task)
 
+        # Tokenize if not already tokenized
+        if "input_ids" not in dataset.column_names:
+
+            def tokenize_fn(examples):
+                return self.tokenizer(
+                    examples["text"],
+                    truncation=True,
+                    max_length=512,
+                    padding=False,
+                )
+
+            dataset = dataset.map(tokenize_fn, batched=True, remove_columns=["text"])
+
+            # Rename 'label' to 'labels' if needed
+            if "label" in dataset.column_names and "labels" not in dataset.column_names:
+                dataset = dataset.rename_column("label", "labels")
+
         # Create collator and dataloader
         collator = SequenceClassificationCollator(tokenizer=self.tokenizer)
         dataloader = DataLoader(

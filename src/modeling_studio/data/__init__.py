@@ -68,6 +68,14 @@ __all__ = [
     # Label schema base
     "LabelSchema",
     "Capability",
+    # V3 Extractor vocabularies
+    "LabelVocabulary",
+    "V3LabelVocabularies",
+    "ExtractedLabels",
+    "MultiTaskExtractor",
+    "collate_classification_labels",
+    "collate_multi_label",
+    "collate_token_labels",
     # Generic
     "NER_GENERAL_LABELS",
     "SENTIMENT_LABELS",
@@ -105,6 +113,24 @@ __all__ = [
     "load_from_config",
     "load_stage_a_datasets",
     "load_stage_b_datasets",
+    "UnifiedFamilyOSDataset",
+    "IterableUnifiedFamilyOSDataset",
+    "TaskType",
+    "HubType",
+    "HubRouting",
+    "HubTaskMapping",
+    "HubRoutingParser",
+    "SpanAnnotation",
+    "RelationTriple",
+    "UnifiedSample",
+    "ShardConfig",
+    "ShardStats",
+    "ShardIndex",
+    "ShardReader",
+    "StreamingShardDataset",
+    "BufferedShardDataset",
+    "create_shard_dataset",
+    "get_shard_statistics",
     # Multi-task dataset
     "TaskDataset",
     "MultiTaskDataset",
@@ -157,6 +183,37 @@ from modeling_studio.data.loaders import (
     load_nli_dataset,
     load_stage_a_datasets,
     load_stage_b_datasets,
+)
+from modeling_studio.data.loaders_v3 import (
+    HubRouting,
+    HubRoutingParser,
+    HubTaskMapping,
+    HubType,
+    IterableUnifiedFamilyOSDataset,
+    RelationTriple,
+    SpanAnnotation,
+    TaskType,
+    UnifiedFamilyOSDataset,
+    UnifiedSample,
+)
+from modeling_studio.data.shard_loader_v3 import (
+    BufferedShardDataset,
+    ShardConfig,
+    ShardIndex,
+    ShardReader,
+    ShardStats,
+    StreamingShardDataset,
+    create_shard_dataset,
+    get_shard_statistics,
+)
+from modeling_studio.data.extractors_v3 import (
+    ExtractedLabels,
+    LabelVocabulary,
+    MultiTaskExtractor,
+    V3LabelVocabularies,
+    collate_classification_labels,
+    collate_multi_label,
+    collate_token_labels,
 )
 
 # Export multi-task dataset

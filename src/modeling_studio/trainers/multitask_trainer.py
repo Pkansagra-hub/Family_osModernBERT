@@ -161,11 +161,16 @@ class MultiTaskDataLoader:
         self._reset_iterators()
         self.sampler.reset()
 
-        step = 0
-        while True:
-            if self.total_steps is not None and step >= self.total_steps:
-                break
+        # Calculate total steps - use explicit total or sum of dataloader lengths
+        max_steps = self.total_steps
+        if max_steps is None:
+            max_steps = sum(len(loader) for loader in self.dataloaders.values())
 
+        # Safety check: ensure we have a valid number of steps
+        if max_steps <= 0:
+            return
+
+        for step in range(max_steps):
             # Sample task
             task = self.sampler.sample()
 
@@ -173,7 +178,6 @@ class MultiTaskDataLoader:
             batch = self._get_batch(task)
 
             yield batch
-            step += 1
 
     def __len__(self) -> int:
         """Return total number of batches across all dataloaders."""
@@ -430,6 +434,11 @@ class MultiTaskTrainer(Trainer):
             preprocess_logits_for_metrics=preprocess_logits_for_metrics,
         )
 
+        # Prefer the new processing_class attribute to avoid tokenizer deprecation warnings
+        self.processing_class = (
+            tokenizer if tokenizer is not None else getattr(self, "processing_class", None)
+        )
+
         # Track current task for loss computation
         self.current_task: str | None = None
 
@@ -521,7 +530,14 @@ class MultiTaskTrainer(Trainer):
         dataloaders = {}
         for task, dataset in self.train_datasets.items():
             # Get task-specific collator
-            collator = get_task_collator(task, tokenizer=self.tokenizer)
+            collator = get_task_collator(
+                task,
+                tokenizer=(
+                    self.processing_class
+                    if self.processing_class is not None
+                    else getattr(self, "tokenizer", None)
+                ),
+            )
 
             # Build dataloader kwargs, handling prefetch_factor correctly
             # prefetch_factor must be None when num_workers=0
@@ -608,8 +624,14 @@ class MultiTaskTrainer(Trainer):
         elif isinstance(task, torch.Tensor):
             task = task[0].item() if task.dim() > 0 else task.item()
 
-        # Store current task for callbacks/logging
+        # Store current task for callbacks/logging (including replay suffix for metrics)
         self.current_task = task
+
+        # Map replay tasks to their base capability
+        # e.g., "sentiment_replay" -> "sentiment", "ner_general_replay" -> "ner_general"
+        capability = task
+        if task.endswith("_replay"):
+            capability = task[:-7]  # Strip "_replay" suffix
 
         # Extract labels
         labels = inputs.pop("labels", None)
@@ -618,7 +640,7 @@ class MultiTaskTrainer(Trainer):
         inputs.pop("token_type_ids", None)
 
         # Handle embedding task with special input format (anchor/positive/negative)
-        if task == "embedding":
+        if capability == "embedding":
             return self._compute_embedding_loss(model, inputs, labels, return_outputs)
 
         # === SOTA FEATURE: Mixup in embedding space ===
@@ -628,7 +650,7 @@ class MultiTaskTrainer(Trainer):
 
         # Forward pass with task-specific head
         outputs = model(
-            capability=task,
+            capability=capability,
             labels=labels,
             return_dict=True,  # Ensure we get structured output
             **inputs,
@@ -664,7 +686,7 @@ class MultiTaskTrainer(Trainer):
             if logits1 is not None:
                 # Second forward pass with same inputs (different dropout masks)
                 outputs2 = model(
-                    capability=task,
+                    capability=capability,
                     labels=labels,
                     return_dict=True,
                     **inputs,
@@ -708,8 +730,10 @@ class MultiTaskTrainer(Trainer):
         Compute contrastive loss for embedding task.
 
         Handles multiple input formats:
-        - anchor/positive format: Compute contrastive loss
-        - Simple input_ids format: Return embeddings (for in-batch negatives)
+        - anchor/positive/negative format: Compute triplet margin loss
+        - anchor/positive format with labels: Compute MSE loss (STS-style)
+        - anchor/positive format without labels: Compute in-batch contrastive loss
+        - Simple input_ids format: Return embeddings (for inference)
         """
         import torch.nn.functional as F
 
@@ -738,14 +762,49 @@ class MultiTaskTrainer(Trainer):
                 else positive_outputs[0]
             )
 
-            # Compute cosine similarity loss (if labels/scores are provided)
+            # Check for explicit negatives (triplet format)
+            negative_embeds = None
+            if "negative_input_ids" in inputs:
+                negative_outputs = model(
+                    capability="embedding",
+                    input_ids=inputs["negative_input_ids"],
+                    attention_mask=inputs["negative_attention_mask"],
+                    return_dict=True,
+                )
+                negative_embeds = (
+                    negative_outputs.logits
+                    if hasattr(negative_outputs, "logits")
+                    else negative_outputs[0]
+                )
+
+            # Compute loss based on data format
             if labels is not None:
-                # STS-style regression: labels are similarity scores
+                # STS-style regression: labels are similarity scores [0, 1]
+                # Note: Normalization now happens during data loading, not here
                 cos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
-                # Scale labels to [0, 1] if needed (STS-B uses 0-5 scale)
-                if labels.max() > 1.0:
-                    labels = labels / 5.0
                 loss = F.mse_loss(cos_sim, labels)
+
+                # Surface cosine scores as logits so evaluation metrics receive
+                # 1D similarity predictions instead of full embeddings
+                if hasattr(anchor_outputs, "logits"):
+                    anchor_outputs.logits = cos_sim
+                else:
+                    anchor_outputs = (loss, cos_sim)
+            elif negative_embeds is not None:
+                # Triplet format with explicit negatives - use triplet margin loss
+                # TripletMarginLoss: max(0, d(a,p) - d(a,n) + margin)
+                # Using cosine similarity (higher = closer), so we invert:
+                # max(0, sim(a,n) - sim(a,p) + margin)
+                pos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
+                neg_sim = F.cosine_similarity(anchor_embeds, negative_embeds)
+                margin = 0.3  # Configurable margin
+                loss = F.relu(neg_sim - pos_sim + margin).mean()
+
+                # Store pos_sim as logits for monitoring
+                if hasattr(anchor_outputs, "logits"):
+                    anchor_outputs.logits = pos_sim
+                else:
+                    anchor_outputs = (loss, pos_sim)
             else:
                 # Contrastive loss using in-batch negatives
                 # Cosine similarity between all pairs
@@ -765,7 +824,14 @@ class MultiTaskTrainer(Trainer):
             return weighted_loss
 
         elif "input_ids" in inputs:
-            # Simple format
+            # Check for positive/negative in non-anchor format
+            if "positive_input_ids" in inputs:
+                # Redirect to anchor format handling
+                inputs["anchor_input_ids"] = inputs.pop("input_ids")
+                inputs["anchor_attention_mask"] = inputs.pop("attention_mask", None)
+                return self._compute_embedding_loss(model, inputs, labels, return_outputs)
+
+            # Simple format (inference only)
             outputs = model(
                 capability="embedding",
                 input_ids=inputs["input_ids"],
@@ -774,7 +840,11 @@ class MultiTaskTrainer(Trainer):
             )
             # No loss for simple embedding (used for inference)
             logits = outputs.logits if hasattr(outputs, "logits") else outputs[0]
-            loss = torch.tensor(0.0, device=logits.device)
+
+            # Preserve computation graph with a zero-valued loss so backward works
+            # even when using simple embedding format during training/debug.
+            # Using logits.sum() keeps the graph connected to model parameters.
+            loss = logits.sum() * 0.0
 
             if return_outputs:
                 return loss, outputs
@@ -1032,7 +1102,14 @@ class MultiTaskTrainer(Trainer):
         """Create evaluation dataloader for a specific task."""
         from modeling_studio.trainers.collators import get_task_collator
 
-        collator = get_task_collator(task, tokenizer=self.tokenizer)
+        collator = get_task_collator(
+            task,
+            tokenizer=(
+                self.processing_class
+                if self.processing_class is not None
+                else getattr(self, "tokenizer", None)
+            ),
+        )
 
         # Build dataloader kwargs, handling prefetch_factor correctly
         # prefetch_factor must be None when num_workers=0
@@ -1089,11 +1166,81 @@ class MultiTaskTrainer(Trainer):
                 # Multi-label or regression - can be float
                 labels = labels.detach().cpu().float().numpy()
 
+        # Special handling for embedding task with triplet format
+        # For triplets: predictions = pos_sim, labels = neg_sim
+        # We detect triplet format by checking if labels look like similarity scores
+        # (all values in [-1, 1] range, continuous, not integer class labels)
+        if task == "embedding" and labels is not None and len(labels) > 0:
+            labels_arr = np.asarray(labels).flatten()
+            preds_arr = np.asarray(predictions).flatten()
+
+            # DEBUG: Print values to understand why triplet detection might fail
+            import logging
+
+            _logger = logging.getLogger(__name__)
+            _logger.warning(
+                f"EMBEDDING DEBUG: labels shape={labels_arr.shape}, preds shape={preds_arr.shape}"
+            )
+            _logger.warning(
+                f"EMBEDDING DEBUG: labels range=[{labels_arr.min():.4f}, {labels_arr.max():.4f}], preds range=[{preds_arr.min():.4f}, {preds_arr.max():.4f}]"
+            )
+            _logger.warning(
+                f"EMBEDDING DEBUG: unique labels count={len(np.unique(labels_arr.round(4)))}"
+            )
+
+            # Detect triplet format: both are 1D floats in similarity range [-1, 1]
+            # Key insight: cosine similarity values are continuous floats,
+            # while STS labels are typically integers (0-5) or normalized to [0, 1]
+            is_triplet = (
+                labels_arr.ndim == 1
+                and preds_arr.ndim == 1
+                and len(labels_arr) == len(preds_arr)
+                and len(labels_arr) > 0
+                and np.all(labels_arr >= -1.0)
+                and np.all(labels_arr <= 1.0)
+                and np.all(preds_arr >= -1.0)
+                and np.all(preds_arr <= 1.0)
+            )
+            _logger.warning(f"EMBEDDING DEBUG: is_triplet={is_triplet}")
+            # Additional check: triplet format has neg_sim as labels (cosine similarity)
+            # vs STS which has integer-ish labels (0, 1, 2, 3, 4, 5 or 0.0, 0.2, 0.4...)
+            # Cosine sim from random embeddings centers around 0, not near 1.0
+            if is_triplet:
+                # Check if labels look like discrete STS scores vs continuous similarity
+                unique_labels = np.unique(labels_arr)
+                # STS typically has few unique values (5-6 score levels)
+                # Triplet neg_sim has continuous values (many unique)
+                is_likely_triplet = len(unique_labels) > 10 or (
+                    # Or if values are mostly negative (which STS labels never are)
+                    np.mean(labels_arr)
+                    < 0.5
+                )
+                if is_likely_triplet:
+                    # This is triplet format - compute triplet accuracy
+                    triplet_correct = (preds_arr > labels_arr).sum()
+                    triplet_accuracy = float(triplet_correct) / len(preds_arr)
+                    avg_margin = float(np.mean(preds_arr - labels_arr))
+                    return {
+                        "triplet_accuracy": triplet_accuracy,
+                        "avg_margin": avg_margin,
+                        "avg_pos_sim": float(np.mean(preds_arr)),
+                        "avg_neg_sim": float(np.mean(labels_arr)),
+                    }
+
+        # Auto-detect single-label from labels for tasks that may be either
+        # (e.g., emotions: multi-label in Stage B, single-label in Stage A)
+        actual_problem_type = problem_type
+        if problem_type == "multi_label_classification":
+            labels_arr = np.asarray(labels)
+            if labels_arr.ndim == 1 or (labels_arr.ndim == 2 and labels_arr.shape[1] == 1):
+                # Labels are 1D integers = single-label format
+                actual_problem_type = "single_label_classification"
+
         # Convert logits to predictions (argmax for classification)
         if predictions.ndim == 3:
             # Token classification: (batch, seq_len, num_classes) -> (batch, seq_len)
             predictions = np.argmax(predictions, axis=-1)
-        elif predictions.ndim == 2 and problem_type == "single_label_classification":
+        elif predictions.ndim == 2 and actual_problem_type == "single_label_classification":
             # Sequence classification: (batch, num_classes) -> (batch,)
             predictions = np.argmax(predictions, axis=-1)
         # For multi-label, keep logits (threshold applied in metrics)
@@ -1101,7 +1248,7 @@ class MultiTaskTrainer(Trainer):
         # Get label list for NER tasks
         label_list = None
 
-        if problem_type == "token_classification":
+        if actual_problem_type == "token_classification":
             label_list = self._get_label_list_for_task(task)
 
         return compute_metrics_for_task(
@@ -1378,8 +1525,8 @@ class MultiTaskTrainer(Trainer):
         inputs.pop("token_type_ids", None)
 
         with torch.no_grad():
-            # Handle embedding task specially (anchor/positive format)
-            if task == "embedding" and "anchor_input_ids" in inputs:
+            # Handle embedding task specially (support all embedding formats)
+            if task == "embedding":
                 return self._embedding_prediction_step(model, inputs, labels, prediction_loss_only)
 
             outputs = model(
@@ -1418,53 +1565,140 @@ class MultiTaskTrainer(Trainer):
         labels: torch.Tensor | None,
         prediction_loss_only: bool,
     ) -> tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None]:
-        """Handle embedding task prediction with anchor/positive pairs."""
+        """Handle embedding task prediction with anchor/positive pairs or triplets.
+
+        For STS-style data (with labels):
+            Returns (loss, cos_sim, labels) for Spearman correlation
+
+        For triplet data (no labels, has negative):
+            Returns (loss, pos_sim, neg_sim) where:
+            - pos_sim: cosine similarity between anchor and positive
+            - neg_sim: cosine similarity between anchor and negative
+            This enables triplet_accuracy metric computation.
+        """
         import torch.nn.functional as F
 
-        # Get embeddings for anchor and positive
+        # Detect embedding input format
+        anchor_ids = None
+        anchor_mask = None
+        positive_ids = None
+        positive_mask = None
+        negative_ids = None
+        negative_mask = None
+
+        if "anchor_input_ids" in inputs:
+            anchor_ids = inputs["anchor_input_ids"]
+            anchor_mask = inputs.get("anchor_attention_mask")
+            positive_ids = inputs.get("positive_input_ids")
+            positive_mask = inputs.get("positive_attention_mask")
+            negative_ids = inputs.get("negative_input_ids")
+            negative_mask = inputs.get("negative_attention_mask")
+        elif "input_ids_1" in inputs and "input_ids_2" in inputs:
+            anchor_ids = inputs["input_ids_1"]
+            anchor_mask = inputs.get("attention_mask_1")
+            positive_ids = inputs["input_ids_2"]
+            positive_mask = inputs.get("attention_mask_2")
+        elif "input_ids" in inputs and "positive_input_ids" in inputs:
+            anchor_ids = inputs["input_ids"]
+            anchor_mask = inputs.get("attention_mask")
+            positive_ids = inputs["positive_input_ids"]
+            positive_mask = inputs.get("positive_attention_mask")
+            negative_ids = inputs.get("negative_input_ids")
+            negative_mask = inputs.get("negative_attention_mask")
+        elif "input_ids" in inputs:
+            anchor_ids = inputs["input_ids"]
+            anchor_mask = inputs.get("attention_mask")
+
+        # Compute embeddings for available inputs
+        if anchor_ids is None:
+            # If format is unknown, return safe defaults to avoid crashing evaluation
+            model_device = next(model.parameters()).device
+            dummy_loss = torch.tensor(0.0, device=model_device)
+            dummy_logits = torch.tensor([], device=model_device)
+            return (dummy_loss, dummy_logits, labels)
+
         anchor_outputs = model(
             capability="embedding",
-            input_ids=inputs["anchor_input_ids"],
-            attention_mask=inputs["anchor_attention_mask"],
+            input_ids=anchor_ids,
+            attention_mask=anchor_mask,
             return_dict=True,
         )
-        # Handle PEFT-wrapped models that return tuple
         anchor_embeds = (
             anchor_outputs.logits if hasattr(anchor_outputs, "logits") else anchor_outputs[0]
         )
 
-        positive_outputs = model(
-            capability="embedding",
-            input_ids=inputs["positive_input_ids"],
-            attention_mask=inputs["positive_attention_mask"],
-            return_dict=True,
-        )
-        # Handle PEFT-wrapped models that return tuple
-        positive_embeds = (
-            positive_outputs.logits if hasattr(positive_outputs, "logits") else positive_outputs[0]
-        )
+        pos_sim = None
+        neg_sim = None
 
-        # Compute cosine similarity as "predictions"
-        cos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
-
-        # Compute loss if labels provided
-        if labels is not None:
-            # Scale labels to [0, 1] if needed (STS-B uses 0-5 scale)
-            scaled_labels = labels / 5.0 if labels.max() > 1.0 else labels
-            loss = F.mse_loss(cos_sim, scaled_labels)
+        if positive_ids is not None:
+            positive_outputs = model(
+                capability="embedding",
+                input_ids=positive_ids,
+                attention_mask=positive_mask,
+                return_dict=True,
+            )
+            positive_embeds = (
+                positive_outputs.logits
+                if hasattr(positive_outputs, "logits")
+                else positive_outputs[0]
+            )
+            pos_sim = F.cosine_similarity(anchor_embeds, positive_embeds)
         else:
-            # Contrastive loss
+            # Without positives, fall back to L2-normalized embeddings compared to self
+            pos_sim = torch.ones(anchor_embeds.size(0), device=anchor_embeds.device)
+
+        # Compute negative similarity for triplet evaluation
+        if negative_ids is not None:
+            negative_outputs = model(
+                capability="embedding",
+                input_ids=negative_ids,
+                attention_mask=negative_mask,
+                return_dict=True,
+            )
+            negative_embeds = (
+                negative_outputs.logits
+                if hasattr(negative_outputs, "logits")
+                else negative_outputs[0]
+            )
+            neg_sim = F.cosine_similarity(anchor_embeds, negative_embeds)
+
+        # Compute loss
+        if labels is not None:
+            # STS-style: labels are similarity scores, use MSE loss
+            loss = F.mse_loss(pos_sim, labels)
+        elif negative_ids is not None and neg_sim is not None:
+            # Triplet format: use triplet margin loss
+            # TripletMarginLoss: L = max(0, pos_dist - neg_dist + margin)
+            # Since we use similarity (not distance): L = max(0, neg_sim - pos_sim + margin)
+            margin = 0.3
+            triplet_loss = F.relu(neg_sim - pos_sim + margin).mean()
+            loss = triplet_loss
+        elif positive_ids is not None:
+            # Contrastive loss when only positives exist (in-batch negatives)
             sim_matrix = F.cosine_similarity(
                 anchor_embeds.unsqueeze(1), positive_embeds.unsqueeze(0), dim=2
             )
             batch_labels = torch.arange(sim_matrix.size(0), device=sim_matrix.device)
             loss = F.cross_entropy(sim_matrix * 20, batch_labels)
+        else:
+            loss = None
 
         if prediction_loss_only:
             return (loss, None, None)
 
-        # Return cosine similarity as logits (1D), labels stay as is
-        return (loss, cos_sim, labels)
+        # Return format depends on whether we have triplet data or STS data
+        # Check triplet format FIRST (has neg_sim from negative_ids)
+        # because collator may add dummy labels even for triplets
+        if neg_sim is not None:
+            # Triplet format: return (loss, pos_sim, neg_sim) for triplet_accuracy
+            # We encode neg_sim as "labels" so metric computation can compare pos vs neg
+            return (loss, pos_sim, neg_sim)
+        elif labels is not None:
+            # STS-style: return (loss, pos_sim, labels) for Spearman correlation
+            return (loss, pos_sim, labels)
+        else:
+            # Fallback: only positive similarity available
+            return (loss, pos_sim, labels)
 
 
 # =============================================================================

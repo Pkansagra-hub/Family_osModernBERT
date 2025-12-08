@@ -41,6 +41,7 @@ from datasets import Dataset, DatasetDict, load_dataset
 
 from modeling_studio.data.labels import (
     ALL_LABEL_SCHEMAS,
+    EMOTIONS_FAMILYOS_LABELS,
     EMOTIONS_LABELS,
     INGRESS_LABELS,
     INTENT_LABELS,
@@ -774,7 +775,7 @@ def _standardize_classification_dataset(
             # Clamp to valid range
             new_label = max(0, min(original_label, label_schema.num_labels - 1))
 
-        return {"text": text, "label": new_label}
+        return {"text": text, "labels": new_label}  # 'labels' for collator compatibility
 
     # Apply standardization - use remove_columns to handle feature type conflict
     dataset = dataset.map(
@@ -3806,11 +3807,22 @@ def _load_dataset_by_task(
 
     elif task == "emotions":
         label_schema = _get_label_schema_from_config(dataset_config, EMOTIONS_LABELS)
-        ds = load_multilabel_dataset(
-            name=dataset_name_or_path,
-            split=split,
-            label_schema=label_schema,
-        )
+        problem_type = dataset_config.get("problem_type", "multi_label_classification")
+
+        if problem_type == "single_label_classification":
+            # Stage A: Single-label classification (7 super-labels)
+            ds = load_classification_dataset(
+                name=dataset_name_or_path,
+                split=split,
+                label_schema=label_schema,
+            )
+        else:
+            # Default: Multi-label classification (44 emotions)
+            ds = load_multilabel_dataset(
+                name=dataset_name_or_path,
+                split=split,
+                label_schema=label_schema,
+            )
         return ds if not isinstance(ds, DatasetDict) else ds[split]
 
     elif task == "safety_generic":
@@ -3888,11 +3900,12 @@ def _apply_tokenization(
         "safety_familyos": "classification",
         "emotions": "multilabel",
         "safety_generic": "multilabel",
+        "relations": "multilabel",  # Sentence-level relation classification
+        "relation": "relation",  # Legacy: span-based relation extraction
         "ner_general": "token_classification",
         "ner_family": "token_classification",
         "temporal": "token_classification",
         "nli": "nli",
-        "relation": "relation",
         "embedding": "embedding",
     }
 
@@ -3920,7 +3933,10 @@ def _apply_tokenization(
         def tokenize_wrapper(example):
             # Try common text column names
             text = example.get("text") or example.get("sentence") or example.get("content")
-            label = example.get("label")
+            # Try both "label" (HuggingFace standard) and "labels" (FamilyOS unified format)
+            label = (
+                example.get("label") if example.get("label") is not None else example.get("labels")
+            )
             result = tokenize_for_classification(
                 tokenizer=tokenizer,
                 text=text,
@@ -3941,8 +3957,11 @@ def _apply_tokenization(
                 max_length=max_length,
             )
             # For multi-label, keep labels as a list of floats
+            # Also support single-label (integer) from classification loader
             if "labels" in example:
                 result["labels"] = example["labels"]
+            elif "label" in example:
+                result["labels"] = example["label"]
             result["task"] = task
             return result
 
@@ -3988,32 +4007,68 @@ def _apply_tokenization(
                     result[f"positive_{k}"] = v
 
             # Add score if present (for STS-B style)
+            # Normalize to [0, 1] range - some datasets use 0-5 scale (STS-B, SICK)
+            # while others are already normalized (sentence-transformers/*)
             if "label" in example:
-                result["labels"] = example["label"]
+                score = float(example["label"])
             elif "score" in example:
-                result["labels"] = example["score"]
+                score = float(example["score"])
+            else:
+                score = None
+
+            if score is not None:
+                # Normalize if score > 1 (assumes 0-5 scale)
+                if score > 1.0:
+                    score = score / 5.0
+                # Clamp to [0, 1] range for safety
+                score = max(0.0, min(1.0, score))
+                result["labels"] = score
 
             result["task"] = task
             return result
 
     elif mapped_task == "relation":
-
+        # Sentence-level multi-label relation classification
+        # Unlike entity-level RE, this is just text -> predicate multi-hot
         def tokenize_wrapper(example):
-            text = example.get("text")
+            text = example.get("text", "")
+
+            # Check if this is entity-level RE (has entity1/entity2) or sentence-level
             entity1 = example.get("entity1")
             entity2 = example.get("entity2")
-            result = tokenize_for_relation(
-                tokenizer=tokenizer,
-                text=text,
-                entity1=entity1,
-                entity2=entity2,
-                max_length=max_length,
-                mark_entities=True,
-            )
-            if "relation" in example:
+
+            if entity1 is not None and entity2 is not None:
+                # Entity-level RE with entity markers
+                result = tokenize_for_relation(
+                    tokenizer=tokenizer,
+                    text=text,
+                    entity1=entity1,
+                    entity2=entity2,
+                    max_length=max_length,
+                    mark_entities=True,
+                )
+            else:
+                # Sentence-level multi-label (no entity markers)
+                # Use simple sequence classification tokenization
+                encoding = tokenizer(
+                    text,
+                    max_length=max_length,
+                    truncation=True,
+                    padding="max_length",
+                )
+                result = {
+                    "input_ids": encoding["input_ids"],
+                    "attention_mask": encoding["attention_mask"],
+                }
+
+            # Handle labels (multi-hot or single label)
+            if "labels" in example:
+                result["labels"] = example["labels"]
+            elif "relation" in example:
                 result["labels"] = example["relation"]
             elif "label" in example:
                 result["labels"] = example["label"]
+
             result["task"] = task
             return result
 
@@ -4092,6 +4147,611 @@ def load_stage_b_datasets(
 
 
 # =============================================================================
+# Unified FamilyOS Synthetic Data Loader
+# =============================================================================
+
+
+def load_familyos_unified(
+    data_dirs: list[str | Path] | str | Path,
+    split: str = "train",
+    tasks: list[str] | None = None,
+    max_samples: int | None = None,
+    validation_ratio: float = 0.1,
+    seed: int = 42,
+) -> dict[str, Dataset]:
+    """
+    Load unified FamilyOS synthetic data for multi-task training.
+
+    This loader handles the unified format from the synthetic data generator,
+    where each sample contains labels for ALL tasks simultaneously:
+
+    Sample format:
+        {
+            "id": "syn_00001",
+            "text": "Had dinner with mom last Sunday",
+            "tasks": {
+                "emotions": ["joy", "warmth"],           # Multi-label
+                "sentiment": "positive",                  # Single-label
+                "ner_family": [{"start": 16, "end": 19, "label": "KINSHIP", "token": "mom"}],
+                "safety_familyos": "GREEN",              # Single-label
+                "intent": "log_memory",                   # Single-label
+                "ingress": "DIARY",                       # Single-label
+                "relations": [],                          # List of relations
+                "temporal": [{"start": 20, "end": 31, "label": "DATE_REL", "token": "last Sunday"}]
+            },
+            "hub_routing": {"EMO": true, "REL": false, "MEM": true, "TASK": true}
+        }
+
+    Args:
+        data_dirs: Path(s) to directories containing shard_*.jsonl files.
+            Can be a single path or list of paths.
+        split: Which split to return ("train" or "validation").
+            The data is split using validation_ratio.
+        tasks: List of tasks to extract. If None, extracts all tasks.
+            Options: emotions, sentiment, ner_family, safety_familyos,
+                    intent, ingress, temporal
+        max_samples: Maximum total samples to load. If None, loads all.
+        validation_ratio: Fraction of data to use for validation (default 0.1).
+        seed: Random seed for train/val split.
+
+    Returns:
+        Dict mapping task name to HuggingFace Dataset.
+        Each dataset is ready for multi-task training.
+
+    Example:
+        >>> datasets = load_familyos_unified(
+        ...     data_dirs=["data/familyos/unified/output_synthetic"],
+        ...     split="train",
+        ...     tasks=["emotions", "sentiment", "ner_family", "safety_familyos"]
+        ... )
+        >>> print(f"Loaded {len(datasets)} tasks")
+        >>> print(f"Emotions samples: {len(datasets['emotions'])}")
+    """
+    import random
+
+    # Normalize data_dirs to list
+    if isinstance(data_dirs, (str, Path)):
+        data_dirs = [data_dirs]
+
+    data_dirs = [Path(d) for d in data_dirs]
+
+    # Default tasks
+    if tasks is None:
+        tasks = [
+            "emotions",
+            "sentiment",
+            "ner_family",
+            "safety_familyos",
+            "intent",
+            "ingress",
+            "relation",
+            "temporal",
+        ]
+
+    logger.info(f"Loading FamilyOS unified data from {len(data_dirs)} directories")
+    logger.info(f"Tasks to extract: {tasks}")
+
+    # Collect all shard files
+    shard_files = []
+    for data_dir in data_dirs:
+        if not data_dir.exists():
+            logger.warning(f"Directory not found: {data_dir}")
+            continue
+        shards = sorted(data_dir.glob("shard_*.jsonl"))
+        shard_files.extend(shards)
+        logger.info(f"  Found {len(shards)} shards in {data_dir}")
+
+    if not shard_files:
+        raise FileNotFoundError(f"No shard_*.jsonl files found in {data_dirs}")
+
+    # Load all samples
+    all_samples = []
+    for shard_file in shard_files:
+        with open(shard_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        sample = json.loads(line)
+                        all_samples.append(sample)
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"Skipping invalid JSON in {shard_file}: {e}")
+
+    logger.info(f"Loaded {len(all_samples)} total samples")
+
+    # Apply max_samples limit
+    if max_samples and len(all_samples) > max_samples:
+        random.seed(seed)
+        all_samples = random.sample(all_samples, max_samples)
+        logger.info(f"Sampled {max_samples} samples")
+
+    # Split into train/validation
+    random.seed(seed)
+    random.shuffle(all_samples)
+
+    val_size = int(len(all_samples) * validation_ratio)
+    if split == "train":
+        samples = all_samples[val_size:]
+        logger.info(f"Using {len(samples)} samples for training")
+    elif split == "validation":
+        samples = all_samples[:val_size]
+        logger.info(f"Using {len(samples)} samples for validation")
+    else:
+        raise ValueError(f"Unknown split: {split}. Use 'train' or 'validation'")
+
+    # Extract task-specific datasets
+    task_datasets = {}
+
+    for task in tasks:
+        task_data = _extract_task_data(samples, task)
+        if task_data:
+            # Use the task name from the first record (normalized)
+            # This handles "relations" -> "relation" mapping
+            normalized_task = task_data[0].get("task", task)
+            task_datasets[normalized_task] = Dataset.from_list(task_data)
+            logger.info(f"  {normalized_task}: {len(task_data)} samples")
+        else:
+            logger.warning(f"  {task}: No valid samples found")
+
+    return task_datasets
+
+
+def _extract_task_data(
+    samples: list[dict],
+    task: str,
+) -> list[dict]:
+    """
+    Extract task-specific data from unified samples.
+
+    Converts the unified format to task-specific format expected by trainers.
+    """
+    # Map task names to data keys (handles singular/plural mismatches)
+    TASK_TO_DATA_KEY = {
+        "relation": "relations",  # Model uses singular, data uses plural
+    }
+
+    task_data = []
+    data_key = TASK_TO_DATA_KEY.get(task, task)
+
+    for sample in samples:
+        text = sample.get("text", "")
+        task_labels = sample.get("tasks", {})
+
+        if data_key not in task_labels:
+            continue
+
+        label_value = task_labels[data_key]
+
+        # Skip samples with empty/None labels
+        if label_value is None:
+            continue
+
+        if task == "emotions":
+            # Multi-label: list of emotion strings → multi-hot vector
+            if not label_value or not isinstance(label_value, list):
+                continue
+            try:
+                labels = _emotions_to_multihot(label_value)
+                task_data.append({"text": text, "labels": labels, "task": task})
+            except KeyError as e:
+                logger.debug(f"Unknown emotion {e}, skipping sample")
+
+        elif task == "sentiment":
+            # Single-label: string → int
+            if not label_value:
+                continue
+            try:
+                label_id = SENTIMENT_LABELS.encode(label_value)
+                task_data.append({"text": text, "labels": label_id, "task": task})
+            except KeyError:
+                logger.debug(f"Unknown sentiment '{label_value}', skipping sample")
+
+        elif task == "safety_familyos":
+            # Single-label: string → int
+            if not label_value:
+                continue
+            try:
+                label_id = SAFETY_FAMILYOS_LABELS.encode(label_value)
+                task_data.append({"text": text, "labels": label_id, "task": task})
+            except KeyError:
+                logger.debug(f"Unknown safety band '{label_value}', skipping sample")
+
+        elif task == "intent":
+            # Single-label: string → int
+            if not label_value:
+                continue
+            try:
+                label_id = INTENT_LABELS.encode(label_value)
+                task_data.append({"text": text, "labels": label_id, "task": task})
+            except KeyError:
+                logger.debug(f"Unknown intent '{label_value}', skipping sample")
+
+        elif task == "ingress":
+            # Single-label: string → int
+            if not label_value:
+                continue
+            try:
+                label_id = INGRESS_LABELS.encode(label_value)
+                task_data.append({"text": text, "labels": label_id, "task": task})
+            except KeyError:
+                logger.debug(f"Unknown ingress '{label_value}', skipping sample")
+
+        elif task == "ner_family":
+            # Token classification: list of span annotations → BIO tags
+            # Format: [{"start": 16, "end": 19, "label": "KINSHIP", "token": "mom"}]
+            tokens, ner_tags = _spans_to_bio_tags(text, label_value, NER_FAMILY_LABELS)
+            if tokens:  # Only add if we have valid tokens
+                task_data.append({"tokens": tokens, "ner_tags": ner_tags, "task": task})
+
+        elif task == "temporal":
+            # Token classification: list of span annotations → BIO tags
+            # Format: [{"start": 20, "end": 31, "label": "DATE_REL", "token": "last Sunday"}]
+            tokens, temporal_tags = _spans_to_bio_tags(text, label_value, TEMPORAL_LABELS)
+            if tokens:
+                task_data.append({"tokens": tokens, "temporal_tags": temporal_tags, "task": task})
+
+        elif task == "relation":
+            # Sentence-level relation classification
+            # Extract predicate types as multi-label (can have multiple relations)
+            # NOTE: Data uses "relations" (plural), but Capability enum uses "relation" (singular)
+            # The data_key mapping above handles the lookup, we use "relation" as task name
+            if not label_value or not isinstance(label_value, list):
+                continue
+
+            # Convert list of relations to multi-hot vector
+            try:
+                labels = _relations_to_multihot(label_value)
+                if sum(labels) > 0:  # At least one valid relation
+                    task_data.append({"text": text, "labels": labels, "task": "relation"})
+            except Exception as e:
+                logger.debug(f"Error processing relations: {e}")
+
+    return task_data
+
+
+def _emotions_to_multihot(emotion_list: list[str]) -> list[int]:
+    """Convert list of emotion strings to multi-hot vector using FamilyOS 44-class schema."""
+    multihot = [0] * EMOTIONS_FAMILYOS_LABELS.num_labels
+    for emotion in emotion_list:
+        try:
+            idx = EMOTIONS_FAMILYOS_LABELS.encode(emotion)
+            multihot[idx] = 1
+        except KeyError:
+            # Skip unknown emotions that might not be in the schema
+            logger.warning(f"Unknown emotion '{emotion}' not in EMOTIONS_FAMILYOS_LABELS, skipping")
+    return multihot
+
+
+def _relations_to_multihot(relations_list: list[dict]) -> list[int]:
+    """
+    Convert list of relation dicts to multi-hot vector.
+
+    Each relation dict has format: {"subject": "...", "predicate": "...", "object": "..."}
+    We extract the predicate and encode it as a multi-hot vector.
+
+    Args:
+        relations_list: List of relation dictionaries
+
+    Returns:
+        Multi-hot vector of size RELATION_LABELS.num_labels (15)
+    """
+    multihot = [0] * RELATION_LABELS.num_labels
+    for rel in relations_list:
+        if not isinstance(rel, dict):
+            continue
+        predicate = rel.get("predicate", "")
+        if predicate:
+            try:
+                idx = RELATION_LABELS.encode(predicate)
+                multihot[idx] = 1
+            except KeyError:
+                logger.warning(f"Unknown relation predicate '{predicate}' not in RELATION_LABELS")
+    return multihot
+
+
+def _spans_to_bio_tags(
+    text: str,
+    spans: list[dict],
+    label_schema: LabelSchema,
+) -> tuple[list[str], list[int]]:
+    """
+    Convert character-level span annotations to BIO token tags.
+
+    This uses simple whitespace tokenization. For production, you should
+    use the same tokenizer as the model.
+
+    Args:
+        text: Original text string
+        spans: List of span annotations with 'start', 'end', 'label', 'token' keys
+        label_schema: Label schema for encoding BIO tags
+
+    Returns:
+        Tuple of (tokens, tag_ids)
+    """
+    if not text:
+        return [], []
+
+    # Simple whitespace tokenization with character offsets
+    tokens = []
+    token_offsets = []
+    current_pos = 0
+
+    for match in text.split():
+        # Find the actual position in text
+        start = text.find(match, current_pos)
+        if start == -1:
+            start = current_pos
+        end = start + len(match)
+        tokens.append(match)
+        token_offsets.append((start, end))
+        current_pos = end
+
+    # Initialize all tags as O
+    ner_tags = [0] * len(tokens)  # 0 = "O"
+
+    # Assign BIO tags based on spans
+    for span in spans:
+        if not isinstance(span, dict):
+            continue
+
+        span_start = span.get("start", -1)
+        span_end = span.get("end", -1)
+        label = span.get("label", "")
+
+        if span_start < 0 or span_end < 0 or not label:
+            continue
+
+        # Find tokens that overlap with this span
+        is_first = True
+        for i, (tok_start, tok_end) in enumerate(token_offsets):
+            # Check overlap
+            if tok_start < span_end and tok_end > span_start:
+                try:
+                    if is_first:
+                        tag = f"B-{label}"
+                        is_first = False
+                    else:
+                        tag = f"I-{label}"
+                    ner_tags[i] = label_schema.encode(tag)
+                except KeyError:
+                    logger.debug(f"Unknown tag '{tag}' for schema {label_schema.name}")
+
+    return tokens, ner_tags
+
+
+# =============================================================================
+# FamilyOS Embedding Triplets Loader
+# =============================================================================
+
+
+def load_embedding_triplets(
+    data_dir: str | Path,
+    split: str = "train",
+    validation_ratio: float = 0.1,
+    seed: int = 42,
+    max_samples: int | None = None,
+) -> Dataset:
+    """
+    Load FamilyOS embedding triplets for contrastive learning.
+
+    This loads synthetic triplets generated by synthetic_embedding_generator.py.
+    Each triplet has an anchor, positive (similar), and negative (dissimilar) text.
+
+    Args:
+        data_dir: Path to directory containing triplet JSONL files
+        split: "train" or "validation"
+        validation_ratio: Fraction for validation (default: 0.1)
+        seed: Random seed for shuffling and splitting
+        max_samples: Maximum samples to load (None = all)
+
+    Returns:
+        Dataset with columns:
+            - anchor: str - Anchor sentence
+            - positive: str - Similar sentence
+            - negative: str - Dissimilar sentence
+            - anchor_cluster: str - Cluster name for anchor (optional)
+            - task: str - Always "embedding"
+
+    Example:
+        >>> triplets = load_embedding_triplets(
+        ...     "data/familyos/embeddings/silver_synthetic",
+        ...     split="train"
+        ... )
+        >>> print(f"Loaded {len(triplets)} triplets")
+    """
+    import random
+
+    data_dir = Path(data_dir)
+    if not data_dir.exists():
+        raise FileNotFoundError(f"Embedding triplet directory not found: {data_dir}")
+
+    # Find all triplet JSONL files
+    triplet_files = sorted(data_dir.glob("triplets_*.jsonl"))
+    if not triplet_files:
+        raise FileNotFoundError(f"No triplet files (triplets_*.jsonl) found in {data_dir}")
+
+    logger.info(f"Loading embedding triplets from {data_dir} ({len(triplet_files)} files)")
+
+    # Load all triplets
+    triplets = []
+    for jsonl_file in triplet_files:
+        with open(jsonl_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    triplet = json.loads(line)
+                    # Validate required fields
+                    if all(k in triplet for k in ["anchor", "positive", "negative"]):
+                        triplets.append(triplet)
+                except json.JSONDecodeError:
+                    continue
+
+    logger.info(f"Loaded {len(triplets):,} total triplets")
+
+    # Apply max_samples before splitting
+    if max_samples and len(triplets) > max_samples:
+        random.seed(seed)
+        triplets = random.sample(triplets, max_samples)
+
+    # Shuffle and split
+    random.seed(seed)
+    random.shuffle(triplets)
+    val_size = int(len(triplets) * validation_ratio)
+
+    if split == "train":
+        triplets = triplets[val_size:]
+    elif split == "validation":
+        triplets = triplets[:val_size]
+
+    logger.info(f"Using {len(triplets):,} triplets for {split}")
+
+    # Convert to Dataset
+    return Dataset.from_list(
+        [
+            {
+                "anchor": t["anchor"],
+                "positive": t["positive"],
+                "negative": t["negative"],
+                "anchor_cluster": t.get("anchor_cluster", t.get("cluster", "")),
+                "task": "embedding",
+            }
+            for t in triplets
+        ]
+    )
+
+
+def load_familyos_unified_for_training(
+    data_dirs: list[str | Path] | str | Path,
+    tasks: list[str] | None = None,
+    validation_ratio: float = 0.1,
+    seed: int = 42,
+    safety_oversampling: dict[str, int] | None = None,
+    tokenizer: Any = None,
+    max_length: int = 512,
+    max_samples_tokenization: int | None = None,
+) -> tuple[dict[str, Dataset], dict[str, Dataset]]:
+    """
+    Load FamilyOS unified data ready for multi-task training with safety oversampling.
+
+    This is a convenience function that:
+    1. Loads train and validation splits
+    2. Applies tokenization if tokenizer is provided
+    3. Applies safety oversampling to balance CRISIS/RED samples
+    4. Returns ready-to-use datasets
+
+    Args:
+        data_dirs: Path(s) to unified data directories
+        tasks: Tasks to load (default: all)
+        validation_ratio: Fraction for validation (default: 0.1)
+        seed: Random seed
+        safety_oversampling: Dict mapping safety band to oversample factor
+            Default: {"CRISIS": 20, "RED": 5, "AMBER": 1, "GREEN": 1}
+        tokenizer: Tokenizer for preprocessing. If None, data is returned raw.
+        max_length: Maximum sequence length for tokenization (default: 512)
+
+    Returns:
+        Tuple of (train_datasets, val_datasets) dicts
+
+    Example:
+        >>> train_ds, val_ds = load_familyos_unified_for_training(
+        ...     data_dirs=["data/familyos/unified/output_synthetic"],
+        ...     tokenizer=tokenizer,
+        ...     safety_oversampling={"CRISIS": 20, "RED": 5}
+        ... )
+    """
+    # Default safety oversampling
+    if safety_oversampling is None:
+        safety_oversampling = {"CRISIS": 20, "RED": 5, "AMBER": 1, "GREEN": 1}
+
+    # Load train and validation
+    train_datasets = load_familyos_unified(
+        data_dirs=data_dirs,
+        split="train",
+        tasks=tasks,
+        validation_ratio=validation_ratio,
+        seed=seed,
+    )
+
+    val_datasets = load_familyos_unified(
+        data_dirs=data_dirs,
+        split="validation",
+        tasks=tasks,
+        validation_ratio=validation_ratio,
+        seed=seed,
+    )
+
+    # Apply tokenization if tokenizer is provided
+    if tokenizer is not None:
+        for task in list(train_datasets.keys()):
+            if max_samples_tokenization is not None:
+                limit = min(max_samples_tokenization, len(train_datasets[task]))
+                train_datasets[task] = train_datasets[task].select(range(limit))
+            train_datasets[task] = _apply_tokenization(
+                train_datasets[task], task, tokenizer, max_length
+            )
+            logger.info(f"  {task}: {len(train_datasets[task])} samples")
+        for task in list(val_datasets.keys()):
+            if max_samples_tokenization is not None:
+                limit = min(max_samples_tokenization, len(val_datasets[task]))
+                val_datasets[task] = val_datasets[task].select(range(limit))
+            val_datasets[task] = _apply_tokenization(
+                val_datasets[task], task, tokenizer, max_length
+            )
+
+    # Apply safety oversampling to training data
+    if "safety_familyos" in train_datasets and safety_oversampling:
+        train_datasets["safety_familyos"] = _apply_safety_oversampling(
+            train_datasets["safety_familyos"],
+            safety_oversampling,
+        )
+
+    return train_datasets, val_datasets
+
+
+def _apply_safety_oversampling(
+    dataset: Dataset,
+    oversampling: dict[str, int],
+) -> Dataset:
+    """
+    Apply oversampling to balance safety classes.
+
+    Duplicates samples from underrepresented classes (CRISIS, RED)
+    to improve model recall on critical safety cases.
+    """
+    # Group samples by label
+    label_to_indices: dict[int, list[int]] = {}
+    for i, sample in enumerate(dataset):
+        label = sample["labels"]
+        if label not in label_to_indices:
+            label_to_indices[label] = []
+        label_to_indices[label].append(i)
+
+    # Build oversampled indices
+    oversampled_indices = []
+    for label_id, indices in label_to_indices.items():
+        label_name = SAFETY_FAMILYOS_LABELS.decode(label_id)
+        factor = oversampling.get(label_name, 1)
+
+        # Add original indices, then duplicate
+        oversampled_indices.extend(indices * factor)
+
+        if factor > 1:
+            logger.info(
+                f"  Safety oversampling: {label_name} {len(indices)} → "
+                f"{len(indices) * factor} ({factor}x)"
+            )
+
+    # Shuffle and select
+    import random
+
+    random.shuffle(oversampled_indices)
+
+    return dataset.select(oversampled_indices)
+
+
+# =============================================================================
 # Public API Exports
 # =============================================================================
 
@@ -4109,6 +4769,11 @@ __all__ = [
     "load_familyos_relations",
     "load_familyos_intents",
     "load_familyos_temporal",
+    # Unified FamilyOS loader (for synthetic data)
+    "load_familyos_unified",
+    "load_familyos_unified_for_training",
+    # FamilyOS embedding triplets
+    "load_embedding_triplets",
     # Config-based loading
     "load_from_config",
     "load_stage_a_datasets",

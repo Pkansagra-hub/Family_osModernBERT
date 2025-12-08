@@ -300,6 +300,173 @@ EMOTIONS_REDUCED_LABELS = LabelSchema(
 
 
 # -----------------------------------------------------------------------------
+# Super-Label Emotion Schema (7 classes - Stage A Curriculum Learning)
+# -----------------------------------------------------------------------------
+# Stage A trains on broad emotion categories before Stage B fine-tunes on 44 labels.
+# This curriculum learning approach helps the model learn valence/arousal first.
+# See TRAINING_STRATEGY.md for details.
+
+EMOTIONS_SUPER_LABELS = LabelSchema(
+    name="emotions_super",
+    label2id={
+        "JOY": 0,  # joy, excitement, celebration, pride, relief, amusement, hope, optimism, surprise
+        "AFFECTION": 1,  # love, warmth, caring, gratitude, tenderness, admiration, parental_pride, protectiveness, playfulness
+        "SADNESS": 2,  # sadness, grief, disappointment, longing, emptiness, remorse, parental_guilt
+        "ANXIETY": 3,  # worry, overwhelmed, frustration, annoyance, nervousness, fear, anger, disgust, disapproval, embarrassment
+        "NOSTALGIA": 4,  # nostalgia, bittersweet, homesickness
+        "CONTENTMENT": 5,  # contentment, belonging, togetherness, patience, approval
+        "NEUTRAL": 6,  # neutral
+    },
+    problem_type="single_label_classification",  # Stage A uses CrossEntropyLoss
+    description="7 super-label emotion categories for Stage A curriculum learning",
+)
+
+
+# Mapping from 44 FamilyOS emotions to 7 super-labels
+# Used by map_to_super_labels() to collapse granular emotions during Stage A training
+EMOTION_TO_SUPER_LABEL: dict[str, str] = {
+    # JOY cluster - High positive valence, high arousal
+    "joy": "JOY",
+    "excitement": "JOY",
+    "celebration": "JOY",
+    "pride": "JOY",
+    "relief": "JOY",
+    "amusement": "JOY",
+    "hope": "JOY",
+    "optimism": "JOY",
+    # AFFECTION cluster - Positive interpersonal, warm
+    "love": "AFFECTION",
+    "warmth": "AFFECTION",
+    "caring": "AFFECTION",
+    "gratitude": "AFFECTION",
+    "tenderness": "AFFECTION",
+    "admiration": "AFFECTION",
+    "parental_pride": "AFFECTION",
+    "protectiveness": "AFFECTION",
+    "playfulness": "AFFECTION",
+    # SADNESS cluster - Low valence, low arousal
+    "sadness": "SADNESS",
+    "grief": "SADNESS",
+    "disappointment": "SADNESS",
+    "longing": "SADNESS",
+    "emptiness": "SADNESS",
+    "remorse": "SADNESS",
+    "parental_guilt": "SADNESS",
+    # ANXIETY cluster - Negative valence, high arousal
+    "worry": "ANXIETY",
+    "overwhelmed": "ANXIETY",
+    "frustration": "ANXIETY",
+    "annoyance": "ANXIETY",
+    "nervousness": "ANXIETY",
+    "fear": "ANXIETY",
+    "anger": "ANXIETY",
+    "disgust": "ANXIETY",
+    "disapproval": "ANXIETY",
+    "embarrassment": "ANXIETY",
+    # NOSTALGIA cluster - Mixed valence, reflective
+    "nostalgia": "NOSTALGIA",
+    "bittersweet": "NOSTALGIA",
+    "homesickness": "NOSTALGIA",
+    # CONTENTMENT cluster - Positive valence, low arousal
+    "contentment": "CONTENTMENT",
+    "belonging": "CONTENTMENT",
+    "togetherness": "CONTENTMENT",
+    "patience": "CONTENTMENT",
+    "approval": "CONTENTMENT",
+    # NEUTRAL cluster - Neutral valence
+    "neutral": "NEUTRAL",
+    # Note: 'surprise' maps to JOY because in FamilyOS context, surprise is typically
+    # positive (birthday surprises, exciting news). Per Plutchik wheel, surprise is
+    # high-energy and in family contexts correlates with excitement/joy.
+    "surprise": "JOY",
+}
+
+
+def map_to_super_labels(
+    multi_hot_44: list[int],
+    source_schema: LabelSchema | None = None,
+    target_schema: LabelSchema | None = None,
+) -> list[int]:
+    """
+    Convert a 44-label multi-hot vector to 7 super-label multi-hot.
+
+    This function supports Stage A curriculum learning by collapsing
+    granular emotion labels into broader categories.
+
+    Args:
+        multi_hot_44: Multi-hot vector of length 44 (or list of emotion names)
+        source_schema: Source label schema (44 labels). Defaults to EMOTIONS_FAMILYOS_LABELS.
+        target_schema: Target label schema (7 super-labels). Defaults to EMOTIONS_SUPER_LABELS.
+
+    Returns:
+        Multi-hot vector of length 7
+
+    Example:
+        >>> labels_44 = [0] * 44
+        >>> labels_44[1] = 1  # joy (index 1 in EMOTIONS_FAMILYOS_LABELS)
+        >>> labels_44[6] = 1  # love (index 6)
+        >>> super_labels = map_to_super_labels(labels_44)
+        >>> super_labels  # [1, 1, 0, 0, 0, 0, 0] -> JOY + AFFECTION
+    """
+    # Use defaults if not provided (avoid mutable default args)
+    if source_schema is None:
+        source_schema = EMOTIONS_FAMILYOS_LABELS
+    if target_schema is None:
+        target_schema = EMOTIONS_SUPER_LABELS
+
+    multi_hot_7 = [0] * target_schema.num_labels
+
+    for idx, val in enumerate(multi_hot_44):
+        if val == 1:
+            # Get emotion name from source schema
+            if idx < source_schema.num_labels:
+                emotion_name = source_schema.id2label.get(idx)
+                if emotion_name:
+                    # Map to super-label
+                    super_label = EMOTION_TO_SUPER_LABEL.get(emotion_name)
+                    if super_label and super_label in target_schema.label2id:
+                        super_idx = target_schema.label2id[super_label]
+                        multi_hot_7[super_idx] = 1
+
+    return multi_hot_7
+
+
+def map_emotion_names_to_super_labels(
+    emotion_names: list[str],
+    target_schema: LabelSchema | None = None,
+) -> list[int]:
+    """
+    Convert a list of emotion names to 7 super-label multi-hot.
+
+    This is a convenience function for when you have emotion names
+    instead of a multi-hot vector.
+
+    Args:
+        emotion_names: List of emotion name strings (e.g., ["joy", "love"])
+        target_schema: Target label schema (7 super-labels). Defaults to EMOTIONS_SUPER_LABELS.
+
+    Returns:
+        Multi-hot vector of length 7
+
+    Example:
+        >>> super_labels = map_emotion_names_to_super_labels(["joy", "love", "nostalgia"])
+        >>> super_labels  # [1, 1, 0, 0, 1, 0, 0] -> JOY + AFFECTION + NOSTALGIA
+    """
+    if target_schema is None:
+        target_schema = EMOTIONS_SUPER_LABELS
+
+    multi_hot_7 = [0] * target_schema.num_labels
+
+    for emotion_name in emotion_names:
+        super_label = EMOTION_TO_SUPER_LABEL.get(emotion_name)
+        if super_label and super_label in target_schema.label2id:
+            super_idx = target_schema.label2id[super_label]
+            multi_hot_7[super_idx] = 1
+
+    return multi_hot_7
+
+
+# -----------------------------------------------------------------------------
 # Safety Generic Labels (Enhanced: 6 → 8 types)
 # -----------------------------------------------------------------------------
 SAFETY_GENERIC_LABELS = LabelSchema(
@@ -514,7 +681,7 @@ RELATION_LABELS = LabelSchema(
         "lives_at": 13,  # X lives at Y (location)
         "owns": 14,  # X owns Y (heirloom)
     },
-    problem_type="single_label_classification",
+    problem_type="multi_label_classification",  # Sentence can have multiple relations
     description="Relationship extraction between entities (15 relations)",
 )
 
@@ -652,6 +819,7 @@ ALL_LABEL_SCHEMAS: dict[str, LabelSchema] = {
     "emotions_legacy": EMOTIONS_LABELS,
     "emotions_reduced": EMOTIONS_REDUCED_LABELS,
     "emotions_familyos": EMOTIONS_FAMILYOS_LABELS,
+    "emotions_super": EMOTIONS_SUPER_LABELS,  # Stage A curriculum learning
     "safety_generic": SAFETY_GENERIC_LABELS,
     "nli": NLI_LABELS,
     "temporal": TEMPORAL_LABELS,  # NEW
@@ -676,6 +844,10 @@ __all__ = [
     "EMOTIONS_LABELS",
     "EMOTIONS_FAMILYOS_LABELS",
     "EMOTIONS_REDUCED_LABELS",
+    "EMOTIONS_SUPER_LABELS",  # Stage A curriculum learning
+    "EMOTION_TO_SUPER_LABEL",  # 44 -> 7 mapping dict
+    "map_to_super_labels",  # Multi-hot conversion function
+    "map_emotion_names_to_super_labels",  # Name-based conversion
     "SAFETY_GENERIC_LABELS",
     "NLI_LABELS",
     "TEMPORAL_LABELS",  # NEW

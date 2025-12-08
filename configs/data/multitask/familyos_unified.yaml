@@ -1,0 +1,431 @@
+# configs/data/multitask/familyos_unified.yaml
+# Unified FamilyOS Dataset Configuration for ModernBERT v3
+#
+# This configuration loads unified FamilyOS JSONL shards with hub_routing and
+# eight task types. It is compatible with UnifiedFamilyOSDataset,
+# StreamingShardDataset, and BufferedShardDataset.
+
+# =============================
+# Dataset metadata
+# =============================
+dataset:
+  name: "familyos_unified"
+  version: "1.0"
+  description: "Unified FamilyOS multi-task data with hub routing"
+  format: "jsonl"
+  purpose: "Phase 1+ training with FamilyOS-specific tasks"
+
+# =============================
+# Data paths
+# =============================
+paths:
+  # Directories containing shard_*.jsonl files
+  data_dirs:
+    - "data/familyos/unified/output_healed_merged"
+  data_dir: "data/familyos/unified/output_healed_merged"
+  shard_pattern: "shard_*.jsonl"
+
+  # Cache and indexing
+  cache_dir: "data/cache/familyos_unified"
+  index_file: "data/cache/familyos_unified/shard_index.json"
+
+  # Optional predefined splits
+  train_shards: "shard_000[0-7].jsonl"
+  val_shards: "shard_0008.jsonl"
+  test_shards: "shard_0009.jsonl"
+
+# =============================
+# Task configurations (8 tasks)
+# =============================
+tasks:
+  emotions:
+    type: "multi_label"
+    num_labels: 44
+    labels:
+      - neutral
+      - joy
+      - sadness
+      - anger
+      - fear
+      - surprise
+      - love
+      - disgust
+      - admiration
+      - amusement
+      - approval
+      - caring
+      - excitement
+      - gratitude
+      - optimism
+      - pride
+      - relief
+      - contentment
+      - hope
+      - tenderness
+      - annoyance
+      - disappointment
+      - disapproval
+      - embarrassment
+      - grief
+      - nervousness
+      - remorse
+      - frustration
+      - overwhelmed
+      - emptiness
+      - nostalgia
+      - protectiveness
+      - togetherness
+      - longing
+      - warmth
+      - playfulness
+      - celebration
+      - belonging
+      - parental_pride
+      - parental_guilt
+      - patience
+      - worry
+      - bittersweet
+      - homesickness
+    hub: "EMO"
+    weight: 1.0
+    loss: "bce_with_logits"
+    metrics:
+      - macro_f1
+      - micro_f1
+      - hamming_loss
+
+  sentiment:
+    type: "single_label"
+    num_labels: 5
+    labels:
+      - very_negative
+      - negative
+      - neutral
+      - positive
+      - very_positive
+    hub: "EMO"
+    weight: 1.0
+    loss: "cross_entropy"
+    label_smoothing: 0.1
+    metrics:
+      - accuracy
+      - macro_f1
+
+  safety_familyos:
+    type: "single_label"
+    num_labels: 4
+    labels:
+      - GREEN
+      - AMBER
+      - RED
+      - CRISIS
+    hub: "EMO"
+    weight: 2.0
+    loss: "cross_entropy"
+    label_smoothing: 0.05
+    class_weights:
+      GREEN: 1.0
+      AMBER: 1.5
+      RED: 2.0
+      CRISIS: 3.0
+    metrics:
+      - accuracy
+      - crisis_recall
+      - confusion_matrix
+
+  intent:
+    type: "single_label"
+    num_labels: 8
+    labels:
+      - log_memory
+      - query_memory
+      - set_reminder
+      - express_feeling
+      - seek_advice
+      - share_news
+      - reflect
+      - other
+    hub: "TASK"
+    weight: 0.8
+    loss: "cross_entropy"
+    label_smoothing: 0.1
+    metrics:
+      - accuracy
+      - macro_f1
+
+  ingress:
+    type: "single_label"
+    num_labels: 12
+    labels:
+      - DIARY
+      - TASK
+      - HEALTH
+      - FINANCE
+      - RELATIONSHIP
+      - WORK
+      - META
+      - MEMORY
+      - PLANNING
+      - CELEBRATION
+      - CONCERN
+      - GRATITUDE
+    hub: "TASK"
+    weight: 0.8
+    loss: "cross_entropy"
+    label_smoothing: 0.1
+    metrics:
+      - accuracy
+      - macro_f1
+
+  ner_family:
+    type: "token_classification"
+    num_labels: 21
+    labels:
+      - O
+      - B-PERSON
+      - I-PERSON
+      - B-KINSHIP
+      - I-KINSHIP
+      - B-NICKNAME
+      - I-NICKNAME
+      - B-PET
+      - I-PET
+      - B-HOME_LOC
+      - I-HOME_LOC
+      - B-FAMILY_EVENT
+      - I-FAMILY_EVENT
+      - B-ROUTINE
+      - I-ROUTINE
+      - B-TRADITION
+      - I-TRADITION
+      - B-MILESTONE
+      - I-MILESTONE
+      - B-HEIRLOOM
+      - I-HEIRLOOM
+    hub: "MEM"
+    weight: 1.0
+    loss: "cross_entropy"
+    ignore_index: -100
+    span_format: "char"
+    metrics:
+      - entity_f1
+      - entity_precision
+      - entity_recall
+
+  temporal:
+    type: "token_classification"
+    num_labels: 13
+    labels:
+      - O
+      - B-DATE_ABS
+      - I-DATE_ABS
+      - B-DATE_REL
+      - I-DATE_REL
+      - B-TIME
+      - I-TIME
+      - B-DURATION
+      - I-DURATION
+      - B-FREQUENCY
+      - I-FREQUENCY
+      - B-AGE
+      - I-AGE
+    hub: "MEM"
+    weight: 1.0
+    loss: "cross_entropy"
+    ignore_index: -100
+    span_format: "char"
+    metrics:
+      - entity_f1
+      - temporal_precision
+      - temporal_recall
+
+  relations:
+    type: "relation_extraction"
+    num_predicates: 15
+    predicates:
+      - no_relation
+      - parent_of
+      - child_of
+      - spouse_of
+      - sibling_of
+      - grandparent_of
+      - grandchild_of
+      - aunt_uncle_of
+      - niece_nephew_of
+      - cousin_of
+      - pet_of
+      - friend_of
+      - colleague_of
+      - lives_at
+      - owns
+    hub: "REL"
+    weight: 1.2
+    loss: "cross_entropy"
+    metrics:
+      - relation_f1
+      - relation_precision
+      - relation_recall
+
+# =============================
+# Hub routing configuration
+# =============================
+hub_routing:
+  hub_to_tasks:
+    EMO:
+      - emotions
+      - sentiment
+      - safety_familyos
+    REL:
+      - relations
+    MEM:
+      - ner_family
+      - temporal
+    TASK:
+      - intent
+      - ingress
+
+  loss_weighting:
+    active_weight: 1.0
+    inactive_weight: 0.3
+    safety_override: true
+    safety_multiplier: 2.0
+
+# =============================
+# Preprocessing configuration
+# =============================
+preprocessing:
+  max_length: 512
+  padding: "max_length"
+  truncation: true
+  return_offsets_mapping: true
+  add_hub_tokens: true
+  hub_token_offset: 5
+  hub_tokens:
+    - "[EMO]"
+    - "[MEM]"
+    - "[REL]"
+    - "[TASK]"
+  lowercase: false
+  strip_whitespace: true
+  normalize_unicode: true
+
+# =============================
+# Shard loading configuration
+# =============================
+shard_loading:
+  streaming: true
+  buffered: true
+  buffer_size: 10000
+  prefetch_shards: 2
+  shuffle_shards: true
+  shuffle_within_shard: false
+  min_text_length: 5
+  max_text_length: 2000
+  require_hub_routing: false
+  validate_samples: true
+  skip_invalid: true
+  num_loading_threads: 2
+
+# =============================
+# Data loading configuration
+# =============================
+loading:
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  persistent_workers: true
+  drop_last: false
+
+# =============================
+# Sampling strategy
+# =============================
+sampling:
+  strategy: "hub_weighted"
+  task_weights:
+    emotions: 1.0
+    sentiment: 1.0
+    safety_familyos: 2.0
+    intent: 0.8
+    ingress: 0.8
+    ner_family: 1.0
+    temporal: 1.0
+    relations: 1.2
+  oversample_rare_hubs: false
+  hub_balance_factor: 0.5
+  replay:
+    enabled: true
+    healing_data: "configs/data/multitask/healing_enhanced.yaml"
+    ratio: 0.15
+    task_balanced: true
+
+# =============================
+# Validation configuration
+# =============================
+validation:
+  enabled: true
+  split_ratio: 0.1
+  stratify_by: "hub_routing"
+  eval_steps: 500
+  eval_strategy: "steps"
+  compute_metrics:
+    - per_task_loss
+    - per_task_accuracy
+    - hub_activation_stats
+    - safety_metrics
+
+# =============================
+# Collation configuration
+# =============================
+collation:
+  collator_type: "v3_multitask"
+  insert_hub_tokens: true
+  hub_token_positions:
+    CLS: 0
+    EMO: 1
+    MEM: 2
+    REL: 3
+    TASK: 4
+  classification_ignore_index: -100
+  token_classification_ignore_index: -100
+  mixed_task_batches: true
+  task_per_batch: null
+
+# =============================
+# Statistics and monitoring
+# =============================
+statistics:
+  collect_stats: true
+  log_distribution_every_n_steps: 1000
+  expected:
+    min_samples_per_task: 1000
+    min_hub_activation_rate: 0.1
+    max_hub_activation_rate: 0.9
+
+# =============================
+# Data augmentation (optional)
+# =============================
+augmentation:
+  enabled: false
+  techniques:
+    - name: "synonym_replacement"
+      probability: 0.1
+      max_replacements: 2
+    - name: "random_insertion"
+      probability: 0.05
+      max_insertions: 1
+  safety_aware: true
+  skip_crisis_samples: true
+
+# =============================
+# Quality filters
+# =============================
+filters:
+  min_length: 5
+  max_length: 2000
+  remove_duplicates: true
+  remove_empty: true
+  min_tasks_per_sample: 1
+  require_text_content: true
+  require_any_hub: false
+  filter_by_hub: null

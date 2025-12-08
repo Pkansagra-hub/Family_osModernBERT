@@ -45,22 +45,12 @@ heads:
   emotions:
     enabled: true
     type: sequence_classification
-    num_labels: 44
-    problem_type: multi_label_classification
+    # Stage A: 7 Primary Super-Labels (Hybrid Strategy)
+    # We predict the ONE primary emotional theme per sentence
+    num_labels: 7
+    problem_type: single_label_classification  # CrossEntropy (not BCE)
     dropout: 0.1
-    # ASL (Asymmetric Loss) - SOTA for multi-label, better than focal loss
-    use_asl: true
-    asl_gamma_neg: 4.0          # Suppress easy negatives (higher = more suppression)
-    asl_gamma_pos: 1.0          # Keep positives learning (lower = less suppression)
-    asl_clip: 0.05              # Shift negative probs down by 0.05
-    pos_weight: 2.0             # Additional positive upweighting
-    # SOTA HierarchicalEmotionHead enhancements
-    use_hierarchical_loss: true   # Family coherence regularization
-    use_label_correlation: true   # GCN-style emotion co-occurrence
-    use_emotion_attention: true   # Multi-head attention over sequence (more compute, better results)
-    use_dynamic_thresholds: true  # Learnable per-emotion thresholds
-    use_mixup: true               # Latent space data augmentation
-    label_smoothing: 0.05         # Regularization
+    label_smoothing: 0.1       # Helps generalization/calibration
 
   safety_generic:
     enabled: true
@@ -125,15 +115,17 @@ optimizer:
 # A100-80GB HYPERFAST training - V2 COMPLIANT
 training:
   # === BATCH & SPEED (optimized for A100-80GB) ===
-  per_device_train_batch_size: 192  # Max batch for 80GB (FGM/R-Drop OFF)
+  per_device_train_batch_size: 128  # Max batch for 80GB (FGM/R-Drop OFF)
   per_device_eval_batch_size: 128
-  gradient_accumulation_steps: 2      # Effective batch = 256
+  gradient_accumulation_steps: 2    # Effective batch = 256
 
   # === LEARNING RATE (base, overridden by optimizer section for heads) ===
   learning_rate: 2e-5
 
-  # === TRAINING DURATION - V2 SPEC: 10-12 EPOCHS ===
-  num_train_epochs: 10
+  # === TRAINING DURATION ===
+  # 3-4 epochs is sufficient for Stage A with plain BCE loss
+  # More epochs risk overfitting without benefit
+  num_train_epochs: 4
   max_steps: -1
 
   # === EMA MODEL - V2 SPEC ===
@@ -151,31 +143,28 @@ training:
   label_smoothing: 0.1
 
   # === PROGRESSIVE REGULARIZATION ===
-  # Enables features gradually by epoch to save ~40% training time
-  # Schedule for 10 epochs:
-  #   Epochs 1-3: No regularization (fast feature learning, 3x faster)
-  #   Epochs 4-6: R-Drop + Mixup (smooth decision boundaries, 1.5x slower)
-  #   Epochs 7-10: All features (full robustness training, 2-3x slower)
-  progressive_regularization: true
-  rdrop_start_epoch: 4        # Start R-Drop at epoch 4
-  mixup_start_epoch: 4        # Start Mixup at epoch 4
-  adversarial_start_epoch: 7  # Start adversarial at epoch 7
+  # DISABLED for 3-epoch training - not enough epochs to benefit
+  # Keep training simple: plain BCE, no extra regularization tricks
+  progressive_regularization: false
+  rdrop_start_epoch: 2        # Not used when progressive_regularization=false
+  mixup_start_epoch: 2        # Not used when progressive_regularization=false
+  adversarial_start_epoch: 3  # Not used when progressive_regularization=false
 
-  # R-Drop: Consistency regularization via dropout variations (+1-2% NLU)
-  use_rdrop: true             # Will be enabled at rdrop_start_epoch
-  rdrop_alpha: 0.7            # KL divergence weight
+  # R-Drop: DISABLED - adds complexity without benefit for short training
+  use_rdrop: false
+  rdrop_alpha: 0.7
 
-  # Adversarial Training: FGM/PGD for robustness (+0.5-1.5% on hard examples)
-  use_adversarial: true       # Will be enabled at adversarial_start_epoch
-  adversarial_type: fgm       # 'fgm' (faster) or 'pgd' (stronger)
-  adversarial_epsilon: 1.0    # Perturbation magnitude
-  pgd_steps: 3                # Only for PGD
-  pgd_alpha: 0.3              # Only for PGD
+  # Adversarial Training: DISABLED - adds complexity without benefit for short training
+  use_adversarial: false
+  adversarial_type: fgm
+  adversarial_epsilon: 1.0
+  pgd_steps: 3
+  pgd_alpha: 0.3
 
-  # Mixup: Embedding-space augmentation for smoother decision boundaries
-  use_mixup: true             # Will be enabled at mixup_start_epoch
-  mixup_alpha: 0.4            # Beta distribution parameter
-  mixup_prob: 0.8             # Probability of applying mixup to batch
+  # Mixup: DISABLED - adds complexity without benefit for short training
+  use_mixup: false
+  mixup_alpha: 0.4
+  mixup_prob: 0.8
 
   # === MEMORY: NO CHECKPOINTING FOR SPEED (High-RAM A100) ===
   gradient_checkpointing: false

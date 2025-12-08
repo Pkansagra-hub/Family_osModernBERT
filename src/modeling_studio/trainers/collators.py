@@ -260,11 +260,21 @@ class MultiLabelCollator(BaseCollator):
         attention_mask = [f["attention_mask"] for f in features]
         labels = [f["labels"] for f in features]
 
+        # Auto-detect single-label vs multi-label based on first sample
+        # Single-label: labels is int, Multi-label: labels is list
+        first_label = labels[0]
+        if isinstance(first_label, (int, float)) and not isinstance(first_label, list):
+            # Single-label classification (Stage A super-labels)
+            label_dtype = torch.long
+        else:
+            # Multi-label classification (BCE loss expects float)
+            label_dtype = torch.float
+
         # Pad sequences
         batch = {
             "input_ids": self._pad_sequence(input_ids, self.pad_token_id, self.max_length),
             "attention_mask": self._pad_sequence(attention_mask, 0, self.max_length),
-            "labels": torch.tensor(labels, dtype=torch.float),  # float for BCE loss
+            "labels": torch.tensor(labels, dtype=label_dtype),
         }
 
         # Preserve task info if present
@@ -478,15 +488,19 @@ class EmbeddingCollator(BaseCollator):
         # Detect format based on keys present
         sample = features[0]
 
-        # Format 1: Triplet format (anchor, positive, negative)
+        # Format 1: Triplet format with explicit anchor naming
         if "anchor_input_ids" in sample:
             return self._collate_triplets(features)
 
-        # Format 2: Pair with scores (sentence1, sentence2, score)
+        # Format 2: Triplet format with input_ids as anchor + positive/negative
+        elif "input_ids" in sample and "positive_input_ids" in sample:
+            return self._collate_triplets_alt(features)
+
+        # Format 3: Pair with scores (sentence1, sentence2, score)
         elif "input_ids_1" in sample:
             return self._collate_pairs(features)
 
-        # Format 3: Simple format (for in-batch negatives)
+        # Format 4: Simple format (for in-batch negatives)
         elif "input_ids" in sample:
             return self._collate_simple(features)
 
@@ -525,6 +539,50 @@ class EmbeddingCollator(BaseCollator):
             batch["labels"] = torch.tensor([f["labels"] for f in features], dtype=torch.float)
         else:
             # Fallback: dummy labels for contrastive learning (positive pairs assumed similar)
+            batch["labels"] = torch.ones(len(features), dtype=torch.float)
+
+        # Add negatives if present
+        if "negative_input_ids" in features[0]:
+            negative_input_ids = [f["negative_input_ids"] for f in features]
+            negative_attention_mask = [f["negative_attention_mask"] for f in features]
+            batch["negative_input_ids"] = self._pad_sequence(
+                negative_input_ids, self.pad_token_id, self.max_length
+            )
+            batch["negative_attention_mask"] = self._pad_sequence(
+                negative_attention_mask, 0, self.max_length
+            )
+
+        # Preserve task info
+        if "task" in features[0]:
+            batch["task"] = features[0]["task"]
+
+        return batch
+
+    def _collate_triplets_alt(self, features: list[dict[str, Any]]) -> dict[str, Any]:
+        """Collate triplet format with input_ids as anchor (alternative naming)."""
+        # Extract anchor sequences (using input_ids)
+        input_ids = [f["input_ids"] for f in features]
+        attention_mask = [f["attention_mask"] for f in features]
+
+        # Extract positive sequences
+        positive_input_ids = [f["positive_input_ids"] for f in features]
+        positive_attention_mask = [f["positive_attention_mask"] for f in features]
+
+        batch = {
+            "input_ids": self._pad_sequence(input_ids, self.pad_token_id, self.max_length),
+            "attention_mask": self._pad_sequence(attention_mask, 0, self.max_length),
+            "positive_input_ids": self._pad_sequence(
+                positive_input_ids, self.pad_token_id, self.max_length
+            ),
+            "positive_attention_mask": self._pad_sequence(
+                positive_attention_mask, 0, self.max_length
+            ),
+        }
+
+        # Use provided labels when available; otherwise default to positives-only signal
+        if "labels" in features[0] and features[0]["labels"] is not None:
+            batch["labels"] = torch.tensor([f["labels"] for f in features], dtype=torch.float)
+        else:
             batch["labels"] = torch.ones(len(features), dtype=torch.float)
 
         # Add negatives if present
@@ -676,6 +734,7 @@ TASK_COLLATOR_MAPPING: dict[str, type] = {
     # Multi-label classification tasks
     "emotions": MultiLabelCollator,
     "safety_generic": MultiLabelCollator,
+    "relation": MultiLabelCollator,  # Sentence-level multi-label (not entity-level RE)
     # Token classification tasks
     "ner_general": TokenClassificationCollator,
     "ner_family": TokenClassificationCollator,
@@ -684,8 +743,6 @@ TASK_COLLATOR_MAPPING: dict[str, type] = {
     "nli": NLICollator,
     # Embedding task
     "embedding": EmbeddingCollator,
-    # Relation extraction
-    "relation": RelationCollator,
 }
 
 
@@ -752,8 +809,15 @@ class MultiTaskCollator:
             self._collator_cache[task] = collator
             return collator
 
-        # Check default mapping
-        if task in TASK_COLLATOR_MAPPING:
+        # Handle replay tasks by stripping _replay suffix
+        base_task = task
+        if task.endswith("_replay"):
+            base_task = task[:-7]  # Remove "_replay" suffix
+
+        # Check default mapping (use base_task for replay tasks)
+        if base_task in TASK_COLLATOR_MAPPING:
+            collator_cls = TASK_COLLATOR_MAPPING[base_task]
+        elif task in TASK_COLLATOR_MAPPING:
             collator_cls = TASK_COLLATOR_MAPPING[task]
         else:
             logger.warning(
@@ -844,8 +908,15 @@ def get_task_collator(
         >>> collator = get_task_collator("ner_general", tokenizer)
         >>> batch = collator(samples)
     """
-    # Get collator class from mapping
-    if task in TASK_COLLATOR_MAPPING:
+    # Handle replay tasks by stripping _replay suffix
+    base_task = task
+    if task.endswith("_replay"):
+        base_task = task[:-7]  # Remove "_replay" suffix
+
+    # Get collator class from mapping (use base_task for replay tasks)
+    if base_task in TASK_COLLATOR_MAPPING:
+        collator_cls = TASK_COLLATOR_MAPPING[base_task]
+    elif task in TASK_COLLATOR_MAPPING:
         collator_cls = TASK_COLLATOR_MAPPING[task]
     else:
         logger.warning(f"Unknown task '{task}', using default SequenceClassificationCollator")

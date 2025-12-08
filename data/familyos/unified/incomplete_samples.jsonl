@@ -1,0 +1,744 @@
+{"text": "Worry creases my brow as Nana skips breakfast.", "_source_task": "emotions", "_emotions": ["worry", "caring", "fear"], "_primary_emotion": "worry", "_intensity": "medium", "_tier": "silver"}
+{"text": "Bhabhi's headache gone. Guilt for my earlier impatience.", "_source_task": "emotions", "_emotions": ["parental_guilt", "relief", "remorse"], "_primary_emotion": "parental_guilt", "_intensity": "low", "_tier": "silver"}
+{"text": "Father-in-law's pneumonia disgust.", "_source_task": "emotions", "_emotions": ["disgust", "worry", "disapproval"], "_primary_emotion": "disgust", "_intensity": "high", "_tier": "silver"}
+{"text": "Mummy complaining of joint pain in knees", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Grandpa's watch ticked loudly at midnight mass", "_source_task": "ner_family", "_tokens": ["Grandpa's", "watch", "ticked", "loudly", "at", "midnight", "mass"], "_ner_tags": [3, 19, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Worried about Priya’s low energy this weekend.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Join Panda's puppet show family weekend event", "_source_task": "ner_family", "_tokens": ["Join", "Panda's", "puppet", "show", "family", "weekend", "event"], "_ner_tags": [0, 5, 11, 12, 11, 0, 0], "_tier": "silver"}
+{"text": "Uncle's kidney pain alert. Admiration for Chachi's vigilant monitoring.", "_source_task": "emotions", "_emotions": ["admiration", "worry", "gratitude"], "_primary_emotion": "worry", "_intensity": "medium", "_tier": "silver"}
+{"text": "Just got the news - the whole family is coming for Thanksgiving dinner!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Dad's snoring worse; sleep apnea from weight gain?", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Weekend off from job, family picnic planned.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Appreciate Amma sharing recipes for quick work lunches.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Chacha Ravi is aunt_uncle_of Bunny during festivals.", "_source_task": "relations", "_entity1": "Chacha Ravi", "_entity2": "Bunny", "_relation_id": 7, "_tier": "silver"}
+{"text": "Eid to self: Mat unfurled alone. Grief post-eid vast.", "_source_task": "emotions", "_emotions": ["grief", "homesickness", "emptiness", "longing"], "_primary_emotion": "grief", "_intensity": "high", "_tier": "silver"}
+{"text": "Caring for Mike's grieving heart post-parent loss. Tenderness nonstop. #YearOne", "_source_task": "emotions", "_emotions": ["caring", "tenderness", "grief", "love"], "_primary_emotion": "grief", "_intensity": "high", "_tier": "silver"}
+{"text": "Tenderness in washing Nani's hair, her sighs of relief amid pain. Pure connection. #BathTimeBliss", "_source_task": "emotions", "_emotions": ["tenderness", "caring", "love", "warmth"], "_primary_emotion": "tenderness", "_intensity": "high", "_tier": "silver"}
+{"text": "What did we plan for Priya's Diwali outfit last week?", "_source_task": "ingress", "_ingress_id": "MEMORY", "_tier": "silver"}
+{"text": "Chacha's nephew wore the traditional kurta.", "_source_task": "relations", "_entity1": "nephew", "_entity2": "chacha", "_relation_id": 8, "_tier": "silver"}
+{"text": "What routine works for weekly deep cleaning?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Mummy, neutral tuck complete.", "_source_task": "emotions", "_emotions": ["neutral", "relief", "patience"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Papa to Mike: Remorse shared is lighter.", "_source_task": "emotions", "_emotions": ["remorse", "caring", "sadness", "belonging"], "_primary_emotion": "remorse", "_intensity": "medium", "_tier": "silver"}
+{"text": "Anger at life's barriers during call.", "_source_task": "emotions", "_emotions": ["anger", "longing", "love", "frustration"], "_primary_emotion": "anger", "_intensity": "medium", "_tier": "silver"}
+{"text": "Caffeine crash leaving me sluggish", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Eye check for screens.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "Dad works with Priya on weekends", "_source_task": "relations", "_entity1": "Dad", "_entity2": "Priya", "_relation_id": 12, "_tier": "silver"}
+{"text": "Sad neutral meal, grief for lost dinner routines abroad.", "_source_task": "emotions", "_emotions": ["sadness", "grief", "emptiness"], "_primary_emotion": "sadness", "_intensity": "low", "_tier": "silver"}
+{"text": "Contentment in family stories during Papa's rest.", "_source_task": "emotions", "_emotions": ["contentment", "nostalgia", "warmth"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Grandpa ji, Emma lost her best friend move. Sadness lingers. Helping her make new ones. Love", "_source_task": "emotions", "_emotions": ["sadness", "grief", "caring", "patience"], "_primary_emotion": "sadness", "_intensity": "low", "_tier": "silver"}
+{"text": "Advice on handling kid's low grades in science?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Protective over sharing kid's school stress.", "_source_task": "emotions", "_emotions": ["protectiveness", "worry"], "_primary_emotion": "protectiveness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Alert for 9am yoga in the park Saturday", "_source_task": "intents", "_intent_id": 2, "_tier": "silver"}
+{"text": "Dad: Nostalgic barn visit, bittersweet decay.", "_source_task": "emotions", "_emotions": ["nostalgia", "bittersweet"], "_primary_emotion": "nostalgia", "_intensity": "low", "_tier": "silver"}
+{"text": "Christmas note: Gift wrap large labels. Papa's sight.", "_source_task": "emotions", "_emotions": ["worry", "tenderness", "caring"], "_primary_emotion": "worry", "_intensity": "medium", "_tier": "silver"}
+{"text": "Didi ,  plan aarti with family heirlooms", "_source_task": "ner_family", "_tokens": ["Didi", ", ", "plan", "aarti", "with", "family", "heirlooms"], "_ner_tags": [3, 0, 0, 15, 16, 0, 19], "_tier": "silver"}
+{"text": "Arjun opened up about bullying at school during bedtime.", "_source_task": "ingress", "_ingress_id": "RELATIONSHIP", "_tier": "silver"}
+{"text": "What did Bhai wear to his exam yesterday?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "What did Priya say about her work stress yesterday?", "_source_task": "ingress", "_ingress_id": "MEMORY", "_tier": "silver"}
+{"text": "Advice on estate planning for nana?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Admiring Didi's resilience in pulling off epic afar collab.", "_source_task": "emotions", "_emotions": ["admiration", "pride", "joy", "togetherness"], "_primary_emotion": "admiration", "_intensity": "high", "_tier": "silver"}
+{"text": "Saved money on groceries this week.", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "Dadi: Approval for your new job choice, beta. Makes me optimistic.", "_source_task": "emotions", "_emotions": ["approval", "optimism", "pride", "parental_pride"], "_primary_emotion": "approval", "_intensity": "medium", "_tier": "silver"}
+{"text": "Bro, barf from overeating sweets - pure disgust at bedtime. Frustrated and overwhelmed.", "_source_task": "emotions", "_emotions": ["disgust", "frustration", "overwhelmed"], "_primary_emotion": "overwhelmed", "_intensity": "high", "_tier": "silver"}
+{"text": "Memo: Make samosas for Chacha and Chachi. Annoyed by their critiques, but it's family.", "_source_task": "emotions", "_emotions": ["annoyance", "patience", "belonging"], "_primary_emotion": "annoyance", "_intensity": "medium", "_tier": "silver"}
+{"text": "Sarah wears the mangalsutra given by John.", "_source_task": "relations", "_entity1": "Sarah", "_entity2": "John", "_relation_id": 3, "_tier": "silver"}
+{"text": "Beta refusing tuitions, arguments daily.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Christmas calendar: Reindeer games for grandkids. Playful energy!", "_source_task": "emotions", "_emotions": ["playfulness", "amusement", "joy", "excitement"], "_primary_emotion": "playfulness", "_intensity": "medium", "_tier": "silver"}
+{"text": "We need to schedule Amma's check-up for next week amid her ongoing cough.", "_source_task": "ingress", "_ingress_id": "PLANNING", "_tier": "silver"}
+{"text": "Parental guilt: Kids handle more than they should.", "_source_task": "emotions", "_emotions": ["parental_guilt", "worry"], "_primary_emotion": "parental_guilt", "_intensity": "medium", "_tier": "silver"}
+{"text": "Papa ji, Admiration needed overwhelm. Regards, Yashita", "_source_task": "emotions", "_emotions": ["admiration", "overwhelmed"], "_primary_emotion": "overwhelmed", "_intensity": "high", "_tier": "silver"}
+{"text": "Grandpa 's anniversary breakfast event", "_source_task": "ner_family", "_tokens": ["Grandpa", "'s", "anniversary", "breakfast", "event"], "_ner_tags": [3, 0, 11, 12, 0], "_tier": "silver"}
+{"text": "Sis: New neighbors seem nice. Bro: Don't talk to strangers, di. Sis: Chill, it's fine.", "_source_task": "emotions", "_emotions": ["excitement", "worry", "protectiveness"], "_primary_emotion": "excitement", "_intensity": "low", "_tier": "silver"}
+{"text": "Didi's fever chills. Pride in her fighting spirit.", "_source_task": "emotions", "_emotions": ["fear", "pride"], "_primary_emotion": "fear", "_intensity": "medium", "_tier": "silver"}
+{"text": "Work triumph: secured funding during coffee break.", "_source_task": "ingress", "_ingress_id": "WORK", "_tier": "silver"}
+{"text": "Grandpa's arthritis worsened from carving the Halloween pumpkin rituals.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "Christmas Eve December 24th for midnight mass daily carols", "_source_task": "temporal", "_tokens": ["Christmas", "Eve", "December", "24th", "for", "midnight", "mass", "daily", "carols"], "_temporal_tags": [0, 0, 1, 2, 7, 8, 8, 9, 0], "_tier": "silver"}
+{"text": "Isolation is my only comfort now", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "How much was the Holi bonus from papa?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "New parrot's mimicry brought playfulness. Remorse for past pet neglect in busy family life.", "_source_task": "emotions", "_emotions": ["playfulness", "remorse", "parental_guilt"], "_primary_emotion": "remorse", "_intensity": "high", "_tier": "silver"}
+{"text": "Persistent cough in family, doctor visit needed.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Cookie ,  that pan from Great-Grandma is magic", "_source_task": "ner_family", "_tokens": ["Cookie", ", ", "that", "pan", "from", "Great-Grandma", "is", "magic"], "_ner_tags": [5, 0, 0, 19, 0, 3, 0, 0], "_tier": "silver"}
+{"text": "Withdrawing from family gatherings.", "_source_task": "safety", "_safety": "RED", "_tier": "gold"}
+{"text": "Wondering about bhai's dreams tonight.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Family video Holi fun, disapproval aside.", "_source_task": "emotions", "_emotions": ["joy", "love", "disapproval", "celebration"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Fear of health scares unspoken.", "_source_task": "emotions", "_emotions": ["fear", "worry", "sadness"], "_primary_emotion": "fear", "_intensity": "medium", "_tier": "silver"}
+{"text": "Thinking about how these moments shape our kids.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Every day at bedtime pray", "_source_task": "temporal", "_tokens": ["Every", "day", "at", "bedtime", "pray"], "_temporal_tags": [9, 0, 0, 5, 0], "_tier": "silver"}
+{"text": "Chachi's indigestion passed. Patience rewarded.", "_source_task": "emotions", "_emotions": ["relief", "patience"], "_primary_emotion": "relief", "_intensity": "low", "_tier": "silver"}
+{"text": "Patience with bhai's college major changes. Loving support.", "_source_task": "emotions", "_emotions": ["patience", "love", "caring"], "_primary_emotion": "patience", "_intensity": "low", "_tier": "silver"}
+{"text": "Lakshmi 's visit February 5th .", "_source_task": "temporal", "_tokens": ["Lakshmi", "'s", "visit", "February", "5th", "."], "_temporal_tags": [0, 0, 0, 1, 2, 0], "_tier": "silver"}
+{"text": "Papa, when did we last visit the temple in the evening?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Note: Cooking session with Dadi and Mummy. Her stories bring warmth amid the chaos.", "_source_task": "emotions", "_emotions": ["warmth", "nostalgia", "joy"], "_primary_emotion": "warmth", "_intensity": "medium", "_tier": "silver"}
+{"text": "Mild joy from Munnar tea gardens memory.", "_source_task": "emotions", "_emotions": ["joy", "nostalgia", "contentment"], "_primary_emotion": "joy", "_intensity": "low", "_tier": "silver"}
+{"text": "Our pet parrot Mitu mimicked the tale during routine", "_source_task": "ner_family", "_tokens": ["Our", "pet", "parrot", "Mitu", "mimicked", "the", "tale", "during", "routine"], "_ner_tags": [0, 7, 8, 8, 0, 0, 0, 0, 13], "_tier": "silver"}
+{"text": "Yoga session before family breakfast", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Panda chased Max around the yard fence.", "_source_task": "relations", "_entity1": "Panda", "_entity2": "Max", "_relation_id": 0, "_tier": "silver"}
+{"text": "Guess what? Built a treehouse base!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Flew kites at the beach with bhai and friends", "_source_task": "intents", "_intent_id": 0, "_tier": "silver"}
+{"text": "Approval for heartfelt party program script. Touches soul! 📜❤️", "_source_task": "emotions", "_emotions": ["approval", "tenderness", "pride"], "_primary_emotion": "approval", "_intensity": "high", "_tier": "silver"}
+{"text": "Amma isn't eating well since her diagnosis.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "How did nana manage his gout attack?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "I'm stressed about Arjun's college applications deadline.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Kids listened to Dadi's tales attentively.", "_source_task": "relations", "_entity1": "kids", "_entity2": "Dadi", "_relation_id": 2, "_tier": "silver"}
+{"text": "Remorse for Holi separations before college. Fear persists intensely.", "_source_task": "emotions", "_emotions": ["remorse", "fear", "nostalgia"], "_primary_emotion": "remorse", "_intensity": "high", "_tier": "silver"}
+{"text": "Ria first steps frenzy! Nana-nani on call. Excitement overload.", "_source_task": "emotions", "_emotions": ["excitement", "parental_pride", "joy", "belonging"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "Screenshot: Group singalong. Voice lagged, out of sync.", "_source_task": "emotions", "_emotions": ["embarrassment", "homesickness", "longing"], "_primary_emotion": "embarrassment", "_intensity": "low", "_tier": "silver"}
+{"text": "Pride in little one's party wave to guests.", "_source_task": "emotions", "_emotions": ["pride", "joy", "parental_pride"], "_primary_emotion": "parental_pride", "_intensity": "medium", "_tier": "silver"}
+{"text": "Bhai fighting with sister over TV", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Neutral college roommate picks, fear mismatches like family tensions.", "_source_task": "emotions", "_emotions": ["neutral", "fear", "worry", "togetherness"], "_primary_emotion": "neutral", "_intensity": "medium", "_tier": "silver"}
+{"text": "Neutral sadness Diwali movies.", "_source_task": "emotions", "_emotions": ["neutral", "sadness"], "_primary_emotion": "sadness", "_intensity": "high", "_tier": "silver"}
+{"text": "Playful negotiations on study breaks. Balance is key! ⚖️😉 #TeenTactics", "_source_task": "emotions", "_emotions": ["playfulness", "amusement", "patience", "warmth"], "_primary_emotion": "playfulness", "_intensity": "low", "_tier": "silver"}
+{"text": "Bittersweet to fund college alone-ish. Grandparents' care lightens it.", "_source_task": "emotions", "_emotions": ["bittersweet", "caring", "gratitude"], "_primary_emotion": "bittersweet", "_intensity": "low", "_tier": "silver"}
+{"text": "John held Sarah's hand as they walked down the aisle.", "_source_task": "relations", "_entity1": "John", "_entity2": "Sarah", "_relation_id": 3, "_tier": "silver"}
+{"text": "Emma ate at restaurant in Mumbai alone.", "_source_task": "relations", "_entity1": "Emma", "_entity2": "Mumbai", "_relation_id": 0, "_tier": "silver"}
+{"text": "Worried about dad's retirement plans.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Dadi gifted books to Priya for her exams.", "_source_task": "relations", "_entity1": "Dadi", "_entity2": "Priya", "_relation_id": 5, "_tier": "silver"}
+{"text": "What did we eat at the last weekend fair?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Family Rakhi vibes with sister's promotion. Tied rakhi, felt extra close.", "_source_task": "emotions", "_emotions": ["togetherness", "love", "gratitude"], "_primary_emotion": "togetherness", "_intensity": "low", "_tier": "silver"}
+{"text": "So isolated, even family feels distant", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Everyone better off if I wasn't suffering", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Today was stressful; chased after lost keys all morning before the family puja.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Prepared lunch boxes for school, kids were excited", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Every Sunday brunch at noon .", "_source_task": "temporal", "_tokens": ["Every", "Sunday", "brunch", "at", "noon", "."], "_temporal_tags": [9, 10, 0, 5, 6, 0], "_tier": "silver"}
+{"text": "The family meeting runs all day", "_source_task": "temporal", "_tokens": ["The", "family", "meeting", "runs", "all", "day"], "_temporal_tags": [0, 0, 0, 0, 7, 8], "_tier": "silver"}
+{"text": "Mom folded laundry on the bed", "_source_task": "relations", "_entity1": "Mom", "_entity2": "bed", "_relation_id": 0, "_tier": "silver"}
+{"text": "Papa leads the Sunday morning walk routine with everyone", "_source_task": "ner_family", "_tokens": ["Papa", "leads", "the", "Sunday", "morning", "walk", "routine", "with", "everyone"], "_ner_tags": [3, 0, 0, 15, 16, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Isolated myself from nana's gatherings", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Every Saturday afternoon board game tradition the whole family meets in the dining room for Monopoly .", "_source_task": "ner_family", "_tokens": ["Every", "Saturday", "afternoon", "board", "game", "tradition", "the", "whole", "family", "meets", "in", "the", "dining", "room", "for", "Monopoly", "."], "_ner_tags": [0, 15, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0], "_tier": "silver"}
+{"text": "Health isolation feels never-ending", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Feeling exhausted from chasing after two energetic kids.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Feeling so isolated with my health issues", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Gallery: Karva Chauth feasts with little helpers. Empty table now, but relief and gratitude fill it. Love forever! #Traditions", "_source_task": "emotions", "_emotions": ["relief", "gratitude", "love", "nostalgia"], "_primary_emotion": "relief", "_intensity": "high", "_tier": "silver"}
+{"text": "Every Wednesday art class August 10th .", "_source_task": "temporal", "_tokens": ["Every", "Wednesday", "art", "class", "August", "10th", "."], "_temporal_tags": [9, 10, 0, 0, 1, 2, 0], "_tier": "silver"}
+{"text": "Wonder if traditions will evolve or stay the same", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "No light at the end of the tunnel anymore", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Aarav's first stretch. Joyful. Sadness solo.", "_source_task": "emotions", "_emotions": ["joy", "sadness", "homesickness"], "_primary_emotion": "sadness", "_intensity": "low", "_tier": "silver"}
+{"text": "Neutral: breakfast chatter, bus on time.", "_source_task": "emotions", "_emotions": ["neutral", "contentment"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Every Wednesday art class lasts 2 hours", "_source_task": "temporal", "_tokens": ["Every", "Wednesday", "art", "class", "lasts", "2", "hours"], "_temporal_tags": [9, 10, 0, 0, 7, 8, 8], "_tier": "silver"}
+{"text": "We go to church every Sunday .", "_source_task": "temporal", "_tokens": ["We", "go", "to", "church", "every", "Sunday", "."], "_temporal_tags": [0, 0, 0, 0, 9, 10, 0], "_tier": "silver"}
+{"text": "Baby started crawling and we're monitoring milestones!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "No energy for weeks, just existing", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Chachi joined our homework session - pure playfulness and togetherness. Kids thriving! ❤️", "_source_task": "emotions", "_emotions": ["playfulness", "togetherness", "joy", "warmth"], "_primary_emotion": "togetherness", "_intensity": "high", "_tier": "silver"}
+{"text": "Withdrawn from friends, prefer alone time.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Tired of beatings from papa, better if I'm gone", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Avoiding people, staying home.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Didi ignores me now, so lonely.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Planning how to take my own life", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Career failures keep piling up, feel hopeless", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Planning to overdose, no one cares", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Kids don't respect me anymore, feels like giving up.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "How to encourage kids to drink more water daily?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Priya 's dance class is January 15th at 5pm .", "_source_task": "temporal", "_tokens": ["Priya", "'s", "dance", "class", "is", "January", "15th", "at", "5pm", "."], "_temporal_tags": [0, 0, 0, 0, 0, 1, 2, 0, 5, 0], "_tier": "silver"}
+{"text": "Sis, let's plan a small puja for the new house. Papa ji will feel at home.", "_source_task": "emotions", "_emotions": ["celebration", "warmth", "protectiveness"], "_primary_emotion": "celebration", "_intensity": "medium", "_tier": "silver"}
+{"text": "Note: Fig newtons with Elias. Admire jam fill.", "_source_task": "emotions", "_emotions": ["admiration", "patience", "joy"], "_primary_emotion": "admiration", "_intensity": "low", "_tier": "silver"}
+{"text": "Big morning news - no homework today!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Priya ran to her nani for a hug.", "_source_task": "relations", "_entity1": "Priya", "_entity2": "nani", "_relation_id": 2, "_tier": "silver"}
+{"text": "Anger at his cheating rumor during award season, but pride in true talent.", "_source_task": "emotions", "_emotions": ["anger", "parental_pride", "disapproval"], "_primary_emotion": "parental_pride", "_intensity": "low", "_tier": "silver"}
+{"text": "We celebrated our parents ' 50th wedding anniversary last year .", "_source_task": "temporal", "_tokens": ["We", "celebrated", "our", "parents", "'", "50th", "wedding", "anniversary", "last", "year", "."], "_temporal_tags": [0, 0, 0, 0, 0, 1, 0, 0, 5, 1, 0], "_tier": "silver"}
+{"text": "School run went fine despite earlier bickering", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Family trivia night cafe... celebration joy team win, disapproval cheating jokes.", "_source_task": "emotions", "_emotions": ["celebration", "joy", "disapproval", "frustration"], "_primary_emotion": "joy", "_intensity": "high", "_tier": "silver"}
+{"text": "Emma walks Whiskers in the neighborhood park.", "_source_task": "relations", "_entity1": "Whiskers", "_entity2": "Emma", "_relation_id": 10, "_tier": "silver"}
+{"text": "Sophia's birthday party in living room", "_source_task": "ner_family", "_tokens": ["Sophia's", "birthday", "party", "in", "living", "room"], "_ner_tags": [1, 11, 12, 0, 9, 10], "_tier": "silver"}
+{"text": "Street art graffiti tour... inspired, but home spray fail... disappointment.", "_source_task": "emotions", "_emotions": ["disappointment", "admiration", "frustration"], "_primary_emotion": "disappointment", "_intensity": "high", "_tier": "silver"}
+{"text": "Playful dinner games suggested for next call.", "_source_task": "emotions", "_emotions": ["playfulness", "excitement", "joy"], "_primary_emotion": "playfulness", "_intensity": "low", "_tier": "silver"}
+{"text": "Priya smiled at grandma's house entrance.", "_source_task": "relations", "_entity1": "Priya", "_entity2": "grandma's house", "_relation_id": 0, "_tier": "silver"}
+{"text": "Magic tricks amazed all", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Nani gone; longing intense. Disgust fades.", "_source_task": "emotions", "_emotions": ["longing", "disgust", "grief", "homesickness"], "_primary_emotion": "longing", "_intensity": "high", "_tier": "silver"}
+{"text": "Dad: This visit is full of positive vibes. Mom: Agreed.", "_source_task": "emotions", "_emotions": ["optimism", "joy", "togetherness"], "_primary_emotion": "optimism", "_intensity": "low", "_tier": "silver"}
+{"text": "Dinner felt disgusting without Chacha's stories. Just bland food now.", "_source_task": "emotions", "_emotions": ["disgust", "emptiness", "longing"], "_primary_emotion": "disgust", "_intensity": "medium", "_tier": "silver"}
+{"text": "Papa shouted a little during discussion, feeling frustrated.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Potty training progress, high fives all around.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "New budget categories for holidays.", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "Longing for youthful vigor in old sport pics.", "_source_task": "emotions", "_emotions": ["longing", "bittersweet", "nostalgia"], "_primary_emotion": "longing", "_intensity": "medium", "_tier": "silver"}
+{"text": "Health isolation feels never-ending", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Amma seems tired from Diwali shopping.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Chacha, intense parental pride – son's first solo prayer!", "_source_task": "emotions", "_emotions": ["parental_pride", "joy", "relief", "pride"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "Nani's blessings before eating. Tenderness in her eyes.", "_source_task": "emotions", "_emotions": ["tenderness", "love", "gratitude"], "_primary_emotion": "tenderness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Warmth envelops plans for kids' weddings, softening the grief's emptiness.", "_source_task": "emotions", "_emotions": ["warmth", "emptiness", "caring", "optimism"], "_primary_emotion": "warmth", "_intensity": "medium", "_tier": "silver"}
+{"text": "Annoyed mildly at group project issues per PTM. Teamwork hard. #KidDrama", "_source_task": "emotions", "_emotions": ["annoyance", "frustration", "disapproval"], "_primary_emotion": "annoyance", "_intensity": "low", "_tier": "silver"}
+{"text": "Bhai helped his little sister with her homework.", "_source_task": "relations", "_entity1": "Bhai", "_entity2": "sister", "_relation_id": 1, "_tier": "silver"}
+{"text": "We visit temple every weekend for 30 minutes .", "_source_task": "temporal", "_tokens": ["We", "visit", "temple", "every", "weekend", "for", "30", "minutes", "."], "_temporal_tags": [0, 0, 0, 9, 10, 7, 8, 8, 0], "_tier": "silver"}
+{"text": "Admiration for bhai's responsibility with new bunny.", "_source_task": "emotions", "_emotions": ["admiration", "pride", "homesickness"], "_primary_emotion": "admiration", "_intensity": "low", "_tier": "silver"}
+{"text": "Mom works alongside nani in the school.", "_source_task": "relations", "_entity1": "Mom", "_entity2": "nani", "_relation_id": 12, "_tier": "silver"}
+{"text": "Papa ji's health blip over. Celebrating quietly in my heart with gratitude for his resilience.", "_source_task": "emotions", "_emotions": ["celebration", "gratitude", "pride"], "_primary_emotion": "celebration", "_intensity": "low", "_tier": "silver"}
+{"text": "Sarah's nephew John drew her portrait.", "_source_task": "relations", "_entity1": "John", "_entity2": "Sarah", "_relation_id": 8, "_tier": "silver"}
+{"text": "Life's reflections come easiest at breakfast", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Mummyji stressed about school fees, money tight this month.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Chachi owns the beaded purse from her wedding.", "_source_task": "relations", "_entity1": "Chachi", "_entity2": "beaded purse", "_relation_id": 14, "_tier": "silver"}
+{"text": "Tomorrow we bake cake for Raj 's anniversary", "_source_task": "temporal", "_tokens": ["Tomorrow", "we", "bake", "cake", "for", "Raj", "'s", "anniversary"], "_temporal_tags": [3, 0, 0, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Best way to teach kids morning hygiene routines?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Uncle, overwhelmed by the love poured on us here.", "_source_task": "emotions", "_emotions": ["overwhelmed", "love", "gratitude", "warmth"], "_primary_emotion": "overwhelmed", "_intensity": "high", "_tier": "silver"}
+{"text": "Meera whispered her first secret to Mummy at tuck-in", "_source_task": "ner_family", "_tokens": ["Meera", "whispered", "her", "first", "secret", "to", "Mummy", "at", "tuck-in"], "_ner_tags": [1, 0, 0, 17, 18, 0, 3, 0, 13], "_tier": "silver"}
+{"text": "Celebration of memories after explaining Chachi.", "_source_task": "emotions", "_emotions": ["celebration", "nostalgia", "joy"], "_primary_emotion": "celebration", "_intensity": "low", "_tier": "silver"}
+{"text": "Avoiding friends, feeling empty inside.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Planning to overdose, no one cares.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Quit my job but regret it, lost direction", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Proud of our DIY party setup. Kids mesmerized.", "_source_task": "emotions", "_emotions": ["pride", "joy", "parental_pride"], "_primary_emotion": "pride", "_intensity": "medium", "_tier": "silver"}
+{"text": "Note to self: Christmas lights - don't let Bhai hog the ladder.", "_source_task": "emotions", "_emotions": ["amusement", "approval"], "_primary_emotion": "amusement", "_intensity": "medium", "_tier": "silver"}
+{"text": "Reminder: Cookies Rakhi with Zara. Celebration bond.", "_source_task": "emotions", "_emotions": ["celebration", "togetherness", "approval"], "_primary_emotion": "celebration", "_intensity": "low", "_tier": "silver"}
+{"text": "Protecting our health – insisting on air purifiers in polluted city.", "_source_task": "emotions", "_emotions": ["protectiveness", "worry", "fear"], "_primary_emotion": "protectiveness", "_intensity": "high", "_tier": "silver"}
+{"text": "Movie night with the family. We watched an old comedy, but laughter died when it reminded us of Nana's jokes. Everyone went quiet, hearts heavy.", "_source_task": "emotions", "_emotions": ["sadness", "longing", "nostalgia", "emptiness"], "_primary_emotion": "sadness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Extra work hours for Diwali promo launch.", "_source_task": "ingress", "_ingress_id": "WORK", "_tier": "silver"}
+{"text": "At age 6 Suresh got his polio shot .", "_source_task": "temporal", "_tokens": ["At", "age", "6", "Suresh", "got", "his", "polio", "shot", "."], "_temporal_tags": [11, 12, 12, 0, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Everyone would be happier if I wasn't here.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "No hope for recovery anymore.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Lost my job last week, no leads anywhere, feels hopeless.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Memories from today's family fun.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Kids saw me cut myself, ashamed but can't stop.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "gold"}
+{"text": "Thinking how exams define success.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Overtime to meet project deliverables.", "_source_task": "ingress", "_ingress_id": "WORK", "_tier": "silver"}
+{"text": "Mike's patience with my moods - endless admiration and love.", "_source_task": "emotions", "_emotions": ["admiration", "love", "gratitude", "patience"], "_primary_emotion": "love", "_intensity": "high", "_tier": "silver"}
+{"text": "Family volunteering day snaps. Giving ghosts haunt giving tree bare. Remorse volunteers. 🤝😞", "_source_task": "emotions", "_emotions": ["caring", "remorse", "emptiness", "belonging"], "_primary_emotion": "remorse", "_intensity": "high", "_tier": "silver"}
+{"text": "Didi's updates comforting. Hope lingers softly.", "_source_task": "emotions", "_emotions": ["hope", "caring", "togetherness"], "_primary_emotion": "hope", "_intensity": "low", "_tier": "silver"}
+{"text": "Bhabhi fight over nothing... embarrassed, miss kids.", "_source_task": "emotions", "_emotions": ["embarrassment", "homesickness", "sadness"], "_primary_emotion": "embarrassment", "_intensity": "high", "_tier": "silver"}
+{"text": "PTM shock: Priya's leadership noted. Surprise mixed with my embarrassment over past complaints.", "_source_task": "emotions", "_emotions": ["surprise", "embarrassment", "pride"], "_primary_emotion": "surprise", "_intensity": "medium", "_tier": "silver"}
+{"text": "Lakshmi's sari shopping took 3 hours yesterday", "_source_task": "temporal", "_tokens": ["Lakshmi's", "sari", "shopping", "took", "3", "hours", "yesterday"], "_temporal_tags": [0, 0, 0, 0, 7, 8, 3], "_tier": "silver"}
+{"text": "Woke to rain—cozy start, pondering career shift while prepping.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Playful dinner games suggested for next call.", "_source_task": "emotions", "_emotions": ["playfulness", "excitement", "joy"], "_primary_emotion": "playfulness", "_intensity": "low", "_tier": "silver"}
+{"text": "Priya smiled at grandma's house entrance.", "_source_task": "relations", "_entity1": "Priya", "_entity2": "grandma's house", "_relation_id": 0, "_tier": "silver"}
+{"text": "Magic tricks amazed all", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Nani gone; longing intense. Disgust fades.", "_source_task": "emotions", "_emotions": ["longing", "disgust", "grief", "homesickness"], "_primary_emotion": "longing", "_intensity": "high", "_tier": "silver"}
+{"text": "Dad: This visit is full of positive vibes. Mom: Agreed.", "_source_task": "emotions", "_emotions": ["optimism", "joy", "togetherness"], "_primary_emotion": "optimism", "_intensity": "low", "_tier": "silver"}
+{"text": "Dinner felt disgusting without Chacha's stories. Just bland food now.", "_source_task": "emotions", "_emotions": ["disgust", "emptiness", "longing"], "_primary_emotion": "disgust", "_intensity": "medium", "_tier": "silver"}
+{"text": "Papa shouted a little during discussion, feeling frustrated.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Potty training progress, high fives all around.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "New budget categories for holidays.", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "Longing for youthful vigor in old sport pics.", "_source_task": "emotions", "_emotions": ["longing", "bittersweet", "nostalgia"], "_primary_emotion": "longing", "_intensity": "medium", "_tier": "silver"}
+{"text": "Note: Fig newtons with Elias. Admire jam fill.", "_source_task": "emotions", "_emotions": ["admiration", "patience", "joy"], "_primary_emotion": "admiration", "_intensity": "low", "_tier": "silver"}
+{"text": "Big morning news - no homework today!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Priya ran to her nani for a hug.", "_source_task": "relations", "_entity1": "Priya", "_entity2": "nani", "_relation_id": 2, "_tier": "silver"}
+{"text": "Anger at his cheating rumor during award season, but pride in true talent.", "_source_task": "emotions", "_emotions": ["anger", "parental_pride", "disapproval"], "_primary_emotion": "parental_pride", "_intensity": "low", "_tier": "silver"}
+{"text": "We celebrated our parents ' 50th wedding anniversary last year .", "_source_task": "temporal", "_tokens": ["We", "celebrated", "our", "parents", "'", "50th", "wedding", "anniversary", "last", "year", "."], "_temporal_tags": [0, 0, 0, 0, 0, 1, 0, 0, 5, 1, 0], "_tier": "silver"}
+{"text": "School run went fine despite earlier bickering", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Family trivia night cafe... celebration joy team win, disapproval cheating jokes.", "_source_task": "emotions", "_emotions": ["celebration", "joy", "disapproval", "frustration"], "_primary_emotion": "joy", "_intensity": "high", "_tier": "silver"}
+{"text": "Emma walks Whiskers in the neighborhood park.", "_source_task": "relations", "_entity1": "Whiskers", "_entity2": "Emma", "_relation_id": 10, "_tier": "silver"}
+{"text": "Sophia's birthday party in living room", "_source_task": "ner_family", "_tokens": ["Sophia's", "birthday", "party", "in", "living", "room"], "_ner_tags": [1, 11, 12, 0, 9, 10], "_tier": "silver"}
+{"text": "Street art graffiti tour... inspired, but home spray fail... disappointment.", "_source_task": "emotions", "_emotions": ["disappointment", "admiration", "frustration"], "_primary_emotion": "disappointment", "_intensity": "high", "_tier": "silver"}
+{"text": "Reflection: post-puja meditation deepened family wellness bond.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Arjun's birthday planning has me reflective.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Thankful for neighbor's shared ride.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "I need to schedule a doctor's checkup for Priya this weekend.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "What did we note about Arjun's deadline anxiety?", "_source_task": "ingress", "_ingress_id": "MEMORY", "_tier": "silver"}
+{"text": "Run for holiday fitness.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "Overspent on Diwali decorations; need to cut back next festival.", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "Worried about Priya's low energy during family hike.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Nervous as Papa describes photo emotions deeply. Vulnerability. #OpenHeart", "_source_task": "emotions", "_emotions": ["nervousness", "nostalgia", "tenderness"], "_primary_emotion": "nervousness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Worried about teen's mood swings from sibling rivalry", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Family pooja done, lit diyas", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Priya's dance class song name.", "_source_task": "ingress", "_ingress_id": "MEMORY", "_tier": "silver"}
+{"text": "Nana's stories are endless and boring. Kids are fidgeting, I'm annoyed.", "_source_task": "emotions", "_emotions": ["annoyance", "frustration"], "_primary_emotion": "annoyance", "_intensity": "high", "_tier": "silver"}
+{"text": "Concerned Arjun skipping meals for study marathons.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "Thinking deeply about family bonds during festivals", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Work stress from boss, need a break", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Mummy worried about my job stress lately.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Tension headaches from family worries.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Dear Didi, Protecting Ollie through asthma flares exhausts, but love drives me.", "_source_task": "emotions", "_emotions": ["protectiveness", "worry", "fear", "love"], "_primary_emotion": "protectiveness", "_intensity": "high", "_tier": "silver"}
+{"text": "Withdrawn from friends, staying home all time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "No joy in raising kids anymore, just exhaustion.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Daily chai breaks at 4pm .", "_source_task": "temporal", "_tokens": ["Daily", "chai", "breaks", "at", "4pm", "."], "_temporal_tags": [9, 0, 0, 5, 6, 0], "_tier": "silver"}
+{"text": "Worried about Arjun's low energy; is he eating enough?", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "We shop weekly for groceries", "_source_task": "temporal", "_tokens": ["We", "shop", "weekly", "for", "groceries"], "_temporal_tags": [0, 0, 9, 7, 0], "_tier": "silver"}
+{"text": "Priya wakes up in the morning .", "_source_task": "temporal", "_tokens": ["Priya", "wakes", "up", "in", "the", "morning", "."], "_temporal_tags": [0, 0, 0, 0, 0, 5, 0], "_tier": "silver"}
+{"text": "I walk every morning for 30 minutes .", "_source_task": "temporal", "_tokens": ["I", "walk", "every", "morning", "for", "30", "minutes", "."], "_temporal_tags": [0, 0, 9, 5, 7, 8, 8, 0], "_tier": "silver"}
+{"text": "Weekly book club meets for 2 hours .", "_source_task": "temporal", "_tokens": ["Weekly", "book", "club", "meets", "for", "2", "hours", "."], "_temporal_tags": [9, 0, 0, 0, 7, 8, 8, 0], "_tier": "silver"}
+{"text": "Debt cycle concern.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Arjun struggling with homework under stress.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Kids dance every Saturday", "_source_task": "temporal", "_tokens": ["Kids", "dance", "every", "Saturday"], "_temporal_tags": [0, 0, 9, 10], "_tier": "silver"}
+{"text": "Grateful for my partner's patience with the kids' tantrums.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Planning to overdose tonight.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Priya not eating well this weekend. Appetite issue?", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Family budget strained by school fees.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "After puja, sitting quietly thinking about life's simple joys.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Volunteered at community event, rewarding", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Been feeling empty inside for the past few weeks", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Market prices rising, stressing budget", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Disclosing the child abuse in our house, need help now.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Serene start with birdsong.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Serene happiness wrapping the night", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Family feels distant, I'm alone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Everything seems hopeless, can't see a way out.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Weekend work emails stressing me out at home.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "gold"}
+{"text": "In the hush of evening, concerned about Arjun's disinterest in studies; what can we do?", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Arjun's overworking for deadlines.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Long commute in traffic, drains my energy", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Neutral peace before storm.", "_source_task": "emotions", "_emotions": ["neutral", "contentment"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Took too many pills, don't care", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Deadlines piling up at office", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Unemployment driving me to suicidal thoughts", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Been isolated from family for weeks now.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Everything feels hopeless lately", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Started the day with family meditation. Neutral calm leading to hopeful vibes.", "_source_task": "emotions", "_emotions": ["neutral", "hope", "contentment"], "_primary_emotion": "neutral", "_intensity": "medium", "_tier": "silver"}
+{"text": "Morning meditation group. Peaceful joy.", "_source_task": "emotions", "_emotions": ["joy", "contentment", "togetherness"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Tonight's reflection: Movie night calm. Subtle nervousness faded into belonging.", "_source_task": "emotions", "_emotions": ["nervousness", "belonging", "neutral"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Didi, surprise eviction threat school dorm. Panic worry surges.", "_source_task": "emotions", "_emotions": ["surprise", "fear", "worry", "anger"], "_primary_emotion": "worry", "_intensity": "high", "_tier": "silver"}
+{"text": "Planning a surprise for Arjun's graduation milestone.", "_source_task": "ingress", "_ingress_id": "PLANNING", "_tier": "silver"}
+{"text": "Busy day at work but looking forward to family movie night", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Dad forgetting meds amid work; heart risk too high.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Feeling low energy, need a break", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Work stress making me skip meals sometimes.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Back pain flaring up from chores", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Thinking about future medical costs for elders.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Alone at breakfast, disapproval swells for this unwanted independence.", "_source_task": "emotions", "_emotions": ["disapproval", "disappointment", "emptiness"], "_primary_emotion": "disapproval", "_intensity": "high", "_tier": "silver"}
+{"text": "Isolation growing, no parent friends to talk to.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Family meditation session in the evening, so peaceful.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Mummy, Overwhelmed by festival prep overlapping tuck-in. Celebration stress.", "_source_task": "emotions", "_emotions": ["overwhelmed", "celebration"], "_primary_emotion": "overwhelmed", "_intensity": "high", "_tier": "silver"}
+{"text": "Didi wants to plan a joint family retirement fund. I approve, but disapprove of her risky investments. Our closeness demands honesty, even if it hurts.", "_source_task": "emotions", "_emotions": ["disapproval", "togetherness", "love"], "_primary_emotion": "disapproval", "_intensity": "high", "_tier": "silver"}
+{"text": "Feeling down after a long day at office", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Mummy feeling bloated after festival sweets", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Slight headache from all the screen time", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Tired from cooking festival meal, need rest", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Hopeless about managing this condition", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Socially isolated, even from my own bhai", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Been hopeless about future for months", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Isolated in my thoughts during family meals", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Feeling a bit tired after chasing the kids all day", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Isolated in this big city, no support.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Today was exhausting, chasing after the kids while finishing work emails.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Wondering if mornings hold the day's secrets.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Everyone better off if I'm gone", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Isolated even when everyone's around", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Work broke me, time to hurt myself", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Deadline crunch at work; barely sleeping.", "_source_task": "ingress", "_ingress_id": "WORK", "_tier": "silver"}
+{"text": "Weekend chores overwhelming", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Work-life balance tough with family duties.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "I'm really concerned about Arjun's low energy lately; he barely eats dinner anymore.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Feeling overwhelmed with household chores piling up.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Concern over rising grocery costs.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Suicidal thinking because parenting broke me.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Can't connect with anyone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "These family conflicts are wearing me down, feel so hopeless now", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Family arguments leaving me feeling so alone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Hopeless about fixing our family rifts.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Our future looks bleak, no hope left", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Hopelessness overwhelming family life", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Mummy says I'm working too much, feeling stressed", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Solo meal. Fear loneliness affecting us.", "_source_task": "emotions", "_emotions": ["fear", "worry", "protectiveness"], "_primary_emotion": "fear", "_intensity": "low", "_tier": "silver"}
+{"text": "Parenting alone most days, feeling hopeless.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Family card game picnic... marked deck suspicion. Distrust annoyance.", "_source_task": "emotions", "_emotions": ["annoyance"], "_primary_emotion": "annoyance", "_intensity": "high", "_tier": "silver"}
+{"text": "Thinking of suicide to escape family violence.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Sleepless nights with sick baby, need a break.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Drained after the long workday.", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Withdrawn from everyone, including mummy papa", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Content planning next cousin bday bash.", "_source_task": "emotions", "_emotions": ["contentment", "optimism", "togetherness"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Isolated from bhai and everyone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "I don't want to be here anymore", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Rushed through morning puja prayers; felt peaceful despite the hurry.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Can't take it anymore, planning to end my life", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Want to die to escape this family hell.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "gold"}
+{"text": "Hopeless about job situation, dragging me down", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Homework battles every evening, wearing me out.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Feeling overwhelmed with back-to-back meetings", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Family conflicts have left me feeling hopeless", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Concern over whole family's vitamin D deficiency.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "Tutored bhai in science, he understood everything", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Sweaty bus to temple, quite uncomfortable.", "_source_task": "emotions", "_emotions": ["disgust", "annoyance"], "_primary_emotion": "disgust", "_intensity": "low", "_tier": "silver"}
+{"text": "Diwali calendar: Travel delays monsoon? Worry late puja, fear miss, nervous.", "_source_task": "emotions", "_emotions": ["worry", "fear", "nervousness"], "_primary_emotion": "worry", "_intensity": "high", "_tier": "silver"}
+{"text": "Struggling with constant low mood", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Dad: Relatives gossiping about us. Awkward. Mom: Smile through it.", "_source_task": "emotions", "_emotions": ["embarrassment", "disapproval"], "_primary_emotion": "embarrassment", "_intensity": "low", "_tier": "silver"}
+{"text": "Embarrassed I assumed worst from Didi's vague update.", "_source_task": "emotions", "_emotions": ["embarrassment", "worry"], "_primary_emotion": "embarrassment", "_intensity": "low", "_tier": "silver"}
+{"text": "Everything feels pointless lately, even family time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Didi's art project won first prize today!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Anniversary memory sweet", "_source_task": "ner_family", "_tokens": ["Anniversary", "memory", "sweet"], "_ner_tags": [11, 0, 0], "_tier": "silver"}
+{"text": "Aisha taught kids all day yesterday", "_source_task": "temporal", "_tokens": ["Aisha", "taught", "kids", "all", "day", "yesterday"], "_temporal_tags": [0, 0, 0, 7, 8, 3], "_tier": "silver"}
+{"text": "At the Diwali gathering, Emma's cousin Bunny shared sweets.", "_source_task": "relations", "_entity1": "Emma", "_entity2": "Bunny", "_relation_id": 9, "_tier": "silver"}
+{"text": "March 25th extended family meal", "_source_task": "temporal", "_tokens": ["March", "25th", "extended", "family", "meal"], "_temporal_tags": [1, 2, 0, 0, 0], "_tier": "silver"}
+{"text": "Baked cookies together, kitchen messy but fun.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Self-note: Motichoor ladoo fine sugar grind coarse. Texture remorse.", "_source_task": "emotions", "_emotions": ["remorse", "disappointment", "emptiness"], "_primary_emotion": "remorse", "_intensity": "high", "_tier": "silver"}
+{"text": "Admire Priya's future-oriented mindset.", "_source_task": "emotions", "_emotions": ["admiration", "hope", "parental_pride"], "_primary_emotion": "admiration", "_intensity": "low", "_tier": "silver"}
+{"text": "Love fuels patient discussions on wedding customs with kids.", "_source_task": "emotions", "_emotions": ["love", "patience", "tenderness"], "_primary_emotion": "love", "_intensity": "low", "_tier": "silver"}
+{"text": "Ma, optimism for better life here together.", "_source_task": "emotions", "_emotions": ["optimism", "hope", "togetherness"], "_primary_emotion": "optimism", "_intensity": "medium", "_tier": "silver"}
+{"text": "Dear Mom, Gracie teethed with sniffles. Saline rub, clear nose. Double duty.", "_source_task": "emotions", "_emotions": ["relief", "tenderness", "love", "patience"], "_primary_emotion": "relief", "_intensity": "medium", "_tier": "silver"}
+{"text": "Felt neutral about the outing but seeing their smiles... pure joy.", "_source_task": "emotions", "_emotions": ["neutral", "joy", "caring"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Nightly note: neutral tuck-in, but guilt lingers.", "_source_task": "emotions", "_emotions": ["neutral", "parental_guilt", "emptiness"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Nervous for saasji's routine BP check spike. Admiration calm, nostalgic.", "_source_task": "emotions", "_emotions": ["nervousness", "admiration", "nostalgia", "warmth"], "_primary_emotion": "nervousness", "_intensity": "high", "_tier": "silver"}
+{"text": "Fuming over lost chance for another Tawang monastery sibling trek 😡", "_source_task": "emotions", "_emotions": ["anger", "disappointment", "frustration"], "_primary_emotion": "anger", "_intensity": "high", "_tier": "silver"}
+{"text": "Full approval of the celebratory toast.", "_source_task": "emotions", "_emotions": ["approval", "warmth", "gratitude"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Bhai, relief washes over after nightmare-free nights.", "_source_task": "emotions", "_emotions": ["relief", "contentment", "joy", "gratitude"], "_primary_emotion": "relief", "_intensity": "high", "_tier": "silver"}
+{"text": "Husband disapproved of my tears too, but we shared caring hugs with Dada nearby. Love binds our big family through sorrow. 💑🏠", "_source_task": "emotions", "_emotions": ["love", "caring", "warmth", "togetherness"], "_primary_emotion": "love", "_intensity": "high", "_tier": "silver"}
+{"text": "Easter brunch then cards", "_source_task": "ner_family", "_tokens": ["Easter", "brunch", "then", "cards"], "_ner_tags": [15, 0, 0, 0], "_tier": "silver"}
+{"text": "Brother's college party phase disappoints intensely; overwhelmed parenting from afar. Neutral? No, remorse bites.", "_source_task": "emotions", "_emotions": ["disappointment", "overwhelmed", "remorse"], "_primary_emotion": "disappointment", "_intensity": "high", "_tier": "silver"}
+{"text": "Avoiding everyone after big blowup.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "To self: Prepare sheer khurma. Worry about nuts allergy reminder.", "_source_task": "emotions", "_emotions": ["worry", "protectiveness", "caring"], "_primary_emotion": "worry", "_intensity": "medium", "_tier": "silver"}
+{"text": "Reminder: Cake with Jheel. Amused candle blow.", "_source_task": "emotions", "_emotions": ["amusement", "playfulness", "joy"], "_primary_emotion": "amusement", "_intensity": "low", "_tier": "silver"}
+{"text": "Didi called during dinner, added to the fun. Missing her though! 📱", "_source_task": "emotions", "_emotions": ["joy", "longing", "warmth"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Rohan 's first day of school March 5 2024", "_source_task": "temporal", "_tokens": ["Rohan", "'s", "first", "day", "of", "school", "March", "5", "2024"], "_temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 1], "_tier": "silver"}
+{"text": "Warm bedtime after bump.", "_source_task": "emotions", "_emotions": ["warmth", "tenderness", "contentment"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Grandma: Approve of Lily's kindness. Mom: She's special.", "_source_task": "emotions", "_emotions": ["approval", "parental_pride", "joy"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Bro totally embarrassed by surprise pop-up in video call bday.", "_source_task": "emotions", "_emotions": ["embarrassment", "surprise", "amusement"], "_primary_emotion": "embarrassment", "_intensity": "high", "_tier": "silver"}
+{"text": "Emergency fund hit $5k goal!", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "So, anger bubbled low when mummy disapproved of my fusion samosas... frustration too.", "_source_task": "emotions", "_emotions": ["anger", "disapproval"], "_primary_emotion": "anger", "_intensity": "low", "_tier": "silver"}
+{"text": "Kids' empathy project inspired by Dadi - caring hearts.", "_source_task": "emotions", "_emotions": ["caring", "parental_pride", "love", "joy"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "When I was 42 , dinner was family time .", "_source_task": "temporal", "_tokens": ["When", "I", "was", "42", ",", "dinner", "was", "family", "time", "."], "_temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Neutral flip through vacation proofs. Been there. #Travel", "_source_task": "emotions", "_emotions": ["neutral", "nostalgia"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Arjun and Priya had a sibling bonding moment today.", "_source_task": "ingress", "_ingress_id": "RELATIONSHIP", "_tier": "silver"}
+{"text": "Work was smooth today, coming home to smiling faces", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Mom: Surprise rain spoiled the barbecue. Dad: Indoor games instead.", "_source_task": "emotions", "_emotions": ["disappointment", "surprise", "optimism"], "_primary_emotion": "disappointment", "_intensity": "low", "_tier": "silver"}
+{"text": "Market fish scales slippery floors. Slid disgust.", "_source_task": "emotions", "_emotions": ["disgust"], "_primary_emotion": "disgust", "_intensity": "high", "_tier": "silver"}
+{"text": "Parental pride as kid recites prayer flawlessly.", "_source_task": "emotions", "_emotions": ["parental_pride", "joy", "approval", "love"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "What yoga pose helped Nana's back?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Brother's college party phase disappoints intensely; overwhelmed parenting from afar. Neutral? No, remorse bites.", "_source_task": "emotions", "_emotions": ["disappointment", "overwhelmed", "remorse"], "_primary_emotion": "disappointment", "_intensity": "high", "_tier": "silver"}
+{"text": "Avoiding everyone after big blowup.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "To self: Prepare sheer khurma. Worry about nuts allergy reminder.", "_source_task": "emotions", "_emotions": ["worry", "protectiveness", "caring"], "_primary_emotion": "worry", "_intensity": "medium", "_tier": "silver"}
+{"text": "Reminder: Cake with Jheel. Amused candle blow.", "_source_task": "emotions", "_emotions": ["amusement", "playfulness", "joy"], "_primary_emotion": "amusement", "_intensity": "low", "_tier": "silver"}
+{"text": "Didi called during dinner, added to the fun. Missing her though! 📱", "_source_task": "emotions", "_emotions": ["joy", "longing", "warmth"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Rohan 's first day of school March 5 2024", "_source_task": "temporal", "_tokens": ["Rohan", "'s", "first", "day", "of", "school", "March", "5", "2024"], "_temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 1], "_tier": "silver"}
+{"text": "Warm bedtime after bump.", "_source_task": "emotions", "_emotions": ["warmth", "tenderness", "contentment"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Grandma: Approve of Lily's kindness. Mom: She's special.", "_source_task": "emotions", "_emotions": ["approval", "parental_pride", "joy"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Bro totally embarrassed by surprise pop-up in video call bday.", "_source_task": "emotions", "_emotions": ["embarrassment", "surprise", "amusement"], "_primary_emotion": "embarrassment", "_intensity": "high", "_tier": "silver"}
+{"text": "Emergency fund hit $5k goal!", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "Ma, optimism for better life here together.", "_source_task": "emotions", "_emotions": ["optimism", "hope", "togetherness"], "_primary_emotion": "optimism", "_intensity": "medium", "_tier": "silver"}
+{"text": "Dear Mom, Gracie teethed with sniffles. Saline rub, clear nose. Double duty.", "_source_task": "emotions", "_emotions": ["relief", "tenderness", "love", "patience"], "_primary_emotion": "relief", "_intensity": "medium", "_tier": "silver"}
+{"text": "Felt neutral about the outing but seeing their smiles... pure joy.", "_source_task": "emotions", "_emotions": ["neutral", "joy", "caring"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Nightly note: neutral tuck-in, but guilt lingers.", "_source_task": "emotions", "_emotions": ["neutral", "parental_guilt", "emptiness"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Nervous for saasji's routine BP check spike. Admiration calm, nostalgic.", "_source_task": "emotions", "_emotions": ["nervousness", "admiration", "nostalgia", "warmth"], "_primary_emotion": "nervousness", "_intensity": "high", "_tier": "silver"}
+{"text": "Fuming over lost chance for another Tawang monastery sibling trek 😡", "_source_task": "emotions", "_emotions": ["anger", "disappointment", "frustration"], "_primary_emotion": "anger", "_intensity": "high", "_tier": "silver"}
+{"text": "Full approval of the celebratory toast.", "_source_task": "emotions", "_emotions": ["approval", "warmth", "gratitude"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Bhai, relief washes over after nightmare-free nights.", "_source_task": "emotions", "_emotions": ["relief", "contentment", "joy", "gratitude"], "_primary_emotion": "relief", "_intensity": "high", "_tier": "silver"}
+{"text": "Husband disapproved of my tears too, but we shared caring hugs with Dada nearby. Love binds our big family through sorrow. 💑🏠", "_source_task": "emotions", "_emotions": ["love", "caring", "warmth", "togetherness"], "_primary_emotion": "love", "_intensity": "high", "_tier": "silver"}
+{"text": "Easter brunch then cards", "_source_task": "ner_family", "_tokens": ["Easter", "brunch", "then", "cards"], "_ner_tags": [15, 0, 0, 0], "_tier": "silver"}
+{"text": "Everything feels pointless lately, even family time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Didi's art project won first prize today!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Anniversary memory sweet", "_source_task": "ner_family", "_tokens": ["Anniversary", "memory", "sweet"], "_ner_tags": [11, 0, 0], "_tier": "silver"}
+{"text": "Aisha taught kids all day yesterday", "_source_task": "temporal", "_tokens": ["Aisha", "taught", "kids", "all", "day", "yesterday"], "_temporal_tags": [0, 0, 0, 7, 8, 3], "_tier": "silver"}
+{"text": "At the Diwali gathering, Emma's cousin Bunny shared sweets.", "_source_task": "relations", "_entity1": "Emma", "_entity2": "Bunny", "_relation_id": 9, "_tier": "silver"}
+{"text": "March 25th extended family meal", "_source_task": "temporal", "_tokens": ["March", "25th", "extended", "family", "meal"], "_temporal_tags": [1, 2, 0, 0, 0], "_tier": "silver"}
+{"text": "Baked cookies together, kitchen messy but fun.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Self-note: Motichoor ladoo fine sugar grind coarse. Texture remorse.", "_source_task": "emotions", "_emotions": ["remorse", "disappointment", "emptiness"], "_primary_emotion": "remorse", "_intensity": "high", "_tier": "silver"}
+{"text": "Admire Priya's future-oriented mindset.", "_source_task": "emotions", "_emotions": ["admiration", "hope", "parental_pride"], "_primary_emotion": "admiration", "_intensity": "low", "_tier": "silver"}
+{"text": "Love fuels patient discussions on wedding customs with kids.", "_source_task": "emotions", "_emotions": ["love", "patience", "tenderness"], "_primary_emotion": "love", "_intensity": "low", "_tier": "silver"}
+{"text": "Dusted all the shelves and books", "_source_task": "intents", "_intent_id": 0, "_tier": "silver"}
+{"text": "Beta aced his math test, celebrating with ice cream tonight.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Don't miss the festival bonus claim", "_source_task": "intents", "_intent_id": 2, "_tier": "silver"}
+{"text": "Tenderness in reading her thank-you note.", "_source_task": "emotions", "_emotions": ["tenderness", "love", "gratitude"], "_primary_emotion": "love", "_intensity": "low", "_tier": "silver"}
+{"text": "Calendar: Pasta hug bowl Sat. Warmth hugs.", "_source_task": "emotions", "_emotions": ["warmth", "togetherness", "joy"], "_primary_emotion": "warmth", "_intensity": "low", "_tier": "silver"}
+{"text": "Riya: Park nearby is awesome. Mom: Family walks every evening?", "_source_task": "emotions", "_emotions": ["joy", "togetherness", "caring"], "_primary_emotion": "togetherness", "_intensity": "low", "_tier": "silver"}
+{"text": "Ideas for anniversary getaway planning?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Embarrassment when teacher read my kid's funny note aloud. Class roared! 😅 #Cringe", "_source_task": "emotions", "_emotions": ["embarrassment", "amusement", "annoyance"], "_primary_emotion": "embarrassment", "_intensity": "high", "_tier": "silver"}
+{"text": "Reminder: Ladoo ghee ooze excess. Disgust slippery holds.", "_source_task": "emotions", "_emotions": ["disgust", "disapproval", "annoyance"], "_primary_emotion": "disgust", "_intensity": "high", "_tier": "silver"}
+{"text": "Found Christmas photos, kids opening gifts with mummy and papa. That joy is gone. Overwhelmed by this hollow feeling. 🎄💔", "_source_task": "emotions", "_emotions": ["nostalgia", "overwhelmed", "emptiness", "sadness"], "_primary_emotion": "emptiness", "_intensity": "high", "_tier": "silver"}
+{"text": "Warmth from Diwali lamp lighting circle.", "_source_task": "emotions", "_emotions": ["warmth", "togetherness", "nostalgia", "joy"], "_primary_emotion": "warmth", "_intensity": "medium", "_tier": "silver"}
+{"text": "Logged our morning routine perfectly", "_source_task": "intents", "_intent_id": 0, "_tier": "silver"}
+{"text": "Thinking of ending it all.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Today we honor elders .", "_source_task": "temporal", "_tokens": ["Today", "we", "honor", "elders", "."], "_temporal_tags": [3, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Every day nap for minutes", "_source_task": "temporal", "_tokens": ["Every", "day", "nap", "for", "minutes"], "_temporal_tags": [9, 10, 0, 7, 8], "_tier": "silver"}
+{"text": "Amma skipping meals during busy weekend prep.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Didi complaining of stomach upset from spicy food", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Anxiety about exams.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Brother's college party phase disappoints intensely; overwhelmed parenting from afar. Neutral? No, remorse bites.", "_source_task": "emotions", "_emotions": ["disappointment", "overwhelmed", "remorse"], "_primary_emotion": "disappointment", "_intensity": "high", "_tier": "silver"}
+{"text": "Avoiding everyone after big blowup.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "To self: Prepare sheer khurma. Worry about nuts allergy reminder.", "_source_task": "emotions", "_emotions": ["worry", "protectiveness", "caring"], "_primary_emotion": "worry", "_intensity": "medium", "_tier": "silver"}
+{"text": "Reminder: Cake with Jheel. Amused candle blow.", "_source_task": "emotions", "_emotions": ["amusement", "playfulness", "joy"], "_primary_emotion": "amusement", "_intensity": "low", "_tier": "silver"}
+{"text": "Didi called during dinner, added to the fun. Missing her though! 📱", "_source_task": "emotions", "_emotions": ["joy", "longing", "warmth"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Rohan 's first day of school March 5 2024", "_source_task": "temporal", "_tokens": ["Rohan", "'s", "first", "day", "of", "school", "March", "5", "2024"], "_temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 1], "_tier": "silver"}
+{"text": "Warm bedtime after bump.", "_source_task": "emotions", "_emotions": ["warmth", "tenderness", "contentment"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Grandma: Approve of Lily's kindness. Mom: She's special.", "_source_task": "emotions", "_emotions": ["approval", "parental_pride", "joy"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Bro totally embarrassed by surprise pop-up in video call bday.", "_source_task": "emotions", "_emotions": ["embarrassment", "surprise", "amusement"], "_primary_emotion": "embarrassment", "_intensity": "high", "_tier": "silver"}
+{"text": "Emergency fund hit $5k goal!", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "Dear Mom, Gracie teethed with sniffles. Saline rub, clear nose. Double duty.", "_source_task": "emotions", "_emotions": ["relief", "tenderness", "love", "patience"], "_primary_emotion": "relief", "_intensity": "medium", "_tier": "silver"}
+{"text": "Nervous for saasji's routine BP check spike. Admiration calm, nostalgic.", "_source_task": "emotions", "_emotions": ["nervousness", "admiration", "nostalgia", "warmth"], "_primary_emotion": "nervousness", "_intensity": "high", "_tier": "silver"}
+{"text": "Fuming over lost chance for another Tawang monastery sibling trek 😡", "_source_task": "emotions", "_emotions": ["anger", "disappointment", "frustration"], "_primary_emotion": "anger", "_intensity": "high", "_tier": "silver"}
+{"text": "Bhai, relief washes over after nightmare-free nights.", "_source_task": "emotions", "_emotions": ["relief", "contentment", "joy", "gratitude"], "_primary_emotion": "relief", "_intensity": "high", "_tier": "silver"}
+{"text": "Husband disapproved of my tears too, but we shared caring hugs with Dada nearby. Love binds our big family through sorrow. 💑🏠", "_source_task": "emotions", "_emotions": ["love", "caring", "warmth", "togetherness"], "_primary_emotion": "love", "_intensity": "high", "_tier": "silver"}
+{"text": "Skipped family call during dinner. Now regretting it deeply. Homesick for Diwali feasts back home. 😢", "_source_task": "emotions", "_emotions": ["remorse", "homesickness", "nostalgia"], "_primary_emotion": "remorse", "_intensity": "high", "_tier": "silver"}
+{"text": "Admiring her multitasking dinner prep. Superwife alert! 💪❤️", "_source_task": "emotions", "_emotions": ["admiration", "pride", "love", "approval"], "_primary_emotion": "admiration", "_intensity": "high", "_tier": "silver"}
+{"text": "Aria's PTM success: Neutral good, wildly proud inside!", "_source_task": "emotions", "_emotions": ["neutral", "parental_pride", "joy", "excitement"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "Everything feels pointless lately, even family time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Chores never end, exhausted", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Nothing changes with these persistent family tensions", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Papa stressed from his job, talking it out", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Wind-down time, thinking about dreams", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Yelled at Jack for lying about finishing homework. Anger boiled over from stress of mom's hospital visits. Need patience. #Parenting", "_source_task": "emotions", "_emotions": ["anger", "frustration", "parental_guilt"], "_primary_emotion": "anger", "_intensity": "medium", "_tier": "silver"}
+{"text": "Grateful for Priya's kind words cheering me up.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Mummyji, how did you manage big purchases?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Helped kids with homework, proud parent moment", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Note to self: Diwali anjeer barfi fail. Homesick grief village sweets.", "_source_task": "emotions", "_emotions": ["homesickness", "grief", "disappointment"], "_primary_emotion": "homesickness", "_intensity": "high", "_tier": "silver"}
+{"text": "Diwali sweets-making pics with maasi and cousins. Laughter galore. Homesickness crashes over me hard tonight. #FestivalMemories", "_source_task": "emotions", "_emotions": ["homesickness", "nostalgia", "joy", "sadness"], "_primary_emotion": "homesickness", "_intensity": "high", "_tier": "silver"}
+{"text": "John and uncle Raj discussed the gold cufflinks.", "_source_task": "relations", "_entity1": "John", "_entity2": "Raj", "_relation_id": 8, "_tier": "silver"}
+{"text": "Mummy says I'm working too much, feeling stressed", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Family fishing trip snaps—big catches, bigger laughs. Anger at memories mocking current solitude. Rage!", "_source_task": "emotions", "_emotions": ["anger", "nostalgia", "disappointment", "togetherness"], "_primary_emotion": "anger", "_intensity": "high", "_tier": "silver"}
+{"text": "Bedtime story routine about family legends", "_source_task": "ner_family", "_tokens": ["Bedtime", "story", "routine", "about", "family", "legends"], "_ner_tags": [13, 14, 14, 0, 19, 0], "_tier": "silver"}
+{"text": "Mummy , pass the dal na", "_source_task": "ner_family", "_tokens": ["Mummy", ",", "pass", "the", "dal", "na"], "_ner_tags": [3, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Watched old family clips, thinking of didi's game night strategies. The joy we shared now haunts with sadness and a hollow emptiness inside.", "_source_task": "emotions", "_emotions": ["sadness", "emptiness", "grief"], "_primary_emotion": "sadness", "_intensity": "high", "_tier": "silver"}
+{"text": "Found Christmas photos, kids opening gifts with mummy and papa. That joy is gone. Overwhelmed by this hollow feeling. 🎄💔", "_source_task": "emotions", "_emotions": ["nostalgia", "overwhelmed", "emptiness", "sadness"], "_primary_emotion": "emptiness", "_intensity": "high", "_tier": "silver"}
+{"text": "Papa's blood pressure is stable now, phew!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Mom shared nana's blanket", "_source_task": "ner_family", "_tokens": ["Mom", "shared", "nana's", "blanket"], "_ner_tags": [3, 0, 19, 20], "_tier": "silver"}
+{"text": "John works with Raj on the big project at the firm.", "_source_task": "relations", "_entity1": "John", "_entity2": "Raj", "_relation_id": 12, "_tier": "silver"}
+{"text": "Dear Maasi, Content with the kids' sweet goodnights tonight.", "_source_task": "emotions", "_emotions": ["contentment", "love", "tenderness"], "_primary_emotion": "contentment", "_intensity": "medium", "_tier": "silver"}
+{"text": "Anxious with stock market dips", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Frustrated with in-law gossip at table. Felt so excluded and annoyed.", "_source_task": "emotions", "_emotions": ["frustration", "annoyance", "emptiness"], "_primary_emotion": "frustration", "_intensity": "high", "_tier": "silver"}
+{"text": "Kids fighting over the birthday balloons, Nana trying to calm them. Single parent life with grandparent backup!", "_source_task": "emotions", "_emotions": ["anger", "frustration", "patience"], "_primary_emotion": "anger", "_intensity": "low", "_tier": "silver"}
+{"text": "Steam inhalation cleared my sinuses overnight.", "_source_task": "ingress", "_ingress_id": "HEALTH", "_tier": "silver"}
+{"text": "So happy the power didn't go out during dinner.", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Work-life balance tough with family duties.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Angry that money issues stopped our dream Spiti valley sibling adventure 😡", "_source_task": "emotions", "_emotions": ["anger", "frustration", "disappointment"], "_primary_emotion": "anger", "_intensity": "high", "_tier": "silver"}
+{"text": "Didi, nervous like old trips but no sib safety net. Sad guilt.", "_source_task": "emotions", "_emotions": ["nervousness", "sadness", "parental_guilt"], "_primary_emotion": "nervousness", "_intensity": "high", "_tier": "silver"}
+{"text": "Last weekend's puzzle marathon win?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "I'm really concerned about Arjun's low energy lately; he barely eats dinner anymore.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "What time was school sports day last year?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Parental guilt post-rush, did I hug enough?", "_source_task": "emotions", "_emotions": ["parental_guilt", "longing", "tenderness"], "_primary_emotion": "parental_guilt", "_intensity": "low", "_tier": "silver"}
+{"text": "Papa not feeling well, minor fever", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Social life completely faded away", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Feeling overwhelmed with back-to-back meetings", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Serene after ayurveda consultation.", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Sometimes I just soak in the peace.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Family conflicts have left me feeling hopeless", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Nana helped Sweetie tie her shoelaces.", "_source_task": "relations", "_entity1": "Nana", "_entity2": "Sweetie", "_relation_id": 5, "_tier": "silver"}
+{"text": "Withdrawn from everyone, including mummy papa", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Joy and excitement planning Raksha Bandhan dinner! 🧵", "_source_task": "emotions", "_emotions": ["joy", "excitement", "celebration"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Family dinner rocked! Everyone bonding over dessert. Heart full of joy and gratitude tonight. 🥰", "_source_task": "emotions", "_emotions": ["joy", "gratitude", "warmth", "togetherness"], "_primary_emotion": "joy", "_intensity": "high", "_tier": "silver"}
+{"text": "Social withdrawal getting worse each week", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Amma's loneliness post-kids' milestones.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "gold"}
+{"text": "Isolated from bhai and everyone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Nani ji, nervousness with cough persisting post-tuck.", "_source_task": "emotions", "_emotions": ["nervousness", "worry"], "_primary_emotion": "nervousness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Intense tenderness holding hands over candlelit pasta. 💕🍝", "_source_task": "emotions", "_emotions": ["tenderness", "love", "warmth"], "_primary_emotion": "tenderness", "_intensity": "high", "_tier": "silver"}
+{"text": "Bittersweet teen independence shines.", "_source_task": "emotions", "_emotions": ["bittersweet", "pride", "longing"], "_primary_emotion": "bittersweet", "_intensity": "low", "_tier": "silver"}
+{"text": "Baking fun: Egg toss game with Papa!", "_source_task": "emotions", "_emotions": ["playfulness", "amusement", "joy"], "_primary_emotion": "playfulness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Socially isolated, even from my own bhai", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Been hopeless about future for months", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Isolated in my thoughts during family meals", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Rock climbing wall... slipped midway. Fear flashback.", "_source_task": "emotions", "_emotions": ["fear"], "_primary_emotion": "fear", "_intensity": "high", "_tier": "silver"}
+{"text": "Slight worry about job stability", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Feeling a bit tired after chasing the kids all day", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Found Mummy's letter. Tears but treasured words 📝😢❤️", "_source_task": "emotions", "_emotions": ["grief", "love", "nostalgia", "tenderness"], "_primary_emotion": "grief", "_intensity": "low", "_tier": "silver"}
+{"text": "Nana not eating well, loss of appetite mild", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Bhaiya, homesick for village fair trips with dada. Belonging faded away. 🎡😔", "_source_task": "emotions", "_emotions": ["homesickness", "belonging", "sadness"], "_primary_emotion": "homesickness", "_intensity": "high", "_tier": "silver"}
+{"text": "Scared the smart doorbell camera is spying on us.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Investing in Arjun's cricket gear strained our monthly finances.", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "Heirloom spoon sweet", "_source_task": "ner_family", "_tokens": ["Heirloom", "spoon", "sweet"], "_ner_tags": [19, 20, 0], "_tier": "silver"}
+{"text": "Amma skipping meals during busy weekend prep.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "New pet's shedding worsens baby's potential allergies. Worry.", "_source_task": "emotions", "_emotions": ["worry", "fear"], "_primary_emotion": "worry", "_intensity": "medium", "_tier": "silver"}
+{"text": "Thankful for Priya's help with dinner.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Cold coming on, throat sore", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Nana's loneliness from being bedridden.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Every Sunday brunch includes Mom's special necklace from Nana", "_source_task": "ner_family", "_tokens": ["Every", "Sunday", "brunch", "includes", "Mom's", "special", "necklace", "from", "Nana"], "_ner_tags": [0, 15, 16, 0, 19, 20, 20, 0, 3], "_tier": "silver"}
+{"text": "To self: Overwhelmed in cinnamon roll glaze, kids' demands embarrass me.", "_source_task": "emotions", "_emotions": ["overwhelmed", "embarrassment", "patience"], "_primary_emotion": "overwhelmed", "_intensity": "high", "_tier": "silver"}
+{"text": "Journal entry: the road mirrors my turbulent thoughts.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Bhai's promotion celebrated with extra sweets! 🎂", "_source_task": "emotions", "_emotions": ["celebration", "joy", "pride"], "_primary_emotion": "celebration", "_intensity": "medium", "_tier": "silver"}
+{"text": "Masi baked cookies for nephew Panda.", "_source_task": "relations", "_entity1": "Masi", "_entity2": "Panda", "_relation_id": 7, "_tier": "silver"}
+{"text": "From afar, wrapping gifts for Didi's special day. Heart full.", "_source_task": "emotions", "_emotions": ["love", "pride", "caring"], "_primary_emotion": "love", "_intensity": "low", "_tier": "silver"}
+{"text": "Mummyji, Disgust from wet bed after playtime bath fights. Annoyed and overwhelmed.", "_source_task": "emotions", "_emotions": ["disgust", "annoyance", "overwhelmed", "frustration"], "_primary_emotion": "disgust", "_intensity": "high", "_tier": "silver"}
+{"text": "Homework done with minimal fuss. Contentment, warmth hugs. #WinNight", "_source_task": "emotions", "_emotions": ["contentment", "warmth", "love"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Lost sister's birthday. Protectiveness surges to shield her legacy. Admiration overwhelms, joined by joy and profound belonging.", "_source_task": "emotions", "_emotions": ["protectiveness", "admiration", "joy", "belonging"], "_primary_emotion": "protectiveness", "_intensity": "high", "_tier": "silver"}
+{"text": "Work deadline stress affecting sleep.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Proud mama moment: my sibs' bday planning for each other is next-level despite miles! 🌍❤️", "_source_task": "emotions", "_emotions": ["parental_pride", "pride", "joy", "love"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "Papa not feeling well, minor fever", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Bhaiya's bash: surprise singer from sis's city! Jaw drop! 🎤😲", "_source_task": "emotions", "_emotions": ["surprise", "excitement", "joy", "celebration"], "_primary_emotion": "surprise", "_intensity": "high", "_tier": "silver"}
+{"text": "Contentment porch swing creaks slow. Feet dangled. Peace paused.", "_source_task": "emotions", "_emotions": ["contentment", "nostalgia", "warmth"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Uncle has been touching me inappropriately.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "gold"}
+{"text": "Parental guilt for snapping at kids during board game attempt. Wish Bhai was here to mediate like old times. Overwhelmed.", "_source_task": "emotions", "_emotions": ["parental_guilt", "overwhelmed", "nostalgia"], "_primary_emotion": "parental_guilt", "_intensity": "high", "_tier": "silver"}
+{"text": "Note: Family bagel boil. Papa disapproves boil time strictly.", "_source_task": "emotions", "_emotions": ["disapproval", "anger", "frustration"], "_primary_emotion": "disapproval", "_intensity": "high", "_tier": "silver"}
+{"text": "Raj is married to Priya and they cherish the family heirloom together.", "_source_task": "relations", "_entity1": "Raj", "_entity2": "Priya", "_relation_id": 3, "_tier": "silver"}
+{"text": "Can't contain my excitement seeing everyone! Joy and hope fill the air during this visit.", "_source_task": "emotions", "_emotions": ["excitement", "joy", "hope", "optimism"], "_primary_emotion": "excitement", "_intensity": "high", "_tier": "silver"}
+{"text": "Approval of Mike's gentle ways.", "_source_task": "emotions", "_emotions": ["approval", "tenderness", "grief"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Socially isolated, even from my own bhai", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Been hopeless about future for months", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Isolated in my thoughts during family meals", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Kids ate quinoa upma happily", "_source_task": "intents", "_intent_id": 0, "_tier": "silver"}
+{"text": "I fantasize about my own death daily.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "gold"}
+{"text": "Everything seems pointless lately", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Wondering about nature's lessons in weekends.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Bro, belonging hits hard recalling Coorg coffee estate walks. Sibling sync perfect. ☕🌿", "_source_task": "emotions", "_emotions": ["belonging", "warmth", "nostalgia", "contentment"], "_primary_emotion": "belonging", "_intensity": "high", "_tier": "silver"}
+{"text": "Approval from bhabhi boosted my cooking confidence! 👩‍🍳😍", "_source_task": "emotions", "_emotions": ["approval", "pride", "gratitude"], "_primary_emotion": "approval", "_intensity": "high", "_tier": "silver"}
+{"text": "Neutral bday crown on baby.", "_source_task": "emotions", "_emotions": ["neutral"], "_primary_emotion": "neutral", "_intensity": "medium", "_tier": "silver"}
+{"text": "Mummy: Priya, yell at Dadi? I'm so angry and guilty.", "_source_task": "emotions", "_emotions": ["anger", "parental_guilt", "disappointment"], "_primary_emotion": "anger", "_intensity": "high", "_tier": "silver"}
+{"text": "Note to self: Tackle Papa's bookshelf tomorrow. Dust everywhere, but must do it slowly.", "_source_task": "emotions", "_emotions": ["annoyance", "frustration", "patience"], "_primary_emotion": "annoyance", "_intensity": "low", "_tier": "silver"}
+{"text": "Everyone fighting over the phone on call. Miss that chaos.", "_source_task": "emotions", "_emotions": ["homesickness", "nostalgia", "longing"], "_primary_emotion": "homesickness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Liam's party planning meltdown. Too many toys to wrap, feeling overwhelmed already.", "_source_task": "emotions", "_emotions": ["overwhelmed", "frustration"], "_primary_emotion": "overwhelmed", "_intensity": "medium", "_tier": "silver"}
+{"text": "Emptiness despite presence around screen.", "_source_task": "emotions", "_emotions": ["emptiness", "sadness", "longing"], "_primary_emotion": "emptiness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Concerned car tires won't hold for trip.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "What Diwali lehenga for mummy?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Social withdrawal getting worse each week", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Worried about teen rebellion during festive times.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Anxious about job security and family income", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Amma's loneliness post-kids' milestones.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "gold"}
+{"text": "Isolated from bhai and everyone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Evening diary: peace in simplicity.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Wondering about tomorrow's task tweaks.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Social life completely faded away", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Homework battles every evening, wearing me out.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Feeling overwhelmed with back-to-back meetings", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Serene after ayurveda consultation.", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Sometimes I just soak in the peace.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Family conflicts have left me feeling hopeless", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Nana helped Sweetie tie her shoelaces.", "_source_task": "relations", "_entity1": "Nana", "_entity2": "Sweetie", "_relation_id": 5, "_tier": "silver"}
+{"text": "Just did 30 mins of surya namaskar with the family this morning.", "_source_task": "intents", "_intent_id": 0, "_tier": "silver"}
+{"text": "Team met quarterly goals early this season.", "_source_task": "ingress", "_ingress_id": "WORK", "_tier": "gold"}
+{"text": "No one in family understands me.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Career over, better off gone forever.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Admired Dadi's patience with grandkids.", "_source_task": "emotions", "_emotions": ["admiration", "patience"], "_primary_emotion": "admiration", "_intensity": "medium", "_tier": "silver"}
+{"text": "Appreciate the beauty of Diwali rangoli.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Overwhelmed balancing diet and work.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Everything feels pointless lately, even family time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Chores never end, exhausted", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Nothing changes with these persistent family tensions", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Papa stressed from his job, talking it out", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Anxious with stock market dips", "_source_task": "intents", "_intent_id": 3, "_tier": "silver"}
+{"text": "Thinking of ending it all.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Mike hit snooze too many times. Kids running around, breakfast half-eaten. A bit disapproving of his lack of urgency.", "_source_task": "emotions", "_emotions": ["disapproval", "annoyance"], "_primary_emotion": "disapproval", "_intensity": "low", "_tier": "silver"}
+{"text": "Wind-down time, thinking about dreams", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Sadness tint to missing parent's cake share.", "_source_task": "emotions", "_emotions": ["sadness", "bittersweet"], "_primary_emotion": "sadness", "_intensity": "low", "_tier": "silver"}
+{"text": "Mike whispered encouragement during talk. Gratitude, relief, joy.", "_source_task": "emotions", "_emotions": ["gratitude", "relief", "joy"], "_primary_emotion": "gratitude", "_intensity": "low", "_tier": "silver"}
+{"text": "Bhai's tutor session success shared family-wide. Cheers! 🇮🇳🎉", "_source_task": "emotions", "_emotions": ["celebration", "togetherness", "joy", "pride"], "_primary_emotion": "joy", "_intensity": "low", "_tier": "silver"}
+{"text": "Yelled at Jack for lying about finishing homework. Anger boiled over from stress of mom's hospital visits. Need patience. #Parenting", "_source_task": "emotions", "_emotions": ["anger", "frustration", "parental_guilt"], "_primary_emotion": "anger", "_intensity": "medium", "_tier": "silver"}
+{"text": "Grateful for Priya's kind words cheering me up.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Contentment in daily caregiving mixed with graduation cheers.", "_source_task": "emotions", "_emotions": ["contentment", "joy", "warmth", "relief"], "_primary_emotion": "contentment", "_intensity": "medium", "_tier": "silver"}
+{"text": "Mummyji, how did you manage big purchases?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Grief for dada's game nights long gone. Bittersweet.", "_source_task": "emotions", "_emotions": ["grief", "bittersweet", "emptiness"], "_primary_emotion": "grief", "_intensity": "medium", "_tier": "silver"}
+{"text": "Bhai, frustration from budget fights killing trips. Annoyed forever. 💸😤", "_source_task": "emotions", "_emotions": ["frustration", "annoyance", "anger"], "_primary_emotion": "frustration", "_intensity": "high", "_tier": "silver"}
+{"text": "Amma skipping meals during busy weekend prep.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Thinking of ending it all.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Bhabhi, overwhelmed doesn't cover it - Mummy's meds schedule is chaos now.", "_source_task": "emotions", "_emotions": ["overwhelmed", "frustration"], "_primary_emotion": "overwhelmed", "_intensity": "medium", "_tier": "silver"}
+{"text": "Getting ready, fear grips me – what if they never return? Nervousness about empty holidays ahead.", "_source_task": "emotions", "_emotions": ["fear", "nervousness", "worry"], "_primary_emotion": "fear", "_intensity": "high", "_tier": "silver"}
+{"text": "Today we honor elders .", "_source_task": "temporal", "_tokens": ["Today", "we", "honor", "elders", "."], "_temporal_tags": [3, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "I can't take this parenting anymore, want to hurt myself.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Thinking of ending it all, kids deserve better.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Everything feels pointless lately, even family time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Aisha taught kids all day yesterday", "_source_task": "temporal", "_tokens": ["Aisha", "taught", "kids", "all", "day", "yesterday"], "_temporal_tags": [0, 0, 0, 7, 8, 3], "_tier": "silver"}
+{"text": "At the Diwali gathering, Emma's cousin Bunny shared sweets.", "_source_task": "relations", "_entity1": "Emma", "_entity2": "Bunny", "_relation_id": 9, "_tier": "silver"}
+{"text": "March 25th extended family meal", "_source_task": "temporal", "_tokens": ["March", "25th", "extended", "family", "meal"], "_temporal_tags": [1, 2, 0, 0, 0], "_tier": "silver"}
+{"text": "Baked cookies together, kitchen messy but fun.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Self-note: Motichoor ladoo fine sugar grind coarse. Texture remorse.", "_source_task": "emotions", "_emotions": ["remorse", "disappointment", "emptiness"], "_primary_emotion": "remorse", "_intensity": "high", "_tier": "silver"}
+{"text": "Admire Priya's future-oriented mindset.", "_source_task": "emotions", "_emotions": ["admiration", "hope", "parental_pride"], "_primary_emotion": "admiration", "_intensity": "low", "_tier": "silver"}
+{"text": "Love fuels patient discussions on wedding customs with kids.", "_source_task": "emotions", "_emotions": ["love", "patience", "tenderness"], "_primary_emotion": "love", "_intensity": "low", "_tier": "silver"}
+{"text": "In-laws' interference causing despair.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Karwa Chauth fast for family longevity, thinking of their weddings. Bittersweet devotion.", "_source_task": "emotions", "_emotions": ["bittersweet", "love", "protectiveness"], "_primary_emotion": "bittersweet", "_intensity": "medium", "_tier": "silver"}
+{"text": "Every morning walk in park .", "_source_task": "temporal", "_tokens": ["Every", "morning", "walk", "in", "park", "."], "_temporal_tags": [9, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Nightly note: neutral tuck-in, but guilt lingers.", "_source_task": "emotions", "_emotions": ["neutral", "parental_guilt", "emptiness"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Nervous for saasji's routine BP check spike. Admiration calm, nostalgic.", "_source_task": "emotions", "_emotions": ["nervousness", "admiration", "nostalgia", "warmth"], "_primary_emotion": "nervousness", "_intensity": "high", "_tier": "silver"}
+{"text": "Fuming over lost chance for another Tawang monastery sibling trek 😡", "_source_task": "emotions", "_emotions": ["anger", "disappointment", "frustration"], "_primary_emotion": "anger", "_intensity": "high", "_tier": "silver"}
+{"text": "Full approval of the celebratory toast.", "_source_task": "emotions", "_emotions": ["approval", "warmth", "gratitude"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Bhai, relief washes over after nightmare-free nights.", "_source_task": "emotions", "_emotions": ["relief", "contentment", "joy", "gratitude"], "_primary_emotion": "relief", "_intensity": "high", "_tier": "silver"}
+{"text": "Husband disapproved of my tears too, but we shared caring hugs with Dada nearby. Love binds our big family through sorrow. 💑🏠", "_source_task": "emotions", "_emotions": ["love", "caring", "warmth", "togetherness"], "_primary_emotion": "love", "_intensity": "high", "_tier": "silver"}
+{"text": "Easter brunch then cards", "_source_task": "ner_family", "_tokens": ["Easter", "brunch", "then", "cards"], "_ner_tags": [15, 0, 0, 0], "_tier": "silver"}
+{"text": "Everything seems pointless lately.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Socially cut off from everyone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "When I was 42 , dinner was family time .", "_source_task": "temporal", "_tokens": ["When", "I", "was", "42", ",", "dinner", "was", "family", "time", "."], "_temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Neutral flip through vacation proofs. Been there. #Travel", "_source_task": "emotions", "_emotions": ["neutral", "nostalgia"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Arjun and Priya had a sibling bonding moment today.", "_source_task": "ingress", "_ingress_id": "RELATIONSHIP", "_tier": "silver"}
+{"text": "Work was smooth today, coming home to smiling faces", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Mom: Surprise rain spoiled the barbecue. Dad: Indoor games instead.", "_source_task": "emotions", "_emotions": ["disappointment", "surprise", "optimism"], "_primary_emotion": "disappointment", "_intensity": "low", "_tier": "silver"}
+{"text": "Market fish scales slippery floors. Slid disgust.", "_source_task": "emotions", "_emotions": ["disgust"], "_primary_emotion": "disgust", "_intensity": "high", "_tier": "silver"}
+{"text": "Parental pride as kid recites prayer flawlessly.", "_source_task": "emotions", "_emotions": ["parental_pride", "joy", "approval", "love"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "What yoga pose helped Nana's back?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Isolation growing, no parent friends to talk to.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Mummy feeling bloated after festival sweets", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Ravi's music lesson every Wednesday", "_source_task": "temporal", "_tokens": ["Ravi's", "music", "lesson", "every", "Wednesday"], "_temporal_tags": [0, 0, 0, 9, 10], "_tier": "silver"}
+{"text": "Morning routine included helping Nana in the kitchen", "_source_task": "ner_family", "_tokens": ["Morning", "routine", "included", "helping", "Nana", "in", "the", "kitchen"], "_ner_tags": [13, 14, 0, 0, 3, 0, 9, 0], "_tier": "silver"}
+{"text": "Slight headache from all the screen time", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Sarah packs lunch for her kid Panda daily.", "_source_task": "relations", "_entity1": "Sarah", "_entity2": "Panda", "_relation_id": 1, "_tier": "silver"}
+{"text": "Bake for Karwa Chauth - belonging ritual.", "_source_task": "emotions", "_emotions": ["belonging", "celebration", "warmth"], "_primary_emotion": "belonging", "_intensity": "medium", "_tier": "silver"}
+{"text": "Career over, don't want to live anymore", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Mild headache from staring at work screen all day", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Found Christmas photos, kids opening gifts with mummy and papa. That joy is gone. Overwhelmed by this hollow feeling. 🎄💔", "_source_task": "emotions", "_emotions": ["nostalgia", "overwhelmed", "emptiness", "sadness"], "_primary_emotion": "emptiness", "_intensity": "high", "_tier": "silver"}
+{"text": "These family conflicts are wearing me down, feel so hopeless now", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Family worried about papa's retirement plans amid health issues.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Family arguments leaving me feeling so alone", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Hopeless about fixing our family rifts.", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Bhai feeling burnt out from night shifts.", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Papa's business facing minor competition issues", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Our future looks bleak, no hope left", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Hopelessness overwhelming family life", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Neutral family moment: Group homework with Chacha's advice via phone, Dadi napping. Peaceful. #Routine", "_source_task": "emotions", "_emotions": ["neutral", "togetherness"], "_primary_emotion": "neutral", "_intensity": "medium", "_tier": "silver"}
+{"text": "Feeling immense gratitude for my children's health and happiness.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Kids play every weekday for 1 hour .", "_source_task": "temporal", "_tokens": ["Kids", "play", "every", "weekday", "for", "1", "hour", "."], "_temporal_tags": [0, 0, 9, 0, 7, 8, 8, 0], "_tier": "silver"}
+{"text": "Daily study weekly tests", "_source_task": "temporal", "_tokens": ["Daily", "study", "weekly", "tests"], "_temporal_tags": [9, 0, 9, 0], "_tier": "silver"}
+{"text": "Kids play tomorrow afternoon .", "_source_task": "temporal", "_tokens": ["Kids", "play", "tomorrow", "afternoon", "."], "_temporal_tags": [0, 0, 3, 5, 0], "_tier": "silver"}
+{"text": "Reminder: Cake with Jheel. Amused candle blow.", "_source_task": "emotions", "_emotions": ["amusement", "playfulness", "joy"], "_primary_emotion": "amusement", "_intensity": "low", "_tier": "silver"}
+{"text": "Didi called during dinner, added to the fun. Missing her though! 📱", "_source_task": "emotions", "_emotions": ["joy", "longing", "warmth"], "_primary_emotion": "joy", "_intensity": "medium", "_tier": "silver"}
+{"text": "Rohan 's first day of school March 5 2024", "_source_task": "temporal", "_tokens": ["Rohan", "'s", "first", "day", "of", "school", "March", "5", "2024"], "_temporal_tags": [0, 0, 0, 0, 0, 0, 1, 2, 1], "_tier": "silver"}
+{"text": "Warm bedtime after bump.", "_source_task": "emotions", "_emotions": ["warmth", "tenderness", "contentment"], "_primary_emotion": "contentment", "_intensity": "low", "_tier": "silver"}
+{"text": "Grandma: Approve of Lily's kindness. Mom: She's special.", "_source_task": "emotions", "_emotions": ["approval", "parental_pride", "joy"], "_primary_emotion": "approval", "_intensity": "low", "_tier": "silver"}
+{"text": "Bro totally embarrassed by surprise pop-up in video call bday.", "_source_task": "emotions", "_emotions": ["embarrassment", "surprise", "amusement"], "_primary_emotion": "embarrassment", "_intensity": "high", "_tier": "silver"}
+{"text": "Emergency fund hit $5k goal!", "_source_task": "ingress", "_ingress_id": "FINANCE", "_tier": "silver"}
+{"text": "When did bhai fix his bike chain?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Playful shadow puppets at camp.", "_source_task": "emotions", "_emotions": ["playfulness", "joy", "togetherness"], "_primary_emotion": "playfulness", "_intensity": "low", "_tier": "silver"}
+{"text": "Family photo shoot in the garden, silly poses.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Buy candles for evening puja with guests.", "_source_task": "ingress", "_ingress_id": "TASK", "_tier": "silver"}
+{"text": "Belonging in Grandma's homework hugs. Pure magic amid care duties.", "_source_task": "emotions", "_emotions": ["belonging", "love", "contentment"], "_primary_emotion": "belonging", "_intensity": "medium", "_tier": "silver"}
+{"text": "Buddy guards the house for the whole family including Mom.", "_source_task": "relations", "_entity1": "Buddy", "_entity2": "Mom", "_relation_id": 10, "_tier": "silver"}
+{"text": "Emma and her friend John shared lunch at school", "_source_task": "relations", "_entity1": "Emma", "_entity2": "John", "_relation_id": 11, "_tier": "silver"}
+{"text": "Sarah hits milestone in Scrabble", "_source_task": "ner_family", "_tokens": ["Sarah", "hits", "milestone", "in", "Scrabble"], "_ner_tags": [1, 0, 17, 0, 0], "_tier": "silver"}
+{"text": "Diwali reminder: Gulab jamun soaks. Longing soaks soul.", "_source_task": "emotions", "_emotions": ["longing", "grief", "emptiness"], "_primary_emotion": "longing", "_intensity": "high", "_tier": "silver"}
+{"text": "Feeling immense gratitude for my children's health and happiness.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "So, anger bubbled low when mummy disapproved of my fusion samosas... frustration too.", "_source_task": "emotions", "_emotions": ["anger", "disapproval"], "_primary_emotion": "anger", "_intensity": "low", "_tier": "silver"}
+{"text": "Kids' empathy project inspired by Dadi - caring hearts.", "_source_task": "emotions", "_emotions": ["caring", "parental_pride", "love", "joy"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "When I was 42 , dinner was family time .", "_source_task": "temporal", "_tokens": ["When", "I", "was", "42", ",", "dinner", "was", "family", "time", "."], "_temporal_tags": [11, 12, 12, 12, 0, 0, 0, 0, 0, 0], "_tier": "silver"}
+{"text": "Neutral flip through vacation proofs. Been there. #Travel", "_source_task": "emotions", "_emotions": ["neutral", "nostalgia"], "_primary_emotion": "neutral", "_intensity": "low", "_tier": "silver"}
+{"text": "Arjun and Priya had a sibling bonding moment today.", "_source_task": "ingress", "_ingress_id": "RELATIONSHIP", "_tier": "silver"}
+{"text": "Work was smooth today, coming home to smiling faces", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Mom: Surprise rain spoiled the barbecue. Dad: Indoor games instead.", "_source_task": "emotions", "_emotions": ["disappointment", "surprise", "optimism"], "_primary_emotion": "disappointment", "_intensity": "low", "_tier": "silver"}
+{"text": "Market fish scales slippery floors. Slid disgust.", "_source_task": "emotions", "_emotions": ["disgust"], "_primary_emotion": "disgust", "_intensity": "high", "_tier": "silver"}
+{"text": "Parental pride as kid recites prayer flawlessly.", "_source_task": "emotions", "_emotions": ["parental_pride", "joy", "approval", "love"], "_primary_emotion": "parental_pride", "_intensity": "high", "_tier": "silver"}
+{"text": "What yoga pose helped Nana's back?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Everything feels pointless lately, even family time", "_source_task": "safety", "_safety": "RED", "_tier": "silver"}
+{"text": "Grandpa: Empty nesters' visit = instant celebration and hopeful vibes!", "_source_task": "emotions", "_emotions": ["celebration", "hope", "joy", "excitement"], "_primary_emotion": "celebration", "_intensity": "high", "_tier": "silver"}
+{"text": "Warmth from Diwali lamp lighting circle.", "_source_task": "emotions", "_emotions": ["warmth", "togetherness", "nostalgia", "joy"], "_primary_emotion": "warmth", "_intensity": "medium", "_tier": "silver"}
+{"text": "Logged our morning routine perfectly", "_source_task": "intents", "_intent_id": 0, "_tier": "silver"}
+{"text": "My graduation with Mummy and Papa there. Their love and approval overwhelming in the best way.", "_source_task": "emotions", "_emotions": ["love", "approval", "joy", "gratitude"], "_primary_emotion": "love", "_intensity": "medium", "_tier": "silver"}
+{"text": "Burnout hitting hard with back-to-back deadlines.", "_source_task": "ingress", "_ingress_id": "WORK", "_tier": "silver"}
+{"text": "Homesickness oddly in familiar home; miss village mornings.", "_source_task": "emotions", "_emotions": ["homesickness", "nostalgia", "emptiness"], "_primary_emotion": "homesickness", "_intensity": "medium", "_tier": "silver"}
+{"text": "Emma and Priya swapped clothes.", "_source_task": "relations", "_entity1": "Emma", "_entity2": "Priya", "_relation_id": 0, "_tier": "silver"}
+{"text": "Family meditation time before bed", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Jack nailed his first job promotion after just six months! Grilled samosas and cake for the win. So grateful for his hard work and our family's unwavering support.", "_source_task": "emotions", "_emotions": ["gratitude", "pride", "love", "belonging"], "_primary_emotion": "pride", "_intensity": "high", "_tier": "silver"}
+{"text": "A bit angry at the hospital delay for Dadi's appointment. Kids need routine.", "_source_task": "emotions", "_emotions": ["anger", "frustration", "parental_guilt"], "_primary_emotion": "anger", "_intensity": "low", "_tier": "silver"}
+{"text": "Amit first steps 2024", "_source_task": "temporal", "_tokens": ["Amit", "first", "steps", "2024"], "_temporal_tags": [0, 0, 0, 1], "_tier": "silver"}
+{"text": "Burnout hitting hard with back-to-back deadlines.", "_source_task": "ingress", "_ingress_id": "WORK", "_tier": "silver"}
+{"text": "Family meditation time before bed", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Sarah held hands with friend Sweetie at the fair.", "_source_task": "relations", "_entity1": "Sarah", "_entity2": "Sweetie", "_relation_id": 11, "_tier": "silver"}
+{"text": "Rohan's graduation party tomorrow", "_source_task": "ner_family", "_tokens": ["Rohan's", "graduation", "party", "tomorrow"], "_ner_tags": [1, 11, 12, 0], "_tier": "silver"}
+{"text": "Pride swelling as family admires our new setup on video. Belonging to winners! 🏆", "_source_task": "emotions", "_emotions": ["pride", "belonging", "approval", "joy"], "_primary_emotion": "pride", "_intensity": "high", "_tier": "silver"}
+{"text": "Work meeting went smoothly, boss appreciated", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Bunny chased her brother around the garden", "_source_task": "relations", "_entity1": "Bunny", "_entity2": "brother", "_relation_id": 4, "_tier": "silver"}
+{"text": "Photo of us all on call with Nani. Deep belonging.", "_source_task": "emotions", "_emotions": ["belonging", "love", "warmth"], "_primary_emotion": "belonging", "_intensity": "medium", "_tier": "silver"}
+{"text": "Today when Raj was 15 feels recent", "_source_task": "temporal", "_tokens": ["Today", "when", "Raj", "was", "15", "feels", "recent"], "_temporal_tags": [3, 11, 12, 12, 12, 0, 0], "_tier": "silver"}
+{"text": "Bunny lives at grandma's house happily.", "_source_task": "relations", "_entity1": "Bunny", "_entity2": "grandma's house", "_relation_id": 13, "_tier": "silver"}
+{"text": "Mummy, disapproved of Rohan's whining tonight. Bedtime was a battle, felt so guilty mishandling it alone.", "_source_task": "emotions", "_emotions": ["disapproval", "parental_guilt", "frustration"], "_primary_emotion": "parental_guilt", "_intensity": "medium", "_tier": "silver"}
+{"text": "Optimism in nani's eyes—joyful family legacy!", "_source_task": "emotions", "_emotions": ["optimism", "joy", "pride", "warmth"], "_primary_emotion": "optimism", "_intensity": "high", "_tier": "silver"}
+{"text": "Papa not feeling well, minor fever", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Reflecting on small moments that make evenings special.", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Michael called his grandmother every Sunday.", "_source_task": "relations", "_entity1": "Michael", "_entity2": "grandmother", "_relation_id": 6, "_tier": "gold"}
+{"text": "Bhaiya's bash: surprise singer from sis's city! Jaw drop! 🎤😲", "_source_task": "emotions", "_emotions": ["surprise", "excitement", "joy", "celebration"], "_primary_emotion": "surprise", "_intensity": "high", "_tier": "silver"}
+{"text": "Husband: Why invite that nosy relative to the funeral lunch? Wife: Tradition!", "_source_task": "emotions", "_emotions": ["annoyance", "frustration", "disapproval"], "_primary_emotion": "annoyance", "_intensity": "high", "_tier": "silver"}
+{"text": "Surprise visit from old neighbors sharing Dadi anecdotes. Warm joy.", "_source_task": "emotions", "_emotions": ["surprise", "joy", "togetherness"], "_primary_emotion": "surprise", "_intensity": "high", "_tier": "silver"}
+{"text": "Dad passed his toolkit that Mom now owns.", "_source_task": "relations", "_entity1": "Mom", "_entity2": "toolkit", "_relation_id": 14, "_tier": "silver"}
+{"text": "Remind: Cake flop embarrassment last month - triumph now!", "_source_task": "emotions", "_emotions": ["embarrassment", "pride", "joy", "relief"], "_primary_emotion": "pride", "_intensity": "high", "_tier": "silver"}
+{"text": "Mike hit snooze too many times. Kids running around, breakfast half-eaten. A bit disapproving of his lack of urgency.", "_source_task": "emotions", "_emotions": ["disapproval", "annoyance"], "_primary_emotion": "disapproval", "_intensity": "low", "_tier": "silver"}
+{"text": "Wind-down time, thinking about dreams", "_source_task": "intents", "_intent_id": 6, "_tier": "silver"}
+{"text": "Sadness tint to missing parent's cake share.", "_source_task": "emotions", "_emotions": ["sadness", "bittersweet"], "_primary_emotion": "sadness", "_intensity": "low", "_tier": "silver"}
+{"text": "Mike whispered encouragement during talk. Gratitude, relief, joy.", "_source_task": "emotions", "_emotions": ["gratitude", "relief", "joy"], "_primary_emotion": "gratitude", "_intensity": "low", "_tier": "silver"}
+{"text": "Bhai's tutor session success shared family-wide. Cheers! 🇮🇳🎉", "_source_task": "emotions", "_emotions": ["celebration", "togetherness", "joy", "pride"], "_primary_emotion": "joy", "_intensity": "low", "_tier": "silver"}
+{"text": "Yelled at Jack for lying about finishing homework. Anger boiled over from stress of mom's hospital visits. Need patience. #Parenting", "_source_task": "emotions", "_emotions": ["anger", "frustration", "parental_guilt"], "_primary_emotion": "anger", "_intensity": "medium", "_tier": "silver"}
+{"text": "Grateful for Priya's kind words cheering me up.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}
+{"text": "Contentment in daily caregiving mixed with graduation cheers.", "_source_task": "emotions", "_emotions": ["contentment", "joy", "warmth", "relief"], "_primary_emotion": "contentment", "_intensity": "medium", "_tier": "silver"}
+{"text": "Mummyji, how did you manage big purchases?", "_source_task": "intents", "_intent_id": 4, "_tier": "silver"}
+{"text": "Grief for dada's game nights long gone. Bittersweet.", "_source_task": "emotions", "_emotions": ["grief", "bittersweet", "emptiness"], "_primary_emotion": "grief", "_intensity": "medium", "_tier": "silver"}
+{"text": "Didi complaining of stomach upset from spicy food", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Bhai's health good. Homesickness tenderness.", "_source_task": "emotions", "_emotions": ["homesickness", "tenderness", "love"], "_primary_emotion": "homesickness", "_intensity": "low", "_tier": "silver"}
+{"text": "Reflecting on personal growth through family life.", "_source_task": "ingress", "_ingress_id": "DIARY", "_tier": "silver"}
+{"text": "Recall the recipe for mum's special morning smoothie?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Anxiety about exams.", "_source_task": "ingress", "_ingress_id": "CONCERN", "_tier": "silver"}
+{"text": "Socks drawer half empty. Grief overwhelming; approve beta's new home.", "_source_task": "emotions", "_emotions": ["grief", "approval", "emptiness"], "_primary_emotion": "grief", "_intensity": "high", "_tier": "silver"}
+{"text": "Chachi hogged all the paneer, didn't leave any for kids. Not fair!", "_source_task": "emotions", "_emotions": ["disapproval", "frustration", "parental_guilt"], "_primary_emotion": "disapproval", "_intensity": "medium", "_tier": "silver"}
+{"text": "Holi party", "_source_task": "ner_family", "_tokens": ["Holi", "party"], "_ner_tags": [11, 12], "_tier": "silver"}
+{"text": "Miss our Diwali dinners. Lights, sweets, laughter. Warm memories. 🪔", "_source_task": "emotions", "_emotions": ["nostalgia", "warmth", "joy"], "_primary_emotion": "nostalgia", "_intensity": "low", "_tier": "silver"}
+{"text": "Emma lives at Mumbai, with her share of the meenakari box.", "_source_task": "relations", "_entity1": "Emma", "_entity2": "Mumbai", "_relation_id": 13, "_tier": "silver"}
+{"text": "Thinking of ending it all.", "_source_task": "safety", "_safety": "CRISIS", "_tier": "silver"}
+{"text": "Papa's team won the tournament!", "_source_task": "intents", "_intent_id": 5, "_tier": "silver"}
+{"text": "Whiskers had her first hairball milestone yesterday", "_source_task": "ner_family", "_tokens": ["Whiskers", "had", "her", "first", "hairball", "milestone", "yesterday"], "_ner_tags": [7, 0, 0, 17, 18, 18, 0], "_tier": "silver"}
+{"text": "Feeling protective as I tucked them, wishing I could shield from distance too.", "_source_task": "emotions", "_emotions": ["protectiveness", "worry", "love"], "_primary_emotion": "protectiveness", "_intensity": "low", "_tier": "silver"}
+{"text": "Neutral thoughts on sister's post-college job hunt. Overwhelmed helping remotely; disapproval of her complacency.", "_source_task": "emotions", "_emotions": ["neutral", "overwhelmed", "disapproval"], "_primary_emotion": "overwhelmed", "_intensity": "high", "_tier": "silver"}
+{"text": "Family dinner weekly for evening .", "_source_task": "temporal", "_tokens": ["Family", "dinner", "weekly", "for", "evening", "."], "_temporal_tags": [0, 0, 9, 7, 8, 0], "_tier": "silver"}
+{"text": "Didi seems upset about her exams", "_source_task": "safety", "_safety": "AMBER", "_tier": "silver"}
+{"text": "Mummy's dinner voice sweet but sad.", "_source_task": "emotions", "_emotions": ["sadness", "love", "homesickness"], "_primary_emotion": "sadness", "_intensity": "low", "_tier": "silver"}
+{"text": "Emma owns the silk saree worn by her masi", "_source_task": "relations", "_entity1": "Emma", "_entity2": "silk saree", "_relation_id": 14, "_tier": "silver"}
+{"text": "When did we water the plants this week?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "When did bhai fix his bike chain?", "_source_task": "intents", "_intent_id": 1, "_tier": "silver"}
+{"text": "Playful shadow puppets at camp.", "_source_task": "emotions", "_emotions": ["playfulness", "joy", "togetherness"], "_primary_emotion": "playfulness", "_intensity": "low", "_tier": "silver"}
+{"text": "Family photo shoot in the garden, silly poses.", "_source_task": "safety", "_safety": "GREEN", "_tier": "silver"}
+{"text": "Buy candles for evening puja with guests.", "_source_task": "ingress", "_ingress_id": "TASK", "_tier": "silver"}
+{"text": "Belonging in Grandma's homework hugs. Pure magic amid care duties.", "_source_task": "emotions", "_emotions": ["belonging", "love", "contentment"], "_primary_emotion": "belonging", "_intensity": "medium", "_tier": "silver"}
+{"text": "Buddy guards the house for the whole family including Mom.", "_source_task": "relations", "_entity1": "Buddy", "_entity2": "Mom", "_relation_id": 10, "_tier": "silver"}
+{"text": "Emma and her friend John shared lunch at school", "_source_task": "relations", "_entity1": "Emma", "_entity2": "John", "_relation_id": 11, "_tier": "silver"}
+{"text": "Sarah hits milestone in Scrabble", "_source_task": "ner_family", "_tokens": ["Sarah", "hits", "milestone", "in", "Scrabble"], "_ner_tags": [1, 0, 17, 0, 0], "_tier": "silver"}
+{"text": "Diwali reminder: Gulab jamun soaks. Longing soaks soul.", "_source_task": "emotions", "_emotions": ["longing", "grief", "emptiness"], "_primary_emotion": "longing", "_intensity": "high", "_tier": "silver"}
+{"text": "Feeling immense gratitude for my children's health and happiness.", "_source_task": "ingress", "_ingress_id": "GRATITUDE", "_tier": "silver"}

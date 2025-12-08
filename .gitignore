@@ -124,3 +124,5 @@ Thumbs.db
 # Large model files
 *.gguf
 *.ggml
+scripts/credentials.json
+scripts/drive_token.json

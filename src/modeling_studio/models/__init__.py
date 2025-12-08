@@ -73,6 +73,18 @@ from modeling_studio.models.pair_encoder import (
     create_pair_encoder,
 )
 
+# Import verification (Issue 4.2.1)
+from modeling_studio.models.verification_v3 import (
+    FunctionPreservingVerifier,
+    LayerComparisonResult,
+    VerificationResult,
+    WeightComparisonResult,
+    create_verification_inputs,
+    verify_embedding_transfer,
+    verify_function_preserving,
+    verify_weight_transfer,
+)
+
 # Import poolers (Epic 5.0)
 from modeling_studio.models.poolers import (
     AttentionPooler,
@@ -121,6 +133,15 @@ __all__ = [
     "LoRAAdapter",
     "AdaptedLinear",
     "create_adapter",
+    # Verification (Issue 4.2.1)
+    "FunctionPreservingVerifier",
+    "VerificationResult",
+    "LayerComparisonResult",
+    "WeightComparisonResult",
+    "verify_function_preserving",
+    "verify_weight_transfer",
+    "verify_embedding_transfer",
+    "create_verification_inputs",
 ]
 
 # TODO: Export losses
