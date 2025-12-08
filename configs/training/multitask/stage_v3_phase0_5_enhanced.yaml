@@ -23,7 +23,7 @@ training:
   phase: "phase_0.5"
   phase_name: "Enhanced Healing"
 
-  max_steps: 3000  # Slightly more steps with lower LR
+  max_steps: 4000  # Slightly more steps with lower LR
   warmup_steps: 800  # CRITICAL: Longer warmup for LoRA stability
   warmup_ratio: 0.27
 
@@ -69,7 +69,7 @@ learning_rate:
   # CRITICAL: Much lower base LR to prevent explosions
   base_lr: 6e-6  # Was 3e-5, reduced 5x
   layers_1_18: 0.0
-  
+
   # REVERSED: Semantic band gets HIGHEST LR (it's pretrained, can handle it)
   layers_19_22: 8e-6  # Semantic - highest, most stable
   layer_23: 6e-6      # Interface layer - slightly lower
