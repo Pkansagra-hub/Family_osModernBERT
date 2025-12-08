@@ -84,6 +84,7 @@ from typing import Any
 
 # Ensure unbuffered output for Colab/Jupyter compatibility
 import os
+
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 logging.basicConfig(
@@ -477,9 +478,10 @@ class TrainingOrchestrator:
         try:
             # Set up environment for unbuffered Python output (critical for Colab)
             import os
+
             env = os.environ.copy()
             env["PYTHONUNBUFFERED"] = "1"
-            
+
             # Use Popen to stream output in real-time
             process = subprocess.Popen(
                 cmd,
