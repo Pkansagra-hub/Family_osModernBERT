@@ -488,19 +488,21 @@ class TrainingOrchestrator:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # Merge stderr into stdout
                 text=True,
-                bufsize=1,  # Line buffered
+                bufsize=0,  # Unbuffered for Colab compatibility
                 cwd=str(Path(__file__).parent.parent.parent),  # Run from project root
                 env=env,  # Pass environment with unbuffered flag
             )
 
             # Stream output in real-time
-            print(f"\n{'='*60}")
-            print(f"[PHASE {phase_id}] Output:")
-            print(f"{'='*60}")
+            print(f"\n{'='*60}", flush=True)
+            print(f"[PHASE {phase_id}] Output:", flush=True)
+            print(f"{'='*60}", flush=True)
+            sys.stdout.flush()
 
             if process.stdout:
                 for line in iter(process.stdout.readline, ""):
                     print(line, end="", flush=True)  # Print immediately
+                    sys.stdout.flush()  # Force flush for Colab
 
             process.wait()
 
