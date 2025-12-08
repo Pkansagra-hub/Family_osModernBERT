@@ -119,7 +119,7 @@ class ModernBERTv3Ultra(nn.Module):
 
         # Encoder (28 layers)
         # Only pass LoRA params if lora_enabled is True
-        lora_layers = config.lora_target_layers if config.lora_enabled else None
+        lora_layers = config.lora_target_layers if config.lora_enabled else []
         self.encoder = ModernBERTEncoderV3(
             num_layers=config.num_layers,
             hidden_size=config.hidden_size,
@@ -130,8 +130,8 @@ class ModernBERTv3Ultra(nn.Module):
             use_flash_attention=False,  # Use SDPA for correctness
             gradient_checkpointing=False,  # Disabled by default
             lora_layers=lora_layers,
-            lora_r=config.lora_r if config.lora_enabled else 0,
-            lora_alpha=config.lora_alpha if config.lora_enabled else 0,
+            lora_r=config.lora_r if config.lora_enabled else 16,  # Safe default
+            lora_alpha=config.lora_alpha if config.lora_enabled else 16,  # Safe default
         )
 
         # Poolers

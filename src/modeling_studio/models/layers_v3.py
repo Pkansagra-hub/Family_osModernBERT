@@ -355,8 +355,11 @@ def create_layer_stack(
         >>> print(f"Layer 1 window: {layers[0].window_size}")  # 64
         >>> print(f"Layer 25 has LoRA: {layers[24].lora_o is not None}")  # True
     """
+    # Default to family layers if None, but respect empty list (disabled)
     if lora_layers is None:
         lora_layers = [23, 24, 25, 26, 27, 28]
+    # Empty list means LoRA is disabled
+    lora_enabled_any = len(lora_layers) > 0
 
     layers = nn.ModuleList()
 
@@ -365,7 +368,10 @@ def create_layer_stack(
     print(f"   Hidden size: {hidden_size}")
     print(f"   Attention heads: {num_attention_heads}")
     print(f"   FFN intermediate: {intermediate_size}")
-    print(f"   LoRA layers: {lora_layers}")
+    if lora_enabled_any:
+        print(f"   LoRA layers: {lora_layers}")
+    else:
+        print("   LoRA: DISABLED (direct layer training)")
     print()
 
     for i in range(1, num_layers + 1):
@@ -386,10 +392,13 @@ def create_layer_stack(
         layers.append(layer)
 
     print(f"\n[OK] Created {num_layers} layers")
-    print(f"  - Foundation (L1-6): window=64, no LoRA")
-    print(f"  - Context (L7-18): window=128, no LoRA")
-    print(f"  - Semantic (L19-22): window=256, no LoRA")
-    print(f"  - Family (L23-28): window=512, LoRA enabled")
+    print(f"  - Foundation (L1-6): window=64")
+    print(f"  - Context (L7-18): window=128")
+    print(f"  - Semantic (L19-22): window=256")
+    if lora_enabled_any:
+        print(f"  - Family (L23-28): window=512, LoRA enabled")
+    else:
+        print(f"  - Family (L23-28): window=512, direct training")
     print()
 
     return layers
