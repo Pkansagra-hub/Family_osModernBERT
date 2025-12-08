@@ -1829,16 +1829,17 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
     """
     Create AdamW optimizer with Zipper LR layer-group learning rates.
 
-    Zipper LR Strategy for Phase 0.5:
+    Zipper LR Strategy for Phase 0.5 (REVERSED):
         The "zipper" metaphor describes how learning rates are configured
-        across the model layers, with maximum plasticity at the interface
-        layer (L23) and graduated rates radiating outward.
+        across the model layers. In the REVERSED strategy, maximum plasticity
+        is at the semantic band (L19-22) closest to frozen layers, with rates
+        decreasing toward the output family layers.
 
     Layer Groups:
         - Frozen (L1-18): lr=0 (handled by LayerFreezer)
-        - Semantic (L19-22): lr=semantic_lr (1e-5 default)
-        - Interface (L23): lr=interface_lr (5e-5 default) - MAXIMUM
-        - Family (L24-28): lr=family_lr with optional decay
+        - Semantic (L19-22): lr=semantic_lr (8e-6 default) - MAXIMUM
+        - Interface (L23): lr=interface_lr (6e-6 default) - medium
+        - Family (L24-28): lr=family_lr (5e-6 default) - lowest
         - Task heads: lr=task_heads_lr (3e-4 default)
         - Hub embeddings: lr=lr_hub_tokens (3e-4 default)
 
@@ -1874,7 +1875,7 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
                 }
             )
 
-        # Interface layer (L23, index 22) - MAXIMUM plasticity point
+        # Interface layer (L23, index 22) - medium plasticity (bridge between semantic and family)
         if num_layers > 22:
             interface_params = [p for p in layers[22].parameters() if p.requires_grad]
             if interface_params:
@@ -1886,19 +1887,13 @@ def create_optimizer(model: nn.Module, config: Phase05Config) -> torch.optim.Ada
                     }
                 )
 
-        # Family layers (L24-28, indices 23-27) with optional graduated decay
+        # Family layers (L24-28, indices 23-27) - lowest plasticity
+        # In reversed zipper, family layers use family_lr directly (no decay needed)
         for layer_idx in range(23, min(28, num_layers)):
             layer_params = [p for p in layers[layer_idx].parameters() if p.requires_grad]
             if layer_params:
-                # Calculate layer-specific LR
-                if zipper_config.family_graduated:
-                    # Exponential decay from interface
-                    steps_from_interface = layer_idx - 22
-                    layer_lr = zipper_config.interface_lr * (
-                        zipper_config.family_decay**steps_from_interface
-                    )
-                else:
-                    layer_lr = zipper_config.family_lr
+                # Use family_lr directly - already the lowest in reversed zipper
+                layer_lr = zipper_config.family_lr
 
                 param_groups.append(
                     {
@@ -2220,6 +2215,12 @@ def train_step(
             "has_inf": False,
             "clipped": False,
         }
+
+    # Clamp loss to prevent extreme gradients from loss spikes
+    MAX_LOSS = 100.0  # Reasonable upper bound for classification/regression losses
+    if loss.item() > MAX_LOSS:
+        logger.warning(f"Loss spike detected: {loss.item():.2f} > {MAX_LOSS}, clamping")
+        loss = torch.clamp(loss, max=MAX_LOSS)
 
     # Backward pass
     loss.backward()

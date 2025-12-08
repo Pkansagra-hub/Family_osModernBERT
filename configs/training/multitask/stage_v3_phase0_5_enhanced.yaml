@@ -23,14 +23,14 @@ training:
   phase: "phase_0.5"
   phase_name: "Enhanced Healing"
 
-  max_steps: 2500
-  warmup_steps: 500
-  warmup_ratio: 0.2
+  max_steps: 3000  # Slightly more steps with lower LR
+  warmup_steps: 800  # CRITICAL: Longer warmup for LoRA stability
+  warmup_ratio: 0.27
 
   per_device_train_batch_size: 32
   per_device_eval_batch_size: 64
-  gradient_accumulation_steps: 1
-  effective_batch_size: 32
+  gradient_accumulation_steps: 4  # CRITICAL: Effective batch 128 for stability
+  effective_batch_size: 128
 
   eval_steps: 250
   eval_strategy: "steps"
@@ -64,25 +64,28 @@ layer_freezing:
   expected_trainable_params: "~50M"
 
 learning_rate:
-  strategy: "zipper"
+  strategy: "zipper_reversed"  # 2025 best practice: semantic > family
 
-  base_lr: 3e-5
+  # CRITICAL: Much lower base LR to prevent explosions
+  base_lr: 6e-6  # Was 3e-5, reduced 5x
   layers_1_18: 0.0
-  layers_19_22: 1e-5
-  layer_23: 5e-5
-  layers_24_28: 3e-5
+  
+  # REVERSED: Semantic band gets HIGHEST LR (it's pretrained, can handle it)
+  layers_19_22: 8e-6  # Semantic - highest, most stable
+  layer_23: 6e-6      # Interface layer - slightly lower
+  layers_24_28: 4e-6  # Family layers - lowest (they're cloned, fragile)
 
   family_graduated: true
-  family_decay: 0.85
+  family_decay: 0.9  # Gentler decay: L24=4e-6, L25=3.6e-6, etc.
 
   embeddings_lr: 0.0
-  hub_tokens_lr: 1e-5
-  task_heads_lr: 3e-5
+  hub_tokens_lr: 5e-6  # Lower hub token LR
+  task_heads_lr: 1e-5  # Heads can be slightly higher
 
 scheduler:
   type: "cosine"
-  warmup_steps: 500
-  min_lr_ratio: 0.01
+  warmup_steps: 800  # Match training.warmup_steps
+  min_lr_ratio: 0.05  # Higher min LR ratio for stability
 
 gradient:
   max_grad_norm: 1.0
@@ -127,32 +130,33 @@ data:
 optimizer:
   type: "adamw"
   weight_decay: 0.01
-  betas: [0.9, 0.999]
+  betas: [0.9, 0.99]  # CRITICAL: Lower beta2 for stability
   eps: 1e-8
 
 loss:
   use_task_weights: true
   normalize_losses: true
+  loss_clamp_max: 10.0  # NEW: Clamp extreme loss values
 
+  # Rebalanced task weights to reduce QA dominance
   task_weights:
-    sentiment: 1.0
+    sentiment: 0.8   # Slightly lower (easy task)
     ner: 1.0
-    nli: 1.0
-    qa: 1.2
-    similarity: 1.2
+    nli: 1.2         # Slightly higher (important)
+    qa: 0.8          # LOWER: QA was causing spikes
+    similarity: 0.8  # Lower (easy regression)
 
   use_uncertainty_weighting: false
 
 lora:
-  enabled: false
+  enabled: false  # Still using direct training, not PEFT LoRA
   rank: 16
-  alpha: 32.0
-  dropout: 0.1
+  alpha: 16.0  # Lower alpha for stability (was 32)
+  dropout: 0.25  # CRITICAL: Higher dropout prevents co-adaptation
+  init_scale: 0.01  # NEW: Initialize LoRA weights small
   target_modules:
     - "q_proj"
-    - "k_proj"
-    - "v_proj"
-    - "o_proj"
+    - "v_proj"  # Only Q and V, not K and O (reduces explosions)
   target_layers: [22, 23, 24, 25, 26, 27]
 
 checkpointing:
