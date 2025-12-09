@@ -1,65 +1,149 @@
-## FamilyOS UltraBERT v2.0.0
+# FamilyOS UltraBERT v2.0.0
 
 High-performance multi-task NLP for family communication analysis.
 
-### Model Performance
+---
+
+## Task Performance
 
 | Task | Metric | Score |
 |------|--------|-------|
+| safety_familyos | Accuracy | **96.20%** |
+| intent | Actionable Rate | **96.58%** |
 | emotions | Hit Rate | 88.30% |
 | sentiment | Direction Accuracy | 88.10% |
 | ner_family | F1 | 87.71% |
-| safety_familyos | Accuracy | 96.20% |
-| intent | Actionable Rate | 96.58% |
+| temporal | F1 | 87.17% |
 | ingress | Accuracy | 84.60% |
 | relation | Micro-F1 | 84.83% |
-| temporal | F1 | 87.17% |
 | **Weighted Average** | | **89.60%** |
 
-### Latency Benchmarks (RTX 4090)
+---
 
-**Single Capability:**
+## Embedding Quality Benchmarks
 
-| Capability | Latency | P95 |
-|------------|---------|-----|
-| sentiment | 9.2 ms | 16.1 ms |
-| emotions | 12.2 ms | 13.1 ms |
-| safety_familyos | 8.6 ms | 9.4 ms |
-| ner_family | 8.2 ms | 9.1 ms |
-| intent | 7.9 ms | 8.6 ms |
-| embedding | 7.9 ms | 8.6 ms |
+### Triplet Accuracy
 
-**Multi-Capability (shared encoder):**
+| Metric | Value | Assessment |
+|--------|-------|------------|
+| **Triplet Accuracy** (pos vs neg) | **98.80%** | Excellent |
+| Mean Positive Similarity | 0.9179 | High cohesion |
+| Mean Negative Similarity | 0.8247 | Good separation |
+| Mean Margin | 0.0932 | Healthy gap |
 
-| Capabilities | Latency | P95 |
-|--------------|---------|-----|
-| 1 | 8.2 ms | 9.2 ms |
-| 3 | 13.2 ms | 13.9 ms |
-| 6 | 13.7 ms | 14.4 ms |
-| **12 (all)** | **13.9 ms** | 15.0 ms |
+### Retrieval Benchmarks (Search Quality)
 
-**Embedding Performance:**
+| Benchmark | Metric | Score |
+|-----------|--------|-------|
+| **10 distractors** | Recall@1 | **74%** |
+| **10 distractors** | Recall@5 | **99%** |
+| **10 distractors** | Recall@10 | **100%** |
+| **100 distractors** | Recall@1 | 36% |
+| **100 distractors** | Recall@5 | 80% |
+| **100 distractors** | Recall@10 | **89%** |
 
-- Single query: 12.7 ms (embed + search 1K docs)
-- Batch throughput: 1,921 embeddings/sec (batch=32)
-- Corpus indexing: 1,020 docs/sec
+**Interpretation:** 89% Recall@10 with 100 candidates is excellent for memory search UI.
 
-**Batch Inference (12 caps):**
+---
 
-| Batch | Latency | Throughput |
-|-------|---------|------------|
-| 1 | 14 ms | 71 samples/sec |
-| 8 | 50 ms | 161 samples/sec |
-| 16 | 98 ms | 163 samples/sec |
+## Inference Latency Benchmarks (RTX 4090)
 
-### Features
+### Full Multi-Task Inference (12 Capabilities)
+
+| Metric | Value |
+|--------|-------|
+| **Average** | **29.60 ms** |
+| **P50** | 27.53 ms |
+| **P95** | 44.29 ms |
+| **Min** | 21.62 ms |
+| **Throughput** | **33.8 inferences/sec** |
+
+### Per-Capability Latency
+
+| Capability | Latency |
+|------------|---------|
+| ner_family | 15.5 ms |
+| safety_familyos | 16.0 ms |
+| temporal | 16.1 ms |
+| intent | 16.7 ms |
+| nli | 17.0 ms |
+| relation | 17.1 ms |
+| ingress | 17.2 ms |
+| embedding | 17.2 ms |
+| safety_generic | 18.6 ms |
+| sentiment | 19.2 ms |
+| ner_general | 21.0 ms |
+| emotions | 25.3 ms |
+
+---
+
+## Embedding Query Performance
+
+### Corpus Indexing
+
+| Metric | Value |
+|--------|-------|
+| **Embedding Throughput** | **987 docs/sec** |
+| **Embedding Dimension** | 768 |
+
+### Query Latency (1000 doc corpus)
+
+| Metric | Value |
+|--------|-------|
+| **Average (embed + search)** | **12.67 ms** |
+| **P50** | 12.09 ms |
+| **P95** | 17.34 ms |
+
+### Latency Breakdown
+
+| Component | Time | % |
+|-----------|------|---|
+| Query Embedding | 11.77 ms | 97% |
+| Search (1000 docs) | 0.32 ms | 3% |
+
+### Search Scaling (Pre-computed Embeddings)
+
+| Corpus Size | Search Time |
+|-------------|-------------|
+| 100 docs | 0.09 ms |
+| 500 docs | 0.09 ms |
+| 1000 docs | 0.13 ms |
+
+---
+
+## Sample Inference Output
+
+```json
+{
+  "text": "My grandmother called yesterday to remind me about the family reunion next Sunday. I am so excited!",
+  "emotions": ["joy", "excitement", "togetherness"],
+  "sentiment": "very_positive",
+  "safety": "GREEN",
+  "intent": "share_news",
+  "ingress": "CELEBRATION",
+  "entities": [
+    {"text": "grandmother", "label": "KINSHIP"},
+    {"text": "family reunion", "label": "FAMILY_EVENT"}
+  ],
+  "temporal": [
+    {"text": "yesterday", "label": "DATE_REL"},
+    {"text": "next Sunday", "label": "DATE_REL"}
+  ],
+  "embedding_dim": 768,
+  "inference_time_ms": 13.64
+}
+```
+
+---
+
+## Features
 
 - 12 NLP capabilities in one unified model
 - PyTorch (GPU) and ONNX (CPU) inference backends
 - 155M parameters, 15% magnitude pruned
 - Single encoder pass for multi-capability inference
 
-### Capabilities
+## Capabilities
 
 | Capability | Type | Description |
 |------------|------|-------------|
@@ -76,7 +160,7 @@ High-performance multi-task NLP for family communication analysis.
 | nli | Classification | Natural language inference |
 | embedding | Vector | 768-dim embeddings |
 
-### Installation
+## Installation
 
 ```bash
 # Download wheel and install with PyTorch
@@ -86,7 +170,7 @@ pip install familyos_ultrabert-2.0.0-py3-none-any.whl torch
 pip install familyos_ultrabert-2.0.0-py3-none-any.whl onnxruntime
 ```
 
-### Quick Start
+## Quick Start
 
 ```python
 from familyos_ultrabert import UltraBERT
@@ -98,6 +182,6 @@ print(result['emotions'])   # ['joy']
 print(result['safety_familyos'])  # GREEN
 ```
 
-### License
+## License
 
 Proprietary - All Rights Reserved
