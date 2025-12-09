@@ -296,6 +296,51 @@ class Client:
             "stats": self.stats,
         }
 
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        Get detailed latency statistics.
+
+        Returns:
+            Dict with total_calls, avg_latency_ms, min_latency_ms, max_latency_ms,
+            p50_latency_ms, p95_latency_ms, p99_latency_ms.
+        """
+        latencies = list(self._stats._latencies)
+        if not latencies:
+            return {
+                "total_calls": 0,
+                "avg_latency_ms": 0.0,
+                "min_latency_ms": 0.0,
+                "max_latency_ms": 0.0,
+                "p50_latency_ms": 0.0,
+                "p95_latency_ms": 0.0,
+                "p99_latency_ms": 0.0,
+            }
+
+        sorted_latencies = sorted(latencies)
+        n = len(sorted_latencies)
+
+        def percentile(p: float) -> float:
+            k = (n - 1) * p
+            f = int(k)
+            c = f + 1 if f + 1 < n else f
+            return sorted_latencies[f] + (k - f) * (sorted_latencies[c] - sorted_latencies[f])
+
+        return {
+            "total_calls": self._stats.total_calls,
+            "avg_latency_ms": round(self._stats.avg, 2),
+            "min_latency_ms": round(self._stats.min, 2),
+            "max_latency_ms": round(self._stats.max, 2),
+            "p50_latency_ms": round(percentile(0.50), 2),
+            "p95_latency_ms": round(percentile(0.95), 2),
+            "p99_latency_ms": round(percentile(0.99), 2),
+        }
+
+    def reset_stats(self) -> None:
+        """
+        Reset latency statistics.
+        """
+        self._stats = LatencyStats()
+
     def __repr__(self) -> str:
         status = "ready" if self._is_ready else "not loaded"
         backend = self._model.backend if self._model else "N/A"

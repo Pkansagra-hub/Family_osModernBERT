@@ -181,23 +181,21 @@ def health_check():
 
 | Metric | Value | Assessment |
 |--------|-------|------------|
-| **Triplet Accuracy** (pos vs neg) | **98.80%** | Excellent |
-| Mean Positive Similarity | 0.9179 | High cohesion |
-| Mean Negative Similarity | 0.8247 | Good separation |
-| Mean Margin | 0.0932 | Healthy gap |
+| **Triplet Accuracy** (pos vs neg) | **98.53%** | Excellent |
+| Mean Positive Similarity | 0.9159 | High cohesion |
+| Mean Negative Similarity | 0.8258 | Good separation |
+| Mean Margin | 0.0901 | Healthy gap |
 
 ### Retrieval Benchmarks (Search Quality)
 
 | Benchmark | Metric | Score |
 |-----------|--------|-------|
-| **10 distractors** | Recall@1 | **74%** |
-| **10 distractors** | Recall@5 | **99%** |
-| **10 distractors** | Recall@10 | **100%** |
-| **100 distractors** | Recall@1 | 36% |
-| **100 distractors** | Recall@5 | 80% |
-| **100 distractors** | Recall@10 | **89%** |
+| **10 distractors** | Recall@1 | **79.60%** |
+| **100 distractors** | Recall@1 | 33.70% |
+| **100 distractors** | Recall@5 | 78.73% |
+| **100 distractors** | Recall@10 | **92.10%** |
 
-**Interpretation:** 89% Recall@10 with 100 candidates is excellent for memory search UI.
+**Interpretation:** 92% Recall@10 with 100 candidates is excellent for memory search UI.
 
 ---
 
