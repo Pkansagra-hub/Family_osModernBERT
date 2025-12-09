@@ -148,14 +148,28 @@ model = UltraBERT.load(model_path="/path/to/weights")
 | Optimization | 15% magnitude pruning |
 | Quantization | Dynamic INT8 (ONNX) |
 
-## Performance
+## Benchmarks (RTX 4090)
 
-| Scenario | Backend | Latency |
-|----------|---------|---------|
-| 6 capabilities, GPU | PyTorch | ~15ms |
-| 6 capabilities, CPU | ONNX | ~150ms |
-| 1 capability, CPU | ONNX (quantized) | ~25ms |
-| 12 capabilities, GPU | PyTorch | ~20ms |
+### Task Performance
+
+| Task | Metric | Score |
+|------|--------|-------|
+| safety_familyos | Accuracy | 96.20% |
+| intent | Actionable Rate | 96.58% |
+| emotions | Hit Rate | 88.30% |
+| sentiment | Direction Accuracy | 88.10% |
+| ner_family | F1 | 87.71% |
+| temporal | F1 | 87.17% |
+| **Weighted Average** | | **89.60%** |
+
+### Latency
+
+| Scenario | Latency | Throughput |
+|----------|---------|------------|
+| 1 capability | 8 ms | - |
+| 6 capabilities | 14 ms | - |
+| 12 capabilities | 14 ms | 71 samples/sec |
+| Embedding query | 13 ms | 1,921 emb/sec |
 
 ## License
 
