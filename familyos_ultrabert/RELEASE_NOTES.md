@@ -1,12 +1,16 @@
 # FamilyOS UltraBERT v2.0.1
 
-High-performance multi-task NLP for family communication analysis.
+## Production-Ready Family NLP with Zero Cold Start
+
+High-performance multi-task NLP for family communication analysis. Now with auto-optimization and developer-friendly APIs.
+
+---
 
 ## What's New in v2.0.1
 
 ### New Client API with Auto-Warmup
 
-- **Zero cold-start latency**: First user call is fast (~10ms instead of 285ms)
+- **Zero cold-start latency**: First user call is fast (~17ms instead of 285ms)
 - **Convenience methods**: `is_safe()`, `is_crisis()`, `get_sentiment()`, `get_emotions()`
 - **Built-in latency tracking**: `client.stats` provides real-time metrics
 - **Health check endpoint**: `client.health_check()` for production monitoring
@@ -26,6 +30,131 @@ print(result.latency_ms)     # 7.5
 # Convenience methods
 client.is_safe("I love my family")       # True
 client.is_crisis("I want to hurt myself") # True
+```
+
+### Performance Improvements in v2.0.1
+
+| Scenario | v2.0.0 | v2.0.1 | Improvement |
+|----------|--------|--------|-------------|
+| First user call | ~285ms | **~17ms** | **16.8x faster** |
+| Convenience methods | N/A | **~12ms** | New feature |
+| Production monitoring | Manual | **Built-in** | Zero config |
+| Warmup required | Manual | **Automatic** | Better UX |
+
+### Version Comparison
+
+| Feature | v2.0.0 | v2.0.1 |
+|---------|--------|--------|
+| Model accuracy | 89.60% | 89.60% |
+| First call latency | ~285ms | **~17ms** |
+| Convenience methods | No | Yes |
+| Auto-warmup | No | Yes |
+| Health monitoring | No | Yes |
+| Latency tracking | No | Yes |
+| API style | Dict-based | Object-based |
+| Backward compatible | - | Yes |
+
+### Backward Compatibility
+
+- **Both APIs work**: `UltraBERT.load()` and `Client()` are both supported
+- **Same model weights**: All v2.0.0 benchmarks apply to v2.0.1
+- **Drop-in replacement**: Update from v2.0.0 to v2.0.1 with no code changes
+- **Legacy API supported**: Dictionary-style access continues to work
+
+---
+
+## Installation
+
+```bash
+# Download wheel and install with PyTorch (GPU)
+pip install familyos_ultrabert-2.0.1-py3-none-any.whl torch
+
+# Or with ONNX for CPU
+pip install familyos_ultrabert-2.0.1-py3-none-any.whl onnxruntime
+```
+
+---
+
+## Quick Start
+
+### New Client API (v2.0.1 - Recommended)
+
+```python
+from familyos_ultrabert import Client
+
+client = Client()  # Auto-warmup happens here
+result = client.analyze('Mom picked up Panda from school!')
+print(result.sentiment)      # very_positive (attribute access)
+print(result.safety)         # GREEN
+print(result.latency_ms)     # 12.5
+```
+
+### Legacy API (v2.0.0 style, still works)
+
+```python
+from familyos_ultrabert import UltraBERT
+
+model = UltraBERT.load()
+result = model.analyze('Mom picked up Panda from school!')
+print(result['sentiment'])   # dictionary style
+print(result['emotions'])    # ['joy']
+print(result['safety_familyos'])  # GREEN
+```
+
+---
+
+## Migrating from v2.0.0 to v2.0.1
+
+### Option 1: Minimal changes (backward compatible)
+
+```python
+# Old code works exactly the same
+from familyos_ultrabert import UltraBERT
+model = UltraBERT.load()
+result = model.analyze(text)
+```
+
+### Option 2: Upgrade to new Client API (recommended)
+
+```python
+# Before (v2.0.0):
+from familyos_ultrabert import UltraBERT
+model = UltraBERT.load()
+result = model.analyze(text)
+is_safe = result['safety_familyos'] == 'GREEN'
+
+# After (v2.0.1):
+from familyos_ultrabert import Client
+client = Client()  # Auto-warms up
+result = client.analyze(text)
+is_safe = client.is_safe(text)  # Cleaner!
+```
+
+---
+
+## Production Deployment
+
+### Web Server Example (FastAPI)
+
+```python
+from fastapi import FastAPI
+from familyos_ultrabert import Client
+
+app = FastAPI()
+client = Client()  # Starts warmup on server startup
+
+@app.post("/analyze")
+def analyze_text(text: str):
+    result = client.analyze(text)
+    return {
+        "sentiment": result.sentiment,
+        "safety": result.safety,
+        "latency_ms": result.latency_ms
+    }
+
+@app.get("/health")
+def health_check():
+    return client.health_check()
 ```
 
 ---
@@ -186,27 +315,7 @@ client.is_crisis("I want to hurt myself") # True
 | nli | Classification | Natural language inference |
 | embedding | Vector | 768-dim embeddings |
 
-## Installation
-
-```bash
-# Download wheel and install with PyTorch
-pip install familyos_ultrabert-2.0.0-py3-none-any.whl torch
-
-# Or with ONNX for CPU
-pip install familyos_ultrabert-2.0.0-py3-none-any.whl onnxruntime
-```
-
-## Quick Start
-
-```python
-from familyos_ultrabert import UltraBERT
-
-model = UltraBERT.load()
-result = model.analyze('Mom picked up Panda from school!')
-print(result['sentiment'])  # very_positive
-print(result['emotions'])   # ['joy']
-print(result['safety_familyos'])  # GREEN
-```
+---
 
 ## License
 
