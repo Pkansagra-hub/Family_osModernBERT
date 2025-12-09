@@ -1,6 +1,32 @@
-# FamilyOS UltraBERT v2.0.0
+# FamilyOS UltraBERT v2.0.1
 
 High-performance multi-task NLP for family communication analysis.
+
+## What's New in v2.0.1
+
+### New Client API with Auto-Warmup
+
+- **Zero cold-start latency**: First user call is fast (~10ms instead of 285ms)
+- **Convenience methods**: `is_safe()`, `is_crisis()`, `get_sentiment()`, `get_emotions()`
+- **Built-in latency tracking**: `client.stats` provides real-time metrics
+- **Health check endpoint**: `client.health_check()` for production monitoring
+- **Clean result wrapper**: `ClientResult` with easy attribute access
+
+```python
+from familyos_ultrabert import Client
+
+client = Client()  # Auto warmup happens here
+result = client.analyze("Mom picked up the kids!")
+
+print(result.sentiment)      # "very_positive"
+print(result.safety)         # "GREEN"
+print(result.emotions)       # ["joy", "love", "excitement"]
+print(result.latency_ms)     # 7.5
+
+# Convenience methods
+client.is_safe("I love my family")       # True
+client.is_crisis("I want to hurt myself") # True
+```
 
 ---
 
