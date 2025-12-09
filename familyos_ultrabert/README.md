@@ -159,4 +159,4 @@ model = UltraBERT.load(model_path="/path/to/weights")
 
 ## License
 
-Apache 2.0
+Proprietary - All Rights Reserved. See [LICENSE](LICENSE) for details.
