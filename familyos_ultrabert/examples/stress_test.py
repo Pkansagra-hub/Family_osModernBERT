@@ -356,13 +356,38 @@ def test_embedding_scaling(model: UltraBERT) -> None:
         print(f"{size:<15} {avg_search:<15.3f} ms {total:<20.2f} ms")
 
 
-def get_attr_safe(obj, attr, default="N/A"):
-    """Safely get attribute from object or dict."""
-    if hasattr(obj, attr):
-        val = getattr(obj, attr, default)
-        return val if val is not None else default
-    elif isinstance(obj, dict):
-        return obj.get(attr, default)
+def get_result_value(result, capability: str, key: str = None, default="N/A"):
+    """
+    Extract value from AnalysisOutput based on its structure.
+
+    AnalysisOutput has capabilities dict with nested results like:
+    - result.capabilities["sentiment"]["prediction"]
+    - result.capabilities["safety_familyos"]["band"]
+    - result.capabilities["emotions"]["predictions"]
+    """
+    if hasattr(result, "capabilities") and result.capabilities:
+        cap_data = result.capabilities.get(capability, {})
+        if not cap_data:
+            return default
+
+        # Handle different capability structures
+        if capability == "sentiment":
+            return cap_data.get("prediction", default)
+        elif capability == "safety_familyos":
+            return cap_data.get("band", default)
+        elif capability == "emotions":
+            return cap_data.get("predictions", default)
+        elif capability == "embedding":
+            return cap_data.get("embedding", default)
+        elif capability in ["ner_family", "ner_general", "temporal"]:
+            return cap_data.get("entities", default)
+        elif capability in ["intent", "ingress", "nli"]:
+            return cap_data.get("prediction", default)
+        elif capability in ["relation", "safety_generic"]:
+            return cap_data.get("predictions", default)
+        elif key:
+            return cap_data.get(key, default)
+        return cap_data
     return default
 
 
