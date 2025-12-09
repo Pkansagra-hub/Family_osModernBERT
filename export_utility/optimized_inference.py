@@ -305,9 +305,11 @@ class ParallelHeadExecutor:
                 head = self.heads[cap]
                 # Execute head
                 if hasattr(head, "forward_with_mask"):
-                    results[cap] = head.forward_with_mask(hidden_states, attention_mask)
+                    out = head.forward_with_mask(hidden_states, attention_mask)
                 else:
-                    results[cap] = head(hidden_states, attention_mask=attention_mask)
+                    out = head(hidden_states, attention_mask=attention_mask)
+                # Extract logits from dict output
+                results[cap] = out["logits"] if isinstance(out, dict) else out
 
         # Synchronize all streams
         torch.cuda.synchronize()
@@ -328,9 +330,11 @@ class ParallelHeadExecutor:
             head = self.heads[cap]
             with torch.no_grad():
                 if hasattr(head, "forward_with_mask"):
-                    output = head.forward_with_mask(hidden_states, attention_mask)
+                    out = head.forward_with_mask(hidden_states, attention_mask)
                 else:
-                    output = head(hidden_states, attention_mask=attention_mask)
+                    out = head(hidden_states, attention_mask=attention_mask)
+                # Extract logits from dict output
+                output = out["logits"] if isinstance(out, dict) else out
             return cap, output
 
         results = {}
@@ -346,6 +350,13 @@ class ParallelHeadExecutor:
     def shutdown(self) -> None:
         """Shutdown thread pool."""
         self.thread_pool.shutdown(wait=False)
+
+
+def _extract_logits(output):
+    """Extract logits tensor from head output (tensor or dict)."""
+    if isinstance(output, dict):
+        return output.get("logits", output.get("embeddings", None))
+    return output
 
 
 # =============================================================================
@@ -690,7 +701,9 @@ class OptimizedMultiTaskModel:
                     if cap not in self.heads:
                         continue
                     head = self.heads[cap]
-                    results[cap] = head(hidden_states, attention_mask=attention_mask)
+                    out = head(hidden_states, attention_mask=attention_mask)
+                    # Extract logits from dict output
+                    results[cap] = out["logits"] if isinstance(out, dict) else out
             return results
 
     def _postprocess(

@@ -95,11 +95,17 @@ QUANTIZATION_MODES = ["none", "dynamic", "static"]
 
 
 class ONNXExportWrapper(torch.nn.Module):
-    """Wrapper module for ONNX export of a single capability."""
+    """Wrapper module for ONNX export of a single capability.
+
+    This wrapper directly accesses the encoder and head to avoid
+    dynamic task routing issues with torch.export.
+    """
 
     def __init__(self, model, capability: str):
         super().__init__()
-        self.model = model
+        # Extract the encoder and specific head for this capability
+        self.encoder = model.encoder
+        self.head = model.heads[capability]
         self.capability = capability
         self.is_sequence_labeling = capability in [
             "ner_general",
@@ -113,17 +119,30 @@ class ONNXExportWrapper(torch.nn.Module):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
     ) -> torch.Tensor:
-        """Forward pass for ONNX export."""
-        outputs = self.model(
+        """Forward pass for ONNX export - directly calls encoder + head."""
+        # Get encoder outputs
+        encoder_outputs = self.encoder(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            task=self.capability,
         )
 
-        if self.is_embedding:
-            return outputs.get("embeddings", outputs.get("logits"))
+        # Get the hidden states
+        if hasattr(encoder_outputs, "last_hidden_state"):
+            hidden_states = encoder_outputs.last_hidden_state
         else:
-            return outputs["logits"]
+            hidden_states = encoder_outputs[0]
+
+        # Call the head
+        head_output = self.head(hidden_states, attention_mask=attention_mask)
+
+        # Extract logits
+        if isinstance(head_output, dict):
+            if self.is_embedding:
+                return head_output.get("embeddings", head_output.get("logits"))
+            else:
+                return head_output.get("logits", head_output.get("embeddings"))
+        else:
+            return head_output
 
 
 # =============================================================================
@@ -144,11 +163,14 @@ def export_to_onnx(
 
     logger.info(f"Exporting {capability} to ONNX (opset {opset_version})...")
 
-    # Create wrapper
-    wrapper = ONNXExportWrapper(model, capability)
+    # Move model to CPU for ONNX export (more compatible)
+    model_cpu = model.cpu()
+
+    # Create wrapper with CPU model
+    wrapper = ONNXExportWrapper(model_cpu, capability)
     wrapper.eval()
 
-    # Create dummy input
+    # Create dummy input on CPU
     dummy_text = "This is a sample input for ONNX export."
     inputs = tokenizer(
         dummy_text,
@@ -158,8 +180,8 @@ def export_to_onnx(
         truncation=True,
     )
 
-    input_ids = inputs["input_ids"]
-    attention_mask = inputs["attention_mask"]
+    input_ids = inputs["input_ids"].cpu()
+    attention_mask = inputs["attention_mask"].cpu()
 
     # Define output path
     onnx_path = output_path / f"{capability}.onnx"
@@ -180,7 +202,7 @@ def export_to_onnx(
     else:
         dynamic_axes_config = None
 
-    # Export
+    # Export using legacy mode (dynamo=False for better compatibility)
     with torch.no_grad():
         torch.onnx.export(
             wrapper,
@@ -192,6 +214,7 @@ def export_to_onnx(
             input_names=["input_ids", "attention_mask"],
             output_names=["output"],
             dynamic_axes=dynamic_axes_config,
+            dynamo=False,  # Use legacy JIT-based export for compatibility
         )
 
     # Validate ONNX model
@@ -630,7 +653,13 @@ Examples:
     from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 
     logger.info(f"Loading model from {model_path}")
-    model = ModernBertMultiTaskModel.from_pretrained(str(model_path))
+
+    # Use load_checkpoint for proper loading of trained checkpoints
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = ModernBertMultiTaskModel.load_checkpoint(
+        checkpoint_path=model_path,
+        device=device,
+    )
     model.eval()
     tokenizer = AutoTokenizer.from_pretrained(str(model_path))
 

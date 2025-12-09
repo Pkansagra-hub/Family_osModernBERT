@@ -1,0 +1,174 @@
+{
+  "model_path": "exports\\pruned-15pct",
+  "output_path": "exports\\onnx-pruned-15pct",
+  "opset_version": 17,
+  "quantization": "dynamic",
+  "fp16": false,
+  "capabilities": {
+    "ner_general": {
+      "base": {
+        "path": "exports\\onnx-pruned-15pct\\ner_general.onnx",
+        "size_mb": 569.0556983947754,
+        "validation": {
+          "validated": false,
+          "num_samples": 10,
+          "max_difference": 0.0009494423866271973,
+          "tolerance": 0.0001,
+          "errors": [
+            {
+              "text": "This is a test sentence for validation.",
+              "max_diff": 0.000213623046875
+            },
+            {
+              "text": "Another sample to check model consistency.",
+              "max_diff": 0.00011691451072692871
+            },
+            {
+              "text": "The quick brown fox jumps over the lazy dog.",
+              "max_diff": 0.0009494423866271973
+            },
+            {
+              "text": "Machine learning models need proper validation.",
+              "max_diff": 0.00013971328735351562
+            },
+            {
+              "text": "ONNX export should preserve model accuracy.",
+              "max_diff": 0.00010704994201660156
+            }
+          ]
+        }
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-pruned-15pct\\ner_general_quantized_dynamic.onnx",
+        "size_mb": 143.08127975463867
+      }
+    },
+    "ner_family": {
+      "base": {
+        "path": "exports\\onnx-pruned-15pct\\ner_family.onnx",
+        "size_mb": 569.0674324035645,
+        "validation": {
+          "validated": false,
+          "num_samples": 10,
+          "max_difference": 0.0009068399667739868,
+          "tolerance": 0.0001,
+          "errors": [
+            {
+              "text": "This is a test sentence for validation.",
+              "max_diff": 0.0001537799835205078
+            },
+            {
+              "text": "Another sample to check model consistency.",
+              "max_diff": 0.0001004338264465332
+            },
+            {
+              "text": "The quick brown fox jumps over the lazy dog.",
+              "max_diff": 0.0009068399667739868
+            },
+            {
+              "text": "Machine learning models need proper validation.",
+              "max_diff": 0.00019693374633789062
+            },
+            {
+              "text": "ONNX export should preserve model accuracy.",
+              "max_diff": 0.00010251998901367188
+            }
+          ]
+        }
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-pruned-15pct\\ner_family_quantized_dynamic.onnx",
+        "size_mb": 143.08422470092773
+      }
+    },
+    "temporal": {
+      "base": {
+        "path": "exports\\onnx-pruned-15pct\\temporal.onnx",
+        "size_mb": 569.0439643859863,
+        "validation": {
+          "validated": false,
+          "num_samples": 10,
+          "max_difference": 0.0003516674041748047,
+          "tolerance": 0.0001,
+          "errors": [
+            {
+              "text": "This is a test sentence for validation.",
+              "max_diff": 0.00015425682067871094
+            },
+            {
+              "text": "Another sample to check model consistency.",
+              "max_diff": 0.00010645389556884766
+            },
+            {
+              "text": "The quick brown fox jumps over the lazy dog.",
+              "max_diff": 0.0003516674041748047
+            },
+            {
+              "text": "Machine learning models need proper validation.",
+              "max_diff": 0.00013634562492370605
+            },
+            {
+              "text": "This is a test sentence for validation.",
+              "max_diff": 0.00015425682067871094
+            }
+          ]
+        }
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-pruned-15pct\\temporal_quantized_dynamic.onnx",
+        "size_mb": 143.0783348083496
+      }
+    },
+    "relation": {
+      "base": {
+        "path": "exports\\onnx-pruned-15pct\\relation.onnx",
+        "size_mb": 573.5533685684204,
+        "validation": {
+          "validated": true,
+          "num_samples": 10,
+          "max_difference": 1.2874603271484375e-05,
+          "tolerance": 0.0001,
+          "errors": []
+        }
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-pruned-15pct\\relation_quantized_dynamic.onnx",
+        "size_mb": 144.20952796936035
+      }
+    },
+    "nli": {
+      "base": {
+        "path": "exports\\onnx-pruned-15pct\\nli.onnx",
+        "size_mb": 571.2679748535156,
+        "validation": {
+          "validated": true,
+          "num_samples": 10,
+          "max_difference": 1.615285873413086e-05,
+          "tolerance": 0.0001,
+          "errors": []
+        }
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-pruned-15pct\\nli_quantized_dynamic.onnx",
+        "size_mb": 143.6377477645874
+      }
+    },
+    "safety_generic": {
+      "base": {
+        "path": "exports\\onnx-pruned-15pct\\safety_generic.onnx",
+        "size_mb": 571.2826442718506,
+        "validation": {
+          "validated": true,
+          "num_samples": 10,
+          "max_difference": 1.0669231414794922e-05,
+          "tolerance": 0.0001,
+          "errors": []
+        }
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-pruned-15pct\\safety_generic_quantized_dynamic.onnx",
+        "size_mb": 143.64142894744873
+      }
+    }
+  }
+}
