@@ -405,7 +405,7 @@ def test_safety_accuracy(model: UltraBERT) -> None:
 
     for text, expected in SAFETY_TESTS:
         result = model.analyze(text, capabilities=["safety_familyos"])
-        predicted = get_attr_safe(result, "safety_familyos", "UNKNOWN")
+        predicted = get_result_value(result, "safety_familyos", default="UNKNOWN")
 
         is_correct = predicted == expected
         if is_correct:
@@ -434,12 +434,12 @@ def test_consistency(model: UltraBERT) -> None:
     for i in range(num_runs):
         result = model.analyze(test_text)
         results.append(result)
-        emb = get_attr_safe(result, "embedding", [])
+        emb = get_result_value(result, "embedding", default=[])
         embeddings.append(emb if emb else [])
 
     # Check classification consistency
-    sentiments = [get_attr_safe(r, "sentiment") for r in results]
-    safety_bands = [get_attr_safe(r, "safety_familyos") for r in results]
+    sentiments = [get_result_value(r, "sentiment") for r in results]
+    safety_bands = [get_result_value(r, "safety_familyos") for r in results]
 
     sentiment_consistent = len(set(sentiments)) == 1
     safety_consistent = len(set(safety_bands)) == 1
@@ -466,10 +466,11 @@ def test_consistency(model: UltraBERT) -> None:
 def test_edge_cases(model: UltraBERT) -> None:
     """Test edge cases and unusual inputs."""
     print("\n" + "=" * 70)
-    print("TEST 7: Edge Cases")
+    print("TEST 7: Edge Cases & Multicultural Inputs")
     print("=" * 70)
 
     edge_cases = [
+        # Basic edge cases
         ("Empty-ish", ""),
         ("Single char", "A"),
         ("Single word", "Hello"),
@@ -477,12 +478,85 @@ def test_edge_cases(model: UltraBERT) -> None:
         ("Special chars", "!@#$%^&*()"),
         ("Mixed case", "HeLLo WoRLd"),
         ("Repeated text", "mom " * 100),
-        ("Unicode", "Mama picked up niño from école"),
-        ("Emojis", "I love my family! 👨‍👩‍👧‍👦 ❤️"),
+
+        # Multicultural family terms
+        ("Spanish", "Mi abuela y mi mamá fueron al mercado con los niños"),
+        ("French", "Ma mère et ma grand-mère sont très gentilles"),
+        ("German", "Meine Mutter und mein Vater lieben mich sehr"),
+        ("Italian", "La nonna ha preparato la pasta per tutta la famiglia"),
+        ("Portuguese", "Minha mãe e meu pai estão muito felizes"),
+        ("Hindi-English", "Mummy ne aaj bahut accha khana banaya"),
+        ("Chinese mixed", "我的妈妈 picked up 弟弟 from school today"),
+        ("Japanese mixed", "おばあちゃん made dinner for the family"),
+        ("Korean mixed", "엄마 is the best mom ever"),
+        ("Arabic mixed", "ماما made the best food today"),
+        ("Russian mixed", "Бабушка always tells the best stories"),
+
+        # Emoji overload
+        ("Emoji spam", "😀😃😄😁😆😅🤣😂🙂🙃😉😊😇🥰😍🤩😘"),
+        ("Family emojis", "👨‍👩‍👧‍👦👨‍👩‍👧👨‍👩‍👦👩‍👩‍👧👨‍👨‍👦👪👨‍👧👩‍👦"),
+        ("Mixed emoji text", "I 💕 my 👨‍👩‍👧 so much! We had 🍕 for 🍽️"),
+
+        # Weird formatting
+        ("ALL CAPS", "MY MOM IS THE BEST MOM IN THE WHOLE WORLD"),
+        ("alternating", "mY mOm Is ThE bEsT"),
+        ("Extra spaces", "Mom    picked    up    the    kids"),
+        ("Tabs", "Mom\tpicked\tup\tthe\tkids"),
+        ("Newlines", "Mom picked up\nthe kids\nfrom school"),
+        ("Mixed whitespace", "  \t  Mom  \n  Dad  \t  "),
+
+        # Internet speak
+        ("Leetspeak", "my m0m 1s th3 b3st"),
+        ("Text speak", "my mom is gr8 luv her so much 4ever"),
+        ("Hashtags", "#blessed #familytime #lovemymom #grateful"),
+        ("Mentions", "@mom @dad please pick up @sister from school"),
+        ("URLs mixed", "Check out https://family.com Mom loved it!"),
+
+        # Punctuation extremes
+        ("Many periods", "Mom... picked... up... the... kids..."),
+        ("Exclamation spam", "I love my family!!!!!!!!!!!!!!!!"),
+        ("Question marks", "Where is mom??? Where is dad???"),
+        ("Mixed punct", "Mom?! Dad!! Kids... What???!!!"),
+
+        # Code-like text
+        ("SQL injection", "'; DROP TABLE family; --"),
+        ("HTML tags", "<script>alert('family')</script>"),
+        ("JSON-like", '{"mom": "best", "dad": "great"}'),
+        ("Path-like", "C:\\Users\\Mom\\Documents\\family.txt"),
+
+        # Sarcasm/irony
+        ("Sarcasm", "Oh great, another wonderful family dinner"),
+        ("Irony", "Sure, my family is totally perfect and has no issues"),
+
+        # Very long single word
+        ("Long word", "Supercalifragilisticexpialidocious"),
+        ("Compound", "great-great-great-grandmother"),
+
+        # RTL languages
+        ("Hebrew", "אמא שלי הכי טובה בעולם"),
+        ("Arabic full", "أمي وأبي يحبانني كثيراً"),
+        ("Mixed RTL-LTR", "My אמא is the best ماما ever"),
+
+        # Edge numbers
+        ("Phone number", "Call mom at 555-123-4567"),
+        ("Date", "Family reunion on 12/25/2025 at 3pm"),
+        ("Currency", "Mom gave me $50 for my birthday"),
+
+        # Unusual but valid
+        ("Single emoji", "❤️"),
+        ("Just punctuation", "..."),
+        ("Just spaces", "     "),
+        ("Zero-width", "Mom\u200bpicked\u200bup\u200bkids"),
+        ("Zalgo", "M̸̡̛̥̈́o̷͎̐m̵̱̌ ̶͇̈́i̷̛̱s̶̰̈́ ̷̣̌g̵̨̛r̸̢̈́e̷̛̜a̵̰͌t̶̰̊"),
     ]
 
     print("\nEdge Case Results:")
-    print("-" * 70)
+    print("-" * 80)
+    print(f"{'Test Case':<25} {'Sentiment':<15} {'Safety':<8} {'Time':<10}")
+    print("-" * 80)
+
+    passed = 0
+    failed = 0
 
     for name, text in edge_cases:
         try:
@@ -490,12 +564,18 @@ def test_edge_cases(model: UltraBERT) -> None:
             result = model.analyze(text if text else " ")  # Handle empty
             elapsed = (time.perf_counter() - start) * 1000
 
-            sentiment = get_attr_safe(result, "sentiment", "N/A")
-            safety = get_attr_safe(result, "safety_familyos", "N/A")
+            sentiment = get_result_value(result, "sentiment", default="N/A")
+            safety = get_result_value(result, "safety_familyos", default="N/A")
 
-            print(f"[PASS] {name:<20} -> sentiment={sentiment:<15} safety={safety:<8} ({elapsed:.1f}ms)")
+            print(f"[PASS] {name:<22} {sentiment:<15} {safety:<8} {elapsed:.1f}ms")
+            passed += 1
         except Exception as e:
-            print(f"[FAIL] {name:<20} -> Error: {str(e)[:40]}")
+            print(f"[FAIL] {name:<22} Error: {str(e)[:35]}")
+            failed += 1
+
+    print("-" * 80)
+    print(f"Results: {passed} passed, {failed} failed out of {len(edge_cases)} tests")
+    print(f"Pass rate: {100*passed/len(edge_cases):.1f}%")
 
 
 def main():
