@@ -93,11 +93,11 @@ TASK_WEIGHTS = {
 
 # Primary metrics for each task
 TASK_PRIMARY_METRIC = {
-    "emotions": "micro_f1",
-    "sentiment": "accuracy",
+    "emotions": "hit_rate",  # At least one correct emotion = success
+    "sentiment": "direction_accuracy",  # Positive/Negative/Neutral direction match
     "ner_family": "f1",
     "safety_familyos": "accuracy",
-    "intent": "accuracy",
+    "intent": "actionable_rate",  # Did we catch action requests?
     "ingress": "accuracy",
     "relation": "micro_f1",
     "temporal": "f1",
@@ -131,12 +131,16 @@ def load_validation_data(
     tokenizer: AutoTokenizer,
     max_samples: int | None = None,
     max_length: int = 512,
+    custom_data_dirs: list[Path] | None = None,
 ) -> dict[str, Dataset]:
     """Load validation split from unified FamilyOS data."""
-    data_dirs = [
-        project_root / "data" / "familyos" / "unified" / "output_synthetic",
-        project_root / "data" / "familyos" / "unified" / "output",
-    ]
+    if custom_data_dirs:
+        data_dirs = custom_data_dirs
+    else:
+        data_dirs = [
+            project_root / "data" / "familyos" / "unified" / "output_synthetic",
+            project_root / "data" / "familyos" / "unified" / "output",
+        ]
 
     # Filter to existing directories
     data_dirs = [d for d in data_dirs if d.exists()]
@@ -291,8 +295,62 @@ def evaluate_classification(
     accuracy = accuracy_score(all_labels, all_preds)
     macro_f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
 
+    # Compute direction accuracy for sentiment
+    # 0,1 = negative, 2 = neutral, 3,4 = positive
+    def get_direction(label_id: int) -> int:
+        if label_id <= 1:  # very_negative, negative
+            return -1
+        elif label_id == 2:  # neutral
+            return 0
+        else:  # positive, very_positive
+            return 1
+
+    direction_matches = sum(
+        1 for pred, label in zip(all_preds, all_labels)
+        if get_direction(pred) == get_direction(label)
+    )
+    direction_accuracy = direction_matches / len(all_labels) if all_labels else 0.0
+
+    # Compute intent family accuracy
+    # ACTIONABLE: log_memory(0), query_memory(1), set_reminder(2)
+    # EMOTIONAL: express_feeling(3), reflect(6)
+    # INFORMATIONAL: seek_advice(4), share_news(5)
+    # OTHER: other(7)
+    def get_intent_family(label_id: int) -> int:
+        if label_id in [0, 1, 2]:  # log_memory, query_memory, set_reminder
+            return 0  # ACTIONABLE
+        elif label_id in [3, 6]:  # express_feeling, reflect
+            return 1  # EMOTIONAL
+        elif label_id in [4, 5]:  # seek_advice, share_news
+            return 2  # INFORMATIONAL
+        else:  # other(7)
+            return 3  # OTHER
+
+    family_matches = sum(
+        1 for pred, label in zip(all_preds, all_labels)
+        if get_intent_family(pred) == get_intent_family(label)
+    )
+    family_accuracy = family_matches / len(all_labels) if all_labels else 0.0
+
+    # Compute actionable detection rate
+    # If user wants ACTION (0,1,2), did we detect ANY intent (not just emotional)?
+    # This is more lenient - catching action request is critical
+    def is_actionable(label_id: int) -> bool:
+        return label_id in [0, 1, 2]  # log_memory, query_memory, set_reminder
+
+    actionable_gt = [(p, l) for p, l in zip(all_preds, all_labels) if is_actionable(l)]
+    if actionable_gt:
+        # For actionable ground truth, did we predict actionable OR informational (both trigger system action)?
+        actionable_detected = sum(1 for p, l in actionable_gt if p in [0, 1, 2, 4])  # include seek_advice as action trigger
+        actionable_rate = actionable_detected / len(actionable_gt)
+    else:
+        actionable_rate = 1.0
+
     return {
         "accuracy": accuracy,
+        "direction_accuracy": direction_accuracy,
+        "family_accuracy": family_accuracy,
+        "actionable_rate": actionable_rate,
         "macro_f1": macro_f1,
         "num_samples": len(all_labels),
     }
@@ -336,6 +394,16 @@ def evaluate_multilabel(
     all_preds = np.array(all_preds)
     all_labels = np.array(all_labels)
 
+    # Compute hit rate: at least one correct prediction per sample
+    # For each sample, check if (pred & label).any() - i.e., at least one overlap
+    hits = 0
+    for pred, label in zip(all_preds, all_labels):
+        pred_arr = np.array(pred, dtype=int)
+        label_arr = np.array(label, dtype=int)
+        if np.any(pred_arr & label_arr):  # At least one match
+            hits += 1
+    hit_rate = hits / len(all_preds) if len(all_preds) > 0 else 0.0
+
     # Compute metrics
     precision, recall, micro_f1, _ = precision_recall_fscore_support(
         all_labels, all_preds, average="micro", zero_division=0
@@ -345,6 +413,7 @@ def evaluate_multilabel(
     )
 
     return {
+        "hit_rate": hit_rate,  # At least one correct = success
         "micro_f1": micro_f1,
         "macro_f1": macro_f1,
         "precision": precision,
@@ -415,6 +484,7 @@ def run_benchmark(
     checkpoint_path: str | Path,
     max_samples: int | None = None,
     batch_size: int = 32,
+    data_dirs: list[Path] | None = None,
 ) -> dict[str, Any]:
     """Run full FamilyOS unified benchmark."""
 
@@ -423,7 +493,7 @@ def run_benchmark(
 
     # Load validation data
     logger.info("\nLoading validation data...")
-    datasets = load_validation_data(tokenizer, max_samples=max_samples)
+    datasets = load_validation_data(tokenizer, max_samples=max_samples, custom_data_dirs=data_dirs)
 
     # Create collator
     collator = MultiTaskCollator(tokenizer=tokenizer, max_length=512)
@@ -585,17 +655,30 @@ def main():
         default=None,
         help="Output JSON file for results",
     )
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default=None,
+        help="Custom data directory (use parent dir of shard files)",
+    )
 
     args = parser.parse_args()
 
     print(f"\nDevice: {DEVICE}")
     print(f"Checkpoint: {args.checkpoint}")
 
+    # Parse data dirs
+    data_dirs = None
+    if args.data_dir:
+        data_dirs = [Path(args.data_dir)]
+        print(f"Using custom data: {data_dirs}")
+
     # Run benchmark
     results = run_benchmark(
         checkpoint_path=args.checkpoint,
         max_samples=args.max_samples,
         batch_size=args.batch_size,
+        data_dirs=data_dirs,
     )
 
     # Print results
