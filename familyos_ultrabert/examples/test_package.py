@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-"""Test the FamilyOS NLP package."""
+"""Test the FamilyOS UltraBERT v2 package."""
 
 import sys
 sys.path.insert(0, ".")
 
-from familyos_nlp import FamilyOSModel
+from familyos_ultrabert import UltraBERT
 
 def test_pytorch_backend():
     print("=" * 60)
     print("Testing PyTorch Backend")
     print("=" * 60)
 
-    model = FamilyOSModel.load(backend="pytorch", device="cuda")
+    model = UltraBERT.load(backend="pytorch", device="cuda")
     print(f"Backend: {model.backend}")
     print(f"Capabilities ({len(model.capabilities)}): {model.capabilities}")
 
@@ -47,7 +47,7 @@ def test_onnx_backend():
     print("Testing ONNX Backend")
     print("=" * 60)
 
-    model = FamilyOSModel.load(backend="onnx", device="cpu")
+    model = UltraBERT.load(backend="onnx", device="cpu")
     print(f"Backend: {model.backend}")
     print(f"Capabilities ({len(model.capabilities)}): {model.capabilities}")
 
@@ -68,7 +68,7 @@ def test_all_capabilities():
     print("Testing All 12 Capabilities")
     print("=" * 60)
 
-    model = FamilyOSModel.load(backend="pytorch", device="cuda")
+    model = UltraBERT.load(backend="pytorch", device="cuda")
 
     text = "Mom and Dad surprised grandma with a birthday party last Sunday at 3pm"
     result = model.analyze(text)  # All capabilities

@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "familyos-nlp"
-version = "0.1.0"
-description = "High-performance multi-task NLP for family communication analysis"
+name = "familyos-ultrabert"
+version = "2.0.0"
+description = "FamilyOS UltraBERT v2 - High-performance multi-task NLP for family communication"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
@@ -14,7 +14,7 @@ authors = [
 keywords = [
     "nlp", "transformers", "sentiment-analysis", "ner",
     "emotion-detection", "family", "multi-task-learning",
-    "safety-classification", "onnx", "pytorch"
+    "safety-classification", "onnx", "pytorch", "ultrabert", "modernbert"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

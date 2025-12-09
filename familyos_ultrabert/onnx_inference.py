@@ -1,5 +1,5 @@
 """
-FamilyOS NLP - ONNX Inference Backend
+FamilyOS UltraBERT v2 - ONNX Inference Backend
 
 Lightweight inference using ONNX Runtime with:
 - CPU and GPU execution providers

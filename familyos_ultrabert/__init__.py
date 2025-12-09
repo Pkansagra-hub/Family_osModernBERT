@@ -1,12 +1,12 @@
 """
-FamilyOS NLP - Multi-Task Language Model for Family Communication
+FamilyOS UltraBERT v2 - Multi-Task Language Model for Family Communication
 
 A high-performance NLP package providing 12 capabilities for analyzing
 family communication: sentiment, emotions, safety, NER, intent, and more.
 
 Quick Start:
-    >>> from familyos_nlp import FamilyOSModel
-    >>> model = FamilyOSModel.load()
+    >>> from familyos_ultrabert import UltraBERT
+    >>> model = UltraBERT.load()
     >>> results = model.analyze("Mom picked up Panda from school")
     >>> print(results["sentiment"])
     {'prediction': 'positive', 'confidence': 0.92}
@@ -34,14 +34,18 @@ Capabilities:
 License: Apache 2.0
 """
 
-__version__ = "0.1.0"
+__version__ = "2.0.0"
 __author__ = "FamilyOS Team"
 
-from familyos_nlp.model import FamilyOSModel
-from familyos_nlp.labels import CAPABILITIES, Capability
+from familyos_ultrabert.model import UltraBERT
+from familyos_ultrabert.labels import CAPABILITIES, Capability
+
+# Alias for backward compatibility
+FamilyOSModel = UltraBERT
 
 __all__ = [
-    "FamilyOSModel",
+    "UltraBERT",
+    "FamilyOSModel",  # Backward compatibility
     "CAPABILITIES",
     "Capability",
     "__version__",

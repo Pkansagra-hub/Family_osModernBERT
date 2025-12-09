@@ -1,5 +1,5 @@
 """
-FamilyOS NLP - PyTorch Inference Backend
+FamilyOS UltraBERT v2 - PyTorch Inference Backend
 
 High-performance inference using PyTorch with:
 - Single encoder pass for multiple capabilities

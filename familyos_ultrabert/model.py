@@ -1,13 +1,13 @@
 """
-FamilyOS NLP - Unified Model Loader
+FamilyOS UltraBERT v2 - Unified Model Loader
 
-Simple API for loading and using the FamilyOS NLP model.
+Simple API for loading and using the FamilyOS UltraBERT model.
 Automatically selects the best backend (PyTorch or ONNX) based on
 available hardware and dependencies.
 
 Usage:
-    >>> from familyos_nlp import FamilyOSModel
-    >>> model = FamilyOSModel.load()
+    >>> from familyos_ultrabert import UltraBERT
+    >>> model = UltraBERT.load()
     >>> results = model.analyze("Mom picked up Panda from school")
     >>> print(results["sentiment"])
 """
@@ -63,16 +63,16 @@ class AnalysisOutput:
         return self.capabilities.values()
 
 
-class FamilyOSModel:
+class UltraBERT:
     """
-    Unified interface for FamilyOS NLP inference.
+    FamilyOS UltraBERT v3.3 - Unified Multi-Task NLP Interface.
 
     Automatically selects the best backend:
     - PyTorch (GPU): Best for multi-capability inference, GPU required
     - ONNX (CPU/GPU): Best for single-capability or CPU-only deployment
 
     Example:
-        >>> model = FamilyOSModel.load()
+        >>> model = UltraBERT.load()
         >>> result = model.analyze("I love my family!")
         >>> print(result["sentiment"])
         {'prediction': 'very_positive', 'confidence': 0.89, ...}
@@ -94,7 +94,7 @@ class FamilyOSModel:
         """
         Initialize model wrapper.
 
-        Use FamilyOSModel.load() instead of calling this directly.
+        Use UltraBERT.load() instead of calling this directly.
         """
         self._engine = engine
         self._backend = backend
@@ -108,9 +108,9 @@ class FamilyOSModel:
         device: Literal["auto", "cpu", "cuda"] = "auto",
         enable_cache: bool = True,
         cache_size: int = 1000,
-    ) -> "FamilyOSModel":
+    ) -> "UltraBERT":
         """
-        Load FamilyOS NLP model.
+        Load FamilyOS UltraBERT model.
 
         Args:
             model_path: Path to model directory. If None, uses bundled weights.
@@ -120,20 +120,20 @@ class FamilyOSModel:
             cache_size: Max cached encodings
 
         Returns:
-            FamilyOSModel instance
+            UltraBERT instance
 
         Examples:
             # Auto-detect best backend
-            >>> model = FamilyOSModel.load()
+            >>> model = UltraBERT.load()
 
             # Force PyTorch on GPU
-            >>> model = FamilyOSModel.load(backend="pytorch", device="cuda")
+            >>> model = UltraBERT.load(backend="pytorch", device="cuda")
 
             # Force ONNX on CPU
-            >>> model = FamilyOSModel.load(backend="onnx", device="cpu")
+            >>> model = UltraBERT.load(backend="onnx", device="cpu")
 
             # Use custom model path
-            >>> model = FamilyOSModel.load(model_path="/path/to/model")
+            >>> model = UltraBERT.load(model_path="/path/to/model")
         """
         # Determine backend
         use_pytorch = False

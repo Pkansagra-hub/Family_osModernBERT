@@ -1,6 +1,8 @@
-# FamilyOS NLP
+# FamilyOS UltraBERT v2
 
-High-performance multi-task NLP model for family communication analysis. Extract sentiment, emotions, safety signals, entities, and more from text with a single model.
+**High-performance multi-task NLP model for family communication analysis.**
+
+Built on ModernBERT architecture, UltraBERT delivers 12 NLP capabilities in a single unified model - extract sentiment, emotions, safety signals, entities, and more from text with state-of-the-art accuracy.
 
 ## Features
 
@@ -9,6 +11,7 @@ High-performance multi-task NLP model for family communication analysis. Extract
 - **< 15ms latency** for 6 capabilities on GPU
 - **Single encoder pass** for multi-capability inference
 - **768-dim sentence embeddings** for semantic search
+- **155M parameters** - Optimized ModernBERT architecture
 
 ## Installation
 
@@ -16,33 +19,33 @@ High-performance multi-task NLP model for family communication analysis. Extract
 
 ```bash
 # Clone the full repository
-git clone https://github.com/your-org/Modeling_studio.git
-cd Modeling_studio
+git clone https://github.com/Pkansagra-hub/Family_osModernBERT.git
+cd Family_osModernBERT
 
 # Install the package with PyTorch backend
-pip install ./familyos_nlp[pytorch]
+pip install ./familyos_ultrabert[pytorch]
 
 # Or with ONNX backend
-pip install ./familyos_nlp[onnx]
+pip install ./familyos_ultrabert[onnx]
 
 # Or both
-pip install ./familyos_nlp[all]
+pip install ./familyos_ultrabert[all]
 ```
 
 ### From PyPI (coming soon)
 
 ```bash
-# Basic installation (requires PyTorch or ONNX Runtime)
-pip install familyos-nlp
+# Basic installation
+pip install familyos-ultrabert
 
 # With PyTorch backend (recommended for GPU)
-pip install familyos-nlp[pytorch]
+pip install familyos-ultrabert[pytorch]
 
 # With ONNX backend (recommended for CPU)
-pip install familyos-nlp[onnx]
+pip install familyos-ultrabert[onnx]
 
 # Full installation (both backends)
-pip install familyos-nlp[all]
+pip install familyos-ultrabert[all]
 ```
 
 > **Note**: The PyTorch backend requires the full repository for model architecture code.
@@ -51,10 +54,10 @@ pip install familyos-nlp[all]
 ## Quick Start
 
 ```python
-from familyos_nlp import FamilyOSModel
+from familyos_ultrabert import UltraBERT
 
 # Load model (auto-selects best backend)
-model = FamilyOSModel.load()
+model = UltraBERT.load()
 
 # Analyze text with multiple capabilities
 result = model.analyze(
@@ -122,17 +125,28 @@ print(len(embedding))  # 768
 
 ```python
 # Auto-detect (uses GPU if available)
-model = FamilyOSModel.load()
+model = UltraBERT.load()
 
 # Force PyTorch on GPU (best for multi-capability)
-model = FamilyOSModel.load(backend="pytorch", device="cuda")
+model = UltraBERT.load(backend="pytorch", device="cuda")
 
 # Force ONNX on CPU (best for single-capability, deployment)
-model = FamilyOSModel.load(backend="onnx", device="cpu")
+model = UltraBERT.load(backend="onnx", device="cpu")
 
 # Custom model path
-model = FamilyOSModel.load(model_path="/path/to/weights")
+model = UltraBERT.load(model_path="/path/to/weights")
 ```
+
+## Model Architecture
+
+| Component | Details |
+|-----------|---------|
+| Base Model | ModernBERT-base (22 layers, 768 hidden) |
+| Parameters | 155M total |
+| Encoder | Shared transformer backbone |
+| Heads | 12 specialized task heads |
+| Optimization | 15% magnitude pruning |
+| Quantization | Dynamic INT8 (ONNX) |
 
 ## Performance
 
