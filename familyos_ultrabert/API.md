@@ -28,10 +28,10 @@ Complete developer documentation for the FamilyOS UltraBERT Python SDK.
 
 ```bash
 # GPU (PyTorch + CUDA)
-pip install familyos_ultrabert-2.0.3-py3-none-any.whl torch
+pip install familyos_ultrabert-2.1.0-py3-none-any.whl torch
 
 # CPU only (ONNX Runtime)
-pip install familyos_ultrabert-2.0.3-py3-none-any.whl onnxruntime
+pip install familyos_ultrabert-2.1.0-py3-none-any.whl onnxruntime
 ```
 
 ---
@@ -1125,7 +1125,8 @@ def stats():
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.0.3 | 2025-06 | Extended API (22 client methods, 27 result properties), critical safety fix (text normalization for 100% crisis recall) |
+| 2.1.0 | 2025-06 | Self-contained wheel (PyTorch backend bundled), no external dependencies |
+| 2.0.3 | 2025-06 | Extended API (22 client methods, 27 result properties), critical safety fix |
 | 2.0.1 | 2024-12 | Client API, auto-warmup, basic convenience methods |
 | 2.0.0 | 2024-12 | Initial release, UltraBERT API |
 

@@ -1,3 +1,68 @@
+# FamilyOS UltraBERT v2.1.0
+
+## Self-Contained Wheel - PyTorch Backend Fixed
+
+This release makes the wheel completely self-contained. Both PyTorch and ONNX backends now work without requiring the `modeling_studio` external package.
+
+---
+
+## What's New in v2.1.0
+
+### Self-Contained Package
+
+**Problem Fixed**: The PyTorch backend failed with:
+```
+ImportError: Could not import ModernBertMultiTaskModel.
+Make sure the modeling_studio package is in your Python path.
+```
+
+**Solution**: Bundled all required model classes into the wheel:
+- `familyos_ultrabert.models.modernbert_multitask` - Main multi-task model
+- `familyos_ultrabert.models.heads` - All 12 task-specific heads
+- `familyos_ultrabert.models.poolers` - CLSPooler, MeanPooler, etc.
+- `familyos_ultrabert.models.adapters` - Task group adapters
+- `familyos_ultrabert.models.pair_encoder` - Cross-attention for NLI/Relation
+- `familyos_ultrabert.data.labels` - All capability label schemas
+
+**Result**: Both backends now work out of the box:
+- **ONNX**: Works on CPU, optimized for deployment
+- **PyTorch**: Works on CPU/GPU, full model access
+
+### Package Structure
+
+```
+familyos_ultrabert/
+├── __init__.py
+├── client.py           # Production Client API
+├── model.py            # UltraBERT wrapper
+├── labels.py           # Label schemas
+├── onnx_inference.py   # ONNX backend
+├── pytorch_inference.py # PyTorch backend
+├── models/             # NEW - bundled model classes
+│   ├── modernbert_multitask.py
+│   ├── heads.py
+│   ├── poolers.py
+│   ├── adapters.py
+│   └── pair_encoder.py
+├── data/               # NEW - label definitions
+│   └── labels.py
+└── weights/
+    ├── onnx/           # 12 quantized ONNX models
+    └── pytorch/        # model.safetensors + configs
+```
+
+---
+
+## Upgrade Notes
+
+This is a breaking change for the internal package structure, but the API remains the same.
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v2.0.3
 
 ## Critical Safety Enhancement: Text Normalization
