@@ -41,7 +41,7 @@ Capabilities:
 License: Proprietary - All Rights Reserved
 """
 
-__version__ = "2.0.3"
+__version__ = "2.1.0"
 __author__ = "FamilyOS Team"
 
 from familyos_ultrabert.model import UltraBERT

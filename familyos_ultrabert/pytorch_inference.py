@@ -14,7 +14,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import sys
 import threading
 import time
 from collections import OrderedDict
@@ -23,12 +22,6 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
-
-# Add parent src path if needed for model loading
-_src_path = Path(__file__).parent.parent / "src"
-if _src_path.exists() and str(_src_path) not in sys.path:
-    sys.path.insert(0, str(_src_path))
-
 from transformers import AutoTokenizer
 
 from .labels import CAPABILITY_TO_LABELS, Capability, LabelSchema
@@ -236,18 +229,11 @@ def postprocess(capability: str, logits: torch.Tensor, tokens: List[str]) -> Dic
 
 
 def _load_model(model_path: str, device: str):
-    """Load the multi-task model using the training codebase."""
-    try:
-        from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
+    """Load the multi-task model using the bundled model classes."""
+    from familyos_ultrabert.models.modernbert_multitask import ModernBertMultiTaskModel
 
-        model = ModernBertMultiTaskModel.load_checkpoint(model_path, device=device)
-        return model
-    except ImportError:
-        raise ImportError(
-            "Could not import ModernBertMultiTaskModel. "
-            "Make sure the modeling_studio package is in your Python path. "
-            "You can add: sys.path.insert(0, '/path/to/Modeling_studio/src')"
-        )
+    model = ModernBertMultiTaskModel.load_checkpoint(model_path, device=device)
+    return model
 
 
 # =============================================================================

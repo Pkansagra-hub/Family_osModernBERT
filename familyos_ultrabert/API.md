@@ -28,10 +28,10 @@ Complete developer documentation for the FamilyOS UltraBERT Python SDK.
 
 ```bash
 # GPU (PyTorch + CUDA)
-pip install familyos_ultrabert-2.0.1-py3-none-any.whl torch
+pip install familyos_ultrabert-2.0.3-py3-none-any.whl torch
 
 # CPU only (ONNX Runtime)
-pip install familyos_ultrabert-2.0.1-py3-none-any.whl onnxruntime
+pip install familyos_ultrabert-2.0.3-py3-none-any.whl onnxruntime
 ```
 
 ---
@@ -219,7 +219,74 @@ print(result.latency_ms)        # 12.5
 
 Quick boolean/value checks without full analysis overhead.
 
-#### Client.is_safe()
+#### Overview Table
+
+**Client Methods (22 total):**
+
+| Method | Description |
+|--------|-------------|
+| `get_sentiment(text)` | Quick sentiment: very_negative -> very_positive |
+| `get_emotions(text)` | Quick emotion list |
+| `get_safety(text)` | Quick safety band: GREEN/AMBER/RED/CRISIS |
+| `get_embedding(text)` | Get 768-dim vector |
+| `get_intent(text)` | Quick intent classification |
+| `get_ingress(text)` | Quick routing category |
+| `get_entities(text)` | Quick family entity extraction |
+| `get_temporal(text)` | Quick temporal expressions |
+| `get_all_entities(text)` | Both family + general entities |
+| `is_safe(text)` | Returns True if GREEN |
+| `is_crisis(text)` | Returns True if CRISIS |
+| `needs_attention(text)` | True if AMBER, RED, or CRISIS |
+| `is_positive(text)` | True if positive/very_positive sentiment |
+| `is_negative(text)` | True if negative/very_negative sentiment |
+| `similarity(text1, text2)` | Cosine similarity between embeddings |
+| `find_similar(query, corpus)` | Find most similar texts in corpus |
+| `embed_batch(texts)` | Batch embeddings (efficient) |
+| `classify_batch(texts, capability)` | Batch single-capability |
+| `stream_analyze(texts)` | Generator for memory efficiency |
+| `export_embeddings(texts, path)` | Save embeddings to file |
+| `health_check()` | Returns health status dict |
+| `analyze_batch(texts)` | Analyze multiple texts |
+
+**ClientResult Properties (27 total):**
+
+| Property | Description |
+|----------|-------------|
+| `sentiment` | Sentiment label |
+| `sentiment_confidence` | Confidence score |
+| `sentiment_scores` | All class scores |
+| `emotions` | List of detected emotions |
+| `emotion_scores` | All emotion scores |
+| `safety` | Safety band |
+| `safety_confidence` | Confidence score |
+| `safety_scores` | All safety scores |
+| `is_safe` | True if GREEN |
+| `is_crisis` | True if CRISIS |
+| `needs_attention` | True if not GREEN |
+| `entities` | Family entities |
+| `general_entities` | General entities |
+| `temporal` | Temporal expressions |
+| `intent` | Intent classification |
+| `intent_confidence` | Intent confidence |
+| `ingress` | Routing category |
+| `relations` | Relationship predictions |
+| `nli` | NLI result |
+| `embedding` | 768-dim vector |
+| `embedding_dim` | Dimension (768) |
+| `top_emotion` | Highest confidence emotion |
+| `sentiment_direction` | "positive"/"negative"/"neutral" |
+| `has_entities` | True if any entities found |
+| `entity_texts` | Just the text spans of entities |
+| `to_dict()` | Dictionary output |
+| `to_json()` | JSON string output |
+| `summary` | One-line summary string |
+| `latency_ms` | Inference latency |
+
+---
+
+#### Safety Methods
+
+##### Client.is_safe()
 
 Check if text is safe (GREEN level).
 
@@ -233,7 +300,7 @@ client.is_safe("I hate everyone")            # False (AMBER)
 client.is_safe("I want to hurt myself")      # False (CRISIS)
 ```
 
-#### Client.is_crisis()
+##### Client.is_crisis()
 
 Check if text indicates crisis.
 
@@ -246,7 +313,25 @@ client.is_crisis("Having a great day!")      # False
 client.is_crisis("I can't go on anymore")    # True
 ```
 
-#### Client.get_sentiment()
+##### Client.needs_attention()
+
+Check if text needs attention (AMBER, RED, or CRISIS).
+
+```python
+Client.needs_attention(text: str) -> bool
+```
+
+```python
+client.needs_attention("I love my family")    # False (GREEN)
+client.needs_attention("I'm feeling stressed") # True (AMBER)
+client.needs_attention("I want to hurt myself") # True (CRISIS)
+```
+
+---
+
+#### Sentiment Methods
+
+##### Client.get_sentiment()
 
 Get sentiment label only.
 
@@ -260,7 +345,37 @@ client.get_sentiment("It's okay")            # "neutral"
 client.get_sentiment("I'm disappointed")     # "negative"
 ```
 
-#### Client.get_emotions()
+##### Client.is_positive()
+
+Check if sentiment is positive or very_positive.
+
+```python
+Client.is_positive(text: str) -> bool
+```
+
+```python
+client.is_positive("I love this!")           # True
+client.is_positive("It's okay")              # False
+```
+
+##### Client.is_negative()
+
+Check if sentiment is negative or very_negative.
+
+```python
+Client.is_negative(text: str) -> bool
+```
+
+```python
+client.is_negative("I hate this!")           # True
+client.is_negative("It's okay")              # False
+```
+
+---
+
+#### Emotion Methods
+
+##### Client.get_emotions()
 
 Get list of detected emotions.
 
@@ -273,7 +388,88 @@ client.get_emotions("I'm so happy!")         # ["joy", "excitement"]
 client.get_emotions("I'm worried about him") # ["concern", "anxiety"]
 ```
 
-#### Client.get_embedding()
+---
+
+#### Classification Methods
+
+##### Client.get_intent()
+
+Get user intent classification.
+
+```python
+Client.get_intent(text: str) -> str
+```
+
+```python
+client.get_intent("Remember mom's birthday")  # "set_reminder"
+client.get_intent("What did we do last year?") # "query_memory"
+client.get_intent("Today was great")          # "log_memory"
+```
+
+##### Client.get_ingress()
+
+Get routing category for message handling.
+
+```python
+Client.get_ingress(text: str) -> str
+```
+
+```python
+client.get_ingress("Tell me a joke")          # "entertainment"
+client.get_ingress("I'm feeling sad")         # "emotional_support"
+```
+
+---
+
+#### Entity Methods
+
+##### Client.get_entities()
+
+Get family entities (family members, pets, etc.).
+
+```python
+Client.get_entities(text: str) -> list[dict]
+```
+
+```python
+entities = client.get_entities("Mom picked up Panda from school")
+# [{"text": "Mom", "label": "FAMILY_MEMBER"}, {"text": "Panda", "label": "PET"}]
+```
+
+##### Client.get_temporal()
+
+Get temporal expressions.
+
+```python
+Client.get_temporal(text: str) -> list[dict]
+```
+
+```python
+temporal = client.get_temporal("Meeting at 3pm tomorrow")
+# [{"text": "3pm tomorrow", "label": "DATETIME"}]
+```
+
+##### Client.get_all_entities()
+
+Get both family and general entities.
+
+```python
+Client.get_all_entities(text: str) -> dict
+```
+
+```python
+all_ents = client.get_all_entities("Mom went to Apple Store in NYC")
+# {
+#     "family": [{"text": "Mom", "label": "FAMILY_MEMBER"}],
+#     "general": [{"text": "Apple Store", "label": "ORG"}, {"text": "NYC", "label": "LOC"}]
+# }
+```
+
+---
+
+#### Embedding Methods
+
+##### Client.get_embedding()
 
 Get embedding vector for similarity search.
 
@@ -284,13 +480,105 @@ Client.get_embedding(text: str) -> list[float]
 ```python
 embedding = client.get_embedding("Family dinner tonight")
 print(len(embedding))  # 768
+```
 
-# Use for similarity search
-import numpy as np
-query_emb = np.array(client.get_embedding("dinner plans"))
-doc_emb = np.array(client.get_embedding("Family dinner tonight"))
-similarity = np.dot(query_emb, doc_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(doc_emb))
-print(similarity)  # 0.89
+##### Client.similarity()
+
+Calculate cosine similarity between two texts.
+
+```python
+Client.similarity(text1: str, text2: str) -> float
+```
+
+```python
+sim = client.similarity("I love my family", "My family is great")
+print(sim)  # 0.92
+```
+
+##### Client.find_similar()
+
+Find most similar texts from a corpus.
+
+```python
+Client.find_similar(query: str, corpus: list[str], top_k: int = 5) -> list[dict]
+```
+
+```python
+corpus = ["Family dinner was fun", "Work meeting tomorrow", "Kids played outside"]
+matches = client.find_similar("Great family day", corpus, top_k=2)
+# [{"text": "Family dinner was fun", "similarity": 0.91, "index": 0}, ...]
+```
+
+##### Client.embed_batch()
+
+Get embeddings for multiple texts efficiently.
+
+```python
+Client.embed_batch(texts: list[str]) -> list[list[float]]
+```
+
+```python
+embeddings = client.embed_batch(["Hello", "World"])
+print(len(embeddings))     # 2
+print(len(embeddings[0]))  # 768
+```
+
+##### Client.export_embeddings()
+
+Export embeddings to file (JSONL or CSV).
+
+```python
+Client.export_embeddings(texts: list[str], path: str, format: str = "jsonl") -> None
+```
+
+```python
+texts = ["Hello world", "Family dinner"]
+client.export_embeddings(texts, "embeddings.jsonl")
+client.export_embeddings(texts, "embeddings.csv", format="csv")
+```
+
+---
+
+#### Batch Methods
+
+##### Client.analyze_batch()
+
+Analyze multiple texts.
+
+```python
+Client.analyze_batch(texts: list[str]) -> list[ClientResult]
+```
+
+```python
+results = client.analyze_batch(["I love you", "I hate this"])
+for r in results:
+    print(r.sentiment)
+```
+
+##### Client.classify_batch()
+
+Classify multiple texts with a single capability.
+
+```python
+Client.classify_batch(texts: list[str], capability: str) -> list[str]
+```
+
+```python
+sentiments = client.classify_batch(["Happy day", "Sad news"], "sentiment")
+# ["positive", "negative"]
+```
+
+##### Client.stream_analyze()
+
+Generator for memory-efficient batch processing.
+
+```python
+Client.stream_analyze(texts: list[str]) -> Generator[ClientResult]
+```
+
+```python
+for result in client.stream_analyze(large_text_list):
+    print(result.sentiment)  # Process one at a time
 ```
 
 ---
@@ -837,7 +1125,8 @@ def stats():
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.0.1 | 2024-12 | Client API, auto-warmup, convenience methods |
+| 2.0.3 | 2025-06 | Extended API (22 client methods, 27 result properties), critical safety fix (text normalization for 100% crisis recall) |
+| 2.0.1 | 2024-12 | Client API, auto-warmup, basic convenience methods |
 | 2.0.0 | 2024-12 | Initial release, UltraBERT API |
 
 ---
