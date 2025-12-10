@@ -1,14 +1,78 @@
-# FamilyOS UltraBERT v2.0.1
+# FamilyOS UltraBERT v2.0.2
 
-## Production-Ready Family NLP with Zero Cold Start
+## Production-Ready Family NLP with Extended Convenience API
 
-High-performance multi-task NLP for family communication analysis. Now with auto-optimization and developer-friendly APIs.
+High-performance multi-task NLP for family communication analysis. Now with 20+ convenience methods and embedding utilities.
 
 ---
 
-## What's New in v2.0.1
+## What's New in v2.0.2
 
-### New Client API with Auto-Warmup
+### Extended Convenience Methods
+
+**New Client Methods (14 added):**
+
+| Method | Description |
+|--------|-------------|
+| `get_intent(text)` | Quick intent classification |
+| `get_ingress(text)` | Quick routing category |
+| `get_entities(text)` | Family entity extraction |
+| `get_temporal(text)` | Temporal expressions |
+| `get_all_entities(text)` | Both family + general entities |
+| `needs_attention(text)` | True if AMBER/RED/CRISIS |
+| `is_positive(text)` | True if positive sentiment |
+| `is_negative(text)` | True if negative sentiment |
+| `similarity(text1, text2)` | Cosine similarity (0-1) |
+| `find_similar(query, corpus)` | Find most similar texts |
+| `embed_batch(texts)` | Batch embeddings |
+| `classify_batch(texts, capability)` | Batch classification |
+| `stream_analyze(texts)` | Generator for memory efficiency |
+| `export_embeddings(texts, path)` | Export to JSONL/CSV |
+
+**New ClientResult Properties (7 added):**
+
+| Property | Description |
+|----------|-------------|
+| `needs_attention` | True if not GREEN |
+| `top_emotion` | Highest confidence emotion |
+| `sentiment_direction` | "positive"/"negative"/"neutral" |
+| `has_entities` | True if any entities found |
+| `entity_texts` | Just the text spans |
+| `to_json()` | JSON string output |
+| `summary` | One-line summary |
+
+### Example Usage
+
+```python
+from familyos_ultrabert import Client
+
+client = Client()
+
+# Semantic similarity
+sim = client.similarity("I love my family", "My family is great")
+print(sim)  # 0.92
+
+# Find similar in corpus
+corpus = ["Family dinner was fun", "Work meeting tomorrow", "Kids played outside"]
+matches = client.find_similar("Great family day", corpus, top_k=2)
+# [{"text": "Family dinner was fun", "similarity": 0.91}, ...]
+
+# Batch operations
+sentiments = client.classify_batch(texts, "sentiment")
+embeddings = client.embed_batch(texts)
+
+# Result properties
+result = client.analyze("Mom picked up the kids!")
+print(result.summary)           # "safety=GREEN | sentiment=positive | emotions=['joy']"
+print(result.top_emotion)       # "joy"
+print(result.sentiment_direction)  # "positive"
+```
+
+---
+
+## What's in v2.0.1
+
+### Client API with Auto-Warmup
 
 - **Zero cold-start latency**: First user call is fast (~17ms instead of 285ms)
 - **Convenience methods**: `is_safe()`, `is_crisis()`, `get_sentiment()`, `get_emotions()`

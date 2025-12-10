@@ -25,7 +25,7 @@ Usage:
 
 import time
 import threading
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, Generator
 from dataclasses import dataclass, field
 from collections import deque
 import warnings
@@ -105,7 +105,7 @@ class Client:
         >>> print(result.safety)     # "GREEN"
     """
 
-    VERSION = "2.0.1"
+    VERSION = "2.0.2"
 
     def __init__(
         self,
@@ -272,6 +272,208 @@ class Client:
     def is_crisis(self, text: str) -> bool:
         """Check if text indicates crisis. Returns True/False."""
         return self.get_safety(text) == "CRISIS"
+
+    def get_intent(self, text: str) -> str:
+        """Quick intent classification. Returns intent label."""
+        result = self.analyze(text, capabilities=["intent"])
+        return result.intent
+
+    def get_ingress(self, text: str) -> str:
+        """Quick routing category. Returns ingress label."""
+        result = self.analyze(text, capabilities=["ingress"])
+        return result.ingress
+
+    def get_entities(self, text: str) -> List[Dict]:
+        """Quick family entity extraction. Returns list of entity dicts."""
+        result = self.analyze(text, capabilities=["ner_family"])
+        return result.entities
+
+    def get_temporal(self, text: str) -> List[Dict]:
+        """Quick temporal expression extraction. Returns list of temporal dicts."""
+        result = self.analyze(text, capabilities=["temporal"])
+        return result.temporal
+
+    def get_all_entities(self, text: str) -> Dict[str, List[Dict]]:
+        """Get both family and general entities. Returns dict with 'family' and 'general' keys."""
+        result = self.analyze(text, capabilities=["ner_family", "ner_general"])
+        return {
+            "family": result.entities,
+            "general": result.general_entities,
+        }
+
+    def needs_attention(self, text: str) -> bool:
+        """Check if text needs attention (AMBER, RED, or CRISIS). Returns True/False."""
+        safety = self.get_safety(text)
+        return safety in ("AMBER", "RED", "CRISIS")
+
+    def is_positive(self, text: str) -> bool:
+        """Check if sentiment is positive or very_positive. Returns True/False."""
+        sentiment = self.get_sentiment(text)
+        return sentiment in ("positive", "very_positive")
+
+    def is_negative(self, text: str) -> bool:
+        """Check if sentiment is negative or very_negative. Returns True/False."""
+        sentiment = self.get_sentiment(text)
+        return sentiment in ("negative", "very_negative")
+
+    def similarity(self, text1: str, text2: str) -> float:
+        """
+        Compute cosine similarity between two texts.
+
+        Args:
+            text1: First text.
+            text2: Second text.
+
+        Returns:
+            Cosine similarity score (0.0 to 1.0).
+        """
+        import math
+
+        emb1 = self.get_embedding(text1)
+        emb2 = self.get_embedding(text2)
+
+        dot = sum(a * b for a, b in zip(emb1, emb2))
+        norm1 = math.sqrt(sum(a * a for a in emb1))
+        norm2 = math.sqrt(sum(b * b for b in emb2))
+
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+
+        return dot / (norm1 * norm2)
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """
+        Get embeddings for multiple texts efficiently.
+
+        Args:
+            texts: List of texts to embed.
+
+        Returns:
+            List of 768-dimensional embedding vectors.
+        """
+        return [self.get_embedding(text) for text in texts]
+
+    def find_similar(
+        self,
+        query: str,
+        corpus: List[str],
+        top_k: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """
+        Find most similar texts in corpus to query.
+
+        Args:
+            query: Query text to find similar texts for.
+            corpus: List of candidate texts.
+            top_k: Number of top results to return.
+
+        Returns:
+            List of dicts with 'text', 'similarity', and 'index' keys.
+        """
+        query_emb = self.get_embedding(query)
+        corpus_embs = self.embed_batch(corpus)
+
+        import math
+
+        def cosine(emb1, emb2):
+            dot = sum(a * b for a, b in zip(emb1, emb2))
+            norm1 = math.sqrt(sum(a * a for a in emb1))
+            norm2 = math.sqrt(sum(b * b for b in emb2))
+            if norm1 == 0 or norm2 == 0:
+                return 0.0
+            return dot / (norm1 * norm2)
+
+        results = []
+        for i, (text, emb) in enumerate(zip(corpus, corpus_embs)):
+            sim = cosine(query_emb, emb)
+            results.append({"text": text, "similarity": round(sim, 4), "index": i})
+
+        results.sort(key=lambda x: x["similarity"], reverse=True)
+        return results[:top_k]
+
+    def classify_batch(
+        self,
+        texts: List[str],
+        capability: str,
+    ) -> List[Any]:
+        """
+        Classify multiple texts with a single capability.
+
+        Args:
+            texts: List of texts to classify.
+            capability: Capability to run (e.g., "sentiment", "safety_familyos").
+
+        Returns:
+            List of predictions.
+        """
+        results = []
+        for text in texts:
+            result = self.analyze(text, capabilities=[capability])
+            if capability == "sentiment":
+                results.append(result.sentiment)
+            elif capability == "emotions":
+                results.append(result.emotions)
+            elif capability == "safety_familyos":
+                results.append(result.safety)
+            elif capability == "intent":
+                results.append(result.intent)
+            elif capability == "ingress":
+                results.append(result.ingress)
+            elif capability == "embedding":
+                results.append(result.embedding)
+            else:
+                results.append(result.to_dict())
+        return results
+
+    def stream_analyze(self, texts: List[str]) -> "Generator[ClientResult, None, None]":
+        """
+        Generator for memory-efficient batch analysis.
+
+        Args:
+            texts: List of texts to analyze.
+
+        Yields:
+            ClientResult for each text.
+        """
+        for text in texts:
+            yield self.analyze(text)
+
+    def export_embeddings(
+        self,
+        texts: List[str],
+        path: str,
+        format: str = "jsonl",
+    ) -> int:
+        """
+        Export embeddings to file.
+
+        Args:
+            texts: List of texts to embed.
+            path: Output file path.
+            format: "jsonl" or "csv".
+
+        Returns:
+            Number of embeddings exported.
+        """
+        import json
+
+        embeddings = self.embed_batch(texts)
+
+        if format == "jsonl":
+            with open(path, "w", encoding="utf-8") as f:
+                for text, emb in zip(texts, embeddings):
+                    f.write(json.dumps({"text": text, "embedding": emb}) + "\n")
+        elif format == "csv":
+            with open(path, "w", encoding="utf-8") as f:
+                # Header
+                f.write("text," + ",".join([f"dim_{i}" for i in range(768)]) + "\n")
+                for text, emb in zip(texts, embeddings):
+                    escaped_text = text.replace('"', '""')
+                    f.write(f'"{escaped_text}",' + ",".join(map(str, emb)) + "\n")
+        else:
+            raise ValueError(f"Unknown format: {format}. Use 'jsonl' or 'csv'.")
+
+        return len(embeddings)
 
     def health_check(self) -> Dict[str, Any]:
         """
@@ -490,6 +692,58 @@ class ClientResult:
     def embedding_dim(self) -> int:
         """Embedding dimensionality."""
         return len(self.embedding)
+
+    # Additional convenience properties
+    @property
+    def needs_attention(self) -> bool:
+        """True if safety is not GREEN (needs attention)."""
+        return self.safety in ("AMBER", "RED", "CRISIS")
+
+    @property
+    def top_emotion(self) -> Optional[str]:
+        """Highest confidence emotion, or None if no emotions."""
+        scores = self.emotion_scores
+        if not scores:
+            return self.emotions[0] if self.emotions else None
+        return max(scores, key=scores.get) if scores else None
+
+    @property
+    def sentiment_direction(self) -> str:
+        """Simplified sentiment: 'positive', 'negative', or 'neutral'."""
+        s = self.sentiment
+        if s in ("positive", "very_positive"):
+            return "positive"
+        elif s in ("negative", "very_negative"):
+            return "negative"
+        else:
+            return "neutral"
+
+    @property
+    def has_entities(self) -> bool:
+        """True if any family entities were found."""
+        return len(self.entities) > 0
+
+    @property
+    def entity_texts(self) -> List[str]:
+        """Just the text spans of detected entities."""
+        return [e.get("text", e.get("entity", "")) for e in self.entities]
+
+    def to_json(self) -> str:
+        """Convert to JSON string."""
+        import json
+        return json.dumps(self.to_dict(), indent=2)
+
+    @property
+    def summary(self) -> str:
+        """One-line summary of the result."""
+        parts = [f"safety={self.safety}"]
+        if self.sentiment != "unknown":
+            parts.append(f"sentiment={self.sentiment_direction}")
+        if self.emotions:
+            parts.append(f"emotions={self.emotions[:2]}")
+        if self.entities:
+            parts.append(f"entities={len(self.entities)}")
+        return " | ".join(parts)
 
     # Utilities
     def to_dict(self) -> Dict[str, Any]:
