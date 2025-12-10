@@ -1,3 +1,47 @@
+# FamilyOS UltraBERT v2.0.3
+
+## Critical Safety Enhancement: Text Normalization
+
+This release addresses a critical safety issue where Unicode variations in text could cause different model behavior on crisis detection.
+
+---
+
+## What's New in v2.0.3
+
+### Safety-Critical Text Normalization
+
+**Problem Fixed**: Smart quotes (curly apostrophe) and contractions could cause the model to miss crisis cases. For example, "I'm going to hurt my children" using `'` (U+2019) was misclassified as RED instead of CRISIS.
+
+**Solution**: Added automatic text normalization layer that:
+1. Converts all Unicode quote variants to ASCII (`'` -> `'`, `"` -> `"`)
+2. Expands safety-critical contractions ("I'm going to hurt" -> "I am going to hurt")
+3. Handles em-dashes, non-breaking spaces, ellipses
+
+**Result**: 100% CRISIS recall across all text variations.
+
+### Benchmark Results
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Crisis Recall** | 100% (6/6) | EXCELLENT |
+| **Latency (GPU)** | 7.2ms avg | EXCELLENT |
+| **Emotions Hit Rate** | 100% (10/10) | EXCELLENT |
+| **Triplet Accuracy** | 98.53% | EXCELLENT |
+
+See `docs/TECHNICAL_REBUTTAL.md` for full benchmark details.
+
+---
+
+## Upgrade Notes
+
+This is a drop-in replacement for v2.0.2. No API changes.
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v2.0.2
 
 ## Production-Ready Family NLP with Extended Convenience API

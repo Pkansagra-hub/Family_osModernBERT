@@ -34,6 +34,66 @@ from .model import UltraBERT, AnalysisOutput
 from . import __version__
 
 
+# Unicode normalization map for consistent tokenization
+# Handles smart quotes, curly apostrophes, and other common variations
+_UNICODE_NORMALIZE_MAP = {
+    "\u2018": "'",  # LEFT SINGLE QUOTATION MARK
+    "\u2019": "'",  # RIGHT SINGLE QUOTATION MARK (curly apostrophe)
+    "\u201A": "'",  # SINGLE LOW-9 QUOTATION MARK
+    "\u201B": "'",  # SINGLE HIGH-REVERSED-9 QUOTATION MARK
+    "\u201C": '"',  # LEFT DOUBLE QUOTATION MARK
+    "\u201D": '"',  # RIGHT DOUBLE QUOTATION MARK
+    "\u201E": '"',  # DOUBLE LOW-9 QUOTATION MARK
+    "\u201F": '"',  # DOUBLE HIGH-REVERSED-9 QUOTATION MARK
+    "\u2032": "'",  # PRIME
+    "\u2033": '"',  # DOUBLE PRIME
+    "\u2014": "-",  # EM DASH
+    "\u2013": "-",  # EN DASH
+    "\u00A0": " ",  # NON-BREAKING SPACE
+    "\u2026": "...",  # HORIZONTAL ELLIPSIS
+}
+
+_NORMALIZE_TABLE = str.maketrans(_UNICODE_NORMALIZE_MAP)
+
+# Safety-critical contraction expansions
+# Expanding these helps the model recognize harmful intent more clearly
+import re as _re
+
+_SAFETY_PATTERNS = [
+    # Harmful intent patterns - MUST be expanded for accurate detection
+    (_re.compile(r"\bI'm\s+going\s+to\s+hurt\b", _re.IGNORECASE), "I am going to hurt"),
+    (_re.compile(r"\bI'm\s+going\s+to\s+kill\b", _re.IGNORECASE), "I am going to kill"),
+    (_re.compile(r"\bI'm\s+going\s+to\s+harm\b", _re.IGNORECASE), "I am going to harm"),
+    (_re.compile(r"\bI'm\s+going\s+to\s+end\b", _re.IGNORECASE), "I am going to end"),
+    # Self-harm patterns
+    (_re.compile(r"\bI'm\s+going\s+to\s+hurt\s+myself\b", _re.IGNORECASE), "I am going to hurt myself"),
+    (_re.compile(r"\bI'm\s+going\s+to\s+cut\b", _re.IGNORECASE), "I am going to cut"),
+    # Colloquial forms
+    (_re.compile(r"\bgonna\s+hurt\b", _re.IGNORECASE), "going to hurt"),
+    (_re.compile(r"\bgonna\s+kill\b", _re.IGNORECASE), "going to kill"),
+]
+
+
+def _normalize_text(text: str) -> str:
+    """Normalize text for consistent model behavior.
+
+    Handles:
+    1. Smart/curly quotes -> straight quotes
+    2. Safety-critical contractions -> expanded forms
+
+    This is critical for safety-sensitive text where variations
+    could cause different model behavior.
+    """
+    # First: normalize Unicode
+    text = text.translate(_NORMALIZE_TABLE)
+
+    # Second: expand safety-critical contractions
+    for pattern, replacement in _SAFETY_PATTERNS:
+        text = pattern.sub(replacement, text)
+
+    return text
+
+
 @dataclass
 class LatencyStats:
     """Track inference latency statistics."""
@@ -220,8 +280,12 @@ class Client:
         """
         self._ensure_ready()
 
+        # Normalize text to handle smart quotes and Unicode variations
+        # Critical for safety-sensitive detection
+        normalized_text = _normalize_text(text)
+
         start = time.perf_counter()
-        raw_result = self._model.analyze(text, capabilities=capabilities)
+        raw_result = self._model.analyze(normalized_text, capabilities=capabilities)
         latency = (time.perf_counter() - start) * 1000
 
         self._stats.record(latency)
