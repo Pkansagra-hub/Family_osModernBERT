@@ -18,11 +18,41 @@ from __future__ import annotations
 
 import argparse
 import os
+from pathlib import Path
 from typing import List, Optional, Sequence
 
 from familyos_ultrabert.benchmarks.runner import BenchmarkRunner
 from familyos_ultrabert.benchmarks.reporter import Reporter
 from familyos_ultrabert.benchmarks.types import BenchmarkRunResult
+
+
+_BENCHMARK_PROFILES: dict[str, List[str]] = {
+    # Fast CI gate (always run). Keep this correctness-focused.
+    "smoke": [
+        "api",
+        "regression",
+        "safety",
+        "embeddings",
+        "latency",
+        "format_structure",
+        "realworld_corruption",
+    ],
+    # Nightly / pre-release (superset). Includes heavier suites.
+    "full": [
+        "api",
+        "regression",
+        "safety",
+        "embeddings",
+        "latency",
+        "format_structure",
+        "realworld_corruption",
+        "robustness",
+        "classification",
+        "semantic_complexity",
+        "throughput_torture",
+        "advanced_embedding",
+    ],
+}
 
 
 def run_all(
@@ -71,6 +101,27 @@ def _parse_suite_list(raw: Optional[str]) -> Optional[List[str]]:
     return suites or None
 
 
+def _profile_suites(profile: str, available: List[str]) -> List[str]:
+    """Return suites for a known profile.
+
+    Args:
+        profile: Profile name.
+        available: Available suite names.
+
+    Returns:
+        List of suites to run (in profile order), filtered to those available.
+
+    Raises:
+        ValueError: If profile is unknown.
+    """
+    key = str(profile).strip().lower()
+    if key not in _BENCHMARK_PROFILES:
+        raise ValueError(f"Unknown profile: {profile}")
+    want = list(_BENCHMARK_PROFILES[key])
+    avail = set(available)
+    return [s for s in want if s in avail]
+
+
 def cli(argv: Optional[Sequence[str]] = None) -> int:
     """CLI entry point for `python -m familyos_ultrabert.benchmarks`.
 
@@ -82,6 +133,11 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
         Process exit code (0 for success).
     """
     parser = argparse.ArgumentParser(description="FamilyOS UltraBERT Benchmark Suite")
+    parser.add_argument(
+        "--profile",
+        choices=sorted(_BENCHMARK_PROFILES.keys()),
+        help="Run a standard benchmark profile (takes priority over --suite)",
+    )
     parser.add_argument("--suite", type=str, help="Comma-separated list of suites to run")
     parser.add_argument("--quick", action="store_true", help="Run quick smoke test only")
     parser.add_argument(
@@ -91,20 +147,45 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
         help="Output format",
     )
     parser.add_argument("--output", type=str, help="Save report to file")
+    parser.add_argument(
+        "--baseline-dir",
+        type=str,
+        help="Directory to store/compare last-known-good benchmark baselines",
+    )
+    parser.add_argument(
+        "--baseline",
+        action="store_true",
+        help="Enable baseline drift compare+save (CI-grade regression tracking)",
+    )
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     suites = _parse_suite_list(args.suite)
+    profile_name = str(args.profile).strip().lower() if args.profile else None
+
+    available = _available_suite_names()
+    if profile_name:
+        if suites is not None:
+            print("Note: --profile takes priority over --suite")
+        try:
+            suites = _profile_suites(profile_name, available)
+        except ValueError as exc:
+            print(str(exc))
+            print(f"Available profiles: {', '.join(sorted(_BENCHMARK_PROFILES.keys()))}")
+            return 2
+        missing = [s for s in _BENCHMARK_PROFILES[profile_name] if s not in set(available)]
+        if missing:
+            # Keep this non-fatal so installed environments without optional deps can still run.
+            print(f"Note: profile '{profile_name}' missing suites: {', '.join(missing)}")
     if args.quick:
         # Suites may consult this to reduce runtime and avoid large loops.
         os.environ["FAMILYOS_ULTRABERT_BENCH_QUICK"] = "1"
-        # If user did not pick suites, default to a fast, correctness-focused subset.
-        if suites is None:
-            suites = ["api", "regression"]
+        # Back-compat: if user did not pick suites or profile, default to smoke.
+        if suites is None and profile_name is None:
+            suites = _BENCHMARK_PROFILES["smoke"]
 
     # Validate suite names early to avoid unnecessary model load.
-    available = _available_suite_names()
     if suites is not None:
         unknown = [s for s in suites if s not in set(available)]
         if unknown:
@@ -115,6 +196,23 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
 
     runner = BenchmarkRunner(suites=suites, verbose=bool(args.verbose))
     results = runner.run()
+
+    baseline_failed = 0
+    baseline_warned = 0
+    if bool(args.baseline):
+        try:
+            from familyos_ultrabert.benchmarks.baselines import compare_and_update_baseline
+
+            base_dir = Path(args.baseline_dir) if args.baseline_dir else None
+            baseline_report = compare_and_update_baseline(results, baseline_dir=base_dir)
+            # Even though BenchmarkRunResult is frozen, metadata is a mutable dict.
+            results.metadata["baseline"] = baseline_report
+            baseline_failed = int(baseline_report.get("failed", 0))
+            baseline_warned = int(baseline_report.get("warned", 0))
+        except Exception as exc:  # noqa: BLE001
+            results.metadata["baseline"] = {
+                "error": f"{type(exc).__name__}: {exc}",
+            }
 
     reporter = Reporter(results)
     if args.format == "json":
@@ -134,8 +232,13 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
     else:
         print(output, end="")
 
-    # Non-zero if there are hard failures or errors.
-    return 0 if (results.summary.failed == 0 and results.summary.errored == 0) else 1
+    # Non-zero if there are hard failures or errors (including baseline drift gates).
+    hard_failed = (results.summary.failed + results.summary.errored + baseline_failed) > 0
+    if hard_failed:
+        return 1
+    # Baseline warnings should not fail the run.
+    _ = baseline_warned
+    return 0
 
 
 def main() -> int:

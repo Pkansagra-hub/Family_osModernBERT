@@ -178,6 +178,19 @@ For a faster smoke run:
 python -m familyos_ultrabert.benchmarks --quick
 ```
 
+Standard profiles (recommended for CI):
+
+```bash
+python -m familyos_ultrabert.benchmarks --profile smoke
+python -m familyos_ultrabert.benchmarks --profile full
+```
+
+Baseline drift tracking (compare against last-known-good per environment key and update baseline):
+
+```bash
+python -m familyos_ultrabert.benchmarks --profile smoke --baseline --format json --output benchmark_report.json
+```
+
 ### Task Performance
 
 | Task | Metric | Score |

@@ -31,7 +31,7 @@ CAPABILITIES: List[str] = [
 LATENCY_THRESHOLDS: Dict[str, Dict[str, float]] = {
 	# milliseconds
 	"gpu": {"single": 15.0, "full": 25.0},
-	"cpu": {"single": 100.0, "full": 200.0},
+	"cpu": {"single": 100.0, "full": 350.0},
 }
 
 

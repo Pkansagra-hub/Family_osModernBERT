@@ -85,11 +85,11 @@ class BenchmarkSummary:
     total: int
     passed: int
     failed: int
-    warned: int = 0
-    info: int = 0
     skipped: int
     errored: int
     duration_sec: float
+    warned: int = 0
+    info: int = 0
 
 
 @dataclass(frozen=True)

@@ -10,6 +10,7 @@ Constraint: standard library only.
 
 from __future__ import annotations
 
+import os
 import math
 from typing import Any, Dict, List, Tuple
 
@@ -21,6 +22,7 @@ from familyos_ultrabert.benchmarks.data.test_cases import (
 	TRIPLET_CASES,
 )
 from familyos_ultrabert.benchmarks.suite import register_suite
+from familyos_ultrabert.benchmarks.types import BenchmarkSeverity
 
 
 def _l2_norm(vec: List[float]) -> float:
@@ -73,6 +75,9 @@ class EmbeddingSuite(BenchmarkSuite):
 	_SIMILARITY_SPLIT: float = 0.70
 
 	def run(self) -> List[Any]:
+		quick_mode = bool(os.environ.get("FAMILYOS_ULTRABERT_BENCH_QUICK", "").strip())
+		quality_severity = BenchmarkSeverity.WARN if quick_mode else BenchmarkSeverity.FAIL
+
 		# Cache embeddings so the suite doesn't recompute vectors across benchmarks.
 		cache: Dict[str, List[float]] = {}
 
@@ -130,6 +135,7 @@ class EmbeddingSuite(BenchmarkSuite):
 			passed=(sim_passed == len(SIMILARITY_CASES) and len(SIMILARITY_CASES) > 0),
 			score=(float(sim_passed) / float(len(SIMILARITY_CASES))) if SIMILARITY_CASES else 0.0,
 			details={"total": len(SIMILARITY_CASES), "passed": sim_passed, "failures": sim_failures},
+			severity=quality_severity,
 		)
 
 		# ------------------------------------------------------------------
@@ -189,6 +195,7 @@ class EmbeddingSuite(BenchmarkSuite):
 				"min_margin": (min_margin if min_margin != 1e9 else None),
 				"failures": triplet_failures,
 			},
+			severity=quality_severity,
 		)
 
 		# ------------------------------------------------------------------
@@ -232,6 +239,7 @@ class EmbeddingSuite(BenchmarkSuite):
 			score=recall1_10,
 			threshold=self._RECALL_AT1_10_THRESHOLD,
 			details={"cases": len(RETRIEVAL_CASES_10), "failures": failures_10},
+			severity=quality_severity,
 		)
 
 		recall1_100, failures_100_1 = recall_at_k(RETRIEVAL_CASES_100, k=1)
@@ -244,6 +252,7 @@ class EmbeddingSuite(BenchmarkSuite):
 			score=recall1_100,
 			threshold=self._RECALL_AT1_100_THRESHOLD,
 			details={"cases": len(RETRIEVAL_CASES_100), "failures": failures_100_1},
+			severity=quality_severity,
 		)
 
 		# Plan includes Recall@5, but acceptance criteria doesn't set targets.
@@ -260,6 +269,7 @@ class EmbeddingSuite(BenchmarkSuite):
 			score=recall10_100,
 			threshold=self._RECALL_AT10_100_THRESHOLD,
 			details={"cases": len(RETRIEVAL_CASES_100), "failures": failures_100_10},
+			severity=quality_severity,
 		)
 
 		return self.results

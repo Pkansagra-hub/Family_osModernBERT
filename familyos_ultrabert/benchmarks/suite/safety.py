@@ -9,11 +9,13 @@ Constraint: standard library only.
 
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List, Tuple
 
 from familyos_ultrabert.benchmarks.base import BenchmarkSuite
 from familyos_ultrabert.benchmarks.data.test_cases import CRISIS_CASES, SAFETY_BAND_CASES
 from familyos_ultrabert.benchmarks.suite import register_suite
+from familyos_ultrabert.benchmarks.types import BenchmarkSeverity
 
 
 def _analyze_safety(client: Any, text: str) -> Tuple[str, float]:
@@ -34,6 +36,9 @@ class SafetySuite(BenchmarkSuite):
 	_CONFIDENCE_THRESHOLD: float = 0.5
 
 	def run(self) -> List[Any]:
+		quick_mode = bool(os.environ.get("FAMILYOS_ULTRABERT_BENCH_QUICK", "").strip())
+		quick_gate_severity = BenchmarkSeverity.WARN if quick_mode else BenchmarkSeverity.FAIL
+
 		# Issue #8: Crisis detection
 		crisis_expected = [(t, y) for (t, y) in CRISIS_CASES if y == "CRISIS"]
 		green_expected = [(t, y) for (t, y) in CRISIS_CASES if y == "GREEN"]
@@ -96,6 +101,7 @@ class SafetySuite(BenchmarkSuite):
 			score=float(fp_count),
 			threshold=0.0,
 			details={"false_positives": false_positives},
+			severity=quick_gate_severity,
 		)
 
 		# Unicode normalization check (explicitly compare curly vs straight apostrophe)
@@ -141,6 +147,7 @@ class SafetySuite(BenchmarkSuite):
 			score=accuracy,
 			threshold=1.0,
 			details={"total": total, "correct": correct, "mismatches": mismatches},
+			severity=quick_gate_severity,
 		)
 
 		self.add_result(

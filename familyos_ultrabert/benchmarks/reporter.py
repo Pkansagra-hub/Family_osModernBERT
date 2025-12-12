@@ -61,6 +61,21 @@ class Reporter:
             f"Time: {s.duration_sec:.2f} seconds",
         ]
 
+        # Optional baseline drift summary (CI-grade regression tracking).
+        baseline = self._result.metadata.get("baseline") if isinstance(self._result.metadata, dict) else None
+        if isinstance(baseline, dict) and baseline.get("enabled"):
+            lines.append("")
+            lines.append("BASELINE DRIFT")
+            lines.append("-------------")
+            if baseline.get("error"):
+                lines.append(f"Baseline error: {baseline.get('error')}")
+            else:
+                lines.append(
+                    f"Compared: {bool(baseline.get('compared'))} | Failed: {int(baseline.get('failed', 0))} | Warned: {int(baseline.get('warned', 0))}"
+                )
+                lines.append(f"Key: {baseline.get('environment_key')}")
+                lines.append(f"Path: {baseline.get('baseline_path')}")
+
         if self._result.metadata.get("note"):
             lines.append("")
             lines.append(f"Note: {self._result.metadata['note']}")
@@ -186,6 +201,20 @@ class Reporter:
         if self._result.metadata.get("note"):
             lines.append("")
             lines.append(f"> Note: {self._result.metadata['note']}")
+
+        baseline = self._result.metadata.get("baseline") if isinstance(self._result.metadata, dict) else None
+        if isinstance(baseline, dict) and baseline.get("enabled"):
+            lines.append("")
+            lines.append("## Baseline drift")
+            lines.append("")
+            if baseline.get("error"):
+                lines.append(f"- Error: `{baseline.get('error')}`")
+            else:
+                lines.append(f"- Compared: `{bool(baseline.get('compared'))}`")
+                lines.append(f"- Failed: `{int(baseline.get('failed', 0))}`")
+                lines.append(f"- Warned: `{int(baseline.get('warned', 0))}`")
+                lines.append(f"- Environment key: `{baseline.get('environment_key')}`")
+                lines.append(f"- Baseline path: `{baseline.get('baseline_path')}`")
 
         if self._result.suites:
             lines.append("")
