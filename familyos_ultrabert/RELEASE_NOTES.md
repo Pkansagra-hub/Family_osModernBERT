@@ -1,4 +1,22 @@
-# FamilyOS UltraBERT v2.1.0
+# FamilyOS UltraBERT v2.2.0
+
+## Benchmark CLI and Reporting
+
+This release adds a packaged benchmark runner with a stable CLI and report formats.
+
+### What's New in v2.2.0
+
+- Built-in benchmark CLI:
+  - Module entry: `python -m familyos_ultrabert.benchmarks`
+  - Console script: `ultrabert-benchmark`
+- Report formats: text, JSON, and Markdown (`--format text|json|markdown`)
+- Quick mode for smoke runs: `--quick` (defaults to `api,regression` when `--suite` is not provided)
+- Cleanup: removed deprecated, ad-hoc benchmark/stress scripts under `familyos_ultrabert/examples/`
+- Added a supported example: `familyos_ultrabert/examples/basic_usage.py`
+
+---
+
+## FamilyOS UltraBERT v2.1.0
 
 ## Self-Contained Wheel - PyTorch Backend Fixed
 
@@ -11,12 +29,14 @@ This release makes the wheel completely self-contained. Both PyTorch and ONNX ba
 ### Self-Contained Package
 
 **Problem Fixed**: The PyTorch backend failed with:
-```
+
+```text
 ImportError: Could not import ModernBertMultiTaskModel.
 Make sure the modeling_studio package is in your Python path.
 ```
 
 **Solution**: Bundled all required model classes into the wheel:
+
 - `familyos_ultrabert.models.modernbert_multitask` - Main multi-task model
 - `familyos_ultrabert.models.heads` - All 12 task-specific heads
 - `familyos_ultrabert.models.poolers` - CLSPooler, MeanPooler, etc.
@@ -25,12 +45,13 @@ Make sure the modeling_studio package is in your Python path.
 - `familyos_ultrabert.data.labels` - All capability label schemas
 
 **Result**: Both backends now work out of the box:
+
 - **ONNX**: Works on CPU, optimized for deployment
 - **PyTorch**: Works on CPU/GPU, full model access
 
 ### Package Structure
 
-```
+```text
 familyos_ultrabert/
 ├── __init__.py
 ├── client.py           # Production Client API
@@ -53,7 +74,7 @@ familyos_ultrabert/
 
 ---
 
-## Upgrade Notes
+## Upgrade Notes (v2.1.0)
 
 This is a breaking change for the internal package structure, but the API remains the same.
 
@@ -63,7 +84,7 @@ pip install --upgrade familyos-ultrabert
 
 ---
 
-# FamilyOS UltraBERT v2.0.3
+## FamilyOS UltraBERT v2.0.3
 
 ## Critical Safety Enhancement: Text Normalization
 
@@ -78,6 +99,7 @@ This release addresses a critical safety issue where Unicode variations in text 
 **Problem Fixed**: Smart quotes (curly apostrophe) and contractions could cause the model to miss crisis cases. For example, "I'm going to hurt my children" using `'` (U+2019) was misclassified as RED instead of CRISIS.
 
 **Solution**: Added automatic text normalization layer that:
+
 1. Converts all Unicode quote variants to ASCII (`'` -> `'`, `"` -> `"`)
 2. Expands safety-critical contractions ("I'm going to hurt" -> "I am going to hurt")
 3. Handles em-dashes, non-breaking spaces, ellipses
@@ -97,7 +119,7 @@ See `docs/TECHNICAL_REBUTTAL.md` for full benchmark details.
 
 ---
 
-## Upgrade Notes
+## Upgrade Notes (v2.0.3)
 
 This is a drop-in replacement for v2.0.2. No API changes.
 
@@ -107,7 +129,7 @@ pip install --upgrade familyos-ultrabert
 
 ---
 
-# FamilyOS UltraBERT v2.0.2
+## FamilyOS UltraBERT v2.0.2
 
 ## Production-Ready Family NLP with Extended Convenience API
 

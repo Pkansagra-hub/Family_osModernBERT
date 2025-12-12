@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "familyos-ultrabert"
-version = "2.1.0"
+version = "2.2.0"
 description = "FamilyOS UltraBERT v2 - High-performance multi-task NLP for family communication"
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -38,6 +38,9 @@ dependencies = [
     "tokenizers>=0.13.0",
 ]
 
+[project.scripts]
+ultrabert-benchmark = "familyos_ultrabert.benchmarks:main"
+
 [project.optional-dependencies]
 pytorch = [
     "torch>=2.0.0",
@@ -69,7 +72,14 @@ Issues = "https://github.com/Pkansagra-hub/Family_osModernBERT/issues"
 
 [tool.setuptools]
 package-dir = {"familyos_ultrabert" = "."}
-packages = ["familyos_ultrabert", "familyos_ultrabert.models", "familyos_ultrabert.data"]
+packages = [
+    "familyos_ultrabert",
+    "familyos_ultrabert.benchmarks",
+    "familyos_ultrabert.benchmarks.suite",
+    "familyos_ultrabert.data",
+    "familyos_ultrabert.examples",
+    "familyos_ultrabert.models",
+]
 include-package-data = true
 
 [tool.setuptools.package-data]

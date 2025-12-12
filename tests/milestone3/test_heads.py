@@ -868,10 +868,10 @@ class TestHierarchicalEmotionHeadASL:
     """Test: test_hierarchical_emotion_head_asl - Uses asymmetric loss."""
 
     def test_asl_enabled_by_default(self, hidden_size):
-        """ASL is enabled by default for HierarchicalEmotionHead."""
+        """ASL is disabled by default for HierarchicalEmotionHead."""
         head = HierarchicalEmotionHead(hidden_size, num_emotions=44)
 
-        assert head.use_asl
+        assert head.use_asl is False
 
     def test_asl_parameters(self, hidden_size):
         """ASL parameters are correctly set."""
@@ -1380,7 +1380,7 @@ class TestHierarchicalEmotionHeadAdvanced:
 
         assert head.num_emotions == 44
         assert head.use_familyos
-        assert head.use_asl
+        assert head.use_asl is False
 
     def test_without_familyos_32_emotions(self, hidden_size):
         """32-emotion mode uses legacy labels."""

@@ -1,6 +1,10 @@
-"""
-FamilyOS UltraBERT v2.0.1 - Client API Stress Test
-Tests the new Client class with auto-warmup and convenience methods.
+"""Deprecated example.
+
+This script was superseded by the built-in benchmark CLI:
+
+    python -m familyos_ultrabert.benchmarks --suite api,regression
+
+and is kept only for historical reference.
 """
 
 import time

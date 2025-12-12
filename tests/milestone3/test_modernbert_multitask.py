@@ -412,12 +412,12 @@ class TestForwardSafetyFamilyos:
     """Test forward pass with safety returns 4 bands."""
 
     def test_safety_uses_enhanced_head(self):
-        """SAFETY_FAMILYOS capability should use EnhancedSafetyHead."""
+        """SAFETY_FAMILYOS capability should use SafetyHead."""
         from modeling_studio.data.labels import Capability
-        from modeling_studio.models.heads import EnhancedSafetyHead
+        from modeling_studio.models.heads import SafetyHead
         from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
 
-        assert CAPABILITY_TO_HEAD_TYPE[Capability.SAFETY_FAMILYOS] == EnhancedSafetyHead
+        assert CAPABILITY_TO_HEAD_TYPE[Capability.SAFETY_FAMILYOS] == SafetyHead
 
 
 class TestForwardEmbedding:
@@ -612,12 +612,12 @@ class TestSafetyUsesEnhancedHead:
         assert EnhancedSafetyHead is not None
 
     def test_safety_familyos_maps_to_enhanced_head(self):
-        """SAFETY_FAMILYOS should map to EnhancedSafetyHead."""
+        """SAFETY_FAMILYOS should map to SafetyHead."""
         from modeling_studio.data.labels import Capability
-        from modeling_studio.models.heads import EnhancedSafetyHead
+        from modeling_studio.models.heads import SafetyHead
         from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
 
-        assert CAPABILITY_TO_HEAD_TYPE[Capability.SAFETY_FAMILYOS] == EnhancedSafetyHead
+        assert CAPABILITY_TO_HEAD_TYPE[Capability.SAFETY_FAMILYOS] == SafetyHead
 
 
 # =============================================================================
@@ -1398,12 +1398,12 @@ class TestCapabilityToHeadTypeMapping:
         assert CAPABILITY_TO_HEAD_TYPE[Capability.INTENT] == IntentHead
 
     def test_safety_familyos_uses_enhanced_safety_head(self):
-        """SAFETY_FAMILYOS should use EnhancedSafetyHead."""
+        """SAFETY_FAMILYOS should use SafetyHead."""
         from modeling_studio.data.labels import Capability
-        from modeling_studio.models.heads import EnhancedSafetyHead
+        from modeling_studio.models.heads import SafetyHead
         from modeling_studio.models.modernbert_multitask import CAPABILITY_TO_HEAD_TYPE
 
-        assert CAPABILITY_TO_HEAD_TYPE[Capability.SAFETY_FAMILYOS] == EnhancedSafetyHead
+        assert CAPABILITY_TO_HEAD_TYPE[Capability.SAFETY_FAMILYOS] == SafetyHead
 
 
 class TestEpic5AvailableFlag:

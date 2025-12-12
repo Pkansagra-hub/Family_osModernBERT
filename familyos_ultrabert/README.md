@@ -150,6 +150,34 @@ model = UltraBERT.load(model_path="/path/to/weights")
 
 ## Benchmarks (RTX 4090)
 
+### Running the built-in benchmark suites
+
+Benchmarks ship with the package and can be run either as a module:
+
+```bash
+python -m familyos_ultrabert.benchmarks --suite api,regression
+```
+
+or via the console script (when installed):
+
+```bash
+ultrabert-benchmark --suite api,regression
+```
+
+Reporting formats:
+
+```bash
+python -m familyos_ultrabert.benchmarks --suite api,regression --format text
+python -m familyos_ultrabert.benchmarks --suite api,regression --format json --output benchmark_report.json
+python -m familyos_ultrabert.benchmarks --suite api,regression --format markdown --output benchmark_report.md
+```
+
+For a faster smoke run:
+
+```bash
+python -m familyos_ultrabert.benchmarks --quick
+```
+
 ### Task Performance
 
 | Task | Metric | Score |

@@ -149,7 +149,7 @@ exclude = ["build", "dist", "__pycache__"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --import-mode=importlib"
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::FutureWarning",

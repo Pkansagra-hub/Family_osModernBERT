@@ -631,5 +631,5 @@ def create_all_heads(
         if head is not None:
             heads[cap] = head
 
-    print(f"[OK] Created {len(heads)} task heads}")
+    print(f"[OK] Created {len(heads)} task heads")
     return heads
