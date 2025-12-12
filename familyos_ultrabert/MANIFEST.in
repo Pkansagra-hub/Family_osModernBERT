@@ -1,0 +1,15 @@
+# Packaging exclusions for the standalone familyos-ultrabert distribution
+# (built from the `familyos_ultrabert/` subproject).
+
+# Exclude local benchmark report artifacts
+exclude benchmark_*.json
+exclude benchmark_*.md
+
+# Exclude local virtual environments and caches
+recursive-exclude .venv_releasecheck *
+recursive-exclude .pytest_cache *
+recursive-exclude __pycache__ *
+
+# Exclude build artifacts (sdist/wheel outputs)
+recursive-exclude build *
+recursive-exclude dist *

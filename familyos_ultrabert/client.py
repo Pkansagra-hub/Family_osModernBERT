@@ -245,6 +245,19 @@ class Client:
         return self._model.backend
 
     @property
+    def device(self) -> str:
+        """Get the active device string when available.
+
+        Returns:
+            A string such as "cpu" or "cuda" when available; otherwise
+            "unknown".
+        """
+        self._ensure_ready()
+        if self._model is None:
+            return "unknown"
+        return str(getattr(self._model, "device", "unknown"))
+
+    @property
     def capabilities(self) -> List[str]:
         """List of available capabilities."""
         self._ensure_ready()

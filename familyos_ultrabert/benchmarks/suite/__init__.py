@@ -1,17 +1,10 @@
 """Benchmark suite registry.
 
-Suites are registered here so the runner can discover them without using
-filesystem scanning or third-party plugins.
+Suites are registered here so the runner can discover them without filesystem
+scanning or third-party plugins.
 
-Milestone 1: no suites are registered yet. Later milestones will add:
-- latency
-- safety
-- classification
-- embeddings
-- entities
-- robustness
-- api
-- regression
+Imports at the bottom are intentionally defensive: if an optional suite fails to
+import (due to missing runtime deps), other suites can still register.
 """
 
 from __future__ import annotations

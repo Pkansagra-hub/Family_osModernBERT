@@ -252,6 +252,17 @@ class UltraBERT:
         """Current backend: "pytorch" or "onnx"."""
         return self._backend
 
+    @property
+    def device(self) -> str:
+        """Return the active device string when available.
+
+        Returns:
+            A string such as "cpu" or "cuda" when the underlying inference
+            engine exposes device information; otherwise "unknown".
+        """
+        dev = getattr(self._engine, "device", None)
+        return str(dev) if dev is not None else "unknown"
+
     def analyze(
         self,
         text: str,

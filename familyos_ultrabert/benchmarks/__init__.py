@@ -134,7 +134,7 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
     else:
         print(output, end="")
 
-    # Non-zero if there are failures or errors.
+    # Non-zero if there are hard failures or errors.
     return 0 if (results.summary.failed == 0 and results.summary.errored == 0) else 1
 
 

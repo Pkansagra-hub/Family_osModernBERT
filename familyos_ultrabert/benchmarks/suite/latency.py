@@ -25,50 +25,6 @@ from familyos_ultrabert.benchmarks.data.test_cases import (
 from familyos_ultrabert.benchmarks.suite import register_suite
 
 
-def _percentile(sorted_samples: List[float], p: float) -> float:
-	"""Compute percentile using linear interpolation.
-
-	Args:
-		sorted_samples: Samples sorted ascending.
-		p: Percentile in [0, 1].
-
-	Returns:
-		Percentile value.
-	"""
-	if not sorted_samples:
-		return 0.0
-	if p <= 0.0:
-		return float(sorted_samples[0])
-	if p >= 1.0:
-		return float(sorted_samples[-1])
-
-	n = len(sorted_samples)
-	k = (n - 1) * p
-	f = int(k)
-	c = f + 1 if f + 1 < n else f
-	if c == f:
-		return float(sorted_samples[f])
-	return float(sorted_samples[f] + (k - f) * (sorted_samples[c] - sorted_samples[f]))
-
-
-def _measure_latency_samples(
-	func: Callable[[], Any],
-	*,
-	warmup: int,
-	runs: int,
-) -> List[float]:
-	"""Measure latency samples in milliseconds."""
-	for _ in range(max(0, warmup)):
-		func()
-
-	samples: List[float] = []
-	for _ in range(runs):
-		start = time.perf_counter()
-		func()
-		samples.append((time.perf_counter() - start) * 1000.0)
-	return samples
-
-
 def _device_kind(client: Any) -> str:
 	"""Infer a coarse device kind for threshold selection."""
 	backend = getattr(client, "backend", "unknown")
@@ -85,6 +41,30 @@ def _device_kind(client: Any) -> str:
 		return "gpu" if backend == "pytorch" else "cpu"
 
 
+def _maybe_synchronize(client: Any) -> Optional[Callable[[], Any]]:
+	"""Return a synchronization callable for accurate timing when needed.
+
+	GPU backends (PyTorch CUDA) can execute asynchronously. Without an explicit
+	synchronization, latency measurements can be unrealistically low.
+
+	Returns:
+		A callable to synchronize device execution, or None.
+	"""
+	backend = getattr(client, "backend", "unknown")
+	device = str(getattr(client, "device", "unknown")).lower()
+	if backend != "pytorch" or device != "cuda":
+		return None
+
+	try:
+		import torch  # type: ignore
+
+		if bool(torch.cuda.is_available()):
+			return torch.cuda.synchronize
+		return None
+	except Exception:  # noqa: BLE001
+		return None
+
+
 def _make_length_text(word_count: int) -> str:
 	"""Create a text with approximately the requested number of words."""
 	if word_count <= 0:
@@ -99,6 +79,7 @@ def _throughput(
 	*,
 	warmup: int,
 	runs: int,
+	synchronize: Optional[Callable[[], Any]] = None,
 ) -> Dict[str, float]:
 	"""Measure throughput for repeated calls.
 
@@ -115,7 +96,11 @@ def _throughput(
 
 	start = time.perf_counter()
 	for _ in range(runs):
+		if synchronize is not None:
+			synchronize()
 		func()
+		if synchronize is not None:
+			synchronize()
 	total_sec = time.perf_counter() - start
 	cps = (float(runs) / total_sec) if total_sec > 0 else 0.0
 	return {"total_sec": float(total_sec), "calls_per_sec": float(cps)}
@@ -134,16 +119,10 @@ class LatencySuite(BenchmarkSuite):
 	_DEFAULT_RUNS_LENGTH: int = 7
 
 	def _measure(self, func: Callable[[], Any], *, warmup: int, runs: int) -> Dict[str, float]:
-		samples = _measure_latency_samples(func, warmup=warmup, runs=runs)
-		samples_sorted = sorted(samples)
-		return {
-			"mean": float(sum(samples) / len(samples)) if samples else 0.0,
-			"p50": _percentile(samples_sorted, 0.50),
-			"p95": _percentile(samples_sorted, 0.95),
-			"p99": _percentile(samples_sorted, 0.99),
-			"min": float(samples_sorted[0]) if samples_sorted else 0.0,
-			"max": float(samples_sorted[-1]) if samples_sorted else 0.0,
-		}
+		# Centralized stats/percentile math lives in BenchmarkSuite.
+		# Synchronize GPU execution when needed for trustworthy measurements.
+		sync = _maybe_synchronize(self.client)
+		return self.measure_latency_extended(func, warmup=warmup, runs=runs, synchronize=sync)
 
 	def _thresholds(self) -> Dict[str, float]:
 		kind = _device_kind(self.client)
@@ -315,10 +294,12 @@ class LatencySuite(BenchmarkSuite):
 
 		# Issue #7: Throughput
 		try:
+			sync = _maybe_synchronize(self.client)
 			tp = _throughput(
 				lambda: self.client.analyze(text),
 				warmup=THROUGHPUT_WARMUP_RUNS,
 				runs=THROUGHPUT_SEQUENTIAL_RUNS,
+				synchronize=sync,
 			)
 			self.add_result(
 				name="throughput_full_sequential",
@@ -352,6 +333,7 @@ class LatencySuite(BenchmarkSuite):
 				_mixed_call,
 				warmup=min(THROUGHPUT_WARMUP_RUNS, max(1, len(mixed_texts) // 20)),
 				runs=len(mixed_texts),
+				synchronize=sync,
 			)
 			self.add_result(
 				name="throughput_mixed_length",
@@ -376,6 +358,7 @@ class LatencySuite(BenchmarkSuite):
 				lambda: self.client.analyze(text, capabilities=["embedding"]),
 				warmup=THROUGHPUT_WARMUP_RUNS,
 				runs=THROUGHPUT_SEQUENTIAL_RUNS,
+				synchronize=sync,
 			)
 			self.add_result(
 				name="throughput_embedding_only",

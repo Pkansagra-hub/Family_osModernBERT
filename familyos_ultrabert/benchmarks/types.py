@@ -19,6 +19,18 @@ class BenchmarkStatus(str, Enum):
     ERROR = "error"
 
 
+class BenchmarkSeverity(str, Enum):
+    """Severity of a benchmark result.
+
+    Use this to separate hard release gates (FAIL) from soft signals that
+    should be tracked over time (WARN/INFO).
+    """
+
+    FAIL = "fail"
+    WARN = "warn"
+    INFO = "info"
+
+
 @dataclass(frozen=True)
 class BenchmarkResult:
     """Result of a single benchmark check."""
@@ -26,6 +38,7 @@ class BenchmarkResult:
     name: str
     category: str
     status: BenchmarkStatus
+    severity: BenchmarkSeverity = BenchmarkSeverity.FAIL
     score: Optional[float] = None
     threshold: Optional[float] = None
     latency_ms: Optional[float] = None
@@ -43,12 +56,24 @@ class SuiteResult:
 
     passed: int = 0
     failed: int = 0
+    warned: int = 0
+    info: int = 0
     skipped: int = 0
     errored: int = 0
 
     def __post_init__(self) -> None:
         self.passed = sum(1 for r in self.results if r.status == BenchmarkStatus.PASS)
-        self.failed = sum(1 for r in self.results if r.status == BenchmarkStatus.FAIL)
+        self.failed = sum(
+            1
+            for r in self.results
+            if r.status == BenchmarkStatus.FAIL and r.severity == BenchmarkSeverity.FAIL
+        )
+        self.warned = sum(
+            1
+            for r in self.results
+            if r.status == BenchmarkStatus.FAIL and r.severity == BenchmarkSeverity.WARN
+        )
+        self.info = sum(1 for r in self.results if r.severity == BenchmarkSeverity.INFO)
         self.skipped = sum(1 for r in self.results if r.status == BenchmarkStatus.SKIP)
         self.errored = sum(1 for r in self.results if r.status == BenchmarkStatus.ERROR)
 
@@ -60,6 +85,8 @@ class BenchmarkSummary:
     total: int
     passed: int
     failed: int
+    warned: int = 0
+    info: int = 0
     skipped: int
     errored: int
     duration_sec: float

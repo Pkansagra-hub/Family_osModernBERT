@@ -261,44 +261,125 @@ TRIPLET_CASES: List[Dict[str, Any]] = [
 
 
 # Milestone 4 / Issue #14: Retrieval recall with distractors
-_DISTRACTORS_10: List[str] = [f"Unrelated topic {i}" for i in range(10)]
-_DISTRACTORS_100: List[str] = [f"Unrelated topic {i}" for i in range(100)]
 
-RETRIEVAL_CASES_10: List[Dict[str, Any]] = [
-	{
-		"query": "Who picked up the children from school?",
-		"relevant": "Mom picked up the kids from school today.",
-		"distractors": _DISTRACTORS_10,
-	},
-	{
-		"query": "Did we eat dinner together?",
-		"relevant": "Family dinner tonight was wonderful.",
-		"distractors": _DISTRACTORS_10,
-	},
-	{
-		"query": "When is grandma visiting?",
-		"relevant": "Grandma is visiting us this weekend.",
-		"distractors": _DISTRACTORS_10,
-	},
+# Retrieval tests are intended to provide meaningful statistical power.
+# We generate a larger, stratified set (family/work/health/planning) with a
+# mixture of unrelated and hard-negative distractors.
+
+_RETRIEVAL_HARD_NEGATIVES: List[str] = [
+	"Mom picked up groceries from the store today.",
+	"Dad picked up the kids from soccer practice.",
+	"We ate dinner at a restaurant last night.",
+	"Grandma is visiting next month.",
+	"The doctor appointment was rescheduled.",
+	"The work meeting moved to Thursday.",
+	"We planned a birthday party for Saturday.",
+	"I called my sister on the phone.",
+	"The children finished their homework.",
+	"We took the car to the mechanic.",
 ]
 
-RETRIEVAL_CASES_100: List[Dict[str, Any]] = [
-	{
-		"query": "We ate together as a family",
-		"relevant": "Family dinner tonight was wonderful.",
-		"distractors": _DISTRACTORS_100,
-	},
-	{
-		"query": "Set a reminder to call my mom",
-		"relevant": "Please remind me to call my mom tomorrow.",
-		"distractors": _DISTRACTORS_100,
-	},
-	{
-		"query": "My child has a doctor visit",
-		"relevant": "My daughter has a doctor appointment on Friday.",
-		"distractors": _DISTRACTORS_100,
-	},
-]
+_DISTRACTORS_10: List[str] = _RETRIEVAL_HARD_NEGATIVES[:5] + [f"Unrelated topic {i}" for i in range(5)]
+_DISTRACTORS_100: List[str] = _RETRIEVAL_HARD_NEGATIVES + [f"Unrelated topic {i}" for i in range(90)]
+
+
+def _build_retrieval_cases(
+	*,
+	distractors: List[str],
+	per_domain: int,
+) -> List[Dict[str, Any]]:
+	"""Create a stratified retrieval benchmark dataset.
+
+	Args:
+		distractors: Shared distractor set.
+		per_domain: Number of cases per domain.
+
+	Returns:
+		List of retrieval cases.
+	"""
+	# Deterministic templates and slots.
+	subjects_family = ["Mom", "Dad", "Grandma", "Grandpa", "My sister", "My brother"]
+	subjects_work = ["I", "My manager", "My coworker", "The team"]
+	subjects_health = ["I", "My child", "Mom", "Dad"]
+	subjects_planning = ["I", "We", "The family"]
+
+	times = [
+		"today",
+		"yesterday",
+		"this morning",
+		"tonight",
+		"this weekend",
+		"next week",
+		"on Monday",
+		"on Tuesday",
+		"on Friday",
+		"tomorrow",
+	]
+
+	actions_family = [
+		("picked up", "the kids from school", "Who picked up the kids from school {time}?"),
+		("made", "dinner for the family", "Did we have dinner together {time}?"),
+		("called", "grandma", "When did we call grandma?"),
+		("went to", "the park", "Did we go to the park {time}?"),
+		("helped with", "homework", "Did someone help with homework {time}?"),
+	]
+
+	actions_work = [
+		("had", "a work meeting", "When was the work meeting?"),
+		("finished", "a project", "Did we finish the project {time}?"),
+		("sent", "an email update", "Was an email update sent {time}?"),
+		("joined", "a video call", "Did we join the video call {time}?"),
+		("prepared", "a presentation", "Was a presentation prepared {time}?"),
+	]
+
+	actions_health = [
+		("had", "a doctor appointment", "When is the doctor appointment?"),
+		("took", "medicine", "Did someone take medicine {time}?"),
+		("felt", "a headache", "Was there a headache {time}?"),
+		("went to", "therapy", "Did we go to therapy {time}?"),
+		("scheduled", "a checkup", "Is there a checkup scheduled {time}?"),
+	]
+
+	actions_planning = [
+		("planned", "a birthday party", "When is the birthday party?"),
+		("scheduled", "a family dinner", "Is there a family dinner scheduled {time}?"),
+		("set", "a reminder to call Mom", "Set a reminder to call Mom {time}."),
+		("booked", "a flight", "Did we book a flight {time}?"),
+		("made", "a grocery list", "Did we make a grocery list {time}?"),
+	]
+
+	def _domain_cases(subjects: List[str], actions: List[tuple[str, str, str]], label: str) -> List[Dict[str, Any]]:
+		cases: List[Dict[str, Any]] = []
+		idx = 0
+		for i in range(int(per_domain)):
+			subj = subjects[i % len(subjects)]
+			verb, obj, q_tpl = actions[i % len(actions)]
+			time_phrase = times[i % len(times)]
+			relevant = f"{subj} {verb} {obj} {time_phrase}."
+			query = q_tpl.format(time=time_phrase)
+			cases.append(
+				{
+					"query": query,
+					"relevant": relevant,
+					"distractors": distractors,
+					"domain": label,
+					"id": f"{label}_{idx}",
+				}
+			)
+			idx += 1
+		return cases
+
+	return (
+		_domain_cases(subjects_family, actions_family, "family")
+		+ _domain_cases(subjects_work, actions_work, "work")
+		+ _domain_cases(subjects_health, actions_health, "health")
+		+ _domain_cases(subjects_planning, actions_planning, "planning")
+	)
+
+
+# Target ~200+ retrieval queries for statistical power.
+RETRIEVAL_CASES_10: List[Dict[str, Any]] = _build_retrieval_cases(distractors=_DISTRACTORS_10, per_domain=50)
+RETRIEVAL_CASES_100: List[Dict[str, Any]] = _build_retrieval_cases(distractors=_DISTRACTORS_100, per_domain=15)
 
 
 # Milestone 5 / Issue #15: Robustness edge cases

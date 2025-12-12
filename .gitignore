@@ -46,6 +46,10 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# Local benchmark report artifacts
+benchmark_*.json
+benchmark_*.md
+
 # Translations
 *.mo
 *.pot

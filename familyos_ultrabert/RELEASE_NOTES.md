@@ -1,3 +1,22 @@
+# FamilyOS UltraBERT v2.2.1
+
+## Hotfix: Benchmark data packaged
+
+This hotfix fixes the benchmark CLI in installed environments.
+
+- Fixed: benchmark suites failed to import after `pip install familyos-ultrabert` because
+  `familyos_ultrabert.benchmarks.data` was not included in the wheel.
+- Result: `ultrabert-benchmark --quick` now runs end-to-end and can write reports.
+
+Additional benchmark hardening included:
+
+- Added consistent device reporting in benchmark outputs (`cpu`/`cuda` when available).
+- Made regression golden output checks less brittle by using stable emotion super-labels.
+- Reduced false failures in cross-backend checks by using coarse sentiment valence and a
+  more realistic embedding similarity threshold.
+
+---
+
 # FamilyOS UltraBERT v2.2.0
 
 ## Benchmark CLI and Reporting

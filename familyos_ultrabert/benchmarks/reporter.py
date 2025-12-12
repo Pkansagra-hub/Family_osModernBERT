@@ -1,11 +1,11 @@
 """Benchmark reporting utilities.
 
-Milestone 1: minimal reporter that can format a BenchmarkRunResult as text.
-Later milestones can extend this with JSON/Markdown output.
+Reporter is intentionally lightweight and dependency-free.
 
-Constraints:
-- Standard library only.
-- No external dependencies.
+Notes:
+- This module is standard-library only.
+- Device information should be supplied by the runner via
+    ``BenchmarkRunResult.metadata['device']``.
 """
 
 from __future__ import annotations
@@ -31,32 +31,16 @@ class Reporter:
         return _dt.datetime.now(tz=_dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
     def _detect_device(self) -> str:
-        """Best-effort device detection (cpu/cuda)."""
+        """Return the device string recorded in metadata.
+
+        The reporter does not attempt runtime/device introspection because it
+        must remain standard-library only.
+        """
         meta_device = self._result.metadata.get("device") if isinstance(self._result.metadata, dict) else None
         if isinstance(meta_device, str) and meta_device.strip():
             return meta_device
 
-        backend = str(self._result.backend or "")
-        if backend == "pytorch":
-            try:
-                import torch  # type: ignore
-
-                return "cuda" if torch.cuda.is_available() else "cpu"
-            except Exception:  # noqa: BLE001
-                return "cpu"
-
-        if backend == "onnx":
-            try:
-                import onnxruntime  # type: ignore
-
-                get_dev = getattr(onnxruntime, "get_device", None)
-                if callable(get_dev):
-                    val = str(get_dev()).upper()
-                    return "cuda" if "GPU" in val else "cpu"
-            except Exception:  # noqa: BLE001
-                return "cpu"
-
-        return "cpu"
+        return "unknown"
 
     def to_text(self) -> str:
         """Render a human-readable summary."""
@@ -73,7 +57,7 @@ class Reporter:
             "",
             "SUMMARY",
             "-------",
-            f"Total: {s.total} | Passed: {s.passed} | Failed: {s.failed} | Skipped: {s.skipped} | Errored: {s.errored}",
+            f"Total: {s.total} | Passed: {s.passed} | Failed: {s.failed} | Warned: {getattr(s, 'warned', 0)} | Skipped: {s.skipped} | Errored: {s.errored}",
             f"Time: {s.duration_sec:.2f} seconds",
         ]
 
@@ -93,8 +77,13 @@ class Reporter:
                 for r in suite.results:
                     status = r.status.value.upper()
 
+                    sev = getattr(r, "severity", None)
+                    sev_str = "" if sev is None else str(getattr(sev, "value", sev)).upper()
+
                     line = f"  [{status}] {r.name}"
                     parts: List[str] = []
+                    if sev_str and sev_str != "FAIL":
+                        parts.append(f"severity={sev_str}")
                     if r.score is not None:
                         parts.append(f"score={r.score}")
                     if r.threshold is not None:
@@ -122,6 +111,8 @@ class Reporter:
                 "total": self._result.summary.total,
                 "passed": self._result.summary.passed,
                 "failed": self._result.summary.failed,
+                "warned": getattr(self._result.summary, "warned", 0),
+                "info": getattr(self._result.summary, "info", 0),
                 "skipped": self._result.summary.skipped,
                 "errored": self._result.summary.errored,
                 "duration_sec": self._result.summary.duration_sec,
@@ -138,6 +129,7 @@ class Reporter:
                         "name": r.name,
                         "category": r.category,
                         "status": r.status.value,
+                        "severity": getattr(getattr(r, "severity", None), "value", None),
                         "score": r.score,
                         "threshold": r.threshold,
                         "latency_ms": r.latency_ms,
@@ -151,6 +143,8 @@ class Reporter:
                     "name": suite.suite_name,
                     "passed": suite.passed,
                     "failed": suite.failed,
+                    "warned": getattr(suite, "warned", 0),
+                    "info": getattr(suite, "info", 0),
                     "skipped": suite.skipped,
                     "errored": suite.errored,
                     "duration_sec": suite.total_time_sec,
@@ -182,6 +176,13 @@ class Reporter:
             f"| {s.total} | {s.passed} | {s.failed} | {s.skipped} | {s.errored} | {s.duration_sec:.2f} |"
         )
 
+        warned = getattr(s, "warned", 0)
+        info = getattr(s, "info", 0)
+        if warned or info:
+            lines.append("")
+            lines.append(f"- Warned: `{warned}`")
+            lines.append(f"- Info: `{info}`")
+
         if self._result.metadata.get("note"):
             lines.append("")
             lines.append(f"> Note: {self._result.metadata['note']}")
@@ -194,15 +195,16 @@ class Reporter:
                 lines.append("")
                 lines.append(f"### {suite.suite_name}")
                 lines.append("")
-                lines.append("| Status | Name | Score | Threshold | Latency (ms) | Error |")
-                lines.append("|---|---|---:|---:|---:|---|")
+                lines.append("| Status | Severity | Name | Score | Threshold | Latency (ms) | Error |")
+                lines.append("|---|---|---|---:|---:|---:|---|")
                 for r in suite.results:
                     status = r.status.value
+                    sev = getattr(getattr(r, "severity", None), "value", "fail")
                     score = "" if r.score is None else str(r.score)
                     threshold = "" if r.threshold is None else str(r.threshold)
                     latency = "" if r.latency_ms is None else f"{r.latency_ms:.2f}"
                     err = "" if not r.error else str(r.error).replace("\n", " ")
-                    lines.append(f"| {status} | {r.name} | {score} | {threshold} | {latency} | {err} |")
+                    lines.append(f"| {status} | {sev} | {r.name} | {score} | {threshold} | {latency} | {err} |")
 
         lines.append("")
         return "\n".join(lines) + "\n"

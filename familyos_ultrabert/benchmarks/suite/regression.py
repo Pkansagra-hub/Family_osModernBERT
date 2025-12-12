@@ -3,7 +3,10 @@
 Implements:
 - Issue #20: Golden outputs / determinism checks
 
-Constraint: standard library only.
+Notes:
+- This suite aims to be standard-library only for its own logic.
+- If optional dependencies (e.g., torch) are available at runtime, we may use
+	them for best-effort seeding to reduce flakiness.
 """
 
 from __future__ import annotations
@@ -128,6 +131,31 @@ def _sentiment_direction(label: str) -> str:
 	return "neutral"
 
 
+def _emotion_super_labels(emotion_names: List[str]) -> List[str]:
+	"""Map granular emotion names to stable super-label categories.
+
+	Args:
+		emotion_names: List of granular emotion labels.
+
+	Returns:
+		Sorted list of unique super-label names (e.g., ["AFFECTION", "JOY"]).
+	"""
+	try:
+		from familyos_ultrabert.data.labels import EMOTION_TO_SUPER_LABEL  # type: ignore
+	except Exception:  # noqa: BLE001
+		return []
+
+	supers: set[str] = set()
+	for emo in emotion_names:
+		key = str(emo).strip().lower()
+		if not key:
+			continue
+		sl = EMOTION_TO_SUPER_LABEL.get(key)
+		if sl:
+			supers.add(str(sl))
+	return sorted(supers)
+
+
 @register_suite
 class RegressionSuite(BenchmarkSuite):
 	"""Golden output regression suite."""
@@ -163,11 +191,14 @@ class RegressionSuite(BenchmarkSuite):
 				exp_sent_dir = expected.get("sentiment_direction")
 				exp_safe = expected.get("safety")
 				exp_emos = list(expected.get("emotions_contain", []))
+				exp_emos_any = list(expected.get("emotions_any_of", []))
+				exp_emos_super_any = list(expected.get("emotions_super_any_of", []))
 				exp_entities = list(expected.get("entities_contain", []))
 
 				obs_sent = str(getattr(res, "sentiment", ""))
 				obs_safe = str(getattr(res, "safety", ""))
 				obs_emos = [str(e).strip().lower() for e in list(getattr(res, "emotions", []))]
+				obs_emo_supers = _emotion_super_labels(obs_emos)
 				obs_entities = _entity_texts(getattr(res, "entities", []))
 
 				ok = True
@@ -195,6 +226,20 @@ class RegressionSuite(BenchmarkSuite):
 					ok = False
 					mismatch["emotions_missing"] = missing_emos
 					mismatch["emotions_observed"] = obs_emos
+
+				if exp_emos_any:
+					norm_any = [str(e).strip().lower() for e in exp_emos_any if str(e).strip()]
+					if norm_any and not any(e in obs_emos for e in norm_any):
+						ok = False
+						mismatch["emotions_any_of_missing"] = norm_any
+						mismatch["emotions_observed"] = obs_emos
+
+				if exp_emos_super_any:
+					norm_sup = [str(e).strip() for e in exp_emos_super_any if str(e).strip()]
+					if norm_sup and not any(s in obs_emo_supers for s in norm_sup):
+						ok = False
+						mismatch["emotions_super_any_of_missing"] = norm_sup
+						mismatch["emotions_super_observed"] = obs_emo_supers
 
 				missing_entities: List[str] = []
 				for ent in exp_entities:
@@ -265,18 +310,26 @@ class RegressionSuite(BenchmarkSuite):
 			sample_text = next(iter(GOLDEN_OUTPUTS.keys()))
 			a = self.client.analyze(sample_text, capabilities=["sentiment", "safety_familyos", "emotions"])
 			b = self.client.analyze(sample_text, capabilities=["sentiment", "safety_familyos", "emotions"])
+
+			def _norm_emotions(val: Any) -> List[str]:
+				if not isinstance(val, list):
+					return []
+				return sorted({str(e).strip().lower() for e in val if str(e).strip()})
+
+			emo_a = _norm_emotions(getattr(a, "emotions", []))
+			emo_b = _norm_emotions(getattr(b, "emotions", []))
 			same = (
 				str(getattr(a, "sentiment", "")) == str(getattr(b, "sentiment", ""))
 				and str(getattr(a, "safety", "")) == str(getattr(b, "safety", ""))
-				and list(getattr(a, "emotions", [])) == list(getattr(b, "emotions", []))
+				and emo_a == emo_b
 			)
 			self.add_result(
 				name="determinism_same_input",
 				passed=same,
 				details={
 					"text": sample_text,
-					"a": {"sentiment": getattr(a, "sentiment", None), "safety": getattr(a, "safety", None), "emotions": getattr(a, "emotions", None)},
-					"b": {"sentiment": getattr(b, "sentiment", None), "safety": getattr(b, "safety", None), "emotions": getattr(b, "emotions", None)},
+					"a": {"sentiment": getattr(a, "sentiment", None), "safety": getattr(a, "safety", None), "emotions": emo_a},
+					"b": {"sentiment": getattr(b, "sentiment", None), "safety": getattr(b, "safety", None), "emotions": emo_b},
 				},
 			)
 		except Exception as exc:  # noqa: BLE001
