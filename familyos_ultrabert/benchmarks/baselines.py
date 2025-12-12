@@ -72,6 +72,12 @@ def _flatten_metrics(payload: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
 				val = r.get(field)
 				if isinstance(val, (int, float)):
 					metric_severity = sev_str
+					# Latency can be noisy across runs (background load, thermal, etc.).
+					# Track it by default but do not fail CI unless explicitly enabled.
+					if field == "latency_ms" and metric_severity == BenchmarkSeverity.FAIL.value:
+						gate_latency = str(os.getenv("ULTRABERT_BENCH_BASELINE_GATE_LATENCY", "")).strip().lower()
+						if gate_latency not in ("1", "true", "yes"):
+							metric_severity = BenchmarkSeverity.WARN.value
 					# Thresholds are configuration, not performance. Track them but don't gate.
 					if field == "threshold" and metric_severity == BenchmarkSeverity.FAIL.value:
 						metric_severity = BenchmarkSeverity.WARN.value

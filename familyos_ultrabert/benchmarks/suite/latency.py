@@ -9,6 +9,7 @@ Constraint: standard library only.
 
 from __future__ import annotations
 
+import os
 import time
 from typing import Any, Callable, Dict, List, Optional
 
@@ -117,6 +118,13 @@ class LatencySuite(BenchmarkSuite):
 	_DEFAULT_RUNS_SINGLE: int = 10
 	_DEFAULT_RUNS_FULL: int = 10
 	_DEFAULT_RUNS_LENGTH: int = 7
+	_DEFAULT_RUNS_SINGLE_QUICK: int = 5
+	_DEFAULT_RUNS_FULL_QUICK: int = 5
+	_DEFAULT_RUNS_LENGTH_QUICK: int = 3
+	_MAX_LENGTH_WORDS_QUICK: int = 2000
+
+	def _is_quick(self) -> bool:
+		return bool(os.environ.get("FAMILYOS_ULTRABERT_BENCH_QUICK", "").strip())
 
 	def _measure(self, func: Callable[[], Any], *, warmup: int, runs: int) -> Dict[str, float]:
 		# Centralized stats/percentile math lives in BenchmarkSuite.
@@ -136,13 +144,18 @@ class LatencySuite(BenchmarkSuite):
 		single_threshold_ms = float(thresholds["single"])
 		full_threshold_ms = float(thresholds["full"])
 
+		quick_mode = self._is_quick()
+		runs_single = self._DEFAULT_RUNS_SINGLE_QUICK if quick_mode else self._DEFAULT_RUNS_SINGLE
+		runs_full = self._DEFAULT_RUNS_FULL_QUICK if quick_mode else self._DEFAULT_RUNS_FULL
+		runs_length = self._DEFAULT_RUNS_LENGTH_QUICK if quick_mode else self._DEFAULT_RUNS_LENGTH
+
 		# Issue #5.1: Single capability latency (all 12 capabilities)
 		for cap in CAPABILITIES:
 			try:
 				stats = self._measure(
 					lambda c=cap: self.client.analyze(text, capabilities=[c]),
 					warmup=self._DEFAULT_WARMUP,
-					runs=self._DEFAULT_RUNS_SINGLE,
+					runs=runs_single,
 				)
 				passed = stats["p95"] <= single_threshold_ms
 				self.add_result(
@@ -158,7 +171,7 @@ class LatencySuite(BenchmarkSuite):
 						"mean_ms": stats["mean"],
 						"min_ms": stats["min"],
 						"max_ms": stats["max"],
-						"runs": self._DEFAULT_RUNS_SINGLE,
+						"runs": runs_single,
 						"capability": cap,
 					},
 				)
@@ -170,7 +183,7 @@ class LatencySuite(BenchmarkSuite):
 			full_stats = self._measure(
 				lambda: self.client.analyze(text),
 				warmup=self._DEFAULT_WARMUP,
-				runs=self._DEFAULT_RUNS_FULL,
+				runs=runs_full,
 			)
 			passed = full_stats["p95"] <= full_threshold_ms
 			self.add_result(
@@ -186,7 +199,7 @@ class LatencySuite(BenchmarkSuite):
 					"mean_ms": full_stats["mean"],
 					"min_ms": full_stats["min"],
 					"max_ms": full_stats["max"],
-					"runs": self._DEFAULT_RUNS_FULL,
+					"runs": runs_full,
 				},
 			)
 		except Exception as exc:  # noqa: BLE001
@@ -228,13 +241,16 @@ class LatencySuite(BenchmarkSuite):
 
 		# Issue #6: Text length scaling
 		length_latencies_p50: Dict[str, float] = {}
-		for label, words in LENGTH_TESTS:
+		length_tests = list(LENGTH_TESTS)
+		if quick_mode:
+			length_tests = [(lbl, wc) for (lbl, wc) in length_tests if int(wc) <= self._MAX_LENGTH_WORDS_QUICK]
+		for label, words in length_tests:
 			try:
 				length_text = _make_length_text(words)
 				stats = self._measure(
 					lambda t=length_text: self.client.analyze(t),
 					warmup=1,
-					runs=self._DEFAULT_RUNS_LENGTH,
+					runs=runs_length,
 				)
 				length_latencies_p50[label] = float(stats["p50"])
 
@@ -250,7 +266,7 @@ class LatencySuite(BenchmarkSuite):
 						"p95_ms": stats["p95"],
 						"p99_ms": stats["p99"],
 						"mean_ms": stats["mean"],
-						"runs": self._DEFAULT_RUNS_LENGTH,
+						"runs": runs_length,
 					},
 				)
 			except Exception as exc:  # noqa: BLE001

@@ -151,11 +151,13 @@ class BenchmarkRunner:
         *,
         suites: Optional[List[str]] = None,
         backend: str = "auto",
+        device: str = "auto",
         warmup_rounds: int = 3,
         verbose: bool = True,
     ):
         self._suite_filter = suites
         self._backend = backend
+        self._device = device
         self._warmup_rounds = warmup_rounds
         self._verbose = verbose
 
@@ -169,6 +171,7 @@ class BenchmarkRunner:
 
         return Client(
             backend=self._backend,
+            device=self._device,
             warmup=True,
             warmup_rounds=self._warmup_rounds,
             verbose=self._verbose,

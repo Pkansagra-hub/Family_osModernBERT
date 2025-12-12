@@ -141,6 +141,18 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--suite", type=str, help="Comma-separated list of suites to run")
     parser.add_argument("--quick", action="store_true", help="Run quick smoke test only")
     parser.add_argument(
+        "--backend",
+        choices=["auto", "pytorch", "onnx"],
+        default="auto",
+        help="Backend to use for inference (default: auto)",
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="auto",
+        help="Device for inference (cpu, cuda, cuda:0, etc). For pytorch backend only.",
+    )
+    parser.add_argument(
         "--format",
         choices=["text", "json", "markdown"],
         default="text",
@@ -194,7 +206,12 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
             print(f"Available suites: {valid}")
             return 2
 
-    runner = BenchmarkRunner(suites=suites, verbose=bool(args.verbose))
+    runner = BenchmarkRunner(
+        suites=suites,
+        backend=str(args.backend),
+        device=str(args.device),
+        verbose=bool(args.verbose),
+    )
     results = runner.run()
 
     baseline_failed = 0

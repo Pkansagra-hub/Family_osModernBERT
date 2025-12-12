@@ -170,12 +170,14 @@ class Client:
     def __init__(
         self,
         backend: str = "auto",
+        device: str = "auto",
         warmup: bool = True,
         warmup_rounds: int = 3,
         lazy_load: bool = False,
         verbose: bool = False,
     ):
         self._backend_preference = backend
+        self._device_preference = device
         self._warmup_enabled = warmup
         self._warmup_rounds = warmup_rounds
         self._verbose = verbose
@@ -204,7 +206,10 @@ class Client:
             self._log("Loading model...")
             load_start = time.perf_counter()
 
-            self._model = UltraBERT.load(backend=self._backend_preference)
+            self._model = UltraBERT.load(
+                backend=self._backend_preference,
+                device=self._device_preference,
+            )
 
             load_time = (time.perf_counter() - load_start) * 1000
             self._log(f"Model loaded in {load_time:.0f}ms (backend: {self._model.backend})")

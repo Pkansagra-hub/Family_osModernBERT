@@ -51,7 +51,8 @@ def test_environment_key_stable():
     assert "abc" in key
 
 
-def test_baseline_compare_and_update(tmp_path: Path):
+def test_baseline_compare_and_update(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("ULTRABERT_BENCH_BASELINE_GATE_LATENCY", "1")
     # First run: baseline is created, no compare.
     r1 = _fake_run(latency_ms=10.0)
     rep1 = compare_and_update_baseline(r1, baseline_dir=tmp_path)
