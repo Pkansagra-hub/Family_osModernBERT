@@ -16,12 +16,12 @@
 #   - Existing heads: ~10M params (frozen)
 #
 # Training Considerations:
-#   - OPTIMIZED FOR A100 80GB + 167GB RAM (Colab Enterprise)
-#   - Massive batch size (192 effective) for fastest convergence
-#   - Full dataset loaded to RAM (zero I/O bottleneck)
+#   - OPTIMIZED FOR A100 40GB + 83GB RAM (Colab Pro)
+#   - Large batch size (64 effective) for good convergence
+#   - Gradient checkpointing enabled for memory efficiency
 #   - Resume-friendly: saves optimizer state, scheduler, RNG
 #   - Mixed precision (bf16) for speed
-#   - ~1-2 hours for 100K samples, ~2-3 hours for 200K
+#   - ~2-4 hours for 100K samples, ~4-6 hours for 200K
 #
 # Usage:
 #   python scripts/train_stage_c.py --config configs/training/multitask/stage_c_decoder.yaml
@@ -103,12 +103,12 @@ data:
   max_input_length: 256        # Max encoder input
   max_output_length: 256       # Max decoder output
 
-  # Data loading - 167GB RAM optimized
-  num_workers: 8               # 8 workers for max throughput
+  # Data loading - 83GB RAM optimized
+  num_workers: 4               # 4 workers for good throughput
   pin_memory: true
-  prefetch_factor: 8           # Prefetch more batches
+  prefetch_factor: 4           # Prefetch batches
   persistent_workers: true     # Keep workers alive
-  load_to_ram: true            # 167GB RAM - load EVERYTHING to RAM!
+  load_to_ram: true            # 83GB RAM - load dataset to RAM
 
 # =============================================================================
 # Training Configuration
@@ -122,22 +122,22 @@ training:
   num_train_epochs: 5          # 5 epochs for 200K samples = ~5K steps
   max_steps: -1                # -1 = use epochs, or set positive for step limit
 
-  # Batch size - A100 80GB MAXIMIZED
+  # Batch size - A100 40GB OPTIMIZED
   # 584M decoder + 155M encoder = 739M params = ~1.5GB in bf16
-  # With 80GB VRAM, we can push batch size VERY high
-  # Effective batch: 96 × 2 = 192 samples (3x faster than 40GB config)
-  per_device_train_batch_size: 96   # Maximized for A100 80GB
-  per_device_eval_batch_size: 192   # Fast evaluation
-  gradient_accumulation_steps: 2    # Effective batch = 192
+  # With 40GB VRAM + gradient checkpointing, safe batch size
+  # Effective batch: 32 × 2 = 64 samples
+  per_device_train_batch_size: 64   # Safe for A100 40GB
+  per_device_eval_batch_size: 64    # Evaluation batch
+  gradient_accumulation_steps: 2    # Effective batch = 64
 
   # Learning rate (decoder-specific)
-  learning_rate: 3.0e-4        # Higher LR for large batch
+  learning_rate: 2.0e-4        # Slightly lower LR for smaller batch
   weight_decay: 0.01
   max_grad_norm: 1.0
 
   # LR schedule - linear warmup, cosine decay
   lr_scheduler_type: "cosine"
-  warmup_ratio: 0.05           # 5% warmup (faster ramp with large batch)
+  warmup_ratio: 0.1            # 10% warmup for smaller batch
 
   # Optimizer - 8-bit for memory savings, fused for speed
   optim: "adamw_torch_fused"   # Fused AdamW (fastest on A100)
@@ -146,8 +146,8 @@ training:
   bf16: true
   fp16: false
 
-  # Memory optimization - A100 80GB TUNED
-  gradient_checkpointing: false    # 80GB = no need for checkpointing
+  # Memory optimization - A100 40GB TUNED
+  gradient_checkpointing: true     # REQUIRED for 40GB - saves ~40% memory
   dataloader_pin_memory: true
   torch_compile: false             # Disable - can cause issues with MoE
   tf32: true                       # A100 TF32 = 3x faster matmuls
@@ -181,10 +181,10 @@ training:
   # Random seed for reproducibility
   seed: 42
 
-  # Data loading - A100 80GB + 167GB RAM optimized
-  dataloader_num_workers: 8    # 8 workers for max I/O throughput
+  # Data loading - A100 40GB + 83GB RAM optimized
+  dataloader_num_workers: 4    # 4 workers for good I/O throughput
   dataloader_drop_last: true   # Avoid small final batch
-  dataloader_prefetch_factor: 8 # Prefetch 8 batches per worker
+  dataloader_prefetch_factor: 4 # Prefetch 4 batches per worker
   remove_unused_columns: false # Keep all columns
 
   # === Resume settings ===
