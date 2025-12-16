@@ -327,9 +327,15 @@ class CounterfactualDataset(Dataset):
 
         Creates decoder_input_ids and shifted labels for causal LM training.
         Labels have -100 for positions that should be ignored in loss.
+
+        For causal LM training:
+        - decoder_input_ids: [CLS, tok1, tok2, ..., tokN, SEP]
+        - labels:            [-100, tok1, tok2, ..., tokN, SEP]
+
+        The loss is computed only on positions where label != -100.
+        We mask the first position (CLS/BOS) since it's the input to start generation.
         """
-        # Tokenize with BOS and EOS
-        # Note: ModernBERT tokenizer may not have explicit BOS, using CLS as start
+        # Tokenize with special tokens (CLS at start, SEP at end)
         encoded = self.tokenizer(
             text,
             padding=False,
@@ -341,12 +347,10 @@ class CounterfactualDataset(Dataset):
 
         input_ids = encoded["input_ids"].squeeze(0)
 
-        # For causal LM: labels are input_ids shifted
-        # decoder_input_ids: [BOS, tok1, tok2, ..., tokN]
-        # labels:            [tok1, tok2, ..., tokN, EOS] or same as input with padding=-100
-
-        # Standard approach: labels = input_ids, loss computed on positions 1..N
+        # Create labels - same as input_ids but mask the first token (CLS/BOS)
+        # Model learns to predict: tok1 from CLS, tok2 from tok1, ..., SEP from tokN
         labels = input_ids.clone()
+        labels[0] = IGNORE_INDEX  # Don't compute loss on predicting the first token
 
         return {
             "input_ids": input_ids,

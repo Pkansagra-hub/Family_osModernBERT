@@ -90,7 +90,7 @@ class DecoderMoEConfig:
     # Core dimensions
     hidden_size: int = 1280
     num_layers: int = 8
-    vocab_size: int = 50280
+    vocab_size: int = 50368  # ModernBERT tokenizer vocab size
     max_position_embeddings: int = 512
 
     # Attention configuration
