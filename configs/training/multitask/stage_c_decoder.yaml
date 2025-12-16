@@ -53,7 +53,7 @@ decoder:
   # Core dimensions
   hidden_size: 1280            # Expanded from encoder's 768
   num_layers: 8                # 2 dense + 6 MoE layers
-  vocab_size: 50280            # Same as encoder tokenizer
+  vocab_size: 50368            # ModernBERT tokenizer vocab size
   max_position_embeddings: 512 # Max generation length
 
   # Attention configuration (GQA)
@@ -127,7 +127,7 @@ training:
   # With 40GB VRAM + gradient checkpointing, safe batch size
   # Effective batch: 32 × 2 = 64 samples
   per_device_train_batch_size: 64   # Safe for A100 40GB
-  per_device_eval_batch_size: 64    # Evaluation batch
+  per_device_eval_batch_size: 64    # Evaluation batch (no grads)
   gradient_accumulation_steps: 2    # Effective batch = 64
 
   # Learning rate (decoder-specific)
