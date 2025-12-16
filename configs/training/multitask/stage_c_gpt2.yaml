@@ -155,8 +155,8 @@ training:
 
   # Checkpoint frequency - Colab 18hr limit aware
   save_strategy: "steps"
-  save_steps: 500               # Save every 500 steps
-  save_total_limit: 5           # Keep last 5 checkpoints
+  save_steps: 1000               # Save every 500 steps
+  save_total_limit: 3           # Keep last 5 checkpoints
   save_safetensors: true        # GPT-2 doesn't have tied weights issue
 
   # Evaluation frequency
