@@ -766,6 +766,9 @@ class Capability(str, Enum):
     RELATION = "relation"  # NEW: Family relationship extraction
     INTENT = "intent"  # NEW: User intent classification
 
+    # Generation capabilities (Stage C)
+    COUNTERFACTUAL = "counterfactual"  # NEW: Counterfactual decoder
+
     def __str__(self) -> str:
         return self.value
 
@@ -790,6 +793,8 @@ CAPABILITY_TO_LABELS: dict[Capability, LabelSchema | None] = {
     Capability.SAFETY_FAMILYOS: SAFETY_FAMILYOS_LABELS,
     Capability.RELATION: RELATION_LABELS,  # NEW
     Capability.INTENT: INTENT_LABELS,  # NEW
+    # Generation capabilities
+    Capability.COUNTERFACTUAL: None,  # Decoder generates text, no label schema
 }
 
 

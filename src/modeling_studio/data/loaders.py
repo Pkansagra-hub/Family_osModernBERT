@@ -4752,6 +4752,95 @@ def _apply_safety_oversampling(
 
 
 # =============================================================================
+# Counterfactual Dataset Loader (Stage C)
+# =============================================================================
+
+
+def load_counterfactual_dataset(
+    data_dir: str | Path,
+    tokenizer,
+    mode: str = "precomputed",
+    split: str = "train",
+    encoder=None,
+    max_input_length: int = 256,
+    max_output_length: int = 256,
+    full_sequence: bool = False,
+    load_to_ram: bool = False,
+):
+    """
+    Load counterfactual dataset for Stage C decoder training.
+
+    This loader wraps CounterfactualDataset for convenient loading
+    of precomputed encoder embeddings and counterfactual text pairs.
+
+    Args:
+        data_dir: Directory containing samples.jsonl and embeddings.h5
+            (output from prepare_decoder_training_data.py)
+        tokenizer: Tokenizer for encoding counterfactual text
+        mode: "precomputed" (default) or "live"
+            - precomputed: Load embeddings from HDF5 (fast)
+            - live: Compute embeddings on-the-fly (flexible)
+        split: "train", "val", or "all"
+        encoder: Encoder model (required if mode="live")
+        max_input_length: Maximum encoder input length (for live mode)
+        max_output_length: Maximum decoder output length
+        full_sequence: Whether to use full sequence embeddings for cross-attention
+        load_to_ram: If True, load all embeddings into RAM (faster training, uses more memory)
+
+    Returns:
+        CounterfactualDataset instance
+
+    Example:
+        >>> from modeling_studio.data.loaders import load_counterfactual_dataset
+        >>> train_ds = load_counterfactual_dataset(
+        ...     data_dir="data/counterfactual/training",
+        ...     tokenizer=tokenizer,
+        ...     split="train",
+        ... )
+        >>> val_ds = load_counterfactual_dataset(
+        ...     data_dir="data/counterfactual/training",
+        ...     tokenizer=tokenizer,
+        ...     split="val",
+        ... )
+    """
+    from modeling_studio.data.counterfactual_dataset import CounterfactualDataset
+
+    data_dir = Path(data_dir)
+
+    if not data_dir.exists():
+        raise FileNotFoundError(f"Data directory not found: {data_dir}")
+
+    # Check required files
+    samples_path = data_dir / "samples.jsonl"
+    if not samples_path.exists():
+        raise FileNotFoundError(f"samples.jsonl not found in {data_dir}")
+
+    if mode == "precomputed":
+        embeddings_path = data_dir / ("sequence_embeddings.h5" if full_sequence else "embeddings.h5")
+        if not embeddings_path.exists():
+            raise FileNotFoundError(f"Embeddings file not found: {embeddings_path}")
+
+    dataset = CounterfactualDataset(
+        data_dir=data_dir,
+        tokenizer=tokenizer,
+        mode=mode,
+        split=split,
+        encoder=encoder,
+        max_input_length=max_input_length,
+        max_output_length=max_output_length,
+        full_sequence=full_sequence,
+        load_to_ram=load_to_ram,
+    )
+
+    logger.info(
+        f"Loaded counterfactual dataset: {len(dataset):,} samples, "
+        f"mode={mode}, split={split}, full_sequence={full_sequence}, load_to_ram={load_to_ram}"
+    )
+
+    return dataset
+
+
+# =============================================================================
 # Public API Exports
 # =============================================================================
 
@@ -4778,6 +4867,8 @@ __all__ = [
     "load_from_config",
     "load_stage_a_datasets",
     "load_stage_b_datasets",
+    # Counterfactual decoder (Stage C)
+    "load_counterfactual_dataset",
     # Constants
     "TASK_LOADERS",
 ]

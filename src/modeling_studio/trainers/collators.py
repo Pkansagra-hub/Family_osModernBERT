@@ -51,10 +51,34 @@ from typing import Any
 import torch
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 
+# Import decoder collator (Issue 14.2.2)
+from modeling_studio.trainers.decoder_collator import CounterfactualCollator
+
 logger = logging.getLogger(__name__)
 
 # Label value to ignore in loss computation (special tokens, padding)
 IGNORE_INDEX = -100
+
+
+# =============================================================================
+# Exports
+# =============================================================================
+
+__all__ = [
+    "BaseCollator",
+    "MultiTaskCollator",
+    "SequenceClassificationCollator",
+    "TokenClassificationCollator",
+    "MultiLabelCollator",
+    "EmbeddingCollator",
+    "NLICollator",
+    "RelationCollator",
+    "TemporalCollator",
+    "get_task_collator",
+    "TASK_COLLATOR_MAPPING",
+    # Decoder collator (Milestone 12)
+    "CounterfactualCollator",
+]
 
 
 # =============================================================================

@@ -82,6 +82,9 @@ from modeling_studio.models.heads import (  # noqa: E402
     TokenClassificationHead,
 )
 
+# Import decoder head (Stage C - Issue 14.1.2)
+from modeling_studio.models.decoder_moe import CounterfactualDecoderHead  # noqa: E402
+
 # Import Epic 5.0 components (optional - for enhanced mode)
 try:
     from modeling_studio.models.adapters import TaskGroupAdapter  # type: ignore
@@ -153,6 +156,8 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.NLI: NLIHead,
     Capability.RELATION: RelationHead,  # NEW
     Capability.EMBEDDING: EmbeddingHead,
+    # Decoder heads (Stage C)
+    Capability.COUNTERFACTUAL: CounterfactualDecoderHead,  # NEW: MoE decoder for counterfactuals
 }
 
 

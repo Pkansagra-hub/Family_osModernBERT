@@ -97,6 +97,7 @@ logs/
 data/raw/*
 data/processed/*
 data/cache/*
+data/counterfactual/*/
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/cache/.gitkeep

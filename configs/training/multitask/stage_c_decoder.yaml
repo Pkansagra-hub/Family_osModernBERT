@@ -1,0 +1,236 @@
+# =============================================================================
+# Stage C: Counterfactual Decoder Training
+# =============================================================================
+# PURPOSE: Train the MoE decoder head on counterfactual generation task.
+#          Encoder and existing 12 heads are FROZEN - only decoder trains.
+#
+# Input: modernbert-v2-for-v3-transfer checkpoint (checkpoint-18000)
+# Output: ultrabert-gen-decoder-v1
+#
+# Architecture (from decoder_moe_architecture.md):
+#   - 8 decoder layers (2 dense + 6 MoE)
+#   - 8 experts per MoE layer, top-2 routing
+#   - 1 shared expert (always active)
+#   - ~420M trainable params in decoder
+#   - Encoder: 155M params (frozen)
+#   - Existing heads: ~10M params (frozen)
+#
+# Training Considerations:
+#   - OPTIMIZED FOR A100 80GB + 167GB RAM (Colab Enterprise)
+#   - Massive batch size (192 effective) for fastest convergence
+#   - Full dataset loaded to RAM (zero I/O bottleneck)
+#   - Resume-friendly: saves optimizer state, scheduler, RNG
+#   - Mixed precision (bf16) for speed
+#   - ~1-2 hours for 100K samples, ~2-3 hours for 200K
+#
+# Usage:
+#   python scripts/train_stage_c.py --config configs/training/multitask/stage_c_decoder.yaml
+#
+#   # Resume from checkpoint
+#   python scripts/train_stage_c.py \
+#       --config configs/training/multitask/stage_c_decoder.yaml \
+#       --resume_from_checkpoint checkpoints/ultrabert-gen-decoder-v1/checkpoint-XXXX
+# =============================================================================
+
+# =============================================================================
+# Base Model (v2 checkpoint)
+# =============================================================================
+model:
+  # Load v2 model that has encoder trained on FamilyOS domain
+  checkpoint_path: "outputs/modernbert-v2-for-v3-transfer/checkpoint-18000"
+
+  # Freezing strategy - CRITICAL for Stage C
+  freeze_encoder: true         # Encoder provides context embeddings only
+  freeze_existing_heads: true  # Keep 12 heads frozen, train only decoder
+
+  torch_dtype: bfloat16
+  use_flash_attention_2: true  # Enable if available
+
+# =============================================================================
+# Decoder Configuration (MoE Architecture)
+# =============================================================================
+decoder:
+  # Core dimensions
+  hidden_size: 1280            # Expanded from encoder's 768
+  num_layers: 8                # 2 dense + 6 MoE layers
+  vocab_size: 50280            # Same as encoder tokenizer
+  max_position_embeddings: 512 # Max generation length
+
+  # Attention configuration (GQA)
+  num_attention_heads: 20      # 5:1 ratio for GQA
+  num_kv_heads: 4              # Shared K/V heads
+  head_dim: 64                 # Per-head dimension
+
+  # FFN configuration
+  intermediate_size: 3584      # 2.8x hidden for SwiGLU
+  ffn_dim_multiplier: 1.0      # No additional scaling
+
+  # MoE configuration
+  num_experts: 8               # 8 experts per MoE layer
+  num_experts_per_token: 2     # Top-2 routing
+  use_shared_expert: true      # Always-active shared expert
+  capacity_factor: 1.5         # Expert capacity buffer
+
+  # MoE layer assignment (0-indexed)
+  dense_layers: [0, 1]         # First 2 layers are dense
+  moe_layers: [2, 3, 4, 5, 6, 7]  # Remaining 6 are MoE
+
+  # Loss weights for auxiliary MoE losses
+  load_balancing_loss_weight: 0.01   # Prevents expert collapse
+  router_z_loss_weight: 0.001        # Prevents router logit explosion
+
+  # Regularization
+  hidden_dropout: 0.1
+  attention_dropout: 0.1
+
+  # RoPE (Rotary Position Embeddings)
+  rope_base: 10000.0
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  # Training data directory (output of prepare_decoder_training_data.py)
+  train_path: "data/counterfactual/training"
+
+  # Embedding mode: "precomputed" (fast) or "live" (flexible)
+  embeddings_mode: "precomputed"
+
+  # Full sequence embeddings for cross-attention (recommended)
+  full_sequence: true
+
+  # Sequence lengths
+  max_input_length: 256        # Max encoder input
+  max_output_length: 256       # Max decoder output
+
+  # Data loading - 167GB RAM optimized
+  num_workers: 8               # 8 workers for max throughput
+  pin_memory: true
+  prefetch_factor: 8           # Prefetch more batches
+  persistent_workers: true     # Keep workers alive
+  load_to_ram: true            # 167GB RAM - load EVERYTHING to RAM!
+
+# =============================================================================
+# Training Configuration
+# =============================================================================
+training:
+  # Output directories
+  output_dir: "outputs/ultrabert-gen-decoder-v1"
+  checkpoint_dir: "checkpoints/ultrabert-gen-decoder-v1"
+
+  # Training duration
+  num_train_epochs: 5          # 5 epochs for 200K samples = ~5K steps
+  max_steps: -1                # -1 = use epochs, or set positive for step limit
+
+  # Batch size - A100 80GB MAXIMIZED
+  # 584M decoder + 155M encoder = 739M params = ~1.5GB in bf16
+  # With 80GB VRAM, we can push batch size VERY high
+  # Effective batch: 96 × 2 = 192 samples (3x faster than 40GB config)
+  per_device_train_batch_size: 96   # Maximized for A100 80GB
+  per_device_eval_batch_size: 192   # Fast evaluation
+  gradient_accumulation_steps: 2    # Effective batch = 192
+
+  # Learning rate (decoder-specific)
+  learning_rate: 3.0e-4        # Higher LR for large batch
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  # LR schedule - linear warmup, cosine decay
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05           # 5% warmup (faster ramp with large batch)
+
+  # Optimizer - 8-bit for memory savings, fused for speed
+  optim: "adamw_torch_fused"   # Fused AdamW (fastest on A100)
+
+  # Mixed precision - bf16 is native on A100
+  bf16: true
+  fp16: false
+
+  # Memory optimization - A100 80GB TUNED
+  gradient_checkpointing: false    # 80GB = no need for checkpointing
+  dataloader_pin_memory: true
+  torch_compile: false             # Disable - can cause issues with MoE
+  tf32: true                       # A100 TF32 = 3x faster matmuls
+
+  # === Checkpoint frequency - COLAB OPTIMIZED ===
+  # Save every 500 steps for Colab 18-hour limit recovery
+  save_strategy: "steps"
+  save_steps: 500              # Save every 500 steps (~15-20 min)
+  save_total_limit: 5          # Keep last 5 checkpoints
+  save_safetensors: false      # Disable for tied weights compatibility
+
+  # Evaluation frequency
+  eval_strategy: "steps"
+  eval_steps: 500              # Eval alongside saves
+
+  # Logging - frequent for monitoring
+  logging_strategy: "steps"
+  logging_steps: 10            # Log every 10 steps
+  logging_first_step: true
+
+  # Best model selection
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+
+  # Report to
+  report_to:
+    - "tensorboard"
+    # - "wandb"  # Uncomment for W&B logging
+
+  # Random seed for reproducibility
+  seed: 42
+
+  # Data loading - A100 80GB + 167GB RAM optimized
+  dataloader_num_workers: 8    # 8 workers for max I/O throughput
+  dataloader_drop_last: true   # Avoid small final batch
+  dataloader_prefetch_factor: 8 # Prefetch 8 batches per worker
+  remove_unused_columns: false # Keep all columns
+
+  # === Resume settings ===
+  resume_from_checkpoint: null  # Will be set via CLI if resuming
+
+# =============================================================================
+# Generation Settings (for evaluation)
+# =============================================================================
+generation:
+  max_length: 256
+  min_length: 20
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  do_sample: true
+  num_beams: 1                 # Sampling, not beam search
+  repetition_penalty: 1.1
+  length_penalty: 1.0
+  no_repeat_ngram_size: 3
+
+# =============================================================================
+# Callbacks and Monitoring
+# =============================================================================
+callbacks:
+  # Colab-specific: Save on interrupt
+  save_on_interrupt: true
+
+  # Early stopping (optional)
+  early_stopping:
+    enabled: false
+    patience: 5
+    threshold: 0.001
+
+  # Memory monitoring
+  log_memory: true
+  log_memory_steps: 100
+
+# =============================================================================
+# W&B Configuration (optional)
+# =============================================================================
+wandb:
+  project: "ultrabert-decoder"
+  name: "stage-c-decoder-v1"
+  tags:
+    - "stage-c"
+    - "decoder"
+    - "moe"
+    - "counterfactual"
+  notes: "Stage C: Training MoE decoder for counterfactual generation"

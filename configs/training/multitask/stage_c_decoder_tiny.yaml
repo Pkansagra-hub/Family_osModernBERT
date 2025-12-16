@@ -1,0 +1,138 @@
+# =============================================================================
+# Stage C: Counterfactual Decoder Training - TINY (for testing on 8GB GPU)
+# =============================================================================
+# PURPOSE: Test decoder training on small GPU (RTX 5070 8.5GB / RTX 3060 8GB)
+#          Reduced architecture for fast iteration and debugging.
+#
+# Architecture (TINY):
+#   - 4 decoder layers (1 dense + 3 MoE)
+#   - 4 experts per MoE layer, top-2 routing
+#   - Hidden size 512 (reduced from 1280)
+#   - ~50M trainable params
+#
+# Usage:
+#   python scripts/train_stage_c.py --config configs/training/multitask/stage_c_decoder_tiny.yaml --debug
+# =============================================================================
+
+# =============================================================================
+# Base Model (v2 checkpoint)
+# =============================================================================
+model:
+  checkpoint_path: "outputs/modernbert-v2-for-v3-transfer/checkpoint-18000"
+  freeze_encoder: true
+  freeze_existing_heads: true
+  torch_dtype: float16
+  use_flash_attention_2: false
+
+# =============================================================================
+# Decoder Configuration (TINY for 8GB GPU)
+# =============================================================================
+decoder:
+  # Reduced dimensions
+  hidden_size: 512              # Reduced from 1280
+  num_layers: 4                 # Reduced from 8
+  vocab_size: 50368             # Match tokenizer
+  max_position_embeddings: 256  # Reduced from 512
+
+  # Attention (scaled down)
+  num_attention_heads: 8        # Reduced from 20
+  num_kv_heads: 2               # Reduced from 4 (4:1 ratio)
+  head_dim: 64
+
+  # FFN (scaled down)
+  intermediate_size: 1408       # 2.8x hidden
+  expert_intermediate_size: 820 # 1.6x hidden
+  shared_expert_intermediate_size: 512  # 1x hidden
+
+  # MoE (scaled down)
+  num_experts: 4                # Reduced from 8
+  num_experts_per_token: 2
+  use_shared_expert: true
+  capacity_factor: 1.5
+
+  # Layers: 1 dense + 3 MoE
+  dense_layers: [0]
+  moe_layers: [1, 2, 3]
+
+  # Loss weights
+  load_balancing_loss_weight: 0.01
+  router_z_loss_weight: 0.001
+
+  # Regularization
+  hidden_dropout: 0.1
+  attention_dropout: 0.1
+
+  # RoPE
+  rope_base: 10000.0
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  train_path: "data/counterfactual/training_test"
+  embeddings_mode: "precomputed"
+  full_sequence: true
+  max_input_length: 256
+  max_output_length: 128        # Reduced for memory
+  num_workers: 2
+  pin_memory: true
+  prefetch_factor: 2
+  persistent_workers: false
+  load_to_ram: false
+
+# =============================================================================
+# Training Configuration (8GB GPU optimized)
+# =============================================================================
+training:
+  output_dir: "outputs/ultrabert-gen-decoder-tiny"
+  checkpoint_dir: "checkpoints/ultrabert-gen-decoder-tiny"
+
+  num_train_epochs: 1
+  max_steps: 100                # Extended for resume test
+
+  # Tiny batch for 8GB GPU
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 4  # Effective batch = 4
+
+  # Learning rate
+  learning_rate: 5.0e-5
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  # LR schedule
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.1
+
+  # 8-bit optimizer for memory savings
+  optim: "adamw_bnb_8bit"
+
+  # Mixed precision
+  bf16: false
+  fp16: true
+
+  # Memory optimization - CRITICAL for 8GB
+  gradient_checkpointing: true
+
+  # Logging and eval - EVAL AT STEP 10
+  logging_steps: 5
+  save_steps: 50
+  eval_strategy: "steps"
+  eval_steps: 10                # Eval every 10 steps
+  save_total_limit: 2
+
+  # Disable safetensors to avoid tied weight issues
+  save_safetensors: false
+
+  # Other
+  dataloader_num_workers: 0
+  remove_unused_columns: false
+  label_names: ["labels"]
+
+# =============================================================================
+# Wandb (optional)
+# =============================================================================
+wandb:
+  enabled: false
+  project: "ultrabert-gen"
+  name: "decoder-tiny-test"

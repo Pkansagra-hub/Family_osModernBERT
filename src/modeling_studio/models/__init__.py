@@ -44,6 +44,21 @@ from modeling_studio.models.adapters import (
     TaskGroupConfig,
     create_adapter,
 )
+
+# Import attention mechanisms (Milestone 11)
+from modeling_studio.models.attention import (
+    CrossAttention,
+    GroupedQueryAttention,
+    RotaryEmbedding,
+)
+
+# Import decoder components (Milestone 10, 11)
+from modeling_studio.models.decoder_config import DecoderMoEConfig
+from modeling_studio.models.decoder_moe import (
+    CounterfactualDecoderHead,
+    DecoderBlock,
+    EncoderProjection,
+)
 from modeling_studio.models.heads import (
     BaseHead,
     EmbeddingHead,
@@ -60,6 +75,13 @@ from modeling_studio.models.modernbert_multitask import (
     ModernBertMultiTaskModel,
     MultiTaskOutput,
     get_problem_type,
+)
+
+# Import MoE components (Milestone 10)
+from modeling_studio.models.moe_components import (
+    MoELayer,
+    SwiGLUExpert,
+    TopKRouter,
 )
 
 # Import pair encoder (Epic 5.0)
@@ -110,6 +132,19 @@ __all__ = [
     "RelationHead",  # NEW
     "IntentHead",  # NEW
     "TemporalHead",  # NEW
+    # Decoder components (Milestone 10, 11)
+    "DecoderMoEConfig",
+    "CounterfactualDecoderHead",
+    "DecoderBlock",
+    "EncoderProjection",
+    # MoE components (Milestone 10)
+    "MoELayer",
+    "TopKRouter",
+    "SwiGLUExpert",
+    # Attention mechanisms (Milestone 11)
+    "GroupedQueryAttention",
+    "CrossAttention",
+    "RotaryEmbedding",
     # Poolers (Epic 5.0)
     "CLSPooler",
     "MeanPooler",
