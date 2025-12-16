@@ -335,7 +335,13 @@ def initialize_decoder_head(
     tokenizer=None,
 ):
     """
-    Initialize the CounterfactualDecoderHead and add it to the model.
+    Initialize a decoder head and add it to the model.
+
+    Supports two decoder types:
+        - "moe": MoE decoder (~420M params, requires large training data)
+        - "gpt2": GPT-2 based decoder (~355M params, pre-trained, edge-friendly)
+
+    The decoder type is selected via config["decoder"]["type"]. Default is "moe".
 
     Args:
         model: The base multi-task model
@@ -344,6 +350,117 @@ def initialize_decoder_head(
 
     Returns:
         The model with decoder head added
+    """
+    decoder_config_dict = config.get("decoder", {})
+    decoder_type = decoder_config_dict.get("type", "moe").lower()
+
+    if decoder_type == "gpt2":
+        return _initialize_gpt2_decoder(model, config, tokenizer)
+    elif decoder_type == "moe":
+        return _initialize_moe_decoder(model, config, tokenizer)
+    else:
+        raise ValueError(f"Unknown decoder type: {decoder_type}. Must be 'moe' or 'gpt2'.")
+
+
+def _initialize_gpt2_decoder(
+    model,
+    config: dict[str, Any],
+    tokenizer=None,
+):
+    """
+    Initialize GPT-2 based decoder head.
+
+    This uses a pre-trained GPT-2 model with prefix injection for
+    encoder-decoder connection. Designed for edge deployment.
+    """
+    from modeling_studio.data.labels import Capability
+    from modeling_studio.models.decoder_gpt2_config import GPT2DecoderConfig
+    from modeling_studio.models.decoder_gpt2 import GPT2DecoderHead
+
+    decoder_config_dict = config.get("decoder", {})
+
+    # Get vocab size and special tokens from tokenizer if available
+    if tokenizer is not None:
+        vocab_size = len(tokenizer)
+        pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
+        bos_token_id = tokenizer.bos_token_id if tokenizer.bos_token_id is not None else tokenizer.cls_token_id
+        eos_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else tokenizer.sep_token_id
+    else:
+        vocab_size = decoder_config_dict.get("vocab_size", 50368)
+        pad_token_id = decoder_config_dict.get("pad_token_id", 50283)
+        bos_token_id = decoder_config_dict.get("bos_token_id", 50281)
+        eos_token_id = decoder_config_dict.get("eos_token_id", 50282)
+
+    # Get encoder hidden size from model
+    encoder_hidden_size = model.config.hidden_size if hasattr(model.config, 'hidden_size') else 768
+
+    # Create GPT-2 decoder config
+    gpt2_config = GPT2DecoderConfig(
+        gpt2_model_name=decoder_config_dict.get("gpt2_model_name", "gpt2-medium"),
+        encoder_hidden_size=encoder_hidden_size,
+        projection_hidden_size=decoder_config_dict.get("projection_hidden_size", 1024),
+        use_prefix_injection=decoder_config_dict.get("use_prefix_injection", True),
+        num_prefix_tokens=decoder_config_dict.get("num_prefix_tokens", None),
+        prefix_projection_layers=decoder_config_dict.get("prefix_projection_layers", 1),
+        freeze_layers=decoder_config_dict.get("freeze_layers", 0),
+        dropout=decoder_config_dict.get("dropout", 0.1),
+        max_position_embeddings=decoder_config_dict.get("max_position_embeddings", 512),
+        vocab_size=vocab_size,
+        pad_token_id=pad_token_id,
+        bos_token_id=bos_token_id,
+        eos_token_id=eos_token_id,
+        generation_max_length=decoder_config_dict.get("generation_max_length", 128),
+        temperature=decoder_config_dict.get("temperature", 1.0),
+        top_k=decoder_config_dict.get("top_k", 50),
+        top_p=decoder_config_dict.get("top_p", 0.9),
+        repetition_penalty=decoder_config_dict.get("repetition_penalty", 1.2),
+    )
+
+    logger.info("=" * 60)
+    logger.info("Initializing GPT2DecoderHead (edge-friendly)")
+    logger.info("=" * 60)
+    logger.info(f"  GPT-2 model: {gpt2_config.gpt2_model_name}")
+    logger.info(f"  Encoder hidden: {encoder_hidden_size} -> Projection: {gpt2_config.projection_hidden_size}")
+    logger.info(f"  Freeze layers: {gpt2_config.freeze_layers}")
+    logger.info(f"  Vocab size: {gpt2_config.vocab_size}")
+    logger.info(f"  BOS/EOS/PAD: {gpt2_config.bos_token_id}/{gpt2_config.eos_token_id}/{gpt2_config.pad_token_id}")
+    logger.info(f"  Estimated VRAM: {gpt2_config.get_estimated_vram_gb():.2f} GB")
+    logger.info("=" * 60)
+
+    # Create decoder head
+    decoder_head = GPT2DecoderHead(
+        config=gpt2_config,
+        encoder_hidden_size=encoder_hidden_size,
+    )
+
+    # Log decoder params
+    decoder_params = sum(p.numel() for p in decoder_head.parameters())
+    trainable_params = sum(p.numel() for p in decoder_head.parameters() if p.requires_grad)
+    logger.info(f"GPT-2 decoder total params: {decoder_params:,}")
+    logger.info(f"GPT-2 decoder trainable params: {trainable_params:,}")
+
+    # Add to model
+    model.heads["counterfactual"] = decoder_head
+
+    # Register capability
+    if hasattr(model, "capabilities"):
+        from modeling_studio.data.labels import Capability
+        if Capability.COUNTERFACTUAL not in model.capabilities:
+            model.capabilities.append(Capability.COUNTERFACTUAL)
+
+    return model
+
+
+def _initialize_moe_decoder(
+    model,
+    config: dict[str, Any],
+    tokenizer=None,
+):
+    """
+    Initialize MoE-based decoder head (original architecture).
+
+    This is the ~420M parameter decoder with 8 experts. Requires
+    substantial training data (Chinchilla: ~8B tokens).
     """
     from modeling_studio.data.labels import Capability
     from modeling_studio.models.decoder_config import DecoderMoEConfig

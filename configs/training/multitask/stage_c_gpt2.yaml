@@ -1,0 +1,235 @@
+# =============================================================================
+# Stage C: Counterfactual Decoder Training (GPT-2 A100 80GB Version)
+# =============================================================================
+# PURPOSE: Train GPT-2 based decoder for counterfactual generation.
+#          Uses pre-trained GPT-2 Medium with prefix injection.
+#          OPTIMIZED FOR A100 80GB (Colab Pro / Cloud).
+#
+# Input: modernbert-v2-for-v3-transfer checkpoint (checkpoint-18000)
+# Output: ultrabert-gen-decoder-gpt2-v1
+#
+# Architecture:
+#   - GPT-2 Medium: 355M params (pre-trained on 40GB WebText)
+#   - Encoder: ModernBERT (155M params, frozen)
+#   - Connection: Prefix injection (encoder outputs → GPT-2 prefix tokens)
+#   - Total: ~510M params, ~1GB model weights in bf16
+#
+# Why GPT-2 instead of MoE:
+#   1. Pre-trained language knowledge (40GB WebText)
+#   2. Chinchilla-efficient: needs less fine-tuning data
+#   3. MoE needs ~8.4B tokens for 420M params, we have only 22M
+#
+# Training Considerations:
+#   - A100 80GB: Large batch sizes (128-256 effective)
+#   - Fast convergence due to pre-training
+#   - ~1-2 hours for 200K samples with large batches
+#
+# Usage:
+#   python scripts/train_stage_c.py --config configs/training/multitask/stage_c_gpt2.yaml
+#
+#   # Resume from checkpoint
+#   python scripts/train_stage_c.py \
+#       --config configs/training/multitask/stage_c_gpt2.yaml \
+#       --resume_from_checkpoint checkpoints/ultrabert-gen-decoder-gpt2-v1/checkpoint-XXXX
+# =============================================================================
+
+# =============================================================================
+# Base Model (v2 checkpoint)
+# =============================================================================
+model:
+  # Load v2 model that has encoder trained on FamilyOS domain
+  checkpoint_path: "outputs/modernbert-v2-for-v3-transfer/checkpoint-18000"
+
+  # Freezing strategy - CRITICAL for Stage C
+  freeze_encoder: true         # Encoder provides context embeddings only
+  freeze_existing_heads: true  # Keep 12 heads frozen, train only decoder
+
+  torch_dtype: bfloat16
+  use_flash_attention_2: true  # Enable if available
+
+# =============================================================================
+# Decoder Configuration (GPT-2 Architecture)
+# =============================================================================
+decoder:
+  # === Decoder Type ===
+  type: "gpt2"                 # Use GPT-2 based decoder instead of MoE
+
+  # GPT-2 model selection
+  # Options: "gpt2" (117M), "gpt2-medium" (355M), "gpt2-large" (774M)
+  gpt2_model_name: "gpt2-medium"  # Best balance for edge + quality
+
+  # Projection settings (encoder → GPT-2)
+  projection_hidden_size: 1024   # GPT-2 Medium hidden size
+  prefix_projection_layers: 1    # 1 = linear, 2 = MLP with GELU
+  use_prefix_injection: true     # Prepend encoder outputs as prefix
+
+  # Freeze settings (optional)
+  # Freezing early layers preserves pre-trained language knowledge
+  # 0 = train all, 6 = freeze half (12 layers), 12 = freeze all except LM head
+  freeze_layers: 0              # Train all GPT-2 layers for maximum adaptation
+
+  # Sequence configuration
+  max_position_embeddings: 512   # Max generation length
+  vocab_size: 50368              # ModernBERT tokenizer vocab size
+
+  # Special tokens (matching ModernBERT tokenizer)
+  pad_token_id: 50283
+  bos_token_id: 50281            # CLS token
+  eos_token_id: 50282            # SEP token
+
+  # Regularization
+  dropout: 0.1
+
+  # Generation defaults
+  generation_max_length: 128
+  temperature: 1.0
+  top_k: 50
+  top_p: 0.9
+  repetition_penalty: 1.2
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  # Training data directory (same as MoE decoder)
+  train_path: "data/counterfactual/training"
+
+  # Embedding mode: "precomputed" (fast) or "live" (flexible)
+  embeddings_mode: "precomputed"
+
+  # Full sequence embeddings for prefix injection
+  full_sequence: true
+
+  # Sequence lengths
+  max_input_length: 256         # Max encoder input
+  max_output_length: 256        # Max decoder output
+
+  # Data loading - A100 80GB optimized
+  num_workers: 8                # More workers for high throughput
+  pin_memory: true
+  prefetch_factor: 8            # Prefetch more batches
+  persistent_workers: true
+  load_to_ram: true             # Load dataset to RAM for speed
+
+# =============================================================================
+# Training Configuration
+# =============================================================================
+training:
+  # Output directories
+  output_dir: "outputs/ultrabert-gen-decoder-gpt2-v1"
+  checkpoint_dir: "checkpoints/ultrabert-gen-decoder-gpt2-v1"
+
+  # Training duration
+  # GPT-2 converges faster than random-init MoE
+  num_train_epochs: 5           # 5 epochs for thorough fine-tuning
+  max_steps: -1                 # -1 = use epochs
+
+  # Batch size - A100 80GB OPTIMIZED
+  # GPT-2 Medium (~1GB) + encoder (~300MB) = ~1.3GB model
+  # 80GB VRAM allows massive batch sizes
+  per_device_train_batch_size: 128  # Large batch for A100 80GB
+  per_device_eval_batch_size: 256   # Even larger for eval (no grads)
+  gradient_accumulation_steps: 2    # Effective batch = 256
+
+  # Learning rate - scaled for large batch
+  learning_rate: 1.0e-4         # Higher LR for large batch training
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  # LR schedule
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05            # 5% warmup (shorter for large batch)
+
+  # Optimizer
+  optim: "adamw_torch_fused"    # Fused AdamW (fastest on A100)
+
+  # Mixed precision - bf16 native on A100
+  bf16: true
+  fp16: false
+
+  # Memory optimization - A100 80GB tuned
+  gradient_checkpointing: false # Disable - 80GB is enough
+  dataloader_pin_memory: true
+  torch_compile: false          # Disable for compatibility with custom layers
+  tf32: true                    # A100 TF32 = 3x faster matmuls
+
+  # Checkpoint frequency - Colab 18hr limit aware
+  save_strategy: "steps"
+  save_steps: 500               # Save every 500 steps
+  save_total_limit: 5           # Keep last 5 checkpoints
+  save_safetensors: true        # GPT-2 doesn't have tied weights issue
+
+  # Evaluation frequency
+  eval_strategy: "steps"
+  eval_steps: 500
+
+  # Logging
+  logging_strategy: "steps"
+  logging_steps: 10
+  logging_first_step: true
+
+  # Best model selection
+  load_best_model_at_end: false
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+
+  # Report to
+  report_to:
+    - "tensorboard"
+    # - "wandb"  # Uncomment for W&B logging
+
+  # Random seed
+  seed: 42
+
+  # Data loading - A100 optimized
+  dataloader_num_workers: 8     # More workers for throughput
+  dataloader_drop_last: true
+  dataloader_prefetch_factor: 8 # Prefetch more batches
+  remove_unused_columns: false
+
+  # Resume settings
+  resume_from_checkpoint: null
+
+# =============================================================================
+# Generation Settings (for evaluation)
+# =============================================================================
+generation:
+  max_length: 256               # Full length generation
+  min_length: 20
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  do_sample: true
+  num_beams: 1
+  repetition_penalty: 1.2
+  length_penalty: 1.0
+  no_repeat_ngram_size: 3
+
+# =============================================================================
+# Callbacks and Monitoring
+# =============================================================================
+callbacks:
+  # Colab-specific: Save on interrupt (critical for 18hr limit)
+  save_on_interrupt: true
+
+  early_stopping:
+    enabled: false              # Disable - run full epochs
+    patience: 5
+    threshold: 0.001
+
+  log_memory: true
+  log_memory_steps: 100
+
+# =============================================================================
+# W&B Configuration (optional)
+# =============================================================================
+wandb:
+  project: "ultrabert-decoder"
+  name: "stage-c-decoder-gpt2-v1"
+  tags:
+    - "stage-c"
+    - "decoder"
+    - "gpt2"
+    - "a100"
+    - "counterfactual"
+  notes: "Stage C: Training GPT-2 decoder for counterfactual generation (A100 80GB)"

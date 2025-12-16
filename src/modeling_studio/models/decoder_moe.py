@@ -646,9 +646,12 @@ class CounterfactualDecoderHead(BaseHead):
         if pad_token_id is None:
             pad_token_id = self.config.pad_token_id
 
+        # Use bos_token_id for generation start (CLS token, matches training)
+        bos_token_id = self.config.bos_token_id
+
         # Initialize with BOS token
         generated = torch.full(
-            (batch_size, 1), pad_token_id, dtype=torch.long, device=device
+            (batch_size, 1), bos_token_id, dtype=torch.long, device=device
         )
 
         # Track which sequences are finished

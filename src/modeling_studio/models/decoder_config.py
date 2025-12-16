@@ -137,7 +137,7 @@ class DecoderMoEConfig:
     # [PAD] = 50283, [SEP] = 50282, [CLS] = 50281
     use_cache: bool = True
     pad_token_id: int = 50283  # [PAD] token
-    bos_token_id: int = 50283  # Use [PAD] as decoder start token
+    bos_token_id: int = 50281  # [CLS] token as decoder start (matches training)
     eos_token_id: int = 50282  # [SEP] token as end-of-sequence
 
     def __post_init__(self) -> None:
