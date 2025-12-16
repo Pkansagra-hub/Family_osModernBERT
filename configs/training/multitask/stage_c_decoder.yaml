@@ -169,7 +169,10 @@ training:
   logging_first_step: true
 
   # Best model selection
-  load_best_model_at_end: true
+  # NOTE: load_best_model_at_end=false to prevent double GPU memory usage
+  # (Trainer would load checkpoint weights again at end of training)
+  # The final checkpoint is saved separately in outputs/ directory.
+  load_best_model_at_end: false
   metric_for_best_model: "eval_loss"
   greater_is_better: false
 

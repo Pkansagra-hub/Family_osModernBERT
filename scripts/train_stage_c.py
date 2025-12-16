@@ -594,6 +594,10 @@ def create_training_args(
         logger.info(f"Debug: batch_size={train_batch_size}, epochs=1")
 
     # Build training arguments
+    # Note: load_best_model_at_end=True causes double GPU memory usage as Trainer
+    # loads checkpoint weights again. Default to False for memory efficiency.
+    load_best_model = training_config.get("load_best_model_at_end", False)
+
     args = TrainingArguments(
         output_dir=output_dir,
         # Optimization
@@ -628,8 +632,8 @@ def create_training_args(
         logging_strategy=training_config.get("logging_strategy", "steps"),
         logging_steps=int(training_config.get("logging_steps", 50)),
         logging_first_step=training_config.get("logging_first_step", True),
-        # Best model
-        load_best_model_at_end=training_config.get("load_best_model_at_end", True),
+        # Best model - disabled by default to prevent double GPU memory usage
+        load_best_model_at_end=load_best_model,
         metric_for_best_model=training_config.get("metric_for_best_model", "eval_loss"),
         greater_is_better=training_config.get("greater_is_better", False),
         # Reporting
@@ -750,14 +754,13 @@ def train(
     # Initialize tokenizer
     tokenizer = init_tokenizer(config)
 
-    # Load base model
+    # Load base model (already on device from load_checkpoint)
     model = load_base_model(config, device=device)
 
     # Initialize decoder head (pass tokenizer for vocab_size and special tokens)
     model = initialize_decoder_head(model, config, tokenizer=tokenizer)
 
-    # Move model to device
-    model = model.to(device)
+    # Note: model is already on device from load_base_model, no need to call .to(device) again
 
     # Freeze encoder and existing heads
     from modeling_studio.trainers.decoder_trainer import freeze_encoder_and_heads
