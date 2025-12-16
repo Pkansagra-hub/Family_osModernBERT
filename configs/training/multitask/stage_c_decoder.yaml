@@ -119,7 +119,7 @@ training:
   checkpoint_dir: "checkpoints/ultrabert-gen-decoder-v1"
 
   # Training duration
-  num_train_epochs: 5          # 5 epochs for 200K samples = ~5K steps
+  num_train_epochs: 7          # 5 epochs for 200K samples = ~5K steps
   max_steps: -1                # -1 = use epochs, or set positive for step limit
 
   # Batch size - A100 40GB OPTIMIZED
