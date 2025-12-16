@@ -127,8 +127,8 @@ training:
   # Batch size - A100 80GB OPTIMIZED
   # GPT-2 Medium (~1GB) + encoder (~300MB) = ~1.3GB model
   # 80GB VRAM allows massive batch sizes
-  per_device_train_batch_size: 128  # Large batch for A100 80GB
-  per_device_eval_batch_size: 256   # Even larger for eval (no grads)
+  per_device_train_batch_size: 96  # Large batch for A100 80GB
+  per_device_eval_batch_size: 192   # Even larger for eval (no grads)
   gradient_accumulation_steps: 2    # Effective batch = 256
 
   # Learning rate - scaled for large batch
