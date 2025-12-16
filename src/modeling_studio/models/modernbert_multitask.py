@@ -449,6 +449,16 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     asl_clip=0.05,  # Probability clipping
                     pos_weight=safety_pos_weight,  # Mild reweighting for balanced data
                 )
+            elif capability == Capability.COUNTERFACTUAL:
+                # CounterfactualDecoderHead: MoE decoder for counterfactual generation
+                # Requires DecoderMoEConfig, not standard head params
+                from modeling_studio.models.decoder_config import DecoderMoEConfig
+
+                decoder_config = DecoderMoEConfig()
+                head = head_cls(
+                    config=decoder_config,
+                    encoder_hidden_size=hidden_size,
+                )
             else:
                 head = head_cls(
                     hidden_size=hidden_size,

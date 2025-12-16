@@ -58,6 +58,17 @@ from modeling_studio.evaluation.cultural_robustness import (
     CulturalRobustnessResult,
     evaluate_cultural_robustness,
 )
+
+# Decoder evaluation metrics (Milestone 15)
+from modeling_studio.evaluation.decoder_metrics import (
+    DecoderEvaluationResults,
+    DecoderEvaluator,
+    compute_bleu,
+    compute_distinct_n,
+    compute_expert_utilization,
+    compute_perplexity,
+    compute_rouge,
+)
 from modeling_studio.evaluation.forgetting_eval import (
     FORGETTING_THRESHOLDS,
     ForgettingEvaluator,
@@ -104,4 +115,12 @@ __all__ = [
     "create_monitor",
     "ISOLATION_KEYWORDS",
     "ESCALATION_KEYWORDS",
+    # Decoder evaluation metrics (Milestone 15)
+    "compute_perplexity",
+    "compute_bleu",
+    "compute_rouge",
+    "compute_distinct_n",
+    "compute_expert_utilization",
+    "DecoderEvaluator",
+    "DecoderEvaluationResults",
 ]
