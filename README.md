@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🏠 FamilyOS ModernBERT v3.3 Ultra
+# 🏠 FamilyOS UltraBERT
 
-### Next-Generation Multi-Task Encoder with Hub Token Architecture
+### Production Multi-Task Encoder + MoE Counterfactual Decoder
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.1+](https://img.shields.io/badge/pytorch-2.1+-ee4c2c.svg)](https://pytorch.org/)
@@ -11,9 +11,11 @@
 [![HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97-Models-yellow)](https://huggingface.co/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-*28-layer transformer. 4 hub tokens. 12 capabilities. Zero forgetting.*
+**v2 Encoder** *(Production)* — 22 layers, 12 heads, 155M params
+**Stage C MoE Decoder** *(Training)* — 8 layers, 584M params, counterfactual generation
+**v3 Ultra** *(Roadmap)* — 28 layers, hub tokens, multi-scale attention
 
-[Features](#-key-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Architecture](#-v3-ultra-architecture) • [Training](#-training-pipeline) • [Documentation](#-documentation)
+[Architecture](#-architecture-overview) • [v2 Encoder](#-v2-multi-task-encoder) • [MoE Decoder](#-stage-c-moe-counterfactual-decoder) • [v3 Roadmap](#-v3-ultra-roadmap) • [Installation](#-installation)
 
 </div>
 
@@ -21,33 +23,268 @@
 
 ## 📖 Overview
 
-**FamilyOS ModernBERT v3.3 Ultra** is a production-ready, 28-layer multi-task encoder that revolutionizes family assistant AI with **Hub Token Architecture**. By introducing 4 specialized hub tokens (`[EMO]`, `[MEM]`, `[REL]`, `[TASK]`) with global bidirectional attention, v3 achieves superior task routing and representation learning while maintaining edge-deployable efficiency.
+**FamilyOS UltraBERT** is a production-ready multi-task NLP system for family assistant AI, featuring:
 
-### 🚀 v3 Ultra Innovations
+- **v2 Encoder** — 22-layer ModernBERT with 12 task-specific heads (NER, emotions, safety, embeddings, etc.)
+- **MoE Decoder** — 13th head: Mixture-of-Experts counterfactual generation decoder (Stage C, currently training)
+- **v3 Ultra** — Future 28-layer architecture with hub token routing (roadmap)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  🎯 Hub Token Routing        │  ⚡ Multi-Scale Attention                │
-│  4 specialized hub tokens    │  64 → 128 → 256 → 512 sliding windows   │
-│  Global bidirectional attn   │  Flash Attention 2 optimized            │
-│  Zero routing overhead       │  <35ms latency on NPU                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│  🧬 Function Preserving      │  🛡️ Enhanced Safety                     │
-│  Direct v2 weight transfer   │  CRISIS recall ≥99%                     │
-│  L1-22: Copy, L23-28: Clone  │  Cultural FP ≤1%                        │
-│  No distillation needed      │  4-band hierarchical system             │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           FamilyOS UltraBERT Architecture                               │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐    │
+│  │  v2 ENCODER (Production) - 155M params                                          │    │
+│  │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                                          │    │
+│  │  ModernBERT-base (22 layers, 768-dim, Flash Attention)                          │    │
+│  │                                                                                 │    │
+│  │  12 Task Heads:                                                                 │    │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │    │
+│  │  │   NER    │ │ Emotions │ │ Sentiment│ │  Safety  │ │   NLI    │ │Embedding │  │    │
+│  │  │ General  │ │  (44)    │ │   (5)    │ │ (4-band) │ │   (3)    │ │  (768d)  │  │    │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │    │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │    │
+│  │  │   NER    │ │ Temporal │ │ Relation │ │  Intent  │ │  Ingress │ │  Safety  │  │    │
+│  │  │  Family  │ │   (7)    │ │  (15)    │ │   (8)    │ │   (6)    │ │ Generic  │  │    │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │    │
+│  └─────────────────────────────────────────────────────────────────────────────────┘    │
+│                                         │                                               │
+│                                         ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐    │
+│  │  MoE DECODER (Stage C - Training) - 584M params (237M active)                   │    │
+│  │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                     │    │
+│  │  13th Head: Counterfactual Generation with Mixture-of-Experts                   │    │
+│  │                                                                                 │    │
+│  │  ┌─────────────────────────────────────────────────────────────────────────┐    │    │
+│  │  │  Cross-Attention to Encoder → 8 Decoder Layers → LM Head (50K vocab)   │    │    │
+│  │  │                                                                         │    │    │
+│  │  │  Layers 0-1: Dense SwiGLU FFN                                           │    │    │
+│  │  │  Layers 2-7: Sparse MoE (8 experts + 1 shared, top-2 routing)           │    │    │
+│  │  │                                                                         │    │    │
+│  │  │  Features: GQA (20 heads, 4 KV), RoPE, 1280-dim hidden                  │    │    │
+│  │  └─────────────────────────────────────────────────────────────────────────┘    │    │
+│  └─────────────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                         │
+│  Total: 739M params │ Active per token: 392M │ Encoder frozen during Stage C           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 📊 Efficiency Gains
+### 📊 Model Summary
 
-| Metric | v2 (22 layers) | v3 Ultra (28 layers) | Improvement |
-|:------:|:--------------:|:--------------------:|:-----------:|
-| **Parameters** | ~149M | ~180M | +21% |
-| **Latency (NPU)** | ~50ms | <35ms | **30% faster** |
-| **Memory** | ~400MB | ~450MB | Minimal |
-| **Task Quality** | Baseline | +2-5% per task | **SOTA** |
-| **CRISIS Recall** | 98% | ≥99% | **Critical** |
+| Component | Params | Active | Status | Use Case |
+|-----------|--------|--------|--------|----------|
+| **v2 Encoder** | 155M | 155M | ✅ Production | Classification, NER, embeddings, safety |
+| **MoE Decoder** | 584M | 237M | 🔄 Training | Counterfactual text generation |
+| **Full Model** | 739M | 392M | 🔄 Stage C | End-to-end family AI |
+
+### 🎯 Key Capabilities
+
+| # | Capability | Type | Output | Head |
+|---|------------|------|--------|------|
+| 1 | `ner_general` | Token | 9 BIO tags | Encoder |
+| 2 | `ner_family` | Token | 12 BIO tags | Encoder |
+| 3 | `sentiment` | Sequence | 5 classes | Encoder |
+| 4 | `emotions` | Multi-label | 44 emotions | Encoder |
+| 5 | `safety_generic` | Multi-label | 8 types | Encoder |
+| 6 | `safety_familyos` | Sequence | 4 bands | Encoder |
+| 7 | `nli` | Pair | 3 classes | Encoder |
+| 8 | `embedding` | Vector | 768-dim | Encoder |
+| 9 | `temporal` | Token | 7 BIO tags | Encoder |
+| 10 | `relation` | Pair | 15 types | Encoder |
+| 11 | `intent` | Sequence | 8 classes | Encoder |
+| 12 | `ingress` | Sequence | 6 domains | Encoder |
+| **13** | **`counterfactual`** | **Generation** | **Text** | **MoE Decoder** |
+
+---
+
+## 🧠 v2 Multi-Task Encoder
+
+The production encoder powering FamilyOS classification, NER, embeddings, and safety detection.
+
+### Architecture
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ModernBERT-base v2 (Production)                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Base: answerdotai/ModernBERT-base                                          │
+│  Layers: 22 │ Hidden: 768 │ Heads: 12 │ Params: 149M                        │
+│  Context: 8192 tokens │ Flash Attention 2 │ RoPE Positional Encoding        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  12 Task-Specific Heads (~6M params total)                                  │
+│                                                                             │
+│  Sequence Classification:                                                   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
+│  │Sentiment │ │ Emotions │ │ Safety   │ │  Intent  │ │  Ingress │           │
+│  │ (5-cls)  │ │(44 multi)│ │(4-band)  │ │  (8-cls) │ │  (6-cls) │           │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
+│                                                                             │
+│  Token Classification:                                                      │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                                     │
+│  │   NER    │ │   NER    │ │ Temporal │                                     │
+│  │ General  │ │  Family  │ │  (7 BIO) │                                     │
+│  └──────────┘ └──────────┘ └──────────┘                                     │
+│                                                                             │
+│  Pair Classification:                                                       │
+│  ┌──────────┐ ┌──────────┐                                                  │
+│  │   NLI    │ │ Relation │     Dense Embeddings:                            │
+│  │  (3-cls) │ │ (15-cls) │     ┌──────────┐                                 │
+│  └──────────┘ └──────────┘     │ 768-dim  │                                 │
+│                                └──────────┘                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Training Pipeline
+
+| Stage | Description | Data | Output |
+|-------|-------------|------|--------|
+| **Stage A** | Generic multi-task pretraining | CoNLL, SST-2, GoEmotions, MNLI, etc. | 7 heads trained |
+| **Stage B** | FamilyOS domain adaptation | FamilyOS unified shards + 15% replay | 12 heads trained |
+
+### Key Features
+
+- **Flash Attention 2** — 2x speedup on A100/H100
+- **EMA Checkpointing** — +0.8-1.5 pt consistent improvement
+- **Head-wise Learning Rates** — Encoder 2e-5, heads 1e-4
+- **Uncertainty Weighting** — Auto-balanced multi-task loss
+- **Safety Oversampling** — CRISIS 20x, RED 5x for recall ≥98%
+
+### Checkpoint Status
+
+| Checkpoint | Step | Status | Weighted Score |
+|------------|------|--------|----------------|
+| `checkpoint-18000` | 18,000 | ✅ Production | **90.58%** |
+
+---
+
+## 🔮 Stage C: MoE Counterfactual Decoder
+
+The **13th head** — a Mixture-of-Experts decoder for generating counterfactual reframes of family situations.
+
+### What is Counterfactual Generation?
+
+Transform negative family moments into constructive alternatives:
+
+```text
+INPUT:  "I yelled at my kids this morning and now I feel terrible about it."
+
+OUTPUT: "Instead of yelling, I could have taken a deep breath and calmly
+        explained why their behavior was problematic. Next time, I'll try
+        counting to ten before responding."
+```
+
+### MoE Decoder Architecture
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  UltraBERT-Gen MoE Decoder (13th Head)                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Total Params: 584M │ Active per Token: 237M │ Hidden: 1280                 │
+│  Layers: 8 │ Vocab: 50,280 │ Max Length: 512                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  ENCODER PROJECTION                                                 │    │
+│  │  Linear(768 → 1280) + RMSNorm + GELU                                │    │
+│  │  Projects frozen encoder output to decoder dimension                │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                     │                                       │
+│                                     ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  DENSE LAYERS (0-1) — 27.5M params                                  │    │
+│  │  ┌─────────────────────────────────────────────────────────────┐    │    │
+│  │  │  RMSNorm → GQA Self-Attention (20 heads, 4 KV) → Residual   │    │    │
+│  │  │  RMSNorm → Cross-Attention (to encoder) → Residual          │    │    │
+│  │  │  RMSNorm → SwiGLU FFN (dense, 3456 intermediate) → Residual │    │    │
+│  │  └─────────────────────────────────────────────────────────────┘    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                     │                                       │
+│                                     ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  MoE LAYERS (2-7) — 407M total, 124M active                         │    │
+│  │  ┌─────────────────────────────────────────────────────────────┐    │    │
+│  │  │  RMSNorm → GQA Self-Attention (causal) → Residual           │    │    │
+│  │  │  RMSNorm → Cross-Attention (to encoder) → Residual          │    │    │
+│  │  │  RMSNorm → Sparse MoE FFN → Residual                        │    │    │
+│  │  │     ├── Router: Linear(1280 → 8) + Softmax + TopK(2)        │    │    │
+│  │  │     ├── 8 Expert SwiGLU FFNs (each 1280 → 3456 → 1280)      │    │    │
+│  │  │     └── 1 Shared Expert (always active)                     │    │    │
+│  │  └─────────────────────────────────────────────────────────────┘    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                     │                                       │
+│                                     ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  LM HEAD                                                            │    │
+│  │  RMSNorm → Linear(1280 → 50,280) [tied with embeddings]             │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### MoE Expert Specialization
+
+During training, experts naturally specialize by domain:
+
+| Expert | Specialization | Example Topics |
+|--------|----------------|----------------|
+| E0 | Parenting & Children | Discipline, education, milestones, teens |
+| E1 | Relationships | Spouse, in-laws, conflicts, trust |
+| E2 | Health & Wellness | Sleep, nutrition, mental health |
+| E3 | Daily Routines | Morning chaos, meals, chores |
+| E4 | Work-Life Balance | Boundaries, burnout, remote work |
+| E5 | Finances | Budgeting, savings, education funds |
+| E6 | Emotions & Communication | Stress, arguments, listening |
+| E7 | Cultural & Traditions | Festivals, rituals, heritage |
+| **Shared** | Common Patterns | Grammar, style, universal advice |
+
+### Training Configuration
+
+```yaml
+# Stage C: Decoder Training
+encoder: FROZEN (155M params)
+existing_heads: FROZEN (12 heads)
+decoder: TRAINABLE (584M params)
+
+batch_size: 24 (per GPU) × 8 (grad accum) = 192 effective
+learning_rate: 3e-4 (cosine decay)
+warmup: 500 steps
+epochs: 5
+checkpoint_every: 500 steps
+
+# MoE Robustness
+load_balance_loss_weight: 0.01
+router_z_loss_weight: 0.001
+capacity_factor: 1.5
+top_k: 2
+```
+
+### Current Training Status
+
+```text
+Stage C Training Progress (December 2025)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GPU: NVIDIA A100-SXM4-80GB
+Data: 206K train / 11K eval samples
+Progress: Training in progress...
+
+Loss Trajectory:
+  Step 0:    22.04
+  Step 100:   9.93
+  Step 200:   5.73
+  Step 300:   4.93
+  Step 400:   4.21
+  Step 500:   3.98 (checkpoint saved)
+
+Eval Loss @ 500: 1.99 ✓ (good generalization)
+```
+
+### Memory Requirements
+
+| Mode | GPU Memory | Notes |
+|------|------------|-------|
+| Training (bf16) | ~9.5 GB | With gradient checkpointing: ~7 GB |
+| Inference (bf16) | ~1.4 GB | Batch=1, seq=512 |
 
 ---
 
@@ -57,16 +294,16 @@
 <tr>
 <td width="50%">
 
-### 🎯 Hub Token Architecture
+### 🎯 v2 Encoder (Production)
 
-- **[EMO]** — Emotions, Sentiment, Safety routing
-- **[MEM]** — Embedding & memory representations
-- **[REL]** — NLI & Relationship reasoning
-- **[TASK]** — Intent & Ingress classification
-- **Global Attention** — Hubs see entire sequence
-- **Semantic Init** — Centroid-based initialization
+- **22 Transformer Layers** — ModernBERT-base backbone
+- **12 Task Heads** — Unified multi-task inference
+- **Flash Attention 2** — 2x speedup on A100/H100
+- **768-dim Embeddings** — Dense semantic vectors
+- **4-Band Safety** — GREEN/AMBER/RED/CRISIS
+- **Cultural Awareness** — Indian English patterns
 
-### 🧠 12 Capabilities
+### 🧠 13 Capabilities
 
 - **NER General** — 9 BIO entity tags
 - **NER Family** — 12 family-specific entities
@@ -80,17 +317,34 @@
 - **Relations** — 15 family relationship types
 - **Intent** — 8 user intent classes
 - **Ingress** — 6 domain categories
+- **Counterfactual** — MoE text generation (NEW)
 
 </td>
 <td width="50%">
 
-### ⚡ v3 Ultra Architecture
+### 🔮 MoE Decoder (Stage C)
 
-- **28 Transformer Layers** — 6 new layers via cloning
-- **Multi-Scale Windows** — 64/128/256/512 by band
-- **Flash Attention 2** — 2x speedup on A100/H100
-- **LoRA Adapters** — Layers 23-28 only (r=16, α=16)
-- **Function Preserving** — Direct v2 weight transfer
+- **8 Decoder Layers** — 2 dense + 6 MoE
+- **584M Parameters** — 237M active per token
+- **8 Experts + Shared** — Top-2 routing
+- **1280-dim Hidden** — Upscaled from encoder
+- **GQA Attention** — 20 heads, 4 KV groups
+- **Cross-Attention** — Full encoder context
+
+### 🛡️ Safety System
+
+- **≥98% CRISIS recall** — Zero misses on self-harm
+- **≤2% Cultural FP** — Indian English aware
+- **4-band hierarchy** — GREEN → AMBER → RED → CRISIS
+- **Keyword override** — Explicit crisis detection
+- **12 subcategories** — Fine-grained classification
+
+### 🚀 Production Ready
+
+- **<90ms full inference** — 12 tasks, single pass
+- **93% Recall@10** — Embedding retrieval
+- **98.6% triplet accuracy** — Semantic similarity
+- **A100/H100 optimized** — Flash Attention 2
 - **Phase 0.5 Healing** — Interface alignment warmup
 
 ### 🛡️ Enhanced Safety System
@@ -115,65 +369,59 @@
 
 ---
 
-## 🏗️ v3 Ultra Architecture
+## 🚀 v3 Ultra Roadmap
 
-### Hub Token Routing System — Complete Data Flow
+> **Status:** Future Development (after Stage C completion)
 
+v3 Ultra is the next-generation encoder with **Hub Token Architecture** — 4 specialized tokens with global bidirectional attention for superior task routing.
+
+### Planned Features
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│  🎯 Hub Token Routing        │  ⚡ Multi-Scale Attention                │
+│  4 specialized hub tokens    │  64 → 128 → 256 → 512 sliding windows   │
+│  [EMO] [MEM] [REL] [TASK]    │  Flash Attention 2 optimized            │
+│  Global bidirectional attn   │  <35ms latency target                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🧬 Function Preserving      │  📊 Target Improvements                 │
+│  Direct v2 weight transfer   │  +2-5% per task over v2                 │
+│  L1-22: Copy, L23-28: Clone  │  CRISIS recall ≥99%                     │
+│  No distillation needed      │  Cultural FP ≤1%                        │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
-╔═════════════════════════════════════════════════════════════════════════════════════════════╗
-║                                                                                             ║
-║  📝 INPUT TEXT: "Mom is feeling sad today"                                                  ║
-║                                                                                             ║
-╚═════════════════════════════════════════════════════════════════════════════════════════════╝
-                                            │
-                                            ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│  🔤 TOKENIZATION + HUB INJECTION                                                            │
-│                                                                                             │
-│  Input IDs:   [101]  [EMO]  [MEM]  [REL] [TASK]  [Mom]  [is] [feeling] [sad] [today] [102]  │
-│  Positions:     0      1      2      3      4       5     6      7       8      9      10   │
-│  Token Type:  [CLS]  HUB-1  HUB-2  HUB-3  HUB-4  TEXT  TEXT   TEXT    TEXT   TEXT   [SEP]   │
-│                                                                                             │
-│  🎯 Hub Token Semantics (Initialized via Centroid):                                         │
-│     [EMO]  → Emotion/Affect space   (joy, sadness, anger, fear...)                          │
-│     [MEM]  → Memory/Retrieval space (dense semantic embeddings)                             │
-│     [REL]  → Relation/Logic space   (entailment, parent_of, sibling...)                     │
-│     [TASK] → Action/Intent space    (log_memory, remind, query...)                          │
-└─────────────────────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼
-╔═════════════════════════════════════════════════════════════════════════════════════════════╗
-║  🧠 ModernBERT v3 Ultra ENCODER (28 Layers × 768-dim × 12 Heads)                           ║
-║                                                                                            ║
-║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🔵 FOUNDATION BAND (Layers 1-6)                            Window: 64    ❄️ FROZEN  │ ║
-║  │  ─────────────────────────────────────                                                │ ║
-║  │  • Basic linguistic patterns, morphology, syntax                                      │ ║
-║  │  • Short-range dependencies (articles, prepositions)                                  │ ║
-║  │  • Transferred from v2 L1-6 (function preserving)                                     │ ║
-║  │  • Hub tokens: GLOBAL BIDIRECTIONAL attention (see all 11 positions)                  │ ║
-║  │  • Text tokens: SLIDING WINDOW attention (window=64, local neighbors only)            │ ║
-║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
-║                                            │                                               ║
-║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🟢 CONTEXT BAND (Layers 7-18)                              Window: 128   ❄️ FROZEN  │ ║
-║  │  ──────────────────────────────                                                       │ ║
-║  │  • Mid-range semantic understanding, entity recognition                               │ ║
-║  │  • Phrasal composition, simple reasoning                                              │ ║
-║  │  • Transferred from v2 L7-18 (function preserving)                                    │ ║
-║  │  • Hub tokens: GLOBAL attention (aggregating semantic info)                           │ ║
-║  │  • Text tokens: SLIDING WINDOW (window=128, moderate context)                         │ ║
-║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
-║                                            │                                               ║
-║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🟡 SEMANTIC BAND (Layers 19-22)                          Window: 256   🔥 TRAINABLE │ ║
-║  │  ────────────────────────────────                                                     │ ║
-║  │  • High-level semantic abstraction, discourse understanding                           │ ║
-║  │  • Emotion nuances, pragmatic reasoning                                               │ ║
-║  │  • Transferred from v2 L19-22 + fine-tuned for multi-task                             │ ║
-║  │  • Hub tokens: GLOBAL attention (refining task-specific representations)              │ ║
-║  │  • Text tokens: SLIDING WINDOW (window=256, broader context)                          │ ║
-║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
+
+### v3 Architecture Preview
+
+| Component | v2 (Current) | v3 (Planned) | Benefit |
+|-----------|--------------|--------------|---------|
+| **Layers** | 22 | 28 (+6 new) | Higher capacity |
+| **Parameters** | 155M | ~180M | +21% |
+| **Hub Tokens** | None | 4 ([EMO], [MEM], [REL], [TASK]) | Task routing |
+| **Attention** | Uniform | Multi-scale (64/128/256/512) | Efficiency |
+| **LoRA** | None | L23-28 only (r=16) | Parameter efficiency |
+
+### Hub Token Routing System (Planned)
+
+```text
+Input: "Mom is feeling sad today"
+
+Tokenization with Hub Injection:
+[CLS] [EMO] [MEM] [REL] [TASK] Mom is feeling sad today [SEP]
+  0     1     2     3     4     5   6    7      8    9    10
+
+Hub Token Routing:
+  [EMO]  → Emotions, Sentiment, Safety heads
+  [MEM]  → Embedding head (768-dim vectors)
+  [REL]  → NLI, Relation heads
+  [TASK] → Intent, Ingress heads
+  Token positions → NER, Temporal heads
+```
+
+<details>
+<summary>Click to expand full v3 architecture diagram</summary>
+
+```text
 ║                                            │                                               ║
 ║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
 ║  │  🔴 FAMILY BAND (Layers 23-28)  ⭐NEW⭐                  Window: 512   🔥 LoRA      │ ║
@@ -1030,7 +1278,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **ModernBERT** by Answer.AI — The backbone architecture (v2 base)
 - **Flash Attention 2** by Dao-AILab — Efficient attention implementation
-- **BigBird & Longformer** — Inspiration for global + local attention
+- **Mixture-of-Experts** — Efficient sparse architecture for generation
 - **LoRA** by Microsoft — Parameter-efficient fine-tuning
 - **HuggingFace Transformers** — Model infrastructure
 - **GoEmotions** by Google — Emotion classification dataset
@@ -1041,27 +1289,30 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
----
+### FamilyOS UltraBERT — Evolution Timeline
 
-### 🎯 Key Innovations in v3.3 Ultra
-
-| Feature | Description | Benefit |
-|---------|-------------|---------|
-| **Hub Tokens** | 4 specialized tokens with global attention | Superior task routing |
-| **Multi-Scale Windows** | 64/128/256/512 by layer band | Efficiency + capacity |
-| **Function Preserving** | Direct v2 weight transfer (no distillation) | Zero quality loss |
-| **Phase 0.5 Healing** | Interface alignment warmup | Prevents transplant rejection |
-| **Semantic Init** | Centroid-based hub initialization | Faster convergence |
-| **15% Replay** | Stage A data mixed in training | Zero catastrophic forgetting |
-| **LoRA on L23-28** | Focused adaptation on new layers | Parameter efficiency |
-| **CRISIS ≥99%** | Enhanced safety with cultural awareness | Production critical |
+| Version | Status | Components | Params |
+|---------|--------|------------|--------|
+| **v2 Encoder** | ✅ Production | 22 layers, 12 heads | 155M |
+| **Stage C MoE** | 🔄 Training | 8-layer decoder, 8 experts | +584M |
+| **v3 Ultra** | 📋 Roadmap | 28 layers, hub tokens | ~180M |
 
 ---
 
-**Built with ❤️ for families**
+### Key Innovations
 
-**ModernBERT v3.3 Ultra — Hub Token Architecture for Multi-Task Excellence**
+| Component | Innovation | Benefit |
+|-----------|------------|---------|
+| **v2 Multi-Task** | 12 heads, unified inference | Single forward pass |
+| **MoE Decoder** | 8 experts + shared, top-2 routing | Efficient generation |
+| **Safety System** | 4-band hierarchy, cultural awareness | CRISIS recall ≥98% |
+| **Embeddings** | 768-dim, 98.6% triplet accuracy | 93% Recall@10 |
 
-[⬆ Back to Top](#-familyos-modernbert-v33-ultra)
+---
 
+**Built with care for families**
+
+**FamilyOS UltraBERT — Multi-Task Encoder + MoE Counterfactual Decoder**
+
+[Back to Top](#-familyos-ultrabert)
 </div>
