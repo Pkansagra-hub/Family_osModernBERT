@@ -454,7 +454,9 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 # Requires DecoderMoEConfig, not standard head params
                 from modeling_studio.models.decoder_config import DecoderMoEConfig
 
-                decoder_config = DecoderMoEConfig()
+                # Use vocab_size from encoder config to match trained weights
+                vocab_size = getattr(self.config, "vocab_size", 50368)
+                decoder_config = DecoderMoEConfig(vocab_size=vocab_size)
                 head = head_cls(
                     config=decoder_config,
                     encoder_hidden_size=hidden_size,

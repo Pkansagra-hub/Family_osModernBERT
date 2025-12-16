@@ -611,6 +611,8 @@ class CounterfactualDecoderHead(BaseHead):
         temperature: float = 1.0,
         top_k: int | None = 50,
         top_p: float | None = 0.9,
+        repetition_penalty: float = 1.0,
+        no_repeat_ngram_size: int = 0,
         eos_token_id: int | None = None,
         pad_token_id: int | None = None,
     ) -> torch.Tensor:
@@ -626,6 +628,9 @@ class CounterfactualDecoderHead(BaseHead):
             temperature: Sampling temperature. Lower = more deterministic.
             top_k: Keep only top k tokens for sampling. None = no filtering.
             top_p: Nucleus sampling probability. None = no filtering.
+            repetition_penalty: Penalty for repeating tokens. 1.0 = no penalty.
+                Values > 1.0 discourage repetition. Recommended: 1.1-1.5.
+            no_repeat_ngram_size: If > 0, prevents n-grams of this size from repeating.
             eos_token_id: End of sequence token ID.
             pad_token_id: Padding token ID (used as BOS).
 
@@ -666,6 +671,14 @@ class CounterfactualDecoderHead(BaseHead):
 
             # Get logits for last position
             logits = outputs["logits"][:, -1, :]  # (batch, vocab_size)
+
+            # Apply repetition penalty
+            if repetition_penalty != 1.0:
+                logits = self._apply_repetition_penalty(logits, generated, repetition_penalty)
+
+            # Apply no-repeat n-gram blocking
+            if no_repeat_ngram_size > 0 and generated.shape[1] >= no_repeat_ngram_size:
+                logits = self._block_repeat_ngrams(logits, generated, no_repeat_ngram_size)
 
             # Apply temperature
             if temperature != 1.0:
@@ -723,6 +736,78 @@ class CounterfactualDecoderHead(BaseHead):
             dim=-1, index=sorted_indices, src=sorted_indices_to_remove
         )
         logits = logits.masked_fill(indices_to_remove, float("-inf"))
+        return logits
+
+    def _apply_repetition_penalty(
+        self,
+        logits: torch.Tensor,
+        generated: torch.Tensor,
+        penalty: float,
+    ) -> torch.Tensor:
+        """
+        Apply repetition penalty to discourage repeating tokens.
+
+        For tokens that have already appeared in generated:
+        - If logit > 0: divide by penalty (reduces probability)
+        - If logit < 0: multiply by penalty (reduces probability)
+
+        Args:
+            logits: Current logits. Shape: (batch, vocab_size)
+            generated: Previously generated tokens. Shape: (batch, seq_len)
+            penalty: Penalty factor. > 1.0 discourages repetition.
+
+        Returns:
+            Modified logits with penalty applied.
+        """
+        for batch_idx in range(logits.shape[0]):
+            unique_tokens = generated[batch_idx].unique()
+            for token_id in unique_tokens:
+                if logits[batch_idx, token_id] > 0:
+                    logits[batch_idx, token_id] = logits[batch_idx, token_id] / penalty
+                else:
+                    logits[batch_idx, token_id] = logits[batch_idx, token_id] * penalty
+        return logits
+
+    def _block_repeat_ngrams(
+        self,
+        logits: torch.Tensor,
+        generated: torch.Tensor,
+        n: int,
+    ) -> torch.Tensor:
+        """
+        Block n-grams that have already appeared from being generated again.
+
+        Args:
+            logits: Current logits. Shape: (batch, vocab_size)
+            generated: Previously generated tokens. Shape: (batch, seq_len)
+            n: Size of n-grams to block.
+
+        Returns:
+            Modified logits with repeated n-grams blocked.
+        """
+        batch_size = logits.shape[0]
+        seq_len = generated.shape[1]
+
+        for batch_idx in range(batch_size):
+            if seq_len < n:
+                continue
+
+            # Get the last (n-1) tokens as the current prefix
+            prefix = tuple(generated[batch_idx, -(n - 1):].tolist())
+
+            # Find all n-grams and their following tokens
+            banned_tokens = set()
+            for i in range(seq_len - n + 1):
+                ngram_prefix = tuple(generated[batch_idx, i : i + n - 1].tolist())
+                if ngram_prefix == prefix:
+                    # The next token after this prefix has appeared before
+                    next_token = generated[batch_idx, i + n - 1].item()
+                    banned_tokens.add(next_token)
+
+            # Block banned tokens
+            for token_id in banned_tokens:
+                logits[batch_idx, token_id] = float("-inf")
+
         return logits
 
 

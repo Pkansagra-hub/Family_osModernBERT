@@ -133,11 +133,12 @@ class DecoderMoEConfig:
     # Initialization
     initializer_range: float = 0.02
 
-    # Generation
+    # Generation - ModernBERT tokenizer special tokens
+    # [PAD] = 50283, [SEP] = 50282, [CLS] = 50281
     use_cache: bool = True
-    pad_token_id: int = 0
-    bos_token_id: int = 0  # Same as pad for this model (decoder-start token)
-    eos_token_id: int = 2
+    pad_token_id: int = 50283  # [PAD] token
+    bos_token_id: int = 50283  # Use [PAD] as decoder start token
+    eos_token_id: int = 50282  # [SEP] token as end-of-sequence
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
