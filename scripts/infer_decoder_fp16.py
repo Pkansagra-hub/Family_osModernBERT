@@ -56,7 +56,7 @@ def load_model_fp16(
     from transformers import AutoTokenizer, AutoConfig
     from modeling_studio.models.decoder_config import DecoderMoEConfig
     from modeling_studio.models.decoder_moe import CounterfactualDecoderHead
-    
+
     # Import ModernBERT for encoder
     try:
         from transformers import ModernBertModel
@@ -70,7 +70,7 @@ def load_model_fp16(
     # Load tokenizer
     logger.info("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_path, trust_remote_code=True)
-    
+
     # Load config
     config = AutoConfig.from_pretrained(checkpoint_path, trust_remote_code=True)
 
@@ -123,7 +123,7 @@ def load_model_fp16(
         "answerdotai/ModernBERT-base",
         torch_dtype=torch.float16,
     )
-    
+
     # Try to load encoder weights if we have them
     if encoder_state_dict:
         try:
@@ -134,7 +134,7 @@ def load_model_fp16(
                 logger.warning(f"Unexpected encoder keys: {len(unexpected)}")
         except Exception as e:
             logger.warning(f"Could not load encoder weights: {e}, using pretrained")
-    
+
     encoder = encoder.to(device).half()
     encoder.eval()
 
