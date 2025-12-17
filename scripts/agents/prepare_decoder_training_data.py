@@ -73,14 +73,25 @@ logger = logging.getLogger(__name__)
 
 
 def load_counterfactual_samples(input_dir: Path) -> list[dict]:
-    """Load all counterfactual samples from shards."""
+    """Load all counterfactual samples from shards or samples.jsonl."""
     samples = []
+
+    # Try shard files first
     shards = sorted(input_dir.glob("shard_*.jsonl"))
 
+    # If no shards, try samples.jsonl
     if not shards:
-        raise ValueError(f"No shard files found in {input_dir}")
+        samples_file = input_dir / "samples.jsonl"
+        if samples_file.exists():
+            shards = [samples_file]
+        else:
+            # Also try any .jsonl file
+            shards = sorted(input_dir.glob("*.jsonl"))
 
-    logger.info(f"Loading samples from {len(shards)} shards...")
+    if not shards:
+        raise ValueError(f"No JSONL files found in {input_dir}")
+
+    logger.info(f"Loading samples from {len(shards)} file(s)...")
 
     for shard in tqdm(shards, desc="Loading shards"):
         with open(shard, encoding="utf-8") as f:
@@ -128,6 +139,7 @@ def load_ultrabert_encoder(model_path: Path | None, device: str = "cuda"):
         PyTorchInferenceEngine with access to encoder
     """
     from familyos_ultrabert.pytorch_inference import PyTorchInferenceEngine
+
 
     # Use bundled weights if no path provided
     if model_path is None:
