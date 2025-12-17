@@ -30,7 +30,7 @@ with open(dataset_path, encoding='utf-8') as f:
             data = json.loads(line.strip())
             domain = data.get('domain', 'unknown')
             subdomain = data.get('subdomain', 'unknown')
-            
+
             domain_counts[domain] += 1
             subdomain_counts[subdomain] += 1
             domain_subdomains[domain].add(subdomain)
@@ -116,7 +116,7 @@ if not perfect_balance:
             status = "GAP" if gap > 0 else "EXCESS"
             gaps.append((subdomain, count, abs(gap)))
             print(f"{subdomain:45s} {count:10,} {gap:10,} {status:20s}")
-    
+
     if gaps:
         print(f"\nTotal subdomains with gaps: {len(gaps)}")
         total_gap = sum(g[2] for g in gaps)
