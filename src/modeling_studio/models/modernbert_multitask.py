@@ -924,7 +924,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Detect decoder type for proper loading
         decoder_type = None
         if Capability.COUNTERFACTUAL in self.capabilities:
-            head = self.heads.get(Capability.COUNTERFACTUAL.value)
+            capability_key = Capability.COUNTERFACTUAL.value
+            head = self.heads[capability_key] if capability_key in self.heads else None
             if head is not None:
                 decoder_type = type(head).__name__  # "GPT2DecoderHead" or "CounterfactualDecoderHead"
 
