@@ -83,7 +83,9 @@ from modeling_studio.models.heads import (  # noqa: E402
 )
 
 # Import decoder head (Stage C - Issue 14.1.2)
-from modeling_studio.models.decoder_moe import CounterfactualDecoderHead  # noqa: E402
+# NOTE: MoE decoder deprecated due to Chinchilla scaling failure (22M tokens << 8.4B required)
+# Using pre-trained GPT-2 Medium with prefix injection instead
+from modeling_studio.models.decoder_gpt2 import GPT2DecoderHead  # noqa: E402
 
 # Import Epic 5.0 components (optional - for enhanced mode)
 try:
@@ -157,7 +159,7 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.RELATION: RelationHead,  # NEW
     Capability.EMBEDDING: EmbeddingHead,
     # Decoder heads (Stage C)
-    Capability.COUNTERFACTUAL: CounterfactualDecoderHead,  # NEW: MoE decoder for counterfactuals
+    Capability.COUNTERFACTUAL: GPT2DecoderHead,  # GPT-2 Medium with prefix injection (MoE deprecated)
 }
 
 
@@ -450,13 +452,19 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     pos_weight=safety_pos_weight,  # Mild reweighting for balanced data
                 )
             elif capability == Capability.COUNTERFACTUAL:
-                # CounterfactualDecoderHead: MoE decoder for counterfactual generation
-                # Requires DecoderMoEConfig, not standard head params
-                from modeling_studio.models.decoder_config import DecoderMoEConfig
+                # GPT2DecoderHead: Pre-trained GPT-2 with prefix injection
+                # NOTE: MoE decoder deprecated - Chinchilla scaling failure
+                # GPT-2 Medium (355M) pre-trained on 40GB WebText provides strong prior
+                from modeling_studio.models.decoder_gpt2_config import GPT2DecoderConfig
 
-                # Use vocab_size from encoder config to match trained weights
+                # Use vocab_size from encoder config to match tokenizer
                 vocab_size = getattr(self.config, "vocab_size", 50368)
-                decoder_config = DecoderMoEConfig(vocab_size=vocab_size)
+                decoder_config = GPT2DecoderConfig(
+                    vocab_size=vocab_size,
+                    pad_token_id=50283,  # ModernBERT [PAD]
+                    bos_token_id=50281,  # ModernBERT [CLS]
+                    eos_token_id=50282,  # ModernBERT [SEP]
+                )
                 head = head_cls(
                     config=decoder_config,
                     encoder_hidden_size=hidden_size,
@@ -646,6 +654,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         caps_file = checkpoint_path / "capabilities.json"  # type: ignore
         capabilities = None
         epic_5_config = {}
+        decoder_type = None
         if caps_file.exists():
             with open(caps_file) as f:
                 caps_data = json.load(f)
@@ -657,6 +666,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                         capabilities = [Capability(c) for c in caps_data["capabilities"]]
                     if "epic_5_0" in caps_data:
                         epic_5_config = caps_data["epic_5_0"]
+                    if "decoder_type" in caps_data:
+                        decoder_type = caps_data["decoder_type"]
 
         # Load config - use local_files_only to avoid HuggingFace Hub validation issues
         config = AutoConfig.from_pretrained(str(checkpoint_path), local_files_only=True)
@@ -706,6 +717,41 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 pair_encoder_state[key] = value
             elif key.startswith("shared_pooler."):
                 pooler_state[key] = value
+
+        # Auto-detect decoder type from weight keys if not specified in config
+        # This handles legacy checkpoints that don't have decoder_type in capabilities.json
+        if decoder_type is None and capabilities and Capability.COUNTERFACTUAL in capabilities:
+            has_gpt2_keys = any("heads.counterfactual.gpt2." in k for k in state_dict.keys())
+            has_moe_keys = any("heads.counterfactual.layers." in k for k in state_dict.keys())
+            if has_gpt2_keys:
+                decoder_type = "GPT2DecoderHead"
+                logger.info("Auto-detected GPT-2 decoder from checkpoint weights")
+            elif has_moe_keys:
+                decoder_type = "CounterfactualDecoderHead"
+                logger.warning(
+                    "Auto-detected MoE decoder from checkpoint weights. "
+                    "MoE decoder is DEPRECATED - consider retraining with GPT-2 decoder."
+                )
+
+        # Replace decoder head if checkpoint uses different type than model default
+        # Model default is now GPT2DecoderHead, but checkpoint might be MoE (deprecated)
+        if (
+            decoder_type == "CounterfactualDecoderHead"
+            and capabilities
+            and Capability.COUNTERFACTUAL in capabilities
+        ):
+            # Legacy MoE checkpoint - replace with MoE decoder for compatibility
+            logger.warning("Loading legacy MoE decoder (deprecated)")
+            from modeling_studio.models.decoder_config import DecoderMoEConfig
+            from modeling_studio.models.decoder_moe import CounterfactualDecoderHead as MoEDecoder
+
+            vocab_size = getattr(config, "vocab_size", 50368)
+            hidden_size = getattr(config, "hidden_size", 768)
+            moe_config = DecoderMoEConfig(vocab_size=vocab_size)
+            model.heads[Capability.COUNTERFACTUAL.value] = MoEDecoder(
+                config=moe_config,
+                encoder_hidden_size=hidden_size,
+            )
 
         # Initialize encoder - from checkpoint if available, else from pretrained
         if encoder_state:
@@ -874,8 +920,17 @@ class ModernBertMultiTaskModel(PreTrainedModel):
 
         # Save capabilities and Epic 5.0 config
         capabilities_path = os.path.join(save_directory, "capabilities.json")
+
+        # Detect decoder type for proper loading
+        decoder_type = None
+        if Capability.COUNTERFACTUAL in self.capabilities:
+            head = self.heads.get(Capability.COUNTERFACTUAL.value)
+            if head is not None:
+                decoder_type = type(head).__name__  # "GPT2DecoderHead" or "CounterfactualDecoderHead"
+
         config_data = {
             "capabilities": [c.value for c in self.capabilities],
+            "decoder_type": decoder_type,  # NEW: For proper decoder loading
             "epic_5_0": {
                 "shared_pooler": self._shared_pooler_type,
                 "use_adapters": self._use_adapters,

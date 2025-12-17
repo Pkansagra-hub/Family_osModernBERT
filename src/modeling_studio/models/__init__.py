@@ -52,10 +52,15 @@ from modeling_studio.models.attention import (
     RotaryEmbedding,
 )
 
-# Import decoder components (Milestone 10, 11)
+# Import decoder components (Stage C - GPT-2 based)
+# NOTE: MoE decoder deprecated due to Chinchilla scaling failure
+from modeling_studio.models.decoder_gpt2 import GPT2DecoderHead
+from modeling_studio.models.decoder_gpt2_config import GPT2DecoderConfig
+
+# Legacy MoE components (deprecated - kept for backward compatibility)
 from modeling_studio.models.decoder_config import DecoderMoEConfig
 from modeling_studio.models.decoder_moe import (
-    CounterfactualDecoderHead,
+    CounterfactualDecoderHead,  # DEPRECATED: Use GPT2DecoderHead
     DecoderBlock,
     EncoderProjection,
 )
@@ -132,9 +137,12 @@ __all__ = [
     "RelationHead",  # NEW
     "IntentHead",  # NEW
     "TemporalHead",  # NEW
-    # Decoder components (Milestone 10, 11)
-    "DecoderMoEConfig",
-    "CounterfactualDecoderHead",
+    # Decoder components (Stage C - GPT-2 based)
+    "GPT2DecoderHead",  # PRIMARY: Pre-trained GPT-2 with prefix injection
+    "GPT2DecoderConfig",
+    # Legacy decoder components (deprecated)
+    "DecoderMoEConfig",  # DEPRECATED
+    "CounterfactualDecoderHead",  # DEPRECATED: Use GPT2DecoderHead
     "DecoderBlock",
     "EncoderProjection",
     # MoE components (Milestone 10)

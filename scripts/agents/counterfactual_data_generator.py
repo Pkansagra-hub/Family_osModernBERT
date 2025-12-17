@@ -5,7 +5,17 @@ Generates high-quality counterfactual pairs for training the UltraBERT decoder h
 Each pair consists of a life scenario (input) and a helpful counterfactual response
 that suggests what could have been done differently for a better outcome.
 
-Focus Areas (40 Family Life Domains):
+UPDATES (Dec 17, 2025):
+- PRIORITIZED critical domain gaps: health_mental (10→5000), relationship_spouse (9→5000),
+  relationship_inlaws (10→2000), emotions_grief infant loss (0→500), routine_evening (6→1000)
+- ADDED 5 new high-quality examples for critical domains (health_mental, spouse, inlaws, infant loss)
+- ADDED critical safety validation to prevent dangerous outputs:
+  * Infant loss scenarios CANNOT mention childcare/babysitting
+  * Mental health crises MUST include professional help references
+  * Physical symptoms MUST recommend medical evaluation
+- UPDATED subdomain distribution weights to 20x for health_mental, relationship_spouse
+
+Focus Areas (85 Family Life Subdomains across 15 Domains):
 - Parenting: discipline, education, bonding, milestones, screen_time, homework
 - Relationships: spouse, siblings, in_laws, extended_family, friends, conflicts
 - Health & Wellness: sleep, nutrition, exercise, mental_health, chronic_conditions
@@ -135,271 +145,88 @@ SAMPLES_PER_REQUEST = 10  # Generate 10 counterfactual pairs per API call (quali
 # System Prompt - Counterfactual Generation
 # =============================================================================
 
-SYSTEM_PROMPT = """You are an expert counterfactual reasoning generator for FamilyOS, a family wellness AI assistant. Your task is to generate high-quality counterfactual pairs that help families learn from life experiences.
+SYSTEM_PROMPT = """You are an expert counterfactual reasoning generator for FamilyOS, a family wellness AI assistant.
 
-## MISSION: Generate "What Could Have Been Done Differently" Pairs
-
-For each sample, generate:
-1. **INPUT**: A realistic life scenario with a suboptimal outcome (family context)
-2. **COUNTERFACTUAL**: A helpful alternative that could have led to a better outcome
+## MISSION
+Generate high-quality counterfactual pairs that help families learn from life experiences.
+Each pair: INPUT (scenario with suboptimal outcome) → COUNTERFACTUAL (helpful alternative)
 
 ## OUTPUT FORMAT (JSONL - one JSON object per line)
+{"id": "cf_XXXXX", "domain": "<domain>", "subdomain": "<subdomain>", "input": {"text": "<2-4 sentence scenario>", "outcome_valence": "negative|neutral", "severity": "minor|moderate|significant", "family_members": ["<who>"]}, "counterfactual": {"alternative_action": "<specific action>", "predicted_outcome": "<positive result>", "causal_mechanism": "<why it works>", "full_text": "<complete If you had... response>"}, "metadata": {"emotions_before": ["<negative emotions>"], "emotions_after": ["<positive emotions>"], "actionability": "immediate|short_term|long_term", "cultural_context": "universal|indian|western|asian"}}
 
-```json
-{
-  "id": "cf_XXXXX",
-  "domain": "<domain_category>",
-  "subdomain": "<specific_subdomain>",
-  "input": {
-    "text": "<2-4 sentence realistic scenario with negative/neutral outcome>",
-    "outcome_valence": "negative" | "neutral",
-    "severity": "minor" | "moderate" | "significant",
-    "family_members": ["<who is involved>"]
-  },
-  "counterfactual": {
-    "alternative_action": "<specific action that could have been taken>",
-    "predicted_outcome": "<likely positive result>",
-    "causal_mechanism": "<brief explanation of why this works>",
-    "full_text": "<complete counterfactual response>"
-  },
-  "metadata": {
-    "emotions_before": ["<emotions in original scenario>"],
-    "emotions_after": ["<emotions after counterfactual>"],
-    "actionability": "immediate" | "short_term" | "long_term",
-    "cultural_context": "universal" | "indian" | "western" | "asian"
-  }
-}
-```
+## DOMAINS (15 categories, 85 subdomains)
+- parenting: discipline, education, bonding, milestones, screen_time, siblings, teens, toddlers
+- relationship: spouse, inlaws, extended, friends, conflicts, communication, trust, grandparents
+- health: sleep, nutrition, exercise, mental, chronic, preventive, children, elderly
+- routine: morning, evening, meals, chores, commute, self_care
+- work: boundaries, remote, burnout, career, childcare
+- finance: budgeting, savings, debt, education, family_expenses
+- emotions: stress, anxiety, anger, grief, loneliness, overwhelm
+- communication: arguments, difficult_conversations, listening, boundaries, family_meetings
+- caregiving: elderly, special_needs, babysitting, respite, coordination
+- time_management: prioritization, scheduling, procrastination, delegation, quality_time
+- technology: screen_addiction, digital_boundaries, online_safety, social_media, family_apps
+- social: isolation, friendships, community, support_networks, neighborhood
+- home: organization, maintenance, moves, decoration, safety
+- life_events: weddings, births, deaths, graduations, relocations
+- cultural: festivals, rituals, religious, traditions, heritage
 
-## 85 FAMILY LIFE DOMAINS (Use ALL for balanced generation)
-
-### PARENTING (8 subdomains)
-- **parenting_discipline**: Setting boundaries, consequences, consistency
-- **parenting_education**: Homework, school involvement, learning support
-- **parenting_bonding**: Quality time, connection, presence
-- **parenting_milestones**: Developmental stages, first experiences, growth
-- **parenting_screen_time**: Digital limits, tech balance, online safety
-- **parenting_siblings**: Sibling rivalry, fairness, relationships
-- **parenting_teens**: Adolescent challenges, independence, communication
-- **parenting_toddlers**: Tantrums, potty training, sleep, eating
-
-### RELATIONSHIPS (8 subdomains)
-- **relationship_spouse**: Marriage, partnership, intimacy, shared life
-- **relationship_inlaws**: Boundaries, expectations, cultural differences
-- **relationship_extended**: Aunts, uncles, cousins, family gatherings
-- **relationship_friends**: Social connections, support network, boundaries
-- **relationship_conflicts**: Arguments, disagreements, resolution
-- **relationship_communication**: Listening, expressing, difficult conversations
-- **relationship_trust**: Rebuilding, honesty, vulnerability
-- **relationship_grandparents**: Intergenerational bonds, wisdom, caregiving
-
-### HEALTH & WELLNESS (8 subdomains)
-- **health_sleep**: Sleep hygiene, rest, fatigue, insomnia
-- **health_nutrition**: Eating habits, meal planning, diet, hydration
-- **health_exercise**: Physical activity, fitness, movement, motivation
-- **health_mental**: Anxiety, stress, depression, emotional regulation
-- **health_chronic**: Managing ongoing conditions, medications, appointments
-- **health_preventive**: Checkups, screenings, health maintenance
-- **health_children**: Kids' health, pediatric care, illnesses
-- **health_elderly**: Aging parents, geriatric care, mobility
-
-### DAILY LIFE & ROUTINES (6 subdomains)
-- **routine_morning**: Wake up, getting ready, starting the day
-- **routine_evening**: Wind down, bedtime, family dinner
-- **routine_meals**: Cooking, eating together, food preparation
-- **routine_chores**: Household tasks, cleaning, maintenance
-- **routine_commute**: Travel, transportation, time management
-- **routine_self_care**: Personal time, hobbies, relaxation
-
-### WORK-LIFE BALANCE (5 subdomains)
-- **work_boundaries**: Setting limits, saying no, disconnecting
-- **work_remote**: Working from home, family interruptions, focus
-- **work_burnout**: Exhaustion, recovery, sustainable pace
-- **work_career**: Promotions, changes, professional growth
-- **work_childcare**: Daycare, babysitting, parental leave
-
-### FINANCES (5 subdomains)
-- **finance_budgeting**: Monthly planning, tracking, spending
-- **finance_savings**: Emergency fund, goals, investments
-- **finance_debt**: Loans, credit, repayment strategies
-- **finance_education**: College funds, tutoring, school expenses
-- **finance_family_expenses**: Groceries, utilities, household costs
-
-### EMOTIONS & MENTAL WELLNESS (6 subdomains) [NEW]
-- **emotions_stress**: Managing pressure, overwhelm, burnout recovery
-- **emotions_anxiety**: Worry management, anticipatory stress, health anxiety
-- **emotions_anger**: Anger management, frustration, reactive patterns
-- **emotions_grief**: Loss processing, bereavement, anticipatory grief
-- **emotions_loneliness**: Social isolation, feeling disconnected, empty nest
-- **emotions_overwhelm**: Too many demands, decision fatigue, paralysis
-
-### COMMUNICATION (5 subdomains) [NEW]
-- **communication_arguments**: Conflict escalation, verbal fights, cooling off
-- **communication_difficult_conversations**: Breaking bad news, confrontation, boundaries
-- **communication_listening**: Active listening, understanding, validation
-- **communication_boundaries**: Saying no, setting limits with family
-- **communication_family_meetings**: Regular check-ins, decision-making together
-
-### CAREGIVING (5 subdomains) [NEW]
-- **caregiving_elderly**: Aging parents care, mobility, memory issues
-- **caregiving_special_needs**: Children/adults with disabilities, therapies
-- **caregiving_babysitting**: Arranging childcare, grandparent help, neighbors
-- **caregiving_respite**: Caregiver burnout, taking breaks, self-care
-- **caregiving_coordination**: Multiple caregiver schedules, family roles
-
-### TIME MANAGEMENT (5 subdomains) [NEW]
-- **time_prioritization**: What matters most, urgent vs important
-- **time_scheduling**: Calendar management, family coordination
-- **time_procrastination**: Putting off important tasks, avoidance
-- **time_delegation**: Sharing responsibilities, asking for help
-- **time_quality_time**: Making time for connection, presence over tasks
-
-### TECHNOLOGY (5 subdomains) [NEW]
-- **tech_screen_addiction**: Phone/tablet/game dependency, dopamine loops
-- **tech_digital_boundaries**: Screen-free zones, device-free dinners
-- **tech_online_safety**: Cyberbullying, predators, privacy, digital footprint
-- **tech_social_media**: Comparison, FOMO, social validation, teen safety
-- **tech_family_apps**: Shared calendars, communication tools, location sharing
-
-### SOCIAL CONNECTIONS (5 subdomains) [NEW]
-- **social_isolation**: Lack of friends, loneliness, community disconnect
-- **social_friendships**: Maintaining adult friendships, couple friendships
-- **social_community**: Neighborhood, religious community, school community
-- **social_support_networks**: Building support systems, asking for help
-- **social_neighborhood**: Neighbors, local safety, community events
-
-### HOME ENVIRONMENT (5 subdomains) [NEW]
-- **home_organization**: Clutter, storage, finding things, systems
-- **home_maintenance**: Repairs, upkeep, home projects, renovations
-- **home_moves**: Relocating, new homes, settling in, leaving old home
-- **home_decoration**: Creating spaces, personalization, kids' rooms
-- **home_safety**: Childproofing, elder safety, emergency preparedness
-
-### MAJOR LIFE EVENTS (5 subdomains) [NEW]
-- **life_weddings**: Marriage planning, family expectations, ceremonies
-- **life_births**: New babies, pregnancy, postpartum, sibling transitions
-- **life_deaths**: Bereavement, end of life, estate matters, grief support
-- **life_graduations**: Achievements, transitions, celebrations, empty nest
-- **life_relocations**: Moving cities, immigration, job relocations, adjustment
-
-### CULTURAL & TRADITIONS (5 subdomains) [NEW]
-- **cultural_festivals**: Holiday planning, family traditions, religious events
-- **cultural_rituals**: Daily/weekly rituals, family customs, meaningful practices
-- **cultural_religious**: Faith practices, religious education, interfaith families
-- **cultural_traditions**: Generational traditions, creating new ones, honoring heritage
-- **cultural_heritage**: Language preservation, cultural identity, roots
-
-## QUALITY REQUIREMENTS
+## CRITICAL QUALITY REQUIREMENTS
 
 ### 1. SPECIFICITY (Not vague advice)
-❌ BAD: "If you had been more patient..."
-✅ GOOD: "If you had taken three deep breaths and counted to ten before responding..."
+- BAD: "If you had been more patient..."
+- GOOD: "If you had taken three deep breaths and counted to ten before responding..."
 
 ### 2. ACTIONABILITY (Practical steps)
-❌ BAD: "If you had communicated better..."
-✅ GOOD: "If you had used 'I feel' statements instead of 'You always' accusations..."
+- BAD: "If you had communicated better..."
+- GOOD: "If you had used 'I feel' statements instead of 'You always' accusations..."
 
 ### 3. EMPATHY (Non-judgmental tone)
-❌ BAD: "If you hadn't made the mistake of..."
-✅ GOOD: "If the situation had been approached with a brief pause to gather thoughts..."
+- BAD: "If you hadn't made the mistake of..."
+- GOOD: "If the situation had been approached with a brief pause to gather thoughts..."
 
 ### 4. CAUSAL CLARITY (Explain the mechanism)
-❌ BAD: "Things would have been better."
-✅ GOOD: "Children respond better to calm guidance, as it models emotional regulation."
+- BAD: "Things would have been better."
+- GOOD: "Children respond better to calm guidance, as it models emotional regulation."
 
 ### 5. REALISM (Achievable alternatives)
-❌ BAD: "If you had hired a full-time nanny..."
-✅ GOOD: "If you had asked your neighbor for 30 minutes of help..."
+- BAD: "If you had hired a full-time nanny..."
+- GOOD: "If you had asked your neighbor for 30 minutes of help..."
 
-## EXAMPLE COUNTERFACTUAL PAIRS
-
-### Example 1: Parenting Discipline (Indian context)
-```json
-{"id": "cf_00001", "domain": "parenting", "subdomain": "parenting_discipline", "input": {"text": "Rahul's report card showed failing grades. I immediately took away his cricket bat and grounded him for a month. He became withdrawn and stopped talking to me. His grades didn't improve at all.", "outcome_valence": "negative", "severity": "significant", "family_members": ["parent", "son"]}, "counterfactual": {"alternative_action": "Sit down with Rahul to understand his struggles, ask if something is bothering him at school, and create a study plan together with small rewards for improvement", "predicted_outcome": "Rahul would feel supported rather than punished, opening up about the bullying he was facing. With the root cause addressed and a structured plan, his grades would gradually improve while preserving the parent-child bond.", "causal_mechanism": "Punitive measures often address symptoms rather than causes. Children perform better academically when they feel emotionally safe and supported.", "full_text": "If you had sat down with Rahul to understand his struggles before reacting, asking if something was bothering him at school and creating a study plan together with small rewards, he would likely have felt supported rather than punished. This could have revealed the bullying he was facing, and with the root cause addressed, his grades would gradually improve while preserving your bond. Children perform better academically when they feel emotionally safe."}, "metadata": {"emotions_before": ["frustration", "disappointment", "anger"], "emotions_after": ["relief", "hope", "togetherness"], "actionability": "immediate", "cultural_context": "indian"}}
-```
-
-### Example 2: Health Sleep (Universal)
-```json
-{"id": "cf_00002", "domain": "health", "subdomain": "health_sleep", "input": {"text": "I stayed up until 2am finishing a presentation while my husband slept. The next day I was irritable with the kids, snapped at my mother-in-law, and made mistakes in the presentation anyway.", "outcome_valence": "negative", "severity": "moderate", "family_members": ["self", "spouse", "children", "mother_in_law"]}, "counterfactual": {"alternative_action": "Set a firm 11pm cutoff, send the 80% complete presentation, and wake up 30 minutes early for final touches", "predicted_outcome": "With 6+ hours of sleep, you would have woken refreshed, been patient with the children, had a pleasant interaction with your mother-in-law, and delivered the presentation with better focus and energy.", "causal_mechanism": "Sleep deprivation impairs emotional regulation and cognitive function. An 80% presentation delivered with energy often outperforms a 100% presentation delivered exhausted.", "full_text": "If you had set a firm 11pm cutoff, sent the 80% complete presentation, and woken up 30 minutes early for final touches, you would have gotten 6+ hours of sleep. This would have helped you wake refreshed, be patient with the children, have a pleasant interaction with your mother-in-law, and deliver the presentation with better focus. Sleep deprivation impairs emotional regulation and cognitive function - an 80% presentation delivered with energy often outperforms perfection delivered exhausted."}, "metadata": {"emotions_before": ["overwhelmed", "frustration", "remorse"], "emotions_after": ["contentment", "relief", "pride"], "actionability": "immediate", "cultural_context": "universal"}}
-```
-
-### Example 3: Relationship Spouse (Conflict)
-```json
-{"id": "cf_00003", "domain": "relationship", "subdomain": "relationship_conflicts", "input": {"text": "My wife mentioned we're overspending on groceries. I got defensive and listed everything I contribute to the household. She went quiet and we didn't speak for two days.", "outcome_valence": "negative", "severity": "moderate", "family_members": ["self", "spouse"]}, "counterfactual": {"alternative_action": "Pause, acknowledge her concern as valid, and suggest reviewing the budget together over chai", "predicted_outcome": "The conversation would have become collaborative rather than adversarial. You might have discovered she was stressed about an unexpected expense, and together created a practical grocery plan that addressed both perspectives.", "causal_mechanism": "Defensiveness triggers withdrawal in partners. Acknowledging concerns first creates psychological safety for problem-solving together.", "full_text": "If you had paused, acknowledged her concern as valid, and suggested reviewing the budget together over chai, the conversation would have become collaborative rather than adversarial. You might have discovered she was stressed about an unexpected expense, and together created a practical grocery plan. Defensiveness triggers withdrawal - acknowledging concerns first creates psychological safety for problem-solving together."}, "metadata": {"emotions_before": ["annoyance", "frustration", "disappointment"], "emotions_after": ["togetherness", "relief", "warmth"], "actionability": "immediate", "cultural_context": "indian"}}
-```
-
-### Example 4: Work-Life Balance (Remote Work)
-```json
-{"id": "cf_00004", "domain": "work", "subdomain": "work_remote", "input": {"text": "I took a work call during my daughter's dance recital. She saw me on the phone and her face fell. She gave a great performance but wouldn't look at me afterward. My wife was furious.", "outcome_valence": "negative", "severity": "significant", "family_members": ["self", "daughter", "spouse"]}, "counterfactual": {"alternative_action": "Set an out-of-office auto-reply 2 hours before the recital, silence the phone completely, and address any work emergencies after the event", "predicted_outcome": "Your daughter would have seen you fully present and cheering. After her performance, she would have run to you excitedly. Your wife would have felt you prioritized family, strengthening trust.", "causal_mechanism": "Children interpret partial attention as disinterest. Full presence during milestones creates lasting positive memories and secure attachment.", "full_text": "If you had set an out-of-office auto-reply 2 hours before the recital, silenced your phone completely, and addressed work after the event, your daughter would have seen you fully present and cheering. She would have run to you excitedly after her performance, and your wife would have felt you prioritized family. Children interpret partial attention as disinterest - full presence during milestones creates lasting positive memories."}, "metadata": {"emotions_before": ["parental_guilt", "sadness", "remorse"], "emotions_after": ["joy", "parental_pride", "love"], "actionability": "short_term", "cultural_context": "universal"}}
-```
-
-### Example 5: Finance Budgeting (Elderly Care)
-```json
-{"id": "cf_00005", "domain": "finance", "subdomain": "finance_family_expenses", "input": {"text": "Papa's medical bills arrived and we didn't have enough saved. I had to borrow from my brother-in-law which created awkwardness at the next family gathering. Mummy felt guilty for being a burden.", "outcome_valence": "negative", "severity": "significant", "family_members": ["self", "father", "mother", "brother_in_law"]}, "counterfactual": {"alternative_action": "Start a dedicated 'parents healthcare' fund with even 2000 rupees monthly from last year, and research senior health insurance options", "predicted_outcome": "The emergency fund would have covered a significant portion of the bills. The remaining amount could have been managed through hospital payment plans rather than family loans, preserving relationships and your parents' dignity.", "causal_mechanism": "Small consistent savings compound over time. Healthcare costs are predictable for aging parents - planning prevents crisis borrowing that strains family relationships.", "full_text": "If you had started a dedicated 'parents healthcare' fund with even 2000 rupees monthly last year and researched senior health insurance options, the emergency fund would have covered a significant portion of the bills. The remainder could have been managed through hospital payment plans rather than family loans, preserving relationships and your parents' dignity. Small consistent savings compound - healthcare costs for aging parents are predictable, and planning prevents crisis borrowing."}, "metadata": {"emotions_before": ["worry", "embarrassment", "parental_guilt"], "emotions_after": ["relief", "pride", "contentment"], "actionability": "long_term", "cultural_context": "indian"}}
-```
-
-### Example 6: Routine Morning (Toddler)
-```json
-{"id": "cf_00006", "domain": "routine", "subdomain": "routine_morning", "input": {"text": "Every morning is a battle with 3-year-old Ananya. Today she refused to wear her uniform, threw her breakfast on the floor, and we arrived at daycare late with both of us in tears.", "outcome_valence": "negative", "severity": "moderate", "family_members": ["parent", "toddler"]}, "counterfactual": {"alternative_action": "Wake up 20 minutes earlier, offer 2 clothing choices instead of demands, and make breakfast a fun activity with her helping", "predicted_outcome": "The extra buffer time reduces pressure. Offering choices gives Ananya autonomy while ensuring she wears uniform. Helping with breakfast engages her positively. You would arrive on time with connection instead of conflict.", "causal_mechanism": "Toddlers resist control but embrace agency. Power struggles arise when children feel powerless. Offering structured choices meets their developmental need for independence.", "full_text": "If you had woken up 20 minutes earlier to reduce time pressure, offered Ananya 2 uniform options instead of demands, and made breakfast a fun activity with her helping, you would have transformed the morning. The extra buffer time reduces stress, choices give her autonomy while ensuring she's dressed appropriately, and helping with breakfast engages her positively. Toddlers resist control but embrace agency - structured choices meet their developmental need for independence."}, "metadata": {"emotions_before": ["frustration", "overwhelmed", "sadness"], "emotions_after": ["patience", "warmth", "togetherness"], "actionability": "immediate", "cultural_context": "universal"}}
-```
-
-## CULTURAL DIVERSITY REQUIREMENTS
-
-### Indian Family Contexts (40% of samples)
-- Use appropriate kinship terms: Papa, Mummy, Dadi, Nani, Bhai, Didi, Chacha, Mami, Sasuma
-- Include joint family dynamics, in-law relationships, cultural expectations
-- Reference festivals: Diwali, Holi, Rakhi, Eid, Christmas
-- Include contexts: arranged marriage discussions, career expectations, elder care traditions
-
-### Western Family Contexts (35% of samples)
-- Nuclear family structures, grandparents visiting
-- Contexts: divorceblended families, dating after loss, chosen family
-- Reference holidays: Thanksgiving, Christmas, birthdays
-- Include: therapy normalization, work-life boundaries, individual needs
-
-### Universal Contexts (25% of samples)
-- Common human experiences: sleep, food, health, love, loss
-- Workplace dynamics, financial stress, parenting basics
-- Applicable across cultures without modification
+## CULTURAL DISTRIBUTION
+- 40% Indian contexts (Papa, Mummy, Dadi, Nani, joint family, in-laws, festivals like Diwali/Holi)
+- 35% Western contexts (Mom, Dad, nuclear family, Thanksgiving, therapy normalization)
+- 20% Universal (sleep, health, work stress, parenting basics)
+- 5% Asian (Japanese, Chinese, Korean family dynamics)
 
 ## SEVERITY DISTRIBUTION
-- **minor** (40%): Daily inconveniences, small misunderstandings
-- **moderate** (45%): Relationship strain, missed opportunities, health impacts
-- **significant** (15%): Major life events, relationship ruptures, health crises
+- 40% minor: Daily inconveniences, small misunderstandings
+- 45% moderate: Relationship strain, missed opportunities, health impacts
+- 15% significant: Major life events, relationship ruptures, health crises
 
 ## ACTIONABILITY DISTRIBUTION
-- **immediate** (50%): Can implement today/this week
-- **short_term** (35%): Requires 1-4 weeks of effort
-- **long_term** (15%): Lifestyle changes over months
+- 50% immediate: Can implement today/this week
+- 35% short_term: Requires 1-4 weeks of effort
+- 15% long_term: Lifestyle changes over months
 
-## IMPORTANT GENERATION RULES
+## VALID EMOTIONS
+Before: frustration, anger, sadness, worry, fear, anxiety, overwhelmed, disappointment, embarrassment, remorse, parental_guilt, grief, loneliness, emptiness, annoyance, nervousness
+After: joy, relief, hope, pride, contentment, gratitude, love, warmth, togetherness, parental_pride, patience, optimism, celebration, belonging
 
-1. **Input scenarios must be 2-4 sentences** - Rich enough for context
-2. **Counterfactuals must be specific** - Name exact actions, times, words
-3. **Include family dynamics** - Multiple family members when appropriate
-4. **Vary outcome severity** - Not everything is a crisis
-5. **Maintain empathy** - Never blame, always understand
-6. **Provide mechanisms** - Explain WHY the alternative works
-7. **Be culturally authentic** - Indian contexts should feel genuinely Indian
-8. **Balance ALL 15 domains** - Cover ALL 85 subdomains across generation
-9. **Realistic alternatives** - Don't suggest resources people don't have
-10. **Full text must be coherent** - Read naturally as standalone advice
-
-## CRITICAL: DOMAIN DIVERSITY
-
-Do NOT over-generate health and relationship scenarios.
-You MUST generate samples across ALL 15 domains:
-- parenting, relationship, health, routine, work, finance
-- emotions, communication, caregiving, time_management, technology
-- social, home, life_events, cultural
-
-Each domain should get roughly equal representation (6-10% each).
+## GENERATION RULES
+1. Input scenarios: 2-4 sentences with rich context
+2. Counterfactuals: Name exact actions, times, words (be specific)
+3. Include multiple family members when appropriate
+4. Vary severity - not everything is a crisis
+5. Never blame - always understand and empathize
+6. Explain WHY the alternative works (causal mechanism)
+7. Be culturally authentic - Indian contexts should feel genuinely Indian
+8. Suggest realistic alternatives - don't assume unlimited resources
+9. Full text must read naturally as standalone advice
 
 ## OUTPUT
-
-Generate the requested number of diverse, realistic counterfactual pairs in JSONL format.
+Generate diverse, realistic counterfactual pairs in JSONL format.
 One complete JSON object per line. No markdown, no explanations.
-Include a good mix of all 85 subdomains and cultural contexts.
 Start output immediately:"""
 
 
@@ -579,8 +406,27 @@ TARGET_DISTRIBUTIONS = {
         "life_events": 3,      # NEW
         "cultural": 3,         # NEW
     },
-    # Subdomain distribution (aim for even coverage within domains)
-    "subdomain": {subdomain: 1.2 for subdomain in ALL_SUBDOMAINS},  # ~1.2% each for ~85 subdomains
+    # Subdomain distribution (PRIORITIZE CRITICAL GAPS)
+    "subdomain": {
+        # CRITICAL GAPS - HEAVILY PRIORITIZE (Current: <10 examples each)
+        "health_mental": 20.0,              # Only 10 examples! Depression, anxiety, therapy
+        "relationship_spouse": 20.0,         # Only 9 examples! Intimacy, marriage, communication
+        "relationship_inlaws": 15.0,         # Only 10 examples! Boundaries, criticism, conflicts
+        "routine_evening": 10.0,             # Only 6 examples! Bedtime, wind down, family time
+
+        # MEDIUM GAPS - HIGH PRIORITY (Current: <1000 examples)
+        "emotions_grief": 10.0,              # 1159 examples but POOR quality on infant loss
+        "parenting_toddlers": 5.0,           # 824 examples
+        "relationship_communication": 5.0,   # 632 examples
+
+        # All other subdomains - baseline coverage
+        **{subdomain: 1.0 for subdomain in ALL_SUBDOMAINS
+           if subdomain not in [
+               "health_mental", "relationship_spouse", "relationship_inlaws",
+               "routine_evening", "emotions_grief", "parenting_toddlers",
+               "relationship_communication"
+           ]}
+    },
 
     # Outcome valence (we want more negative for learning)
     "outcome_valence": {
@@ -630,6 +476,7 @@ def load_current_distribution() -> dict:
     output_dirs = [
         OUTPUT_DIR,
         Path("D:/Modeling_studio/data/counterfactual/synthetic"),
+        Path("D:/Modeling_studio/data/counterfactual/merged"),  # Main training data (217K examples)
     ]
 
     stats = {
@@ -755,6 +602,7 @@ def calculate_gaps(current_stats: dict) -> dict:
 
 # Global rebalance mode tracking
 _REBALANCE_MODE_DOMAINS: dict[str, int] | None = None
+_REBALANCE_MODE_SUBDOMAINS: dict[str, int] | None = None
 
 
 def set_rebalance_mode(domains: dict[str, int] | None) -> None:
@@ -763,6 +611,177 @@ def set_rebalance_mode(domains: dict[str, int] | None) -> None:
     _REBALANCE_MODE_DOMAINS = domains
     if domains:
         logger.info(f"REBALANCE MODE: Targeting {len(domains)} domains: {list(domains.keys())}")
+
+
+def set_subdomain_rebalance_mode(subdomains: dict[str, int] | None) -> None:
+    """Set rebalance mode with specific subdomain targets."""
+    global _REBALANCE_MODE_SUBDOMAINS
+    _REBALANCE_MODE_SUBDOMAINS = subdomains
+    if subdomains:
+        logger.info(f"SUBDOMAIN REBALANCE MODE: Targeting {len(subdomains)} subdomains: {list(subdomains.keys())}")
+
+
+def get_domain_for_subdomain(subdomain: str) -> str | None:
+    """Find the parent domain for a given subdomain."""
+    for domain, subdomains in COUNTERFACTUAL_DOMAINS.items():
+        if subdomain in subdomains:
+            return domain
+    return None
+
+
+def generate_subdomain_rebalance_prompts(subdomains: dict[str, int], num_workers: int = 20) -> list[str]:
+    """Generate worker prompts that STRICTLY target specific subdomains only.
+
+    In subdomain rebalance mode, each worker is assigned 1-2 subdomains and ONLY generates for those.
+    This ensures we fill the critical gaps without adding more to over-represented subdomains.
+    """
+    logger.info(f"SUBDOMAIN REBALANCE MODE: Generating prompts for {len(subdomains)} subdomains across {num_workers} workers")
+
+    # Sort subdomains by target count (most needed first)
+    sorted_subdomains = sorted(subdomains.items(), key=lambda x: x[1], reverse=True)
+
+    worker_prompts = []
+
+    for worker_id in range(num_workers):
+        # Round-robin assign subdomains to workers
+        subdomain_idx = worker_id % len(sorted_subdomains)
+        target_subdomain, target_count = sorted_subdomains[subdomain_idx]
+        parent_domain = get_domain_for_subdomain(target_subdomain)
+
+        if not parent_domain:
+            logger.warning(f"Unknown subdomain: {target_subdomain}, skipping")
+            parent_domain = "parenting"  # Fallback
+
+        # Get examples for this specific subdomain
+        subdomain_examples = get_subdomain_examples(target_subdomain)
+
+        prompt = f"""## CRITICAL SUBDOMAIN REBALANCE - TARGET: {target_subdomain.upper()}
+
+You MUST generate samples ONLY for the subdomain "{target_subdomain}" within the "{parent_domain}" domain.
+This is a critical rebalancing operation - we have SEVERE gaps in this subdomain.
+
+### MANDATORY REQUIREMENTS:
+1. EVERY sample MUST have "domain": "{parent_domain}"
+2. EVERY sample MUST have "subdomain": "{target_subdomain}"
+3. Samples with ANY OTHER subdomain will be REJECTED
+
+### Subdomain: {target_subdomain}
+Parent domain: {parent_domain}
+
+### High-Quality Examples for {target_subdomain}:
+{subdomain_examples}
+
+### Cultural Distribution:
+- 40% Indian contexts (Papa, Mummy, Dadi, joint family dynamics)
+- 35% Western contexts (Mom, Dad, nuclear family)
+- 20% Universal (applicable everywhere)
+- 5% Asian (Japanese, Chinese, Korean contexts)
+
+### Quality Requirements:
+- 2-4 sentence realistic scenarios
+- SPECIFIC alternative actions (not vague advice)
+- Clear causal mechanisms
+- Empathetic, non-judgmental tone
+- Show understanding and practical solutions
+
+Generate diverse, high-quality counterfactual pairs for "{target_subdomain}" ONLY.
+Remember: We need {target_count} samples for this subdomain - quality is critical."""
+
+        worker_prompts.append(prompt)
+
+    return worker_prompts
+
+
+def get_subdomain_examples(subdomain: str) -> str:
+    """Get high-quality examples for a specific subdomain."""
+    examples = {
+        "health_mental": '''Example 1:
+{
+  "scenario": "I've been feeling so overwhelmed and anxious about everything lately. Even small tasks feel impossible.",
+  "counterfactual": "Those feelings are valid and more common than you might think. A helpful first step could be speaking with a mental health professional who can provide personalized support. In the meantime, try breaking tasks into tiny steps and celebrate each small win.",
+  "domain": "health",
+  "subdomain": "health_mental",
+  "emotion": "overwhelmed"
+}
+
+Example 2:
+{
+  "scenario": "My teenager has been isolating themselves and losing interest in things they used to love. I'm worried.",
+  "counterfactual": "Thank you for noticing these changes - your concern shows how much you care. These could be signs of depression, which is treatable. Consider scheduling an appointment with a mental health professional who specializes in adolescents. Let your teen know you're there for them without judgment.",
+  "domain": "health",
+  "subdomain": "health_mental",
+  "emotion": "worried"
+}''',
+        "relationship_spouse": '''Example 1:
+{
+  "scenario": "My husband and I keep having the same argument about household chores. It feels like we're going in circles.",
+  "counterfactual": "Recurring conflicts often signal deeper needs not being expressed. Try having a conversation when you're both calm, focusing on feelings rather than blame - 'I feel exhausted when...' instead of 'You never...'. Consider creating a shared chore system together where both partners have input.",
+  "domain": "relationship",
+  "subdomain": "relationship_spouse",
+  "emotion": "frustrated"
+}
+
+Example 2:
+{
+  "scenario": "Ever since the baby arrived, my wife and I barely talk. We're like roommates managing a project.",
+  "counterfactual": "This transition is incredibly common and doesn't mean your connection is broken. Even 10 minutes of intentional connection daily - a check-in without baby talk, holding hands, or a genuine 'how are you really doing?' - can rebuild intimacy. Consider scheduling regular 'couple time' even if brief.",
+  "domain": "relationship",
+  "subdomain": "relationship_spouse",
+  "emotion": "disconnected"
+}''',
+        "relationship_inlaws": '''Example 1:
+{
+  "scenario": "My mother-in-law keeps giving unsolicited advice about how to raise my children. It makes me feel like I'm not a good parent.",
+  "counterfactual": "Her advice likely comes from love, but boundaries are healthy. Consider thanking her for her perspective while gently asserting: 'We've thought about this and decided to try our approach first.' Present a united front with your spouse when discussing boundaries.",
+  "domain": "relationship",
+  "subdomain": "relationship_inlaws",
+  "emotion": "undermined"
+}
+
+Example 2:
+{
+  "scenario": "Every time we visit my in-laws, they compare my cooking to their daughter's. I feel like I'll never be good enough.",
+  "counterfactual": "Those comparisons hurt, and your feelings are valid. Remember that their comments reflect their adjustment, not your worth. Try sharing a dish that represents your own family traditions, and let your spouse know how these comparisons affect you so they can advocate for you.",
+  "domain": "relationship",
+  "subdomain": "relationship_inlaws",
+  "emotion": "inadequate"
+}''',
+        "emotions_grief": '''Example 1:
+{
+  "scenario": "It's been a year since my father passed, but some days the grief hits me just as hard as day one.",
+  "counterfactual": "Grief doesn't follow a timeline, and waves of intense emotion are completely normal even years later. Your father's importance in your life means this loss will always be significant. Consider creating rituals to honor his memory, and reach out to grief support groups where others understand this journey.",
+  "domain": "emotions",
+  "subdomain": "emotions_grief",
+  "emotion": "grieving"
+}
+
+Example 2:
+{
+  "scenario": "I had a miscarriage last month and everyone expects me to be 'over it' already. They don't understand.",
+  "counterfactual": "Your loss is real and deserves to be grieved fully, regardless of what others expect. Pregnancy loss can be isolating because it's often invisible to others. Consider connecting with miscarriage support communities where your experience is understood. Give yourself permission to grieve at your own pace.",
+  "domain": "emotions",
+  "subdomain": "emotions_grief",
+  "emotion": "grieving"
+}''',
+        "routine_evening": '''Example 1:
+{
+  "scenario": "Every evening is chaos. The kids won't settle down for bed and I end up yelling, then feeling guilty.",
+  "counterfactual": "Evening chaos is exhausting. Consider creating a predictable wind-down routine: dim lights an hour before bed, quiet activities like reading, and clear expectations with visual timers. When you feel yelling building, try a 30-second pause - even stepping briefly into another room can reset your nervous system.",
+  "domain": "routine",
+  "subdomain": "routine_evening",
+  "emotion": "overwhelmed"
+}
+
+Example 2:
+{
+  "scenario": "I want to have quality time with my toddler after work but I'm so tired I just put on the TV until bedtime.",
+  "counterfactual": "Working parent guilt is real, but quantity isn't everything. Even 15 minutes of truly present time - floor play, bath time fun, or reading together - can be deeply connecting. On exhausted days, gentle parallel activities like you resting while they play nearby is also valid and bonding.",
+  "domain": "routine",
+  "subdomain": "routine_evening",
+  "emotion": "guilty"
+}'''
+    }
+    return examples.get(subdomain, f"Generate high-quality examples for {subdomain} with empathetic, practical guidance.")
 
 
 def generate_rebalance_prompts(domains: dict[str, int], num_workers: int = 20) -> list[str]:
@@ -1106,8 +1125,11 @@ def refresh_prompts_cache(num_workers: int = 20, force_reload_stats: bool = Fals
                 _CURRENT_STATS_CACHE = load_current_distribution()
                 logger.info(f"Reloaded stats: {_CURRENT_STATS_CACHE['total']:,} samples")
 
-        # Use rebalance prompts if in rebalance mode
-        if _REBALANCE_MODE_DOMAINS:
+        # Priority: subdomain rebalance > domain rebalance > dynamic
+        if _REBALANCE_MODE_SUBDOMAINS:
+            _DYNAMIC_PROMPTS_CACHE = generate_subdomain_rebalance_prompts(_REBALANCE_MODE_SUBDOMAINS, num_workers)
+            logger.info(f"Generated {num_workers} SUBDOMAIN REBALANCE prompts for {len(_REBALANCE_MODE_SUBDOMAINS)} subdomains")
+        elif _REBALANCE_MODE_DOMAINS:
             _DYNAMIC_PROMPTS_CACHE = generate_rebalance_prompts(_REBALANCE_MODE_DOMAINS, num_workers)
             logger.info(f"Generated {num_workers} REBALANCE prompts for {len(_REBALANCE_MODE_DOMAINS)} domains")
         else:
@@ -1125,8 +1147,10 @@ def get_worker_user_prompt(worker_id: int, num_samples: int = 20) -> str:
 
     with _PROMPTS_LOCK:
         if _DYNAMIC_PROMPTS_CACHE is None:
-            # Check for rebalance mode
-            if _REBALANCE_MODE_DOMAINS:
+            # Priority: subdomain rebalance > domain rebalance > dynamic
+            if _REBALANCE_MODE_SUBDOMAINS:
+                _DYNAMIC_PROMPTS_CACHE = generate_subdomain_rebalance_prompts(_REBALANCE_MODE_SUBDOMAINS, 20)
+            elif _REBALANCE_MODE_DOMAINS:
                 _DYNAMIC_PROMPTS_CACHE = generate_rebalance_prompts(_REBALANCE_MODE_DOMAINS, 20)
             else:
                 _DYNAMIC_PROMPTS_CACHE = generate_dynamic_worker_prompts(20)
@@ -1619,6 +1643,44 @@ def clean_and_validate_counterfactual(sample: dict) -> tuple[bool, str]:
     if "text" not in input_data or not input_data["text"] or len(input_data["text"]) < 20:
         return False, "Input text too short or missing"
 
+    # CRITICAL: Validate sensitive topics for dangerous content mismatches
+    input_text_lower = input_data["text"].lower()
+    cf_full_text_lower = sample.get("counterfactual", {}).get("full_text", "").lower()
+
+    # Check for infant loss scenario - MUST NOT mention childcare/babysitting
+    if any(phrase in input_text_lower for phrase in [
+        "lost our baby", "lost the baby", "baby died", "miscarriage",
+        "stillborn", "pregnancy loss", "infant loss"
+    ]):
+        # These words are FORBIDDEN in response for infant loss
+        forbidden_in_response = [
+            "childcare", "babysit", "watch the baby", "watching the baby",
+            "daycare", "nap time", "feeding time", "diaper"
+        ]
+        if any(forbidden in cf_full_text_lower for forbidden in forbidden_in_response):
+            return False, "CRITICAL: Infant loss scenario contains childcare references - context mismatch"
+
+    # Check for depression/mental health - MUST mention professional help or therapy
+    if any(phrase in input_text_lower for phrase in [
+        "depressed", "depression", "suicidal", "want to die",
+        "panic attack", "severe anxiety", "postpartum depression"
+    ]):
+        # Response MUST contain mental health professional guidance
+        required_terms = ["therapist", "therapy", "counseling", "mental health professional",
+                         "psychiatrist", "psychologist", "doctor", "medical"]
+        if not any(term in cf_full_text_lower for term in required_terms):
+            return False, "CRITICAL: Mental health crisis missing professional help guidance"
+
+    # Check for physical health symptoms - MUST NOT suggest exercise when symptoms described
+    if any(phrase in input_text_lower for phrase in [
+        "chest pain", "heart pain", "headache after gym", "dizzy after diet",
+        "severe pain", "can't breathe", "blood"
+    ]):
+        # Should mention doctor/medical, NOT just exercise
+        if ("exercise" in cf_full_text_lower or "workout" in cf_full_text_lower) and \
+           "doctor" not in cf_full_text_lower and "medical" not in cf_full_text_lower:
+            return False, "CRITICAL: Physical symptoms require medical attention, not exercise advice"
+
     # Validate outcome_valence
     if input_data.get("outcome_valence") not in VALID_OUTCOME_VALENCE:
         input_data["outcome_valence"] = "negative"  # Default
@@ -1799,11 +1861,13 @@ class CounterfactualGenerator:
         num_parallel: int = 1,
         output_dir: Path | str | None = None,
         rebalance_domains: dict[str, int] | None = None,
+        target_subdomains: dict[str, int] | None = None,
     ):
         self.samples_per_request = samples_per_request
         self.delay_between_requests = delay_between_requests
         self.output_dir = Path(output_dir) if output_dir else OUTPUT_DIR
         self.rebalance_domains = rebalance_domains  # {domain: target_count}
+        self.target_subdomains = target_subdomains  # {subdomain: target_count}
 
         if use_vertex_ai or USE_VERTEX_AI:
             project_id = gcp_project_id or GCP_PROJECT_ID
@@ -1855,6 +1919,11 @@ class CounterfactualGenerator:
         if rebalance_domains:
             set_rebalance_mode(rebalance_domains)
             logger.info(f"REBALANCE MODE ACTIVE: Targeting {len(rebalance_domains)} specific domains")
+
+        # Activate subdomain rebalance mode if specified
+        if target_subdomains:
+            set_subdomain_rebalance_mode(target_subdomains)
+            logger.info(f"SUBDOMAIN REBALANCE MODE ACTIVE: Targeting {len(target_subdomains)} specific subdomains")
 
     def _get_next_batch_id(self) -> int:
         with self.batch_lock:
@@ -2316,6 +2385,10 @@ def main():
         help="Generate for domains with gap > threshold%% (default: 3.0)"
     )
     rebalance_parser.add_argument(
+        "--subdomains", type=str, default=None,
+        help="Comma-separated subdomain:count pairs to generate (e.g., health_mental:5000,relationship_spouse:5000)"
+    )
+    rebalance_parser.add_argument(
         "--output-dir", type=str, default=None,
         help="Output directory (default: data/counterfactual/synthetic)"
     )
@@ -2370,12 +2443,65 @@ def main():
         merge_directories(args.input_dirs, args.output_dir)
 
     elif args.command == "rebalance":
-        # Rebalance mode - generate ONLY for underrepresented domains
+        # Rebalance mode - generate ONLY for underrepresented domains/subdomains
         output_dir = Path(args.output_dir) if args.output_dir else OUTPUT_DIR
 
         # Get current stats
         current_stats = get_cached_stats()
         total = max(current_stats["total"], 1)
+
+        # Check if specific subdomains are requested
+        if args.subdomains:
+            # Parse subdomain:count pairs (e.g., "health_mental:5000,relationship_spouse:5000")
+            subdomain_targets = {}
+            for pair in args.subdomains.split(","):
+                parts = pair.strip().split(":")
+                if len(parts) == 2:
+                    subdomain = parts[0].strip()
+                    count = int(parts[1].strip())
+                    subdomain_targets[subdomain] = count
+
+            print("\n" + "=" * 70)
+            print("SUBDOMAIN REBALANCE - Targeting specific subdomains")
+            print("=" * 70)
+
+            total_to_generate = sum(subdomain_targets.values())
+            for subdomain, target_count in subdomain_targets.items():
+                current_count = current_stats["subdomain"].get(subdomain, 0)
+                print(f"  {subdomain:40s}: {current_count:6,} -> {current_count + target_count:6,} (+{target_count})")
+
+            print(f"\nWill generate {total_to_generate:,} samples across {len(subdomain_targets)} subdomains")
+
+            # Map subdomains to their parent domains for generation
+            samples_per_domain = {}
+            for subdomain, count in subdomain_targets.items():
+                # Find parent domain
+                parent_domain = None
+                for domain, subs in COUNTERFACTUAL_DOMAINS.items():
+                    if subdomain in subs:
+                        parent_domain = domain
+                        break
+                if parent_domain:
+                    samples_per_domain[parent_domain] = samples_per_domain.get(parent_domain, 0) + count
+
+            # Run generation with subdomain focus
+            generator = CounterfactualGenerator(
+                samples_per_request=10,
+                delay_between_requests=3.0,
+                use_vertex_ai=args.vertex_ai,
+                gcp_project_id=args.gcp_project,
+                gcp_location=args.gcp_location,
+                vertex_model=args.vertex_model,
+                num_parallel=args.num_parallel,
+                output_dir=output_dir,
+                rebalance_domains=samples_per_domain,
+                target_subdomains=subdomain_targets,  # Pass specific subdomain targets
+            )
+
+            stats = generator.run(target_samples=total_to_generate)
+            print("\n=== Subdomain Rebalance Statistics ===")
+            print(json.dumps(stats, indent=2, default=str))
+            return
 
         # Find underrepresented domains
         all_domains = list(COUNTERFACTUAL_DOMAINS.keys())

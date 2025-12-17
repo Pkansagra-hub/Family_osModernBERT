@@ -121,7 +121,7 @@ training:
 
   # Training duration
   # GPT-2 converges faster than random-init MoE
-  num_train_epochs: 5           # 5 epochs for thorough fine-tuning
+  num_train_epochs: 7           # 5 epochs for thorough fine-tuning
   max_steps: -1                 # -1 = use epochs
 
   # Batch size - A100 80GB OPTIMIZED
