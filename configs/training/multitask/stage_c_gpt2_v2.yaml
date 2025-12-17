@@ -122,7 +122,7 @@ training:
   tf32: true
 
   save_strategy: "steps"
-  save_steps: 10
+  save_steps: 250
   save_total_limit: 3
   save_safetensors: true
 
