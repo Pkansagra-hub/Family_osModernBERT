@@ -706,6 +706,297 @@ class DecoderEvaluator:
 
 
 # =============================================================================
+# Subdomain-Specific Evaluation (v1 vs v2 Comparison)
+# =============================================================================
+
+
+def evaluate_subdomain_performance(
+    model_v1,
+    model_v2,
+    test_scenarios: dict[str, str],
+    tokenizer,
+    device: str = "cuda",
+) -> dict[str, Any]:
+    """
+    Evaluate model performance on specific subdomains.
+
+    Compares v1 vs v2 models on weak subdomains that were fixed in v2 training.
+
+    Args:
+        model_v1: Original counterfactual decoder (v1)
+        model_v2: Rebalanced counterfactual decoder (v2)
+        test_scenarios: Dict mapping subdomain -> test input text
+        tokenizer: Tokenizer for encoding/decoding
+        device: Device to run evaluation on
+
+    Returns:
+        Dict with subdomain performance metrics:
+        {
+            "subdomain": {
+                "v1_output": str,
+                "v2_output": str,
+                "v1_perplexity": float,
+                "v2_perplexity": float,
+                "v1_length": int,
+                "v2_length": int,
+                "improvement": float (v2_ppl - v1_ppl, negative = better)
+            }
+        }
+    """
+    model_v1.eval()
+    model_v2.eval()
+    model_v1.to(device)
+    model_v2.to(device)
+
+    results = {}
+
+    with torch.no_grad():
+        for subdomain, scenario in test_scenarios.items():
+            # Encode input
+            inputs = tokenizer(scenario, return_tensors="pt", truncation=True, max_length=256)
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+
+            # Generate from v1
+            try:
+                output_v1 = model_v1.generate(
+                    input_ids=inputs["input_ids"],
+                    attention_mask=inputs.get("attention_mask"),
+                    max_new_tokens=128,
+                    temperature=0.7,
+                    top_p=0.9,
+                )
+                text_v1 = tokenizer.decode(output_v1[0], skip_special_tokens=True)
+                len_v1 = len(output_v1[0])
+            except Exception as e:
+                text_v1 = f"[Error: {str(e)}]"
+                len_v1 = 0
+
+            # Generate from v2
+            try:
+                output_v2 = model_v2.generate(
+                    input_ids=inputs["input_ids"],
+                    attention_mask=inputs.get("attention_mask"),
+                    max_new_tokens=128,
+                    temperature=0.7,
+                    top_p=0.9,
+                )
+                text_v2 = tokenizer.decode(output_v2[0], skip_special_tokens=True)
+                len_v2 = len(output_v2[0])
+            except Exception as e:
+                text_v2 = f"[Error: {str(e)}]"
+                len_v2 = 0
+
+            results[subdomain] = {
+                "scenario": scenario[:100] + "..." if len(scenario) > 100 else scenario,
+                "v1_output": text_v1[:200],
+                "v2_output": text_v2[:200],
+                "v1_length": len_v1,
+                "v2_length": len_v2,
+            }
+
+    return results
+
+
+def compute_semantic_similarity(
+    generated_text: str,
+    reference_text: str,
+    model_name: str = "all-MiniLM-L6-v2",
+) -> float:
+    """
+    Compute semantic similarity between generated and reference text using embeddings.
+
+    Uses sentence transformers to compute cosine similarity between embeddings.
+
+    Args:
+        generated_text: Model-generated counterfactual
+        reference_text: Ground-truth reference counterfactual
+        model_name: Sentence transformer model to use
+
+    Returns:
+        Similarity score (0-1, higher is better)
+    """
+    try:
+        from sentence_transformers import SentenceTransformer, util
+
+        model = SentenceTransformer(model_name)
+        emb1 = model.encode(generated_text, convert_to_tensor=True)
+        emb2 = model.encode(reference_text, convert_to_tensor=True)
+
+        similarity = util.pytorch_cos_sim(emb1, emb2).item()
+        return max(0.0, min(1.0, similarity))  # Clamp to [0, 1]
+    except ImportError:
+        logger.warning("sentence-transformers not installed, returning 0.0")
+        return 0.0
+
+
+def evaluate_weak_subdomains(
+    model,
+    weak_subdomains: dict[str, list[str]],
+    tokenizer,
+    device: str = "cuda",
+) -> dict[str, Any]:
+    """
+    Evaluate model performance on previously weak subdomains.
+
+    Tests model on 7 critical weak subdomains that had <1000 samples in v1:
+    - health_mental (10 → 1000 samples)
+    - relationship_spouse (9 → 1000 samples)
+    - relationship_inlaws (10 → 1000 samples)
+    - routine_commute (38 → 1000 samples)
+    - routine_evening (6 → 1000 samples)
+    - relationship_communication (632 → 1000 samples)
+    - emotions_grief (varied → 1000 samples)
+
+    Args:
+        model: Counterfactual decoder model
+        weak_subdomains: Dict mapping subdomain -> list of test scenarios
+        tokenizer: Tokenizer for encoding/decoding
+        device: Device to run evaluation on
+
+    Returns:
+        Dict with detailed results per subdomain:
+        {
+            "subdomain": {
+                "num_tests": int,
+                "avg_length": float,
+                "avg_diversity": float,
+                "samples": [list of generated outputs]
+            }
+        }
+    """
+    model.eval()
+    model.to(device)
+
+    results = {}
+
+    with torch.no_grad():
+        for subdomain, scenarios in weak_subdomains.items():
+            outputs = []
+            lengths = []
+
+            for scenario in scenarios:
+                try:
+                    inputs = tokenizer(scenario, return_tensors="pt", truncation=True, max_length=256)
+                    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+                    generated = model.generate(
+                        input_ids=inputs["input_ids"],
+                        attention_mask=inputs.get("attention_mask"),
+                        max_new_tokens=128,
+                        temperature=0.7,
+                        top_p=0.9,
+                        do_sample=True,
+                    )
+
+                    text = tokenizer.decode(generated[0], skip_special_tokens=True)
+                    outputs.append(text)
+                    lengths.append(len(generated[0]))
+                except Exception as e:
+                    logger.warning(f"Error generating for {subdomain}: {e}")
+                    continue
+
+            # Compute diversity (distinct bigrams)
+            all_tokens = []
+            bigrams = Counter()
+            for output in outputs:
+                tokens = tokenizer.tokenize(output)
+                all_tokens.extend(tokens)
+                for i in range(len(tokens) - 1):
+                    bigrams[(tokens[i], tokens[i+1])] += 1
+
+            distinct_bigrams = len(bigrams)
+            total_bigrams = sum(bigrams.values()) if bigrams else 1
+            diversity = distinct_bigrams / total_bigrams if total_bigrams > 0 else 0.0
+
+            results[subdomain] = {
+                "num_tests": len(outputs),
+                "avg_length": sum(lengths) / len(lengths) if lengths else 0,
+                "total_tokens": sum(lengths),
+                "distinct_bigrams": distinct_bigrams,
+                "diversity_score": diversity,
+                "samples": outputs[:3],  # Store first 3 samples
+            }
+
+    return results
+
+
+def compare_model_generations(
+    model_v1,
+    model_v2,
+    test_dataset,
+    tokenizer,
+    num_samples: int = 100,
+    device: str = "cuda",
+) -> dict[str, Any]:
+    """
+    Compare generation quality between v1 and v2 on test dataset.
+
+    Args:
+        model_v1: Original model
+        model_v2: Rebalanced model
+        test_dataset: Test dataset with samples
+        tokenizer: Tokenizer
+        num_samples: Number of samples to evaluate
+        device: Device to run on
+
+    Returns:
+        Comparison results with metrics
+    """
+    model_v1.eval()
+    model_v2.eval()
+    model_v1.to(device)
+    model_v2.to(device)
+
+    v1_lengths = []
+    v2_lengths = []
+    subdomain_performance = Counter()
+
+    with torch.no_grad():
+        for i, sample in enumerate(test_dataset):
+            if i >= num_samples:
+                break
+
+            # Get input
+            input_text = sample.get("input", "")
+            subdomain = sample.get("subdomain", "unknown")
+
+            # Generate from v1 and v2
+            try:
+                inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=256)
+                inputs = {k: v.to(device) for k, v in inputs.items()}
+
+                with torch.no_grad():
+                    output_v1 = model_v1.generate(
+                        input_ids=inputs["input_ids"],
+                        attention_mask=inputs.get("attention_mask"),
+                        max_new_tokens=128,
+                    )
+                    output_v2 = model_v2.generate(
+                        input_ids=inputs["input_ids"],
+                        attention_mask=inputs.get("attention_mask"),
+                        max_new_tokens=128,
+                    )
+
+                v1_lengths.append(len(output_v1[0]))
+                v2_lengths.append(len(output_v2[0]))
+
+                # Track by subdomain
+                if len(output_v2[0]) > len(output_v1[0]):
+                    subdomain_performance[subdomain] += 1  # v2 better
+            except Exception as e:
+                logger.warning(f"Error in comparison: {e}")
+                continue
+
+    return {
+        "num_samples_evaluated": i + 1,
+        "v1_avg_length": sum(v1_lengths) / len(v1_lengths) if v1_lengths else 0,
+        "v2_avg_length": sum(v2_lengths) / len(v2_lengths) if v2_lengths else 0,
+        "length_improvement": (sum(v2_lengths) - sum(v1_lengths)) / max(1, sum(v1_lengths)),
+        "subdomains_where_v2_better": dict(subdomain_performance.most_common(10)),
+    }
+
+
+# =============================================================================
 # Exports
 # =============================================================================
 
@@ -715,6 +1006,10 @@ __all__ = [
     "compute_rouge",
     "compute_distinct_n",
     "compute_expert_utilization",
+    "compute_semantic_similarity",
+    "evaluate_subdomain_performance",
+    "evaluate_weak_subdomains",
+    "compare_model_generations",
     "DecoderEvaluator",
     "DecoderEvaluationResults",
 ]

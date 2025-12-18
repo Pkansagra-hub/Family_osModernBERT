@@ -1,0 +1,218 @@
+# =============================================================================
+# Stage C v3: OPTIMIZED Fine-tuning for Subdomain Rebalancing
+# =============================================================================
+# PURPOSE: Third fine-tune with OPTIMIZED hyperparameters after v2 showed regression.
+#          Analysis: v2 had LR too low (3e-5) and too few epochs (3).
+#          v3 uses higher LR (7e-5), more epochs (5), and better regularization.
+#
+# Input: ultrabert-gen-decoder-v1 (first fine-tuned checkpoint)
+# Output: ultrabert-gen-decoder-v3 (IMPROVED rebalanced model)
+#
+# What Changed from v2:
+#   - Learning rate: 3e-5 → 7e-5 (2.3x higher, enables stronger adaptation)
+#   - Epochs: 3 → 5 (66% more training, better convergence)
+#   - Warmup: 10% → 5% (faster ramp-up, less wasted steps)
+#   - Dropout: 0.1 → 0.15 (stronger regularization, prevents overfitting)
+#   - Weight decay: 0.01 → 0.02 (stronger L2 regularization)
+#   - Batch size: 64 → 32 (smaller batches = more gradient updates = better learning)
+#   - Gradient accumulation: 2 → 4 (maintains effective batch = 128)
+#   - Early stopping: patience 3 → 5 (more tolerance for plateaus)
+#
+# Why v2 Failed:
+#   - LR 3e-5 was too conservative (model couldn't escape v1's local minimum)
+#   - Only 3 epochs wasn't enough to learn new subdomain patterns
+#   - Large batch size (64) meant fewer gradient updates per epoch
+#   - Results: -1.5% regression on weak subdomains
+#
+# v3 Optimization Strategy:
+#   1. Higher LR to enable stronger weight updates for weak subdomain patterns
+#   2. More epochs to give model time to converge on balanced data
+#   3. Smaller batches = more frequent gradient updates = better exploration
+#   4. Stronger regularization to prevent catastrophic forgetting
+#   5. Shorter warmup to reach peak LR faster
+#
+# Expected Improvements:
+#   - Weak subdomains: +5-10% diversity improvement (vs v1)
+#   - Strong subdomains: Maintained at >90% of v1 (anti-forgetting)
+#   - Training time: ~2-3 hours on A100 (5 epochs × 86K samples)
+#
+# Usage:
+#   python scripts/train_stage_c.py --config configs/training/multitask/stage_c_gpt2_v3.yaml
+# =============================================================================
+
+# =============================================================================
+# Base Model (Load from v1 fine-tuned checkpoint)
+# =============================================================================
+model:
+  checkpoint_path: "outputs/ultrabert-gen-decoder-v1"
+
+  freeze_encoder: true
+  freeze_existing_heads: true
+
+  torch_dtype: bfloat16
+  use_flash_attention_2: true
+
+# =============================================================================
+# Decoder Configuration (Same architecture as v1/v2)
+# =============================================================================
+decoder:
+  type: "gpt2"
+  gpt2_model_name: "gpt2-medium"
+
+  projection_hidden_size: 1024
+  prefix_projection_layers: 1
+  use_prefix_injection: true
+
+  freeze_layers: 0              # Train all layers
+
+  max_position_embeddings: 512
+  vocab_size: 50368
+
+  pad_token_id: 50283
+  bos_token_id: 50281
+  eos_token_id: 50282
+
+  # INCREASED DROPOUT for better regularization
+  dropout: 0.15                 # Was 0.1 in v1/v2
+
+  generation_max_length: 128
+  temperature: 1.0
+  top_k: 50
+  top_p: 0.9
+  repetition_penalty: 1.2
+
+# =============================================================================
+# Data Configuration (Balanced Training Data)
+# =============================================================================
+data:
+  train_path: "data/counterfactual/training_v2"
+
+  embeddings_mode: "precomputed"
+  full_sequence: true
+
+  max_input_length: 256
+  max_output_length: 256
+
+  num_workers: 8
+  pin_memory: true
+  prefetch_factor: 8
+  persistent_workers: true
+  load_to_ram: true
+
+# =============================================================================
+# Training Configuration (OPTIMIZED HYPERPARAMETERS)
+# =============================================================================
+training:
+  output_dir: "outputs/ultrabert-gen-decoder-v3"
+  checkpoint_dir: "checkpoints/ultrabert-gen-decoder-v3"
+
+  # MORE EPOCHS - v2's 3 wasn't enough
+  num_train_epochs: 5           # 66% more than v2
+  max_steps: -1
+
+  # SMALLER BATCHES - more gradient updates per epoch
+  per_device_train_batch_size: 32   # Was 64 in v2 (halved)
+  per_device_eval_batch_size: 128
+  gradient_accumulation_steps: 4    # Was 2 in v2 (doubled)
+  # Effective batch size: 32 × 4 = 128 (vs v2's 64 × 2 = 128, same total)
+  # BUT: 4 accumulation steps = 4x more frequent weight updates!
+
+  # HIGHER LEARNING RATE - v2's 3e-5 was too low
+  learning_rate: 7.0e-5         # 2.3x higher than v2 (3e-5)
+                                # Still safer than v1 (1e-4)
+                                # Sweet spot for continued fine-tuning
+
+  # STRONGER REGULARIZATION - prevent overfitting
+  weight_decay: 0.02            # 2x higher than v2 (0.01)
+  max_grad_norm: 1.0
+
+  # LR schedule - cosine with SHORTER warmup
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05            # Was 0.1 in v2 (halved)
+                                # Reach peak LR faster, more time at high LR
+
+  optim: "adamw_torch_fused"
+
+  bf16: true
+  fp16: false
+
+  gradient_checkpointing: false
+  dataloader_pin_memory: true
+  torch_compile: false
+  tf32: true
+
+  # Checkpoint frequency
+  save_strategy: "steps"
+  save_steps: 250               # More frequent saves
+  save_total_limit: 5           # Keep more checkpoints
+  save_safetensors: true
+
+  eval_strategy: "steps"
+  eval_steps: 250
+
+  logging_strategy: "steps"
+  logging_steps: 10
+  logging_first_step: true
+
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+
+  report_to:
+    - "tensorboard"
+
+  seed: 42
+
+  dataloader_num_workers: 8
+  dataloader_drop_last: true
+  dataloader_prefetch_factor: 8
+  remove_unused_columns: false
+
+  resume_from_checkpoint: null
+
+# =============================================================================
+# Generation Settings
+# =============================================================================
+generation:
+  max_length: 256
+  min_length: 20
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  do_sample: true
+  num_beams: 1
+  repetition_penalty: 1.2
+  length_penalty: 1.0
+  no_repeat_ngram_size: 3
+
+# =============================================================================
+# Callbacks
+# =============================================================================
+callbacks:
+  save_on_interrupt: true
+  early_stopping:
+    enabled: true
+    patience: 5                 # More patience than v2 (was 3)
+    threshold: 0.001
+  log_memory: true
+  log_memory_steps: 100
+
+# =============================================================================
+# W&B Configuration
+# =============================================================================
+wandb:
+  project: "ultrabert-decoder"
+  name: "stage-c-decoder-gpt2-v3-optimized"
+  tags:
+    - "stage-c"
+    - "decoder"
+    - "gpt2"
+    - "v3"
+    - "optimized"
+    - "rebalanced"
+    - "higher-lr"
+  notes: |
+    Stage C v3: OPTIMIZED fine-tuning after v2 regression.
+    Changes: LR 3e-5→7e-5, epochs 3→5, dropout 0.1→0.15, 
+    batch 64→32, accumulation 2→4, warmup 10%→5%.
+    Goal: Fix -1.5% regression on weak subdomains.
