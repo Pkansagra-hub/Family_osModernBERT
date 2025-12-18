@@ -1,3 +1,29 @@
+# FamilyOS UltraBERT v3.0.1
+
+## Decoder Quality Fix
+
+Fixes encoder/decoder version mismatch that caused degraded output quality.
+
+### Bug Fixes
+
+- **PyTorch decoder backend**: Added native PyTorch decoder path as default (ONNX decoder export has compatibility issues with current transformers)
+- **Encoder version alignment**: Default encoder now correctly uses v2-checkpoint-18000 to match decoder training
+- **Decoder loading**: Improved weight loading for 294-tensor GPT-2 decoder
+
+### Changes
+
+- `DecoderSession` now defaults to `backend="pytorch"` instead of ONNX
+- `Client.create_decoder_session()` accepts `backend` parameter ("pytorch" or "onnx")
+- Fixed encoder version detection in model.py
+
+### Upgrade from v3.0.0
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v3.0.0
 
 ## Edge-Ready Architecture with Counterfactual Generation

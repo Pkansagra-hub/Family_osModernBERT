@@ -77,7 +77,7 @@ def _check_huggingface_hub() -> bool:
 
 
 def download_encoder(
-    version: str = "v2-checkpoint-18000",
+    version: str = "v1",
     quantization: QuantizationType = "int8",
     force: bool = False,
     cache_dir: Optional[Path] = None,
@@ -88,7 +88,7 @@ def download_encoder(
     the ModernBERT backbone that powers all 12 capabilities.
 
     Args:
-        version: Encoder version (default: v2-checkpoint-18000)
+        version: Encoder version (default: v1)
         quantization: "fp32", "fp16", or "int8" (default: int8)
         force: Re-download even if cached
         cache_dir: Custom cache directory (default: ~/.cache/familyos_ultrabert/)

@@ -638,6 +638,7 @@ class Client:
         version: str = "v3",
         quantization: str = "int8",
         device: str = "auto",
+        backend: str = "pytorch",
     ) -> "DecoderSession":
         """
         Create a decoder session for batch counterfactual generation.
@@ -649,7 +650,8 @@ class Client:
         Args:
             version: Decoder version (default: "v3")
             quantization: Weight format - "fp32", "fp16", or "int8"
-            device: Backend - "auto", "npu", "cuda", or "cpu"
+            device: Hardware - "auto", "npu", "cuda", or "cpu"
+            backend: Inference backend - "pytorch" or "onnx" (default: "pytorch")
 
         Returns:
             DecoderSession context manager
@@ -666,6 +668,7 @@ class Client:
             version=version,
             quantization=quantization,
             device=device,
+            backend=backend,
         )
 
     def encode(self, text: str) -> "np.ndarray":

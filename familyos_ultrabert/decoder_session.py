@@ -70,20 +70,20 @@ class DecoderSession:
     decoder. The decoder is loaded on __enter__ and unloaded on __exit__,
     making it perfect for R5 dream exploration phases.
 
-    The decoder uses ONNX Runtime with automatic backend selection:
-    - AMD NPU (DirectML) for power-efficient edge inference
-    - NVIDIA CUDA for GPU acceleration
-    - CPU as universal fallback
+    The decoder supports two backends:
+    - "onnx": ONNX Runtime with automatic hardware selection (NPU/CUDA/CPU)
+    - "pytorch": Full PyTorch model (more accurate, requires more memory)
 
     Args:
         version: Decoder version (default: "v3")
         quantization: Weight format - "fp32", "fp16", or "int8" (default: "int8")
-        device: Backend selection - "auto", "npu", "cuda", or "cpu" (default: "auto")
+        device: Device selection - "auto", "npu", "cuda", or "cpu" (default: "auto")
+        backend: Inference backend - "onnx" or "pytorch" (default: "pytorch")
         max_batch_size: Maximum batch size for parallel generation (default: 16)
         cache_dir: Custom cache directory for weights (default: None uses default)
 
     Example:
-        >>> with DecoderSession(quantization="int8") as decoder:
+        >>> with DecoderSession(backend="pytorch") as decoder:
         ...     result = decoder.generate(encoder_output)
         ...     print(result)
         "If you had scheduled some personal time..."
@@ -94,18 +94,21 @@ class DecoderSession:
         version: str = "v3",
         quantization: QuantizationType = "int8",
         device: Literal["auto", "npu", "cuda", "cpu"] = "auto",
+        backend: Literal["onnx", "pytorch"] = "pytorch",
         max_batch_size: int = 16,
         cache_dir: Optional[Path] = None,
     ):
         self.version = version
         self.quantization = quantization
         self.device = device
+        self._requested_backend = backend  # Renamed to avoid conflict with property
         self.max_batch_size = max_batch_size
         self.cache_dir = cache_dir
 
         # Sessions (loaded on __enter__)
         self._prefix_session: Optional[Any] = None
         self._decoder_session: Optional[Any] = None
+        self._pytorch_decoder: Optional[Any] = None  # PyTorch decoder head
         self._tokenizer: Optional[Any] = None
         self._loaded = False
         self._weights_path: Optional[Path] = None
@@ -127,53 +130,13 @@ class DecoderSession:
     def __enter__(self) -> "DecoderSession":
         """Load decoder into memory."""
         load_start = time.perf_counter()
-        logger.info(f"Loading decoder v{self.version} ({self.quantization})...")
+        logger.info(f"Loading decoder v{self.version} (backend={self._requested_backend})...")
 
         try:
-            # Download weights if needed
-            from .weights_manager import download_decoder
-
-            self._weights_path = download_decoder(
-                version=self.version,
-                quantization=self.quantization,
-                cache_dir=self.cache_dir,
-            )
-            logger.info(f"Weights path: {self._weights_path}")
-
-            # Get best provider based on device preference
-            from .runtime import get_best_backend, Backend, ONNXSession
-
-            if self.device == "auto":
-                backend = get_best_backend()
-            elif self.device == "npu":
-                backend = Backend.DIRECTML
-            elif self.device == "cuda":
-                backend = Backend.CUDA
+            if self._requested_backend == "pytorch":
+                self._load_pytorch_decoder()
             else:
-                backend = Backend.CPU
-
-            self._backend_name = backend.value
-            logger.info(f"Using backend: {self._backend_name}")
-
-            # Load ONNX sessions
-            prefix_path = self._weights_path / "prefix_encoder.onnx"
-            decoder_path = self._weights_path / f"decoder_core_{self.quantization}.onnx"
-
-            # Fallback to generic decoder path if quantization-specific doesn't exist
-            if not decoder_path.exists():
-                decoder_path = self._weights_path / "decoder_core.onnx"
-
-            if prefix_path.exists():
-                self._prefix_session = ONNXSession(prefix_path, backend=backend)
-                logger.info(f"Loaded prefix encoder from {prefix_path}")
-            else:
-                logger.warning(f"Prefix encoder not found at {prefix_path}")
-
-            if decoder_path.exists():
-                self._decoder_session = ONNXSession(decoder_path, backend=backend)
-                logger.info(f"Loaded decoder core from {decoder_path}")
-            else:
-                logger.warning(f"Decoder core not found at {decoder_path}")
+                self._load_onnx_decoder()
 
             # Try to load tokenizer
             self._load_tokenizer()
@@ -195,6 +158,131 @@ class DecoderSession:
 
         return self
 
+    def _load_pytorch_decoder(self) -> None:
+        """Load PyTorch decoder from full model checkpoint."""
+        from .weights_manager import download_decoder
+        import torch
+
+        # For PyTorch, we need fp32 weights (full model checkpoint)
+        self._weights_path = download_decoder(
+            version=self.version,
+            quantization="fp32",  # Always fp32 for PyTorch
+            cache_dir=self.cache_dir,
+        )
+        logger.info(f"Weights path: {self._weights_path}")
+
+        # Determine device
+        if self.device == "auto":
+            if torch.cuda.is_available():
+                device = "cuda"
+            else:
+                device = "cpu"
+        else:
+            device = self.device if self.device != "npu" else "cpu"
+
+        self._backend_name = f"pytorch-{device}"
+        logger.info(f"Using backend: {self._backend_name}")
+
+        # Load the full model and extract decoder head
+        try:
+            from safetensors.torch import load_file
+
+            # Load state dict
+            model_path = self._weights_path / "model.safetensors"
+            if not model_path.exists():
+                raise FileNotFoundError(f"Model weights not found at {model_path}")
+
+            state_dict = load_file(str(model_path))
+
+            # Extract decoder weights (heads.counterfactual.*)
+            decoder_weights = {}
+            for key, value in state_dict.items():
+                if key.startswith("heads.counterfactual."):
+                    # Remove prefix
+                    new_key = key.replace("heads.counterfactual.", "")
+                    decoder_weights[new_key] = value
+
+            logger.info(f"Extracted {len(decoder_weights)} decoder weight tensors")
+
+            # Create decoder head with config
+            from .models.decoder_gpt2 import GPT2DecoderHead
+            from .models.decoder_gpt2_config import GPT2DecoderConfig
+
+            config = GPT2DecoderConfig(
+                gpt2_model_name="gpt2-medium",
+                encoder_hidden_size=768,  # ModernBERT hidden size
+            )
+            self._pytorch_decoder = GPT2DecoderHead(
+                config=config,
+                encoder_hidden_size=768,
+            )
+
+            # Load weights
+            missing, unexpected = self._pytorch_decoder.load_state_dict(
+                decoder_weights, strict=False
+            )
+            if missing:
+                logger.warning(f"Missing keys: {missing[:5]}...")
+            if unexpected:
+                logger.warning(f"Unexpected keys: {unexpected[:5]}...")
+
+            # Move to device
+            self._pytorch_decoder = self._pytorch_decoder.to(device)
+            self._pytorch_decoder.eval()
+
+            logger.info(f"Loaded PyTorch decoder on {device}")
+
+        except ImportError as e:
+            raise RuntimeError(
+                f"PyTorch decoder requires additional dependencies: {e}"
+            )
+
+    def _load_onnx_decoder(self) -> None:
+        """Load ONNX decoder sessions."""
+        from .weights_manager import download_decoder
+
+        self._weights_path = download_decoder(
+            version=self.version,
+            quantization=self.quantization,
+            cache_dir=self.cache_dir,
+        )
+        logger.info(f"Weights path: {self._weights_path}")
+
+        # Get best provider based on device preference
+        from .runtime import get_best_backend, Backend, ONNXSession
+
+        if self.device == "auto":
+            backend = get_best_backend()
+        elif self.device == "npu":
+            backend = Backend.DIRECTML
+        elif self.device == "cuda":
+            backend = Backend.CUDA
+        else:
+            backend = Backend.CPU
+
+        self._backend_name = backend.value
+        logger.info(f"Using backend: {self._backend_name}")
+
+        # Load ONNX sessions
+        prefix_path = self._weights_path / "prefix_encoder.onnx"
+        decoder_path = self._weights_path / f"decoder_core_{self.quantization}.onnx"
+
+        # Fallback to generic decoder path if quantization-specific doesn't exist
+        if not decoder_path.exists():
+            decoder_path = self._weights_path / "decoder_core.onnx"
+
+        if prefix_path.exists():
+            self._prefix_session = ONNXSession(prefix_path, backend=backend)
+            logger.info(f"Loaded prefix encoder from {prefix_path}")
+        else:
+            logger.warning(f"Prefix encoder not found at {prefix_path}")
+
+        if decoder_path.exists():
+            self._decoder_session = ONNXSession(decoder_path, backend=backend)
+            logger.info(f"Loaded decoder core from {decoder_path}")
+        else:
+            logger.warning(f"Decoder core not found at {decoder_path}")
+
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         """Unload decoder and free memory."""
         logger.info("Unloading decoder...")
@@ -204,7 +292,7 @@ class DecoderSession:
 
     def _cleanup(self) -> None:
         """Clean up resources and free memory."""
-        # Delete sessions
+        # Delete ONNX sessions
         if self._prefix_session is not None:
             del self._prefix_session
             self._prefix_session = None
@@ -212,6 +300,11 @@ class DecoderSession:
         if self._decoder_session is not None:
             del self._decoder_session
             self._decoder_session = None
+
+        # Delete PyTorch decoder
+        if self._pytorch_decoder is not None:
+            del self._pytorch_decoder
+            self._pytorch_decoder = None
 
         if self._tokenizer is not None:
             del self._tokenizer
@@ -221,6 +314,14 @@ class DecoderSession:
 
         # Force garbage collection
         gc.collect()
+
+        # Also clear CUDA cache if available
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except ImportError:
+            pass
 
     def _load_tokenizer(self) -> None:
         """Load tokenizer for text encoding/decoding."""
@@ -438,6 +539,70 @@ class DecoderSession:
     ) -> np.ndarray:
         """
         Generate token IDs autoregressively.
+
+        Routes to PyTorch or ONNX implementation based on backend.
+        """
+        if self._pytorch_decoder is not None:
+            return self._generate_tokens_pytorch(
+                encoder_hidden_states=encoder_hidden_states,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
+                repetition_penalty=repetition_penalty,
+            )
+        else:
+            return self._generate_tokens_onnx(
+                encoder_hidden_states=encoder_hidden_states,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
+                repetition_penalty=repetition_penalty,
+            )
+
+    def _generate_tokens_pytorch(
+        self,
+        encoder_hidden_states: np.ndarray,
+        max_new_tokens: int,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+        repetition_penalty: float,
+    ) -> np.ndarray:
+        """Generate tokens using PyTorch decoder."""
+        import torch
+
+        # Convert to torch tensor
+        device = next(self._pytorch_decoder.parameters()).device
+        hidden_states = torch.from_numpy(encoder_hidden_states).to(device)
+
+        # Generate
+        with torch.no_grad():
+            output_ids = self._pytorch_decoder.generate(
+                encoder_hidden_states=hidden_states,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
+                repetition_penalty=repetition_penalty,
+                eos_token_id=self._eos_token_id,
+                pad_token_id=self._pad_token_id,
+            )
+
+        return output_ids.cpu().numpy()
+
+    def _generate_tokens_onnx(
+        self,
+        encoder_hidden_states: np.ndarray,
+        max_new_tokens: int,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+        repetition_penalty: float,
+    ) -> np.ndarray:
+        """
+        Generate token IDs autoregressively using ONNX.
 
         This is the core generation loop that:
         1. Projects encoder outputs through prefix encoder

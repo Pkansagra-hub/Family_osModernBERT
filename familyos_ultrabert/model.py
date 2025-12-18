@@ -126,7 +126,7 @@ class UltraBERT:
         enable_cache: bool = True,
         cache_size: int = 1000,
         # v3: New parameters
-        encoder_version: str = "v1",
+        encoder_version: str = "v2-checkpoint-18000",  # Must match decoder training
         decoder_version: str = "v3",
         quantization: Literal["fp32", "fp16", "int8"] = "int8",
         load_decoder: bool = False,
@@ -140,7 +140,7 @@ class UltraBERT:
             device: "auto" (default), "cpu", "cuda", or "npu"
             enable_cache: Enable encoder caching (PyTorch only)
             cache_size: Max cached encodings
-            encoder_version: Version of encoder weights (default: v1)
+            encoder_version: Version of encoder weights (default: v2-checkpoint-18000)
             decoder_version: Version of decoder weights (default: v3)
             quantization: Weight format - "fp32", "fp16", "int8" (default: int8)
             load_decoder: Load decoder immediately (default: False for memory)
