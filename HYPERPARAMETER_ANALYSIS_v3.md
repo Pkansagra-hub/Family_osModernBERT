@@ -68,7 +68,7 @@
 **CORRECTION**: Let me recalculate with actual batch sizes:
 - v2: batch=64, accum=2, samples=86K → 86K÷128 = **672 steps/epoch**
   - Weight updates: 672 (updated every step after accumulation)
-- v3: batch=32, accum=4, samples=86K → 86K÷128 = **672 steps/epoch**  
+- v3: batch=32, accum=4, samples=86K → 86K÷128 = **672 steps/epoch**
   - Weight updates: 672 (same, but each update uses 4 gradient accumulations)
 
 **Key Insight**: Same number of weight updates, but v3 sees more mini-batch diversity!
@@ -130,7 +130,7 @@
 ## Risk Mitigation
 
 ### Risk 1: LR 7e-5 too high → Catastrophic forgetting
-**Mitigation**: 
+**Mitigation**:
 - Stronger regularization (dropout 0.15, weight_decay 0.02)
 - Early stopping with patience=5
 - Checkpoints every 250 steps (can revert if needed)
