@@ -157,6 +157,7 @@ class Client:
         warmup_rounds: Number of warmup inferences to run. Default 3.
         lazy_load: If True, defer loading until first call. Default False.
         verbose: If True, print loading/warmup info. Default False.
+        load_decoder: If True, load decoder for counterfactual generation. Default False.
 
     Example:
         >>> client = Client()  # Loads and warms up automatically
@@ -165,7 +166,7 @@ class Client:
         >>> print(result.safety)     # "GREEN"
     """
 
-    VERSION = "2.0.2"
+    VERSION = "3.0.0"
 
     def __init__(
         self,
@@ -175,13 +176,16 @@ class Client:
         warmup_rounds: int = 3,
         lazy_load: bool = False,
         verbose: bool = False,
+        load_decoder: bool = False,
     ):
         self._backend_preference = backend
         self._device_preference = device
         self._warmup_enabled = warmup
         self._warmup_rounds = warmup_rounds
         self._verbose = verbose
+        self._load_decoder = load_decoder
         self._model: Optional[UltraBERT] = None
+        self._decoder_session: Optional[Any] = None
         self._is_ready = False
         self._lock = threading.Lock()
         self._stats = LatencyStats()
@@ -671,12 +675,15 @@ class Client:
         This returns the raw encoder output that can be passed to
         DecoderSession.generate() for counterfactual generation.
 
+        Note: This method requires the PyTorch backend to access full
+        encoder hidden states. ONNX backend will raise an error.
+
         Args:
             text: Text to encode
 
         Returns:
             Encoder hidden states as numpy array.
-            Shape: (1, seq_len, 768)
+            Shape: (1, seq_len, 768) - full sequence hidden states
 
         Example:
             >>> encoder_output = client.encode("I hate this situation")
@@ -687,18 +694,23 @@ class Client:
 
         self._ensure_ready()
 
-        # Get embedding which uses the encoder
-        # Note: This is a simplified implementation.
-        # For full encoder output, we'd need direct access to the model's
-        # hidden states before the pooling layer.
-        embedding = self.get_embedding(text)
+        # Access the underlying engine to get full hidden states
+        engine = self._model._engine
 
-        # Convert to numpy and add batch/sequence dimensions
-        # The embedding is already pooled, so we expand it
-        hidden_states = np.array(embedding, dtype=np.float32)
-        hidden_states = hidden_states.reshape(1, 1, -1)  # (1, 1, 768)
-
-        return hidden_states
+        # Check if we have PyTorch backend with _encode method
+        if hasattr(engine, "_encode"):
+            # PyTorch backend - get full sequence hidden states
+            hidden_states, attention_mask, tokens, from_cache = engine._encode(text)
+            # Convert to numpy: (batch=1, seq_len, 768)
+            return hidden_states.cpu().numpy().astype(np.float32)
+        else:
+            # ONNX backend - cannot get hidden states directly
+            # ONNX models output final logits, not intermediate hidden states
+            raise RuntimeError(
+                "encode() requires PyTorch backend for full hidden states. "
+                "ONNX backend only outputs final logits per capability. "
+                "Initialize with: Client(backend='pytorch') or use PyTorch model."
+            )
 
     def suggest_alternative(
         self,

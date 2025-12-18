@@ -1,0 +1,14 @@
+{
+  "format": "onnx",
+  "opset_version": 17,
+  "architecture": "gpt2-medium",
+  "hidden_size": 1024,
+  "vocab_size": 50368,
+  "num_layers": 24,
+  "num_heads": 16,
+  "encoder_hidden_size": 768,
+  "files": {
+    "prefix_encoder": "prefix_encoder.onnx",
+    "decoder": "decoder.onnx"
+  }
+}

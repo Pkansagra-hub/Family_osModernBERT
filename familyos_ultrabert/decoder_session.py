@@ -463,35 +463,28 @@ class DecoderSession:
             batch_size = prefix_embeds.shape[0]
             prefix_len = prefix_embeds.shape[1]
 
-            # Step 2: Initialize generation
+            # Step 2: Initialize generation with BOS token
             generated_ids = np.full((batch_size, 1), self._bos_token_id, dtype=np.int64)
             finished = np.zeros(batch_size, dtype=bool)
 
-            # KV cache placeholder (if supported by model)
-            past_key_values = None
-
             # Step 3: Autoregressive generation loop
+            # Note: This ONNX model doesn't use KV cache, it takes full sequence each step
             for step in range(max_new_tokens):
-                # Prepare decoder inputs
-                if step == 0:
-                    # First step: include prefix
-                    position_ids = np.arange(prefix_len + 1, dtype=np.int64).reshape(1, -1)
-                    position_ids = np.broadcast_to(position_ids, (batch_size, prefix_len + 1))
-                else:
-                    position_ids = np.full((batch_size, 1), prefix_len + step, dtype=np.int64)
+                current_dec_len = generated_ids.shape[1]
+                total_len = prefix_len + current_dec_len
 
-                # Run decoder
+                # Create attention mask (all ones - attending to everything)
+                attention_mask = np.ones((batch_size, total_len), dtype=np.float32)
+
+                # Run decoder with correct input names
                 decoder_inputs = {
-                    "input_ids": generated_ids[:, -1:] if step > 0 else generated_ids,
-                    "position_ids": position_ids[:, -1:] if step > 0 else position_ids,
+                    "prefix_embeds": prefix_embeds.astype(np.float32),
+                    "decoder_input_ids": generated_ids,
+                    "attention_mask": attention_mask,
                 }
 
-                # Add prefix embeddings on first step
-                if step == 0:
-                    decoder_inputs["prefix_embeds"] = prefix_embeds.astype(np.float32)
-
                 outputs = self._decoder_session.run(None, decoder_inputs)
-                logits = outputs[0][:, -1, :]  # (batch, vocab_size)
+                logits = outputs[0][:, -1, :]  # (batch, vocab_size) - last token logits
 
                 # Apply repetition penalty
                 if repetition_penalty != 1.0:

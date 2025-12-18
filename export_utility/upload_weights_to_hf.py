@@ -110,7 +110,7 @@ def upload_encoder(
     onnx_path: Optional[Path] = None,
 ) -> bool:
     """Upload encoder weights to HuggingFace with v3 structure.
-    
+
     Uploads:
         encoder/{version}/fp32/ - PyTorch weights
         encoder/{version}/int8/ - Quantized ONNX heads
@@ -171,7 +171,7 @@ def upload_decoder(
     onnx_path: Optional[Path] = None,
 ) -> bool:
     """Upload decoder weights to HuggingFace with v3 structure.
-    
+
     Uploads:
         decoder/{version}/fp32/ - PyTorch weights
         decoder/{version}/int8/ - Quantized ONNX decoder

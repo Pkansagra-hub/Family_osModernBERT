@@ -206,6 +206,13 @@ class UltraBERT:
         else:
             raise ValueError(f"Invalid backend: {backend}")
 
+        # Adjust quantization for backend compatibility
+        # PyTorch backend requires fp32 (no PyTorch int8/fp16 weights available)
+        # ONNX backend can use int8 (quantized) or fp32
+        if use_pytorch and quantization != "fp32":
+            logger.info(f"PyTorch backend requires fp32 weights. Switching from {quantization} to fp32.")
+            quantization = "fp32"
+
         # Download weights if no path provided
         encoder_path = model_path
         if encoder_path is None:
