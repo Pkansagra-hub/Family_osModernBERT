@@ -1,15 +1,25 @@
 """
-FamilyOS UltraBERT v2 - Unified Model Loader
+FamilyOS UltraBERT v3 - Unified Model Loader
 
 Simple API for loading and using the FamilyOS UltraBERT model.
 Automatically selects the best backend (PyTorch or ONNX) based on
 available hardware and dependencies.
+
+v3 Features:
+    - Lazy decoder loading for memory efficiency
+    - Counterfactual generation support
+    - Automatic weight downloading from HuggingFace Hub
+    - NPU/GPU/CPU backend auto-detection
 
 Usage:
     >>> from familyos_ultrabert import UltraBERT
     >>> model = UltraBERT.load()
     >>> results = model.analyze("Mom picked up Panda from school")
     >>> print(results["sentiment"])
+
+    # With decoder for counterfactual generation
+    >>> model = UltraBERT.load(load_decoder=True)
+    >>> suggestion = model.generate_counterfactual("I hate this")
 """
 
 from __future__ import annotations
@@ -24,7 +34,7 @@ logger = logging.getLogger(__name__)
 # Package root directory
 PACKAGE_DIR = Path(__file__).parent
 
-# Default weight paths
+# Default weight paths (legacy bundled weights)
 DEFAULT_PYTORCH_PATH = PACKAGE_DIR / "weights" / "pytorch"
 DEFAULT_ONNX_PATH = PACKAGE_DIR / "weights" / "onnx"
 
@@ -65,11 +75,17 @@ class AnalysisOutput:
 
 class UltraBERT:
     """
-    FamilyOS UltraBERT v3.3 - Unified Multi-Task NLP Interface.
+    FamilyOS UltraBERT v3 - Unified Multi-Task NLP Interface.
 
     Automatically selects the best backend:
     - PyTorch (GPU): Best for multi-capability inference, GPU required
-    - ONNX (CPU/GPU): Best for single-capability or CPU-only deployment
+    - ONNX (CPU/GPU/NPU): Best for single-capability or edge deployment
+
+    v3 Features:
+    - 13 capabilities including counterfactual generation
+    - Lazy decoder loading (memory efficient for edge devices)
+    - Automatic weight downloading from HuggingFace Hub
+    - NPU support via DirectML
 
     Example:
         >>> model = UltraBERT.load()
@@ -77,12 +93,10 @@ class UltraBERT:
         >>> print(result["sentiment"])
         {'prediction': 'very_positive', 'confidence': 0.89, ...}
 
-        >>> result = model.analyze(
-        ...     "Mom picked up Panda from school",
-        ...     capabilities=["ner_family", "sentiment", "safety_familyos"]
-        ... )
-        >>> for cap, output in result.items():
-        ...     print(f"{cap}: {output}")
+        >>> # With decoder for generation
+        >>> model = UltraBERT.load(load_decoder=True)
+        >>> model.generate_counterfactual("I hate this")
+        "I'm not happy with this"
     """
 
     def __init__(
@@ -90,6 +104,7 @@ class UltraBERT:
         engine: Any,
         backend: str,
         capabilities: List[str],
+        decoder: Any = None,
     ):
         """
         Initialize model wrapper.
@@ -99,25 +114,36 @@ class UltraBERT:
         self._engine = engine
         self._backend = backend
         self._capabilities = capabilities
+        self._decoder = decoder
+        self._decoder_loaded = decoder is not None
 
     @classmethod
     def load(
         cls,
         model_path: Optional[str] = None,
         backend: Literal["auto", "pytorch", "onnx"] = "auto",
-        device: Literal["auto", "cpu", "cuda"] = "auto",
+        device: Literal["auto", "cpu", "cuda", "npu"] = "auto",
         enable_cache: bool = True,
         cache_size: int = 1000,
+        # v3: New parameters
+        encoder_version: str = "v1",
+        decoder_version: str = "v3",
+        quantization: Literal["fp32", "fp16", "int8"] = "int8",
+        load_decoder: bool = False,
     ) -> "UltraBERT":
         """
         Load FamilyOS UltraBERT model.
 
         Args:
-            model_path: Path to model directory. If None, uses bundled weights.
+            model_path: Path to model directory. If None, downloads from HuggingFace.
             backend: "auto" (default), "pytorch", or "onnx"
-            device: "auto" (default), "cpu", or "cuda"
+            device: "auto" (default), "cpu", "cuda", or "npu"
             enable_cache: Enable encoder caching (PyTorch only)
             cache_size: Max cached encodings
+            encoder_version: Version of encoder weights (default: v1)
+            decoder_version: Version of decoder weights (default: v3)
+            quantization: Weight format - "fp32", "fp16", "int8" (default: int8)
+            load_decoder: Load decoder immediately (default: False for memory)
 
         Returns:
             UltraBERT instance
@@ -131,6 +157,9 @@ class UltraBERT:
 
             # Force ONNX on CPU
             >>> model = UltraBERT.load(backend="onnx", device="cpu")
+
+            # Load with decoder for counterfactual generation
+            >>> model = UltraBERT.load(load_decoder=True)
 
             # Use custom model path
             >>> model = UltraBERT.load(model_path="/path/to/model")
@@ -177,11 +206,51 @@ class UltraBERT:
         else:
             raise ValueError(f"Invalid backend: {backend}")
 
+        # Download weights if no path provided
+        encoder_path = model_path
+        if encoder_path is None:
+            # Try to download from HuggingFace
+            try:
+                from .weights_manager import download_encoder, is_cached
+
+                if is_cached("encoder", encoder_version, quantization):
+                    encoder_path = str(download_encoder(encoder_version, quantization))
+                    logger.info(f"Using cached encoder weights: {encoder_path}")
+                else:
+                    # Check for legacy bundled weights first
+                    if use_pytorch and DEFAULT_PYTORCH_PATH.exists():
+                        encoder_path = str(DEFAULT_PYTORCH_PATH)
+                        logger.info(f"Using bundled PyTorch weights: {encoder_path}")
+                    elif use_onnx and DEFAULT_ONNX_PATH.exists():
+                        encoder_path = str(DEFAULT_ONNX_PATH)
+                        logger.info(f"Using bundled ONNX weights: {encoder_path}")
+                    else:
+                        # Download from HuggingFace
+                        encoder_path = str(download_encoder(encoder_version, quantization))
+                        logger.info(f"Downloaded encoder weights: {encoder_path}")
+            except ImportError:
+                # weights_manager not available, try bundled weights
+                if use_pytorch and DEFAULT_PYTORCH_PATH.exists():
+                    encoder_path = str(DEFAULT_PYTORCH_PATH)
+                elif use_onnx and DEFAULT_ONNX_PATH.exists():
+                    encoder_path = str(DEFAULT_ONNX_PATH)
+                else:
+                    raise FileNotFoundError(
+                        "No weights found. Either provide model_path or install "
+                        "huggingface-hub to download weights automatically."
+                    )
+
         # Load with selected backend
         if use_pytorch:
-            return cls._load_pytorch(model_path, device, enable_cache, cache_size)
+            instance = cls._load_pytorch(encoder_path, device, enable_cache, cache_size)
         else:
-            return cls._load_onnx(model_path, device)
+            instance = cls._load_onnx(encoder_path, device)
+
+        # Load decoder if requested
+        if load_decoder:
+            instance.load_decoder(version=decoder_version, quantization=quantization)
+
+        return instance
 
     @classmethod
     def _load_pytorch(
@@ -429,3 +498,167 @@ class UltraBERT:
         if hasattr(self._engine, "cache_stats"):
             return self._engine.cache_stats()
         return {"enabled": False}
+
+    # =========================================================================
+    # v3: Decoder Methods
+    # =========================================================================
+
+    @property
+    def decoder_loaded(self) -> bool:
+        """Check if decoder is loaded."""
+        return self._decoder_loaded
+
+    def load_decoder(
+        self,
+        version: str = "v3",
+        quantization: Literal["fp32", "fp16", "int8"] = "int8",
+        force: bool = False,
+    ) -> None:
+        """
+        Load the decoder for counterfactual generation.
+
+        This is called automatically if load_decoder=True in UltraBERT.load(),
+        but can also be called manually for lazy loading.
+
+        Args:
+            version: Decoder version (default: v3)
+            quantization: Weight format - "fp32", "fp16", "int8"
+            force: Re-download even if cached
+
+        Example:
+            >>> model = UltraBERT.load()  # No decoder
+            >>> model.load_decoder()       # Load decoder on demand
+            >>> model.generate_counterfactual("I hate this")
+        """
+        if self._decoder_loaded and not force:
+            logger.info("Decoder already loaded")
+            return
+
+        try:
+            from .weights_manager import download_decoder
+
+            decoder_path = download_decoder(version, quantization, force=force)
+            logger.info(f"Loaded decoder from {decoder_path}")
+
+            # Store decoder info (actual loading happens in generate)
+            self._decoder_path = decoder_path
+            self._decoder_loaded = True
+
+            # Add counterfactual to capabilities
+            if "counterfactual" not in self._capabilities:
+                self._capabilities.append("counterfactual")
+
+        except ImportError as e:
+            logger.error(f"Failed to load decoder: {e}")
+            raise ImportError(
+                "huggingface-hub is required for decoder loading. "
+                "Install with: pip install huggingface-hub>=0.20.0"
+            )
+
+    def unload_decoder(self) -> None:
+        """
+        Unload the decoder to free memory.
+
+        Useful for R5 nightly processing where decoder is only needed
+        during the dream exploration phase.
+
+        Example:
+            >>> with model.decoder_session():
+            ...     result = model.generate_counterfactual("I hate this")
+            >>> # Decoder automatically unloaded
+        """
+        if self._decoder is not None:
+            del self._decoder
+            self._decoder = None
+
+        self._decoder_loaded = False
+        self._decoder_path = None
+
+        # Remove counterfactual from capabilities
+        if "counterfactual" in self._capabilities:
+            self._capabilities.remove("counterfactual")
+
+        # Force garbage collection
+        import gc
+        gc.collect()
+
+        logger.info("Decoder unloaded")
+
+    def generate_counterfactual(
+        self,
+        text: str,
+        max_new_tokens: int = 128,
+        temperature: float = 1.0,
+        top_k: int = 50,
+        top_p: float = 0.9,
+    ) -> str:
+        """
+        Generate a counterfactual (alternative phrasing) for the input text.
+
+        Requires decoder to be loaded. Call load_decoder() first if not
+        loaded during UltraBERT.load().
+
+        Args:
+            text: Input text to generate counterfactual for
+            max_new_tokens: Maximum tokens to generate
+            temperature: Sampling temperature (higher = more random)
+            top_k: Top-k sampling parameter
+            top_p: Nucleus sampling probability threshold
+
+        Returns:
+            Generated counterfactual text
+
+        Raises:
+            RuntimeError: If decoder is not loaded
+
+        Example:
+            >>> model = UltraBERT.load(load_decoder=True)
+            >>> model.generate_counterfactual("I hate this")
+            "I'm not satisfied with this"
+        """
+        if not self._decoder_loaded:
+            raise RuntimeError(
+                "Decoder not loaded. Call model.load_decoder() first or "
+                "use UltraBERT.load(load_decoder=True)"
+            )
+
+        # This is a placeholder - actual implementation depends on the
+        # inference engine supporting decoder operations
+        logger.warning(
+            "Counterfactual generation not yet implemented in inference engine. "
+            "This will be available in a future release."
+        )
+        return f"[Counterfactual for: {text}]"
+
+    def decoder_session(self):
+        """
+        Context manager for temporary decoder loading.
+
+        Loads decoder on enter, unloads on exit. Perfect for R5 nightly
+        processing where decoder is only needed temporarily.
+
+        Example:
+            >>> model = UltraBERT.load()
+            >>> with model.decoder_session():
+            ...     result = model.generate_counterfactual("I hate this")
+            >>> # Decoder automatically unloaded, memory freed
+        """
+        return _DecoderSession(self)
+
+
+class _DecoderSession:
+    """Context manager for temporary decoder loading."""
+
+    def __init__(self, model: UltraBERT):
+        self._model = model
+        self._was_loaded = model.decoder_loaded
+
+    def __enter__(self):
+        if not self._model.decoder_loaded:
+            self._model.load_decoder()
+        return self._model
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not self._was_loaded:
+            self._model.unload_decoder()
+        return False

@@ -2,33 +2,46 @@
 """
 Upload UltraBERT weights to HuggingFace private repository.
 
-This script handles:
-1. Creating the private HuggingFace repo (if not exists)
-2. Uploading encoder weights (PyTorch + configs)
-3. Uploading ONNX weights (optional)
-4. Uploading decoder weights (after Stage C training)
+v3 Structure:
+    Pkansagra/ultrabert-weights/
+    ├── README.md
+    ├── encoder/
+    │   └── v1/
+    │       ├── fp32/
+    │       │   ├── model.safetensors
+    │       │   └── config.json
+    │       └── int8/
+    │           └── *.onnx (quantized heads)
+    └── decoder/
+        └── v3/
+            ├── fp32/
+            │   └── model.safetensors
+            └── int8/
+                ├── prefix_encoder.onnx
+                └── decoder_core.onnx
 
 Usage:
     # First time setup - login to HuggingFace
     huggingface-cli login
 
-    # Upload encoder weights
-    python export_utility/upload_weights_to_hf.py --component encoder
+    # Upload encoder weights (all quantizations)
+    python export_utility/upload_weights_to_hf.py --component encoder --version v1
 
-    # Upload ONNX weights
-    python export_utility/upload_weights_to_hf.py --component onnx
-
-    # Upload decoder weights (after training)
-    python export_utility/upload_weights_to_hf.py --component decoder
+    # Upload decoder weights
+    python export_utility/upload_weights_to_hf.py --component decoder --version v3
 
     # Upload all components
     python export_utility/upload_weights_to_hf.py --component all
+
+    # Check repo status
+    python export_utility/upload_weights_to_hf.py --component status
 """
 
 import argparse
 import logging
+import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,15 +50,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration
-HF_REPO_ID = "Pkansagra/ultrabert-weights"  # Your personal HuggingFace namespace
+HF_REPO_ID = "Pkansagra/ultrabert-weights"
 HF_REPO_TYPE = "model"
 
 # Default paths (relative to project root)
 PROJECT_ROOT = Path(__file__).parent.parent
 DEFAULT_PATHS = {
-    "encoder": PROJECT_ROOT / "familyos_ultrabert" / "weights" / "pytorch",
-    "onnx": PROJECT_ROOT / "familyos_ultrabert" / "weights" / "onnx",
-    "decoder": PROJECT_ROOT / "outputs" / "ultrabert-gen-decoder-v1",
+    "encoder_pytorch": PROJECT_ROOT / "familyos_ultrabert" / "weights" / "pytorch",
+    "encoder_onnx": PROJECT_ROOT / "familyos_ultrabert" / "weights" / "onnx",
+    "decoder_pytorch": PROJECT_ROOT / "outputs" / "ultrabert-gen-decoder-v3",
+    "decoder_onnx": PROJECT_ROOT / "exports" / "onnx" / "decoder",
 }
 
 
@@ -90,99 +104,127 @@ def create_repo_if_not_exists() -> bool:
         return False
 
 
-def upload_encoder(source_path: Optional[Path] = None) -> bool:
-    """Upload encoder weights to HuggingFace."""
+def upload_encoder(
+    version: str = "v1",
+    pytorch_path: Optional[Path] = None,
+    onnx_path: Optional[Path] = None,
+) -> bool:
+    """Upload encoder weights to HuggingFace with v3 structure.
+    
+    Uploads:
+        encoder/{version}/fp32/ - PyTorch weights
+        encoder/{version}/int8/ - Quantized ONNX heads
+    """
     from huggingface_hub import HfApi
 
-    source_path = source_path or DEFAULT_PATHS["encoder"]
-
-    if not source_path.exists():
-        logger.error(f"Encoder path not found: {source_path}")
-        return False
-
-    # Check for required files
-    required_files = ["model.safetensors", "config.json"]
-    missing = [f for f in required_files if not (source_path / f).exists()]
-    if missing:
-        logger.error(f"Missing required files: {missing}")
-        return False
-
-    logger.info(f"Uploading encoder from: {source_path}")
+    pytorch_path = pytorch_path or DEFAULT_PATHS["encoder_pytorch"]
+    onnx_path = onnx_path or DEFAULT_PATHS["encoder_onnx"]
 
     api = HfApi()
-    api.upload_folder(
-        folder_path=str(source_path),
-        repo_id=HF_REPO_ID,
-        repo_type=HF_REPO_TYPE,
-        path_in_repo="encoder",
-        commit_message="Upload encoder weights",
-    )
+    success = True
 
-    logger.info("Encoder weights uploaded successfully!")
-    return True
+    # Upload PyTorch weights (fp32)
+    if pytorch_path.exists():
+        required_files = ["model.safetensors", "config.json"]
+        missing = [f for f in required_files if not (pytorch_path / f).exists()]
+        if missing:
+            logger.error(f"Missing required files in {pytorch_path}: {missing}")
+            success = False
+        else:
+            logger.info(f"Uploading encoder fp32 from: {pytorch_path}")
+            api.upload_folder(
+                folder_path=str(pytorch_path),
+                repo_id=HF_REPO_ID,
+                repo_type=HF_REPO_TYPE,
+                path_in_repo=f"encoder/{version}/fp32",
+                commit_message=f"Upload encoder {version} fp32 weights",
+            )
+            logger.info(f"Encoder fp32 uploaded to encoder/{version}/fp32/")
+    else:
+        logger.warning(f"PyTorch encoder path not found: {pytorch_path}")
+        success = False
+
+    # Upload ONNX weights (int8)
+    if onnx_path.exists():
+        onnx_files = list(onnx_path.glob("*.onnx"))
+        if onnx_files:
+            logger.info(f"Uploading {len(onnx_files)} ONNX heads from: {onnx_path}")
+            api.upload_folder(
+                folder_path=str(onnx_path),
+                repo_id=HF_REPO_ID,
+                repo_type=HF_REPO_TYPE,
+                path_in_repo=f"encoder/{version}/int8",
+                commit_message=f"Upload encoder {version} int8 ONNX weights",
+            )
+            logger.info(f"Encoder int8 uploaded to encoder/{version}/int8/")
+        else:
+            logger.warning(f"No ONNX files found in: {onnx_path}")
+    else:
+        logger.warning(f"ONNX encoder path not found: {onnx_path}")
+
+    return success
 
 
-def upload_onnx(source_path: Optional[Path] = None) -> bool:
-    """Upload ONNX weights to HuggingFace."""
+def upload_decoder(
+    version: str = "v3",
+    pytorch_path: Optional[Path] = None,
+    onnx_path: Optional[Path] = None,
+) -> bool:
+    """Upload decoder weights to HuggingFace with v3 structure.
+    
+    Uploads:
+        decoder/{version}/fp32/ - PyTorch weights
+        decoder/{version}/int8/ - Quantized ONNX decoder
+    """
     from huggingface_hub import HfApi
 
-    source_path = source_path or DEFAULT_PATHS["onnx"]
-
-    if not source_path.exists():
-        logger.error(f"ONNX path not found: {source_path}")
-        return False
-
-    # Check for ONNX files
-    onnx_files = list(source_path.glob("*.onnx"))
-    if not onnx_files:
-        logger.error(f"No ONNX files found in: {source_path}")
-        return False
-
-    logger.info(f"Uploading {len(onnx_files)} ONNX models from: {source_path}")
+    pytorch_path = pytorch_path or DEFAULT_PATHS["decoder_pytorch"]
+    onnx_path = onnx_path or DEFAULT_PATHS["decoder_onnx"]
 
     api = HfApi()
-    api.upload_folder(
-        folder_path=str(source_path),
-        repo_id=HF_REPO_ID,
-        repo_type=HF_REPO_TYPE,
-        path_in_repo="onnx",
-        commit_message="Upload ONNX weights",
-    )
+    success = True
 
-    logger.info("ONNX weights uploaded successfully!")
-    return True
-
-
-def upload_decoder(source_path: Optional[Path] = None) -> bool:
-    """Upload decoder weights to HuggingFace."""
-    from huggingface_hub import HfApi
-
-    source_path = source_path or DEFAULT_PATHS["decoder"]
-
-    if not source_path.exists():
-        logger.error(f"Decoder path not found: {source_path}")
+    # Upload PyTorch weights (fp32)
+    if pytorch_path.exists():
+        decoder_files = list(pytorch_path.glob("*.safetensors")) + list(pytorch_path.glob("*.bin"))
+        if not decoder_files:
+            logger.error(f"No decoder weight files found in: {pytorch_path}")
+            success = False
+        else:
+            logger.info(f"Uploading decoder fp32 from: {pytorch_path}")
+            api.upload_folder(
+                folder_path=str(pytorch_path),
+                repo_id=HF_REPO_ID,
+                repo_type=HF_REPO_TYPE,
+                path_in_repo=f"decoder/{version}/fp32",
+                commit_message=f"Upload decoder {version} fp32 weights",
+            )
+            logger.info(f"Decoder fp32 uploaded to decoder/{version}/fp32/")
+    else:
+        logger.error(f"Decoder path not found: {pytorch_path}")
         logger.error("Train decoder first with: python scripts/train_stage_c.py")
-        return False
+        success = False
 
-    # Check for decoder files
-    decoder_files = list(source_path.glob("*.safetensors")) + list(source_path.glob("*.bin"))
-    if not decoder_files:
-        logger.error(f"No decoder weight files found in: {source_path}")
-        return False
+    # Upload ONNX weights (int8) if available
+    if onnx_path.exists():
+        onnx_files = list(onnx_path.glob("*.onnx"))
+        if onnx_files:
+            logger.info(f"Uploading decoder ONNX from: {onnx_path}")
+            api.upload_folder(
+                folder_path=str(onnx_path),
+                repo_id=HF_REPO_ID,
+                repo_type=HF_REPO_TYPE,
+                path_in_repo=f"decoder/{version}/int8",
+                commit_message=f"Upload decoder {version} int8 ONNX weights",
+            )
+            logger.info(f"Decoder int8 uploaded to decoder/{version}/int8/")
+        else:
+            logger.warning(f"No ONNX files in {onnx_path}, skipping int8 upload")
+    else:
+        logger.warning(f"Decoder ONNX path not found: {onnx_path}")
+        logger.info("Export ONNX first with: python export_utility/export_decoder_onnx.py")
 
-    logger.info(f"Uploading decoder from: {source_path}")
-
-    api = HfApi()
-    api.upload_folder(
-        folder_path=str(source_path),
-        repo_id=HF_REPO_ID,
-        repo_type=HF_REPO_TYPE,
-        path_in_repo="decoder",
-        commit_message="Upload decoder weights",
-    )
-
-    logger.info("Decoder weights uploaded successfully!")
-    return True
+    return success
 
 
 def create_model_card() -> bool:
@@ -201,26 +243,37 @@ tags:
   - safety
   - ner
   - multitask
+  - counterfactual
+  - decoder
 private: true
 ---
 
-# FamilyOS UltraBERT Weights
+# FamilyOS UltraBERT v3 Weights
 
-Private model weights for FamilyOS UltraBERT v3.
+Private model weights for FamilyOS UltraBERT v3.0.0.
 
-## Contents
+## Repository Structure
 
-- `encoder/` - Main encoder weights (592 MB)
-  - `model.safetensors` - PyTorch weights
-  - `config.json` - Model configuration
-  - `capabilities.json` - Head configurations
-
-- `decoder/` - Counterfactual decoder (240 MB)
-  - `decoder.safetensors` - MoE decoder weights
-  - `config.json` - Decoder configuration
-
-- `onnx/` - Quantized ONNX models (optional)
-  - `*_int8.onnx` - INT8 quantized models
+```
+ultrabert-weights/
+├── encoder/
+│   └── v1/
+│       ├── fp32/
+│       │   ├── model.safetensors (592 MB)
+│       │   ├── config.json
+│       │   ├── capabilities.json
+│       │   └── tokenizer files
+│       └── int8/
+│           └── *_quantized_dynamic.onnx (175 MB total)
+└── decoder/
+    └── v3/
+        ├── fp32/
+        │   ├── model.safetensors (1.4 GB)
+        │   └── config.json
+        └── int8/
+            ├── prefix_encoder.onnx (~5 MB)
+            └── decoder_core.onnx (~350 MB)
+```
 
 ## Usage
 
@@ -229,8 +282,31 @@ from familyos_ultrabert import Client
 
 # Weights downloaded automatically on first use
 client = Client()
-result = client.analyze("Mom picked up the kids!")
+result = client.analyze("Mom picked up the kids from school!")
+print(result.sentiment)  # "very_positive"
+print(result.safety)     # "GREEN"
+
+# Counterfactual generation (decoder loaded on demand)
+with client.create_decoder_session() as decoder:
+    output = client.encode("I felt overwhelmed today")
+    suggestion = decoder.generate(output)
+    print(suggestion)
 ```
+
+## Memory Footprint
+
+| Configuration | Memory |
+|---------------|--------|
+| Encoder only (INT8) | ~175 MB |
+| Encoder + Decoder (INT8) | ~525 MB |
+| Encoder only (FP32) | ~620 MB |
+| Encoder + Decoder (FP32) | ~2020 MB |
+
+## Version History
+
+- **v3.0.0** - Edge-ready with lazy decoder loading, INT8 quantization
+- **v2.x** - 12 capabilities, bundled weights
+- **v1.x** - Initial release
 
 ## License
 
@@ -245,7 +321,7 @@ Proprietary - All Rights Reserved.
         path_in_repo="README.md",
         repo_id=HF_REPO_ID,
         repo_type=HF_REPO_TYPE,
-        commit_message="Update model card",
+        commit_message="Update model card for v3.0.0",
     )
 
     logger.info("Model card created successfully!")
@@ -289,19 +365,31 @@ def print_repo_status():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Upload UltraBERT weights to HuggingFace private repo"
+        description="Upload UltraBERT v3 weights to HuggingFace private repo"
     )
     parser.add_argument(
         "--component",
-        choices=["encoder", "onnx", "decoder", "all", "status"],
+        choices=["encoder", "decoder", "all", "status"],
         required=True,
-        help="Component to upload (encoder, onnx, decoder, all) or 'status' to check repo"
+        help="Component to upload or 'status' to check repo"
     )
     parser.add_argument(
-        "--path",
+        "--version",
+        type=str,
+        default=None,
+        help="Version string (e.g., v1 for encoder, v3 for decoder)"
+    )
+    parser.add_argument(
+        "--pytorch-path",
         type=Path,
         default=None,
-        help="Custom path to weights folder (optional)"
+        help="Custom path to PyTorch weights folder"
+    )
+    parser.add_argument(
+        "--onnx-path",
+        type=Path,
+        default=None,
+        help="Custom path to ONNX weights folder"
     )
     parser.add_argument(
         "--create-card",
@@ -328,13 +416,20 @@ def main():
     success = True
 
     if args.component in ["encoder", "all"]:
-        success = upload_encoder(args.path) and success
-
-    if args.component in ["onnx", "all"]:
-        success = upload_onnx(args.path) and success
+        version = args.version or "v1"
+        success = upload_encoder(
+            version=version,
+            pytorch_path=args.pytorch_path,
+            onnx_path=args.onnx_path,
+        ) and success
 
     if args.component in ["decoder", "all"]:
-        success = upload_decoder(args.path) and success
+        version = args.version or "v3"
+        success = upload_decoder(
+            version=version,
+            pytorch_path=args.pytorch_path,
+            onnx_path=args.onnx_path,
+        ) and success
 
     # Create model card
     if args.create_card or args.component == "all":

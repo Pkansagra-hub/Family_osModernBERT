@@ -51,7 +51,7 @@ class LabelSchema:
 
 
 class Capability(str, Enum):
-    """All 12 capabilities supported by FamilyOS NLP."""
+    """All 13 capabilities supported by FamilyOS NLP."""
 
     # Generic capabilities
     NER_GENERAL = "ner_general"
@@ -68,6 +68,9 @@ class Capability(str, Enum):
     SAFETY_FAMILYOS = "safety_familyos"
     RELATION = "relation"
     INTENT = "intent"
+
+    # v3: Generation capability (requires decoder)
+    COUNTERFACTUAL = "counterfactual"
 
     def __str__(self) -> str:
         return self.value
@@ -212,6 +215,15 @@ INTENT_LABELS = LabelSchema(
 )
 
 
+# Counterfactual generation schema (v3)
+COUNTERFACTUAL_LABELS = LabelSchema(
+    name="counterfactual",
+    label2id={},  # Generation task, no fixed labels
+    problem_type="generation",
+    description="Counterfactual text generation (requires decoder)",
+)
+
+
 # Mapping from capability to labels
 CAPABILITY_TO_LABELS: Dict[Capability, Optional[LabelSchema]] = {
     Capability.NER_GENERAL: NER_GENERAL_LABELS,
@@ -226,7 +238,12 @@ CAPABILITY_TO_LABELS: Dict[Capability, Optional[LabelSchema]] = {
     Capability.SAFETY_FAMILYOS: SAFETY_FAMILYOS_LABELS,
     Capability.RELATION: RELATION_LABELS,
     Capability.INTENT: INTENT_LABELS,
+    Capability.COUNTERFACTUAL: COUNTERFACTUAL_LABELS,
 }
+
+
+# Capabilities that require the decoder (v3)
+DECODER_CAPABILITIES = {Capability.COUNTERFACTUAL}
 
 
 def get_labels(capability: Capability | str) -> Optional[LabelSchema]:

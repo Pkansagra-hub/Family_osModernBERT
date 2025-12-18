@@ -1,3 +1,114 @@
+# FamilyOS UltraBERT v3.0.0
+
+## Edge-Ready Architecture with Counterfactual Generation
+
+This major release introduces GPT-2 decoder support for counterfactual text generation, lazy loading for memory efficiency, and automatic weight downloading from HuggingFace Hub.
+
+### Breaking Changes
+
+- **Weights no longer bundled** - Package size reduced from ~1.6 GB to ~10 MB
+- **Weights downloaded automatically** - On first use, from `Pkansagra/ultrabert-weights`
+- **New dependency** - `huggingface-hub>=0.20.0` required
+
+### What's New in v3.0.0
+
+#### 13 Capabilities (12 Encoder + 1 Decoder)
+
+Added `Capability.COUNTERFACTUAL` for generating alternative phrasings:
+
+```python
+from familyos_ultrabert import Client
+
+client = Client()
+
+# Generate counterfactual suggestion
+suggestion = client.suggest_alternative("I felt overwhelmed today")
+# -> "I noticed I needed some time to recharge today"
+```
+
+#### Lazy Decoder Loading (DecoderSession)
+
+Memory-efficient context manager for R5 dream exploration:
+
+```python
+# Encoder stays resident (175 MB INT8)
+with client.create_decoder_session() as decoder:
+    # Decoder loaded here (+350 MB)
+    for text in texts:
+        output = client.encode(text)
+        suggestion = decoder.generate(output)
+# Decoder automatically unloaded (back to 175 MB)
+```
+
+#### HuggingFace Hub Integration
+
+Automatic weight management with caching:
+
+```python
+from familyos_ultrabert import download_encoder, download_decoder, get_weights_info
+
+# Weights downloaded to ~/.cache/familyos_ultrabert/
+encoder_path = download_encoder(version="v1", quantization="int8")
+decoder_path = download_decoder(version="v3", quantization="int8")
+
+# Check cache status
+info = get_weights_info()
+print(info)  # {"cache_dir": "...", "cache_size_mb": 525, ...}
+```
+
+#### Multi-Backend Support (NPU/CUDA/CPU)
+
+Automatic backend selection with fallback:
+
+```python
+# Priority: AMD NPU (DirectML) → NVIDIA CUDA → CPU
+client = Client(device="auto")  # Auto-detect best backend
+```
+
+### Memory Footprint
+
+| Configuration | v2.x | v3.0 (INT8) | Reduction |
+|---------------|------|-------------|-----------|
+| Encoder only | 620 MB | 175 MB | 3.5x |
+| Encoder + Decoder | 2020 MB | 525 MB | 3.8x |
+| Wheel size | 1590 MB | ~10 MB | 159x |
+
+### New Files
+
+| File | Description |
+|------|-------------|
+| `decoder_session.py` | Lazy-loading decoder context manager |
+| `weights_manager.py` | HuggingFace Hub integration |
+| `models/decoder_gpt2.py` | GPT-2 decoder head |
+| `models/decoder_gpt2_config.py` | Decoder configuration |
+| `examples/p03_dreaming.py` | P03 integration example |
+
+### Upgrade from v2.x
+
+```bash
+# Upgrade package
+pip install --upgrade familyos-ultrabert
+
+# First run will download weights (~525 MB for encoder + decoder)
+python -c "from familyos_ultrabert import Client; Client()"
+```
+
+### API Additions
+
+**Client class:**
+- `create_decoder_session(version, quantization, device)` - Create decoder context
+- `encode(text)` - Get encoder hidden states
+- `suggest_alternative(text)` - One-shot counterfactual
+- `suggest_alternative_structured(text)` - Structured output with insights
+
+**New exports:**
+- `DecoderSession` - Context manager for decoder
+- `download_encoder()`, `download_decoder()` - Weight management
+- `get_cache_dir()`, `clear_cache()`, `is_cached()`, `get_weights_info()`
+- `DECODER_CAPABILITIES` - Set of decoder-required capabilities
+
+---
+
 # FamilyOS UltraBERT v2.2.1
 
 ## Hotfix: Benchmark data packaged

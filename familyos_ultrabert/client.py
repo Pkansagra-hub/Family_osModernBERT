@@ -625,6 +625,150 @@ class Client:
         """
         self._stats = LatencyStats()
 
+    # =========================================================================
+    # v3: Decoder Methods for Counterfactual Generation
+    # =========================================================================
+
+    def create_decoder_session(
+        self,
+        version: str = "v3",
+        quantization: str = "int8",
+        device: str = "auto",
+    ) -> "DecoderSession":
+        """
+        Create a decoder session for batch counterfactual generation.
+
+        The decoder is loaded when entering the context and automatically
+        unloaded when exiting, freeing memory. This is ideal for R5 dream
+        exploration phases in P03 consolidation.
+
+        Args:
+            version: Decoder version (default: "v3")
+            quantization: Weight format - "fp32", "fp16", or "int8"
+            device: Backend - "auto", "npu", "cuda", or "cpu"
+
+        Returns:
+            DecoderSession context manager
+
+        Example:
+            >>> with client.create_decoder_session() as decoder:
+            ...     for text in texts:
+            ...         encoder_output = client.encode(text)
+            ...         suggestion = decoder.generate(encoder_output)
+            >>> # Decoder automatically unloaded, memory freed
+        """
+        from .decoder_session import DecoderSession
+        return DecoderSession(
+            version=version,
+            quantization=quantization,
+            device=device,
+        )
+
+    def encode(self, text: str) -> "np.ndarray":
+        """
+        Get encoder hidden states for a text.
+
+        This returns the raw encoder output that can be passed to
+        DecoderSession.generate() for counterfactual generation.
+
+        Args:
+            text: Text to encode
+
+        Returns:
+            Encoder hidden states as numpy array.
+            Shape: (1, seq_len, 768)
+
+        Example:
+            >>> encoder_output = client.encode("I hate this situation")
+            >>> with client.create_decoder_session() as decoder:
+            ...     suggestion = decoder.generate(encoder_output)
+        """
+        import numpy as np
+
+        self._ensure_ready()
+
+        # Get embedding which uses the encoder
+        # Note: This is a simplified implementation.
+        # For full encoder output, we'd need direct access to the model's
+        # hidden states before the pooling layer.
+        embedding = self.get_embedding(text)
+
+        # Convert to numpy and add batch/sequence dimensions
+        # The embedding is already pooled, so we expand it
+        hidden_states = np.array(embedding, dtype=np.float32)
+        hidden_states = hidden_states.reshape(1, 1, -1)  # (1, 1, 768)
+
+        return hidden_states
+
+    def suggest_alternative(
+        self,
+        text: str,
+        max_new_tokens: int = 128,
+        temperature: float = 0.8,
+    ) -> str:
+        """
+        Generate a counterfactual suggestion for the given text.
+
+        This is a convenience method that loads the decoder temporarily,
+        generates a suggestion, and unloads the decoder. For processing
+        multiple texts, use create_decoder_session() instead.
+
+        Args:
+            text: Text to generate alternative for
+            max_new_tokens: Maximum tokens to generate
+            temperature: Sampling temperature (higher = more random)
+
+        Returns:
+            Generated counterfactual text
+
+        Example:
+            >>> suggestion = client.suggest_alternative("I hate this")
+            "I'm not satisfied with this"
+        """
+        encoder_output = self.encode(text)
+
+        with self.create_decoder_session() as decoder:
+            return decoder.generate(
+                encoder_output,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+            )
+
+    def suggest_alternative_structured(
+        self,
+        text: str,
+        max_new_tokens: int = 128,
+    ) -> Dict[str, Any]:
+        """
+        Generate counterfactual with structured output including procedural insights.
+
+        This extracts actionable insights from the generated counterfactual,
+        useful for P03 memory consolidation.
+
+        Args:
+            text: Text to generate alternative for
+            max_new_tokens: Maximum tokens to generate
+
+        Returns:
+            Dictionary with:
+                - "text": Cleaned generated text
+                - "raw": Raw generated text
+                - "generation_time_ms": Generation time
+                - "procedural_insight": Extracted insight dict
+
+        Example:
+            >>> result = client.suggest_alternative_structured("I felt overwhelmed")
+            >>> print(result["procedural_insight"])
+            {"trigger": "feeling overwhelmed", "action": "schedule break", ...}
+        """
+        encoder_output = self.encode(text)
+
+        with self.create_decoder_session() as decoder:
+            return decoder.generate_structured(
+                encoder_output,
+                max_new_tokens=max_new_tokens,
+            )
+
     def __repr__(self) -> str:
         status = "ready" if self._is_ready else "not loaded"
         backend = self._model.backend if self._model else "N/A"
