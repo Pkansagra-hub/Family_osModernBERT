@@ -725,6 +725,28 @@ def _create_eval_callbacks(
         callbacks.append(ppl_callback)
         logger.info("Added PerplexityLoggingCallback")
 
+    # Add BLEU/ROUGE/Distinct-N callback if enabled
+    if eval_config.get("compute_bleu", False) or eval_config.get("compute_rouge", False) or eval_config.get("compute_distinct_n", False):
+        text_metrics_callback = _create_text_metrics_callback(
+            config=config,
+            tokenizer=tokenizer,
+            eval_samples=eval_samples,
+            debug=debug,
+        )
+        if text_metrics_callback:
+            callbacks.append(text_metrics_callback)
+            logger.info("Added TextMetricsCallback (BLEU/ROUGE/Distinct-N)")
+
+    # Add expert utilization callback for MoE debugging
+    if eval_config.get("log_expert_utilization", False):
+        expert_callback = _create_expert_utilization_callback(
+            config=config,
+            debug=debug,
+        )
+        if expert_callback:
+            callbacks.append(expert_callback)
+            logger.info("Added ExpertUtilizationCallback")
+
     return callbacks
 
 
@@ -837,6 +859,239 @@ def _create_perplexity_callback(config: dict[str, Any], debug: bool = False):
             return control
 
     return PerplexityLoggingCallback()
+
+
+def _create_text_metrics_callback(
+    config: dict[str, Any],
+    tokenizer: AutoTokenizer,
+    eval_samples: list[tuple[str, str]],
+    debug: bool = False,
+):
+    """
+    Create callback for BLEU, ROUGE, and Distinct-N metrics.
+
+    These metrics are computed on generated text vs references during evaluation.
+    """
+    from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
+
+    eval_config = config.get("evaluation", {})
+    compute_bleu = eval_config.get("compute_bleu", True)
+    compute_rouge = eval_config.get("compute_rouge", True)
+    compute_distinct = eval_config.get("compute_distinct_n", True)
+
+    class TextMetricsCallback(TrainerCallback):
+        """Callback to compute BLEU, ROUGE, Distinct-N on generated text."""
+
+        def __init__(self):
+            self.eval_samples = eval_samples
+            self.tokenizer = tokenizer
+            self._last_eval_step = -1
+
+        def on_evaluate(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            model=None,
+            **kwargs,
+        ) -> TrainerControl:
+            """Compute text metrics during evaluation."""
+            if model is None or not self.eval_samples:
+                return control
+
+            # Avoid duplicate computation
+            if state.global_step == self._last_eval_step:
+                return control
+            self._last_eval_step = state.global_step
+
+            try:
+                predictions, references = self._generate_predictions(model, state)
+
+                if not predictions:
+                    return control
+
+                metrics = {}
+
+                # BLEU
+                if compute_bleu:
+                    try:
+                        from modeling_studio.evaluation.decoder_metrics import compute_bleu as calc_bleu
+                        bleu = calc_bleu(predictions, references)
+                        metrics["text_metrics/bleu"] = bleu
+                        logger.info(f"[TextMetrics] BLEU: {bleu:.2f}")
+                    except Exception as e:
+                        logger.warning(f"BLEU computation failed: {e}")
+
+                # ROUGE
+                if compute_rouge:
+                    try:
+                        from modeling_studio.evaluation.decoder_metrics import compute_rouge as calc_rouge
+                        rouge = calc_rouge(predictions, references)
+                        for key, value in rouge.items():
+                            metrics[f"text_metrics/{key}"] = value
+                        logger.info(f"[TextMetrics] ROUGE-L: {rouge.get('rougeL', 0):.4f}")
+                    except Exception as e:
+                        logger.warning(f"ROUGE computation failed: {e}")
+
+                # Distinct-N
+                if compute_distinct:
+                    try:
+                        from modeling_studio.evaluation.decoder_metrics import compute_distinct_n
+                        distinct = compute_distinct_n(predictions)
+                        for key, value in distinct.items():
+                            metrics[f"text_metrics/{key}"] = value
+                        logger.info(f"[TextMetrics] Distinct-2: {distinct.get('distinct-2', 0):.4f}")
+                    except Exception as e:
+                        logger.warning(f"Distinct-N computation failed: {e}")
+
+                # Log to wandb
+                if metrics and state.is_world_process_zero:
+                    try:
+                        import wandb
+                        if wandb.run is not None:
+                            metrics["text_metrics/step"] = state.global_step
+                            wandb.log(metrics)
+                    except ImportError:
+                        pass
+
+            except Exception as e:
+                logger.warning(f"TextMetricsCallback error: {e}")
+
+            return control
+
+        def _generate_predictions(self, model, state) -> tuple[list[str], list[str]]:
+            """Generate predictions for eval samples."""
+            import torch
+
+            model.eval()
+            device = next(model.parameters()).device
+            predictions = []
+            references = []
+
+            # Get decoder head
+            if hasattr(model, "heads") and "counterfactual" in model.heads:
+                decoder_head = model.heads["counterfactual"]
+            elif hasattr(model, "decoder"):
+                decoder_head = model.decoder
+            else:
+                decoder_head = model
+
+            num_samples = min(20 if not debug else 5, len(self.eval_samples))
+
+            with torch.no_grad():
+                for input_text, ref_text in self.eval_samples[:num_samples]:
+                    try:
+                        encoded = self.tokenizer(
+                            input_text,
+                            return_tensors="pt",
+                            truncation=True,
+                            max_length=256,
+                            padding=True,
+                        )
+                        input_ids = encoded["input_ids"].to(device)
+
+                        if hasattr(decoder_head, "generate"):
+                            output_ids = decoder_head.generate(
+                                input_ids=input_ids,
+                                max_new_tokens=64,
+                                temperature=0.7,
+                                do_sample=True,
+                            )
+                            pred_text = self.tokenizer.decode(
+                                output_ids[0], skip_special_tokens=True
+                            )
+                            predictions.append(pred_text)
+                            references.append(ref_text)
+                    except Exception as e:
+                        logger.debug(f"Generation failed: {e}")
+                        continue
+
+            model.train()
+            return predictions, references
+
+    return TextMetricsCallback()
+
+
+def _create_expert_utilization_callback(
+    config: dict[str, Any],
+    debug: bool = False,
+):
+    """
+    Create callback for logging MoE expert utilization stats.
+
+    Tracks load balancing across experts to detect expert collapse.
+    """
+    from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
+
+    eval_config = config.get("evaluation", {})
+    log_steps = eval_config.get("expert_util_steps", 1000 if not debug else 100)
+
+    class ExpertUtilizationCallback(TrainerCallback):
+        """Callback to log MoE expert utilization statistics."""
+
+        def __init__(self):
+            self._last_log_step = 0
+
+        def on_step_end(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            model=None,
+            **kwargs,
+        ) -> TrainerControl:
+            """Log expert utilization stats periodically."""
+            if model is None:
+                return control
+
+            steps_since_log = state.global_step - self._last_log_step
+            if steps_since_log < log_steps:
+                return control
+
+            self._last_log_step = state.global_step
+
+            try:
+                # Get decoder head
+                if hasattr(model, "heads") and "counterfactual" in model.heads:
+                    decoder_head = model.heads["counterfactual"]
+                elif hasattr(model, "decoder"):
+                    decoder_head = model.decoder
+                else:
+                    return control
+
+                # Check if MoE decoder with expert tracking
+                if not hasattr(decoder_head, "get_expert_utilization"):
+                    return control
+
+                util_stats = decoder_head.get_expert_utilization()
+
+                if util_stats:
+                    logger.info(f"[ExpertUtil] Step {state.global_step}:")
+                    for layer_idx, stats in util_stats.items():
+                        avg_util = sum(stats.values()) / len(stats) if stats else 0
+                        min_util = min(stats.values()) if stats else 0
+                        max_util = max(stats.values()) if stats else 0
+                        logger.info(f"  Layer {layer_idx}: avg={avg_util:.3f}, min={min_util:.3f}, max={max_util:.3f}")
+
+                    # Log to wandb
+                    if state.is_world_process_zero:
+                        try:
+                            import wandb
+                            if wandb.run is not None:
+                                wandb_metrics = {"expert_util/step": state.global_step}
+                                for layer_idx, stats in util_stats.items():
+                                    for expert_id, util in stats.items():
+                                        wandb_metrics[f"expert_util/layer{layer_idx}_expert{expert_id}"] = util
+                                wandb.log(wandb_metrics)
+                        except ImportError:
+                            pass
+
+            except Exception as e:
+                logger.debug(f"Expert utilization logging failed: {e}")
+
+            return control
+
+    return ExpertUtilizationCallback()
 
 
 # =============================================================================
