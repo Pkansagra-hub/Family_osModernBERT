@@ -186,6 +186,26 @@ generation:
   no_repeat_ngram_size: 3
 
 # =============================================================================
+# Evaluation Callbacks Configuration
+# =============================================================================
+evaluation:
+  # GenerationEvalCallback settings
+  num_gen_samples: 50           # Number of samples for generation quality eval
+  gen_eval_steps: 500           # Run generation eval every N steps
+  max_new_tokens: 64            # Max tokens to generate per sample
+  temperature: 0.7              # Sampling temperature for generation
+  valence: "positive"           # Expected valence for format adherence check
+
+  # Additional metrics (computed during generation eval)
+  compute_bleu: true            # Compute BLEU score against references
+  compute_rouge: true           # Compute ROUGE-L score
+  compute_distinct_n: true      # Compute Distinct-1/2/3 diversity metrics
+
+  # Expert utilization tracking (for MoE debugging)
+  log_expert_utilization: true  # Log expert load balance stats
+  expert_util_steps: 1000       # Log expert stats every N steps
+
+# =============================================================================
 # Callbacks
 # =============================================================================
 callbacks:
