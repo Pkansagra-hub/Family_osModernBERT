@@ -236,8 +236,14 @@ class GPT2DecoderHead(BaseHead):
         (std ~0.02, norm ~2.1) while GPT-2's learned tokens have norm ~3.7.
         This 56% magnitude gap causes weak BOS/EOS signals.
 
-        Solution: Initialize new tokens to mean of existing GPT-2 embeddings,
-        with special handling for BOS (copy from endoftext) and PAD (zero).
+        Solution (based on Hewitt 2021 - https://cs.columbia.edu/~johnhew/vocab-expansion.html):
+        1. New tokens: Sample from multivariate normal with mean/covariance of existing embeddings
+           This bounds KL-divergence between pre/post expansion LMs.
+        2. BOS/EOS: Copy from GPT-2's <|endoftext|> (has learned start/stop semantics)
+        3. PAD: Zero vector (no attention contribution)
+
+        Additionally, we SCALE new embeddings to match the target norm, since the mean
+        embedding has lower norm than individual embeddings due to vector cancellation.
 
         Args:
             original_vocab_size: Original GPT-2 vocab size (50257)
@@ -252,20 +258,37 @@ class GPT2DecoderHead(BaseHead):
             # Compute statistics from original GPT-2 vocabulary
             original_embeddings = wte[:original_vocab_size]
             old_mean = original_embeddings.mean(dim=0)
-            original_norm = original_embeddings.norm(dim=1).mean()
+            target_norm = original_embeddings.norm(dim=1).mean()
 
-            logger.info(f"Original GPT-2 embeddings: mean norm={original_norm:.2f}")
+            logger.info(f"Original GPT-2 embeddings: mean norm={target_norm:.2f}")
 
-            # Initialize all new tokens to the mean embedding
-            # This gives them the correct magnitude from the start
+            # Compute covariance for multivariate normal sampling (Hewitt 2021)
+            centered = original_embeddings - old_mean
+            covariance = (centered.T @ centered) / original_vocab_size
+
+            # Sample new embeddings from multivariate normal
             num_new = new_vocab_size - original_vocab_size
-            wte[original_vocab_size:].copy_(
-                old_mean.unsqueeze(0).expand(num_new, -1)
-            )
+            try:
+                dist = torch.distributions.MultivariateNormal(old_mean, covariance_matrix=1e-5 * covariance)
+                new_embeds = torch.stack([dist.sample() for _ in range(num_new)], dim=0)
+            except Exception as e:
+                # Fallback: use mean embedding if covariance is singular
+                logger.warning(f"MultivariateNormal failed ({e}), using mean embedding")
+                new_embeds = old_mean.unsqueeze(0).expand(num_new, -1).clone()
+
+            # CRITICAL: Scale new embeddings to match target norm
+            # Mean embedding has smaller norm due to vector cancellation
+            current_norms = new_embeds.norm(dim=1, keepdim=True)
+            # Avoid division by zero
+            current_norms = torch.clamp(current_norms, min=1e-8)
+            new_embeds = new_embeds * (target_norm / current_norms)
+
+            # Apply to embedding matrix
+            wte[original_vocab_size:new_vocab_size].copy_(new_embeds)
 
             # Special token initialization:
             # BOS/EOS: Copy from GPT-2's <|endoftext|> token (ID 50256)
-            # This token has learned start/stop semantics
+            # This token has learned start/stop semantics and proper norm
             endoftext_embed = wte[50256].clone()
             wte[bos_token_id].copy_(endoftext_embed)
             wte[eos_token_id].copy_(endoftext_embed)
@@ -273,13 +296,24 @@ class GPT2DecoderHead(BaseHead):
             # PAD: Zero vector (should not contribute to attention)
             wte[pad_token_id].zero_()
 
-            # Verify new embeddings
-            new_norm = wte[original_vocab_size:new_vocab_size].norm(dim=1).mean()
+            # Verify new embeddings (exclude PAD from norm calculation)
+            new_tokens_for_norm = list(range(original_vocab_size, new_vocab_size))
+            new_tokens_for_norm = [t for t in new_tokens_for_norm if t != pad_token_id]
+            if new_tokens_for_norm:
+                new_norm = wte[new_tokens_for_norm].norm(dim=1).mean()
+            else:
+                new_norm = 0.0
+
+            bos_norm = wte[bos_token_id].norm().item()
+            eos_norm = wte[eos_token_id].norm().item()
+            endoftext_norm = wte[50256].norm().item()
+
             logger.info(
                 f"Initialized {num_new} new token embeddings: "
                 f"BOS={bos_token_id}, EOS={eos_token_id}, PAD={pad_token_id}"
             )
-            logger.info(f"New embeddings mean norm: {new_norm:.2f} (target: {original_norm:.2f})")
+            logger.info(f"New embeddings mean norm: {new_norm:.2f} (target: {target_norm:.2f})")
+            logger.info(f"BOS norm: {bos_norm:.2f}, EOS norm: {eos_norm:.2f} (endoftext: {endoftext_norm:.2f})")
 
     def forward(
         self,
