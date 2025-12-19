@@ -150,6 +150,9 @@ class DecoderSession:
                 f"(~{memory_mb:.0f} MB, backend: {self._backend_name})"
             )
 
+            # Warmup decoder for fast first inference
+            self._warmup()
+
         except Exception as e:
             logger.error(f"Failed to load decoder: {e}")
             # Clean up any partially loaded resources
@@ -157,6 +160,59 @@ class DecoderSession:
             raise RuntimeError(f"Failed to load decoder: {e}")
 
         return self
+
+    def _warmup(self, rounds: int = 2) -> None:
+        """Warmup decoder to avoid cold-start latency.
+
+        Runs a few dummy generations to:
+        - JIT compile any lazy kernels
+        - Warm up GPU caches
+        - Stabilize memory allocations
+        """
+        logger.info(f"Warming up decoder ({rounds} rounds)...")
+
+        # Create a simple dummy input
+        dummy_text = "This is a test."
+
+        try:
+            import torch
+
+            for i in range(rounds):
+                start = time.perf_counter()
+
+                if self._pytorch_decoder is not None:
+                    # PyTorch warmup
+                    device = next(self._pytorch_decoder.parameters()).device
+
+                    # Create dummy encoder hidden states
+                    batch_size = 1
+                    seq_len = 16
+                    hidden_size = 768
+                    dummy_hidden = torch.randn(
+                        batch_size, seq_len, hidden_size,
+                        device=device, dtype=torch.float32
+                    )
+                    dummy_mask = torch.ones(batch_size, seq_len, device=device)
+
+                    # Run a short generation
+                    with torch.no_grad():
+                        _ = self._pytorch_decoder.generate(
+                            encoder_hidden_states=dummy_hidden,
+                            encoder_attention_mask=dummy_mask,
+                            max_new_tokens=8,  # Short for warmup
+                            temperature=1.0,  # Neutral for warmup
+                        )
+                else:
+                    # ONNX warmup - just run sessions if available
+                    pass
+
+                elapsed = (time.perf_counter() - start) * 1000
+                logger.info(f"  Warmup {i+1}: {elapsed:.1f}ms")
+
+        except Exception as e:
+            logger.warning(f"Warmup failed (non-fatal): {e}")
+
+        logger.info("Decoder warmup complete - ready for fast inference!")
 
     def _load_pytorch_decoder(self) -> None:
         """Load PyTorch decoder from full model checkpoint."""

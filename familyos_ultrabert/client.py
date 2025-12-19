@@ -742,7 +742,14 @@ class Client:
         """
         encoder_output = self.encode(text)
 
-        with self.create_decoder_session() as decoder:
+        # Use the same device as the client
+        device = "cpu"  # Safe default
+        if hasattr(self, '_model') and hasattr(self._model, 'device'):
+            device = str(self._model.device)
+        elif hasattr(self, '_device'):
+            device = self._device
+
+        with self.create_decoder_session(device=device) as decoder:
             return decoder.generate(
                 encoder_output,
                 max_new_tokens=max_new_tokens,

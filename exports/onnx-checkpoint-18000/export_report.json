@@ -1,0 +1,129 @@
+{
+  "model_path": "outputs\\modernbert-v2-for-v3-transfer\\checkpoint-18000",
+  "output_path": "exports\\onnx-checkpoint-18000",
+  "opset_version": 17,
+  "quantization": "dynamic",
+  "fp16": false,
+  "capabilities": {
+    "ner_general": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\ner_general.onnx",
+        "size_mb": 569.0556983947754
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\ner_general_quantized_dynamic.onnx",
+        "size_mb": 143.08127975463867
+      }
+    },
+    "sentiment": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\sentiment.onnx",
+        "size_mb": 571.2738418579102
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\sentiment_quantized_dynamic.onnx",
+        "size_mb": 143.63922023773193
+      }
+    },
+    "emotions": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\emotions.onnx",
+        "size_mb": 571.3891439437866
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\emotions_quantized_dynamic.onnx",
+        "size_mb": 143.66947078704834
+      }
+    },
+    "safety_generic": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\safety_generic.onnx",
+        "size_mb": 571.2826442718506
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\safety_generic_quantized_dynamic.onnx",
+        "size_mb": 143.64142894744873
+      }
+    },
+    "nli": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\nli.onnx",
+        "size_mb": 571.2679748535156
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\nli_quantized_dynamic.onnx",
+        "size_mb": 143.6377477645874
+      }
+    },
+    "embedding": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\embedding.onnx",
+        "size_mb": 569.0093278884888
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\embedding_quantized_dynamic.onnx",
+        "size_mb": 143.0728406906128
+      }
+    },
+    "temporal": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\temporal.onnx",
+        "size_mb": 569.0439643859863
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\temporal_quantized_dynamic.onnx",
+        "size_mb": 143.0783348083496
+      }
+    },
+    "ner_family": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\ner_family.onnx",
+        "size_mb": 569.0674324035645
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\ner_family_quantized_dynamic.onnx",
+        "size_mb": 143.08422470092773
+      }
+    },
+    "ingress": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\ingress.onnx",
+        "size_mb": 571.2943782806396
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\ingress_quantized_dynamic.onnx",
+        "size_mb": 143.6443738937378
+      }
+    },
+    "safety_familyos": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\safety_familyos.onnx",
+        "size_mb": 571.2710304260254
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\safety_familyos_quantized_dynamic.onnx",
+        "size_mb": 143.6388454437256
+      }
+    },
+    "relation": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\relation.onnx",
+        "size_mb": 573.5533685684204
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\relation_quantized_dynamic.onnx",
+        "size_mb": 144.20952796936035
+      }
+    },
+    "intent": {
+      "base": {
+        "path": "exports\\onnx-checkpoint-18000\\intent.onnx",
+        "size_mb": 571.2826442718506
+      },
+      "quantized_dynamic": {
+        "path": "exports\\onnx-checkpoint-18000\\intent_quantized_dynamic.onnx",
+        "size_mb": 143.64142894744873
+      }
+    }
+  }
+}

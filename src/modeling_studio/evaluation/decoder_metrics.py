@@ -387,6 +387,276 @@ def compute_distinct_n(
 
 
 # =============================================================================
+# Counterfactual-Specific Metrics (Epic 2.4.1)
+# =============================================================================
+
+
+def compute_completion_rate(
+    texts: list[str],
+    min_words: int = 3,
+) -> float:
+    """
+    Compute completion rate: fraction of outputs that don't cut off mid-sentence.
+
+    A "complete" generation ends with proper punctuation and has minimum length.
+    Incomplete outputs typically end mid-word or without terminal punctuation.
+
+    Args:
+        texts: List of generated counterfactual texts.
+        min_words: Minimum words required for a text to be "complete".
+
+    Returns:
+        Completion rate as float (0-1). Higher is better.
+        1.0 = all outputs complete, 0.0 = none complete.
+
+    Example:
+        >>> texts = ["If you had spoken calmly, the situation would have improved.",
+        ...          "If you had"]
+        >>> rate = compute_completion_rate(texts)
+        >>> print(f"Completion rate: {rate:.2%}")  # 50%
+    """
+    if not texts:
+        return 0.0
+
+    terminal_punctuation = {'.', '!', '?', '"', "'"}
+    complete_count = 0
+
+    for text in texts:
+        text = text.strip()
+        if not text:
+            continue
+
+        # Check minimum length
+        words = text.split()
+        if len(words) < min_words:
+            continue
+
+        # Check for terminal punctuation
+        if text[-1] in terminal_punctuation:
+            complete_count += 1
+        # Handle quotes: "...word."
+        elif len(text) >= 2 and text[-2] in terminal_punctuation:
+            complete_count += 1
+
+    return complete_count / len(texts) if texts else 0.0
+
+
+def compute_format_adherence(
+    texts: list[str],
+    valence: str = "positive",
+) -> dict[str, float]:
+    """
+    Compute format adherence for counterfactual outputs.
+
+    Checks if outputs follow the expected format based on valence:
+    - positive: Should start with "If you had..." or similar alternatives
+    - neutral: Should start with "In this situation..." or similar
+    - negative: Should start with "What you did worked well..." (used as positive reinforcement)
+
+    Args:
+        texts: List of generated counterfactual texts.
+        valence: Expected valence ("positive", "neutral", "negative").
+
+    Returns:
+        Dictionary with:
+            - adherence_rate: Fraction matching expected format (0-1)
+            - pattern_counts: Dict mapping pattern -> count
+
+    Example:
+        >>> texts = ["If you had spoken calmly...", "You should have..."]
+        >>> result = compute_format_adherence(texts, valence="positive")
+        >>> print(f"Adherence: {result['adherence_rate']:.2%}")
+    """
+    if not texts:
+        return {"adherence_rate": 0.0, "pattern_counts": {}}
+
+    # Expected patterns by valence (case-insensitive)
+    patterns_by_valence = {
+        "positive": [
+            "if you had",
+            "had you",
+            "if you'd",
+            "if only you had",
+            "you could have",
+            "you might have",
+            "it would have been better if",
+            "a better approach would have been",
+        ],
+        "neutral": [
+            "in this situation",
+            "here,",
+            "in this case",
+            "one approach would be",
+            "you might consider",
+            "an alternative would be",
+        ],
+        "negative": [
+            "what you did worked well",
+            "you handled this well",
+            "your approach was effective",
+            "this was a good choice",
+            "you did well to",
+        ],
+    }
+
+    patterns = patterns_by_valence.get(valence.lower(), patterns_by_valence["positive"])
+    pattern_counts = {p: 0 for p in patterns}
+    adherent_count = 0
+
+    for text in texts:
+        text_lower = text.lower().strip()
+
+        matched = False
+        for pattern in patterns:
+            if text_lower.startswith(pattern):
+                pattern_counts[pattern] += 1
+                matched = True
+                break
+
+        if matched:
+            adherent_count += 1
+
+    return {
+        "adherence_rate": adherent_count / len(texts) if texts else 0.0,
+        "pattern_counts": pattern_counts,
+    }
+
+
+def compute_context_fidelity(
+    inputs: list[str],
+    outputs: list[str],
+    method: str = "keyword",
+) -> float:
+    """
+    Compute context fidelity: how well outputs reference entities from inputs.
+
+    Measures whether the counterfactual response references key elements
+    (people, actions, objects) from the original context.
+
+    Args:
+        inputs: List of input context texts.
+        outputs: List of generated counterfactual texts.
+        method: Extraction method ("keyword" or "ner").
+            - "keyword": Simple noun/verb extraction
+            - "ner": Named Entity Recognition (requires spacy, falls back to keyword)
+
+    Returns:
+        Context fidelity score (0-1). Higher = better entity preservation.
+        1.0 = all key entities preserved, 0.0 = no overlap.
+
+    Example:
+        >>> inputs = ["My daughter refused to clean her room and slammed the door"]
+        >>> outputs = ["If you had calmly explained the importance of cleaning to your daughter..."]
+        >>> fidelity = compute_context_fidelity(inputs, outputs)
+        >>> print(f"Context fidelity: {fidelity:.2%}")
+    """
+    if not inputs or not outputs:
+        return 0.0
+
+    if len(inputs) != len(outputs):
+        logger.warning(
+            f"Input/output length mismatch: {len(inputs)} vs {len(outputs)}. "
+            "Using minimum length."
+        )
+
+    # Common stopwords to exclude from keyword matching
+    stopwords = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "do", "does", "did", "will", "would", "could",
+        "should", "may", "might", "must", "shall", "can", "need", "dare",
+        "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by",
+        "from", "as", "into", "through", "during", "before", "after", "above",
+        "below", "between", "under", "again", "further", "then", "once", "here",
+        "there", "when", "where", "why", "how", "all", "each", "few", "more",
+        "most", "other", "some", "such", "no", "nor", "not", "only", "own",
+        "same", "so", "than", "too", "very", "just", "and", "but", "if", "or",
+        "because", "until", "while", "although", "though", "i", "me", "my",
+        "myself", "we", "our", "ours", "ourselves", "you", "your", "yours",
+        "yourself", "yourselves", "he", "him", "his", "himself", "she", "her",
+        "hers", "herself", "it", "its", "itself", "they", "them", "their",
+        "theirs", "themselves", "what", "which", "who", "whom", "this", "that",
+        "these", "those", "am", "about", "get", "got", "getting", "make",
+        "made", "making", "go", "went", "going", "come", "came", "coming",
+    }
+
+    def extract_keywords(text: str) -> set[str]:
+        """Extract meaningful keywords from text."""
+        import re
+        # Tokenize: keep only alphabetic words
+        tokens = re.findall(r'\b[a-zA-Z]+\b', text.lower())
+        # Filter stopwords and short words
+        keywords = {t for t in tokens if t not in stopwords and len(t) > 2}
+        return keywords
+
+    fidelity_scores = []
+    num_pairs = min(len(inputs), len(outputs))
+
+    for i in range(num_pairs):
+        input_keywords = extract_keywords(inputs[i])
+        output_keywords = extract_keywords(outputs[i])
+
+        if not input_keywords:
+            # No keywords in input, can't measure fidelity
+            continue
+
+        # Calculate overlap
+        overlap = input_keywords & output_keywords
+        fidelity = len(overlap) / len(input_keywords)
+        fidelity_scores.append(fidelity)
+
+    return sum(fidelity_scores) / len(fidelity_scores) if fidelity_scores else 0.0
+
+
+def compute_counterfactual_quality(
+    inputs: list[str],
+    outputs: list[str],
+    valence: str = "positive",
+) -> dict[str, Any]:
+    """
+    Compute comprehensive counterfactual generation quality metrics.
+
+    Combines completion rate, format adherence, and context fidelity
+    into a single evaluation.
+
+    Args:
+        inputs: List of input context texts.
+        outputs: List of generated counterfactual texts.
+        valence: Expected valence ("positive", "neutral", "negative").
+
+    Returns:
+        Dictionary with:
+            - completion_rate: Fraction of complete outputs
+            - format_adherence: Fraction matching expected format
+            - context_fidelity: Entity preservation score
+            - overall_quality: Weighted average of all metrics
+            - pattern_counts: Distribution of format patterns
+
+    Example:
+        >>> quality = compute_counterfactual_quality(inputs, outputs, "positive")
+        >>> print(f"Overall quality: {quality['overall_quality']:.2%}")
+    """
+    completion = compute_completion_rate(outputs)
+    format_result = compute_format_adherence(outputs, valence)
+    fidelity = compute_context_fidelity(inputs, outputs)
+
+    # Weighted average: format adherence most important for counterfactuals
+    overall = (
+        0.25 * completion +
+        0.50 * format_result["adherence_rate"] +
+        0.25 * fidelity
+    )
+
+    return {
+        "completion_rate": completion,
+        "format_adherence": format_result["adherence_rate"],
+        "context_fidelity": fidelity,
+        "overall_quality": overall,
+        "pattern_counts": format_result["pattern_counts"],
+        "num_samples": len(outputs),
+    }
+
+
+# =============================================================================
 # MoE Expert Utilization Metrics
 # =============================================================================
 
@@ -529,11 +799,12 @@ class DecoderEvaluationResults:
     rouge: dict[str, float] = field(default_factory=dict)
     distinct_n: dict[str, float] = field(default_factory=dict)
     expert_utilization: dict[str, Any] = field(default_factory=dict)
+    counterfactual_quality: dict[str, Any] = field(default_factory=dict)
     num_samples: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for logging."""
-        return {
+        result = {
             "perplexity": self.perplexity,
             "bleu": self.bleu,
             **self.rouge,
@@ -542,6 +813,13 @@ class DecoderEvaluationResults:
             "collapsed_experts": self.expert_utilization.get("collapsed_experts", 0),
             "num_samples": self.num_samples,
         }
+        # Add counterfactual quality metrics
+        if self.counterfactual_quality:
+            result["completion_rate"] = self.counterfactual_quality.get("completion_rate", 0.0)
+            result["format_adherence"] = self.counterfactual_quality.get("format_adherence", 0.0)
+            result["context_fidelity"] = self.counterfactual_quality.get("context_fidelity", 0.0)
+            result["counterfactual_quality"] = self.counterfactual_quality.get("overall_quality", 0.0)
+        return result
 
     def summary(self) -> str:
         """Generate summary string."""
@@ -558,6 +836,13 @@ class DecoderEvaluationResults:
         if self.distinct_n:
             for name, score in self.distinct_n.items():
                 lines.append(f"{name}: {score:.4f}")
+
+        if self.counterfactual_quality:
+            lines.append("--- Counterfactual Quality ---")
+            lines.append(f"Completion Rate: {self.counterfactual_quality.get('completion_rate', 0):.4f}")
+            lines.append(f"Format Adherence: {self.counterfactual_quality.get('format_adherence', 0):.4f}")
+            lines.append(f"Context Fidelity: {self.counterfactual_quality.get('context_fidelity', 0):.4f}")
+            lines.append(f"Overall Quality: {self.counterfactual_quality.get('overall_quality', 0):.4f}")
 
         if self.expert_utilization:
             lines.append(f"Expert Balance: {self.expert_utilization.get('balance_score', 0):.4f}")
@@ -603,7 +888,10 @@ class DecoderEvaluator:
         self,
         dataloader: DataLoader,
         references: list[str] | None = None,
+        inputs: list[str] | None = None,
+        valence: str = "positive",
         compute_generation_metrics: bool = True,
+        compute_counterfactual_metrics: bool = True,
         compute_expert_metrics: bool = True,
         max_new_tokens: int = 64,
         temperature: float = 1.0,
@@ -614,7 +902,10 @@ class DecoderEvaluator:
         Args:
             dataloader: Validation dataloader.
             references: Reference texts for BLEU/ROUGE (optional).
+            inputs: Input context texts for counterfactual metrics (optional).
+            valence: Expected valence for format adherence ("positive", "neutral", "negative").
             compute_generation_metrics: Whether to generate and compute BLEU/ROUGE.
+            compute_counterfactual_metrics: Whether to compute counterfactual quality.
             compute_expert_metrics: Whether to compute expert utilization.
             max_new_tokens: Maximum tokens to generate per sample.
             temperature: Sampling temperature for generation.
@@ -633,6 +924,7 @@ class DecoderEvaluator:
         bleu = 0.0
         rouge = {}
         distinct = {}
+        counterfactual_stats = {}
         predictions = []
 
         if compute_generation_metrics and references is not None:
@@ -651,7 +943,29 @@ class DecoderEvaluator:
                 logger.info("Computing Distinct-N...")
                 distinct = compute_distinct_n(predictions)
 
-        # 3. Expert utilization
+        # 3. Counterfactual quality metrics
+        if compute_counterfactual_metrics and predictions:
+            logger.info("Computing counterfactual quality...")
+            # Use inputs if provided, otherwise use references as fallback
+            input_texts = inputs if inputs is not None else references
+            if input_texts:
+                counterfactual_stats = compute_counterfactual_quality(
+                    input_texts[:len(predictions)],
+                    predictions,
+                    valence=valence,
+                )
+            else:
+                # Compute what we can without input texts
+                counterfactual_stats = {
+                    "completion_rate": compute_completion_rate(predictions),
+                    "format_adherence": compute_format_adherence(predictions, valence)["adherence_rate"],
+                    "context_fidelity": 0.0,  # Cannot compute without inputs
+                    "overall_quality": 0.0,
+                    "pattern_counts": {},
+                    "num_samples": len(predictions),
+                }
+
+        # 4. Expert utilization
         expert_stats = {}
         if compute_expert_metrics:
             logger.info("Computing expert utilization...")
@@ -664,6 +978,7 @@ class DecoderEvaluator:
             bleu=bleu,
             rouge=rouge,
             distinct_n=distinct,
+            counterfactual_quality=counterfactual_stats,
             expert_utilization=expert_stats,
             num_samples=len(predictions) if predictions else 0,
         )
@@ -1005,6 +1320,10 @@ __all__ = [
     "compute_bleu",
     "compute_rouge",
     "compute_distinct_n",
+    "compute_completion_rate",
+    "compute_format_adherence",
+    "compute_context_fidelity",
+    "compute_counterfactual_quality",
     "compute_expert_utilization",
     "compute_semantic_similarity",
     "evaluate_subdomain_performance",

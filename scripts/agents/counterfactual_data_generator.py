@@ -149,10 +149,13 @@ SYSTEM_PROMPT = """You are an expert counterfactual reasoning generator for Fami
 
 ## MISSION
 Generate high-quality counterfactual pairs that help families learn from life experiences.
-Each pair: INPUT (scenario with suboptimal outcome) → COUNTERFACTUAL (helpful alternative)
+Scenarios can have THREE types of outcome valence:
+- NEGATIVE: Things went wrong → suggest what could have been done better
+- NEUTRAL: Decision point → explore alternative paths that could work
+- POSITIVE: Things went well → reinforce what worked and why
 
 ## OUTPUT FORMAT (JSONL - one JSON object per line)
-{"id": "cf_XXXXX", "domain": "<domain>", "subdomain": "<subdomain>", "input": {"text": "<2-4 sentence scenario>", "outcome_valence": "negative|neutral", "severity": "minor|moderate|significant", "family_members": ["<who>"]}, "counterfactual": {"alternative_action": "<specific action>", "predicted_outcome": "<positive result>", "causal_mechanism": "<why it works>", "full_text": "<complete If you had... response>"}, "metadata": {"emotions_before": ["<negative emotions>"], "emotions_after": ["<positive emotions>"], "actionability": "immediate|short_term|long_term", "cultural_context": "universal|indian|western|asian"}}
+{"id": "cf_XXXXX", "domain": "<domain>", "subdomain": "<subdomain>", "input": {"text": "<2-4 sentence scenario>", "outcome_valence": "negative|neutral|positive", "severity": "minor|moderate|significant", "family_members": ["<who>"]}, "counterfactual": {"alternative_action": "<specific action>", "predicted_outcome": "<result>", "causal_mechanism": "<why it works>", "full_text": "<complete response>"}, "metadata": {"emotions_before": ["<emotions>"], "emotions_after": ["<emotions>"], "actionability": "immediate|short_term|long_term", "cultural_context": "universal|indian|western|asian"}}
 
 ## DOMAINS (15 categories, 85 subdomains)
 - parenting: discipline, education, bonding, milestones, screen_time, siblings, teens, toddlers
@@ -210,8 +213,34 @@ Each pair: INPUT (scenario with suboptimal outcome) → COUNTERFACTUAL (helpful 
 - 15% long_term: Lifestyle changes over months
 
 ## VALID EMOTIONS
-Before: frustration, anger, sadness, worry, fear, anxiety, overwhelmed, disappointment, embarrassment, remorse, parental_guilt, grief, loneliness, emptiness, annoyance, nervousness
-After: joy, relief, hope, pride, contentment, gratitude, love, warmth, togetherness, parental_pride, patience, optimism, celebration, belonging
+Negative emotions: frustration, anger, sadness, worry, fear, anxiety, overwhelmed, disappointment, embarrassment, remorse, parental_guilt, grief, loneliness, emptiness, annoyance, nervousness
+Positive emotions: joy, relief, hope, pride, contentment, gratitude, love, warmth, togetherness, parental_pride, patience, optimism, celebration, belonging
+Neutral emotions: curiosity, contemplation, anticipation, uncertainty, acceptance
+
+## VALENCE-SPECIFIC RESPONSE FORMATS
+
+### NEGATIVE scenarios (outcome_valence: "negative")
+- Input: Scenario where something went wrong
+- emotions_before: negative emotions (frustration, anger, worry, etc.)
+- emotions_after: positive emotions (relief, hope, joy, etc.)
+- full_text starts with: "If you had..." (suggesting what could have been done differently)
+- Example: "If you had taken a deep breath before responding to your teenager's outburst, you would have modeled emotional regulation..."
+
+### NEUTRAL scenarios (outcome_valence: "neutral")
+- Input: Decision point or uncertain situation (neither clearly good nor bad)
+- emotions_before: neutral/mixed emotions (curiosity, uncertainty, anticipation)
+- emotions_after: positive emotions (clarity, confidence, relief)
+- full_text starts with: "In this situation, you might consider..." or "One approach would be to..."
+- Example: "We're trying to decide whether to put our son in private school or keep him with his neighborhood friends..."
+
+### POSITIVE scenarios (outcome_valence: "positive")
+- Input: Scenario where things went WELL - the person made good choices
+- emotions_before: could be mixed (some stress but managed well)
+- emotions_after: positive emotions (pride, joy, satisfaction)
+- full_text starts with: "What you did worked well because..." or "Your approach was effective because..."
+- This REINFORCES good behavior and explains WHY it worked
+- Example: "When my daughter failed her driving test, I stayed calm and offered to practice more with her. She passed the next time."
+- Response: "What you did worked well because staying calm modeled emotional resilience. By offering support instead of criticism, you maintained trust..."
 
 ## GENERATION RULES
 1. Input scenarios: 2-4 sentences with rich context
@@ -223,6 +252,7 @@ After: joy, relief, hope, pride, contentment, gratitude, love, warmth, togethern
 7. Be culturally authentic - Indian contexts should feel genuinely Indian
 8. Suggest realistic alternatives - don't assume unlimited resources
 9. Full text must read naturally as standalone advice
+10. For POSITIVE scenarios: Celebrate what went right, explain the psychology behind why it worked
 
 ## OUTPUT
 Generate diverse, realistic counterfactual pairs in JSONL format.
@@ -363,24 +393,26 @@ for domain, subdomains in COUNTERFACTUAL_DOMAINS.items():
 # Valid values for validation
 VALID_DOMAINS = set(COUNTERFACTUAL_DOMAINS.keys())
 VALID_SUBDOMAINS = set(ALL_SUBDOMAINS)
-VALID_OUTCOME_VALENCE = {"negative", "neutral"}
+VALID_OUTCOME_VALENCE = {"negative", "neutral", "positive"}
 VALID_SEVERITY = {"minor", "moderate", "significant"}
 VALID_ACTIONABILITY = {"immediate", "short_term", "long_term"}
 VALID_CULTURAL_CONTEXT = {"universal", "indian", "western", "asian"}
 
 # Emotions that can appear in counterfactual scenarios
 VALID_EMOTIONS = {
-    # Negative (before counterfactual)
+    # Negative (before counterfactual for negative scenarios)
     "frustration", "anger", "sadness", "worry", "fear", "anxiety", "overwhelmed",
     "disappointment", "embarrassment", "remorse", "parental_guilt", "grief",
     "loneliness", "emptiness", "annoyance", "nervousness", "bittersweet",
-    # Positive (after counterfactual)
+    # Positive (after counterfactual, or before/after for positive scenarios)
     "joy", "relief", "hope", "pride", "contentment", "gratitude", "love",
     "warmth", "togetherness", "parental_pride", "patience", "optimism",
     "celebration", "belonging", "admiration", "caring", "tenderness",
-    "playfulness", "excitement", "amusement", "approval",
-    # Neutral
-    "neutral",
+    "playfulness", "excitement", "amusement", "approval", "satisfaction",
+    "confidence", "empowerment", "clarity", "peace",
+    # Neutral (for neutral scenarios - decision points)
+    "neutral", "curiosity", "contemplation", "anticipation", "uncertainty",
+    "acceptance", "thoughtfulness", "openness",
 }
 
 # =============================================================================
@@ -428,10 +460,14 @@ TARGET_DISTRIBUTIONS = {
            ]}
     },
 
-    # Outcome valence (we want more negative for learning)
+    # Outcome valence (balanced for 300K dataset)
+    # Positive scenarios: what you did right, keep doing it
+    # Neutral scenarios: decision points with multiple valid paths
+    # Negative scenarios: learn from mistakes
     "outcome_valence": {
-        "negative": 75,       # Most counterfactuals address negative outcomes
-        "neutral": 25,        # Some neutral situations that could be better
+        "negative": 40,       # Learn from suboptimal outcomes
+        "neutral": 30,        # Decision points, neither good nor bad yet
+        "positive": 30,       # Reinforce what went well
     },
     # Severity distribution
     "severity": {
@@ -603,6 +639,20 @@ def calculate_gaps(current_stats: dict) -> dict:
 # Global rebalance mode tracking
 _REBALANCE_MODE_DOMAINS: dict[str, int] | None = None
 _REBALANCE_MODE_SUBDOMAINS: dict[str, int] | None = None
+_TARGET_VALENCE: str | None = None  # Global valence filter: "positive", "neutral", "negative", or None
+
+
+def set_target_valence(valence: str | None) -> None:
+    """Set global target valence for generation."""
+    global _TARGET_VALENCE
+    _TARGET_VALENCE = valence
+    if valence:
+        logger.info(f"VALENCE MODE: Will generate ONLY '{valence}' scenarios")
+
+
+def get_target_valence() -> str | None:
+    """Get global target valence."""
+    return _TARGET_VALENCE
 
 
 def set_rebalance_mode(domains: dict[str, int] | None) -> None:
@@ -1156,7 +1206,45 @@ def get_worker_user_prompt(worker_id: int, num_samples: int = 20) -> str:
                 _DYNAMIC_PROMPTS_CACHE = generate_dynamic_worker_prompts(20)
 
     prompt = _DYNAMIC_PROMPTS_CACHE[worker_id % len(_DYNAMIC_PROMPTS_CACHE)]
-    return f"Generate exactly {num_samples} samples with this focus:\n\n{prompt}"
+    base_prompt = f"Generate exactly {num_samples} samples with this focus:\n\n{prompt}"
+
+    # CRITICAL: Add valence instruction if target valence is set
+    target_valence = get_target_valence()
+    if target_valence:
+        valence_instruction = f"""
+
+## CRITICAL VALENCE REQUIREMENT
+You MUST generate ONLY '{target_valence}' outcome_valence scenarios.
+EVERY sample MUST have: "outcome_valence": "{target_valence}"
+Samples with any other outcome_valence will be REJECTED.
+"""
+        if target_valence == "positive":
+            valence_instruction += """
+### POSITIVE scenario format:
+- Input: Person made GOOD choices, things went WELL
+- emotions_before: can include initial stress but MANAGED well
+- emotions_after: MUST be positive (pride, joy, satisfaction, warmth)
+- full_text: MUST start with "What you did worked well because..." or "Your approach was effective because..."
+"""
+        elif target_valence == "neutral":
+            valence_instruction += """
+### NEUTRAL scenario format:
+- Input: Decision point, crossroads, weighing options (neither good nor bad YET)
+- emotions_before: neutral/mixed (curiosity, uncertainty, anticipation, contemplation)
+- emotions_after: positive (clarity, confidence, relief)
+- full_text: MUST start with "In this situation, you might consider..." or "One approach would be to..."
+"""
+        elif target_valence == "negative":
+            valence_instruction += """
+### NEGATIVE scenario format:
+- Input: Something went WRONG, made a mistake, regret
+- emotions_before: MUST be negative (frustration, anger, worry, disappointment)
+- emotions_after: positive (showing improvement from counterfactual)
+- full_text: MUST start with "If you had..." (suggesting what could have been done differently)
+"""
+        base_prompt = base_prompt + valence_instruction
+
+    return base_prompt
 
 
 # =============================================================================
@@ -1685,6 +1773,11 @@ def clean_and_validate_counterfactual(sample: dict) -> tuple[bool, str]:
     if input_data.get("outcome_valence") not in VALID_OUTCOME_VALENCE:
         input_data["outcome_valence"] = "negative"  # Default
 
+    # CRITICAL: Filter by target valence if set (reject samples with wrong valence)
+    target_valence = get_target_valence()
+    if target_valence and input_data.get("outcome_valence") != target_valence:
+        return False, f"VALENCE FILTER: Expected '{target_valence}', got '{input_data.get('outcome_valence')}'"
+
     # Validate severity
     if input_data.get("severity") not in VALID_SEVERITY:
         input_data["severity"] = "moderate"  # Default
@@ -1862,12 +1955,22 @@ class CounterfactualGenerator:
         output_dir: Path | str | None = None,
         rebalance_domains: dict[str, int] | None = None,
         target_subdomains: dict[str, int] | None = None,
+        target_valence: str | None = None,
+        valence_distribution: dict[str, int] | None = None,
     ):
         self.samples_per_request = samples_per_request
         self.delay_between_requests = delay_between_requests
         self.output_dir = Path(output_dir) if output_dir else OUTPUT_DIR
         self.rebalance_domains = rebalance_domains  # {domain: target_count}
         self.target_subdomains = target_subdomains  # {subdomain: target_count}
+        self.target_valence = target_valence  # "positive", "neutral", "negative", or None for all
+        self.valence_distribution = valence_distribution  # Custom {neg: x, neu: y, pos: z}
+
+        # CRITICAL: Set global valence filter for prompt generation and validation
+        set_target_valence(target_valence)
+
+        # Build valence-specific system prompt if targeting specific valence
+        system_prompt = self._build_system_prompt()
 
         if use_vertex_ai or USE_VERTEX_AI:
             project_id = gcp_project_id or GCP_PROJECT_ID
@@ -1880,7 +1983,7 @@ class CounterfactualGenerator:
                 location=gcp_location or GCP_LOCATION,
                 model_name=vertex_model or VERTEX_MODEL,
                 key_id=0,
-                system_prompt=SYSTEM_PROMPT,
+                system_prompt=system_prompt,
                 cache_ttl="86400s",
             )
 
@@ -1925,6 +2028,89 @@ class CounterfactualGenerator:
             set_subdomain_rebalance_mode(target_subdomains)
             logger.info(f"SUBDOMAIN REBALANCE MODE ACTIVE: Targeting {len(target_subdomains)} specific subdomains")
 
+        # Log valence mode
+        if target_valence:
+            logger.info(f"VALENCE MODE: Generating ONLY {target_valence} scenarios")
+        elif valence_distribution:
+            logger.info(f"CUSTOM VALENCE DISTRIBUTION: {valence_distribution}")
+
+    def _build_system_prompt(self) -> str:
+        """Build system prompt, optionally customized for specific valence generation."""
+        if not self.target_valence:
+            return SYSTEM_PROMPT
+
+        # Create valence-specific prompts
+        valence_instructions = {
+            "positive": '''
+## SPECIAL MODE: POSITIVE SCENARIOS ONLY
+You are generating ONLY positive outcome scenarios where the person made GOOD choices.
+
+For POSITIVE scenarios:
+- Input: Describe a situation where the person handled things WELL
+- The scenario should show good parenting, communication, or decision-making
+- emotions_before: Can include initial stress/uncertainty that was managed well
+- emotions_after: MUST be positive (pride, joy, satisfaction, warmth)
+- full_text starts with: "What you did worked well because..." or "Your approach was effective because..."
+- Explain WHY their approach worked (the psychology/mechanism behind it)
+
+EXAMPLES OF POSITIVE SCENARIOS:
+1. "When my daughter failed her test, I stayed calm and offered to help her study. She passed the next time and thanked me for believing in her."
+   Response: "What you did worked well because staying calm during setbacks models emotional resilience for your child..."
+
+2. "My teenager was upset about a friendship conflict. Instead of giving advice, I just listened. She later told me she felt really understood."
+   Response: "Your approach was effective because active listening without judgment creates psychological safety..."
+
+3. "We made a family decision about moving by involving our children in the discussion. Everyone felt heard and the transition went smoothly."
+   Response: "What you did worked well because including children in family decisions gives them a sense of agency..."
+
+Generate ONLY scenarios with outcome_valence: "positive"
+''',
+            "neutral": '''
+## SPECIAL MODE: NEUTRAL SCENARIOS ONLY
+You are generating ONLY neutral decision-point scenarios.
+
+For NEUTRAL scenarios:
+- Input: Describe a decision point or crossroads (no clear right/wrong yet)
+- The person is weighing options, considering choices
+- emotions_before: neutral/mixed (curiosity, uncertainty, anticipation, contemplation)
+- emotions_after: positive emotions (clarity, confidence, relief)
+- full_text starts with: "In this situation, you might consider..." or "One approach would be to..."
+- Explore different valid paths, not just one "right" answer
+
+EXAMPLES OF NEUTRAL SCENARIOS:
+1. "We're trying to decide whether to put our son in private school or keep him with his neighborhood friends at the local school."
+   Response: "In this situation, you might consider both the academic opportunities and social connections..."
+
+2. "My mother-in-law wants to move in with us. We're not sure if this is the right decision for our family."
+   Response: "One approach would be to have a family meeting to discuss expectations, boundaries, and trial periods..."
+
+3. "My teenager wants to take a gap year before college. We're weighing the pros and cons."
+   Response: "In this situation, consider both the potential benefits of maturity and self-discovery..."
+
+Generate ONLY scenarios with outcome_valence: "neutral"
+''',
+            "negative": '''
+## SPECIAL MODE: NEGATIVE SCENARIOS ONLY
+You are generating ONLY negative outcome scenarios (traditional counterfactuals).
+
+For NEGATIVE scenarios:
+- Input: Describe a situation where something went wrong
+- emotions_before: MUST be negative (frustration, anger, worry, disappointment)
+- emotions_after: MUST be positive (showing improvement)
+- full_text starts with: "If you had..." (suggesting what could have been done differently)
+- This is the traditional counterfactual format
+
+Generate ONLY scenarios with outcome_valence: "negative"
+'''
+        }
+
+        # Append valence-specific instructions to base prompt
+        base_prompt = SYSTEM_PROMPT
+        if self.target_valence in valence_instructions:
+            base_prompt = base_prompt + "\n" + valence_instructions[self.target_valence]
+
+        return base_prompt
+
     def _get_next_batch_id(self) -> int:
         with self.batch_lock:
             batch_id = self.batch_counter
@@ -1936,9 +2122,11 @@ class CounterfactualGenerator:
         batch_id = self._get_next_batch_id()
 
         try:
+            # Use instance's system prompt (may be valence-specific)
+            system_prompt = self._build_system_prompt()
             response = client.generate(
                 model=MODEL if hasattr(client, "api_key") else client.model_name,
-                system_prompt=SYSTEM_PROMPT,
+                system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 temperature=0.85,
             )
@@ -2353,6 +2541,22 @@ def main():
         help="Re-analyze distribution gaps every N batches (default: 100)",
     )
 
+    # Valence control options
+    valence_group = gen_parser.add_argument_group("Valence Control")
+    valence_group.add_argument(
+        "--valence",
+        type=str,
+        choices=["all", "positive", "neutral", "negative"],
+        default="all",
+        help="Generate only specific valence type: all (balanced), positive, neutral, or negative",
+    )
+    valence_group.add_argument(
+        "--valence-distribution",
+        type=str,
+        default=None,
+        help="Custom valence distribution as 'negative:neutral:positive' (e.g., '40:30:30')",
+    )
+
     # Stats command
     stats_parser = subparsers.add_parser("stats", help="Show statistics")
     stats_parser.add_argument(
@@ -2420,6 +2624,21 @@ def main():
         logger.info(f"Output directory: {output_dir}")
         logger.info(f"Speed settings: {args.speed} preset, delay={delay}s, rpm={rpm}")
 
+        # Resolve valence settings
+        target_valence = args.valence if args.valence != "all" else None
+        valence_distribution = None
+        if args.valence_distribution:
+            parts = args.valence_distribution.split(":")
+            if len(parts) == 3:
+                valence_distribution = {
+                    "negative": int(parts[0]),
+                    "neutral": int(parts[1]),
+                    "positive": int(parts[2]),
+                }
+                logger.info(f"Custom valence distribution: {valence_distribution}")
+        if target_valence:
+            logger.info(f"Generating ONLY {target_valence} valence scenarios")
+
         generator = CounterfactualGenerator(
             samples_per_request=args.samples_per_request,
             delay_between_requests=delay,
@@ -2429,6 +2648,8 @@ def main():
             vertex_model=args.vertex_model,
             num_parallel=args.num_parallel,
             output_dir=output_dir,
+            target_valence=target_valence,
+            valence_distribution=valence_distribution,
         )
 
         stats = generator.run(target_samples=args.count)

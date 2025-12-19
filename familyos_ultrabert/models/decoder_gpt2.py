@@ -156,6 +156,21 @@ class GPT2DecoderHead(BaseHead):
             )
             self.gpt2.resize_token_embeddings(config.vocab_size)
 
+            # Initialize new token embeddings properly
+            # New tokens (50257-50367) are random after resize - fix them
+            self._initialize_new_token_embeddings(
+                original_vocab_size=original_vocab_size,
+                new_vocab_size=config.vocab_size,
+                bos_token_id=config.bos_token_id,
+                eos_token_id=config.eos_token_id,
+                pad_token_id=config.pad_token_id,
+            )
+
+        # Update GPT-2 config with our special token IDs
+        self.gpt2.config.bos_token_id = config.bos_token_id
+        self.gpt2.config.eos_token_id = config.eos_token_id
+        self.gpt2.config.pad_token_id = config.pad_token_id
+
         # Get actual GPT-2 hidden size
         self.gpt2_hidden_size = self.gpt2.config.n_embd
 
@@ -205,6 +220,66 @@ class GPT2DecoderHead(BaseHead):
                 frozen_params += param.numel()
 
         logger.info(f"Froze {frozen_params:,} parameters in first {num_layers} GPT-2 layers")
+
+    def _initialize_new_token_embeddings(
+        self,
+        original_vocab_size: int,
+        new_vocab_size: int,
+        bos_token_id: int,
+        eos_token_id: int,
+        pad_token_id: int,
+    ) -> None:
+        """
+        Initialize new token embeddings to match GPT-2's learned embedding scale.
+
+        Problem: resize_token_embeddings() adds new tokens with random normal init
+        (std ~0.02, norm ~2.1) while GPT-2's learned tokens have norm ~3.7.
+        This 56% magnitude gap causes weak BOS/EOS signals.
+
+        Solution: Initialize new tokens to mean of existing GPT-2 embeddings,
+        with special handling for BOS (copy from endoftext) and PAD (zero).
+
+        Args:
+            original_vocab_size: Original GPT-2 vocab size (50257)
+            new_vocab_size: New vocab size after resize (50368)
+            bos_token_id: BOS token ID (50281)
+            eos_token_id: EOS token ID (50282)
+            pad_token_id: PAD token ID (50283)
+        """
+        with torch.no_grad():
+            wte = self.gpt2.transformer.wte.weight
+
+            # Compute statistics from original GPT-2 vocabulary
+            original_embeddings = wte[:original_vocab_size]
+            old_mean = original_embeddings.mean(dim=0)
+            original_norm = original_embeddings.norm(dim=1).mean()
+
+            logger.info(f"Original GPT-2 embeddings: mean norm={original_norm:.2f}")
+
+            # Initialize all new tokens to the mean embedding
+            # This gives them the correct magnitude from the start
+            num_new = new_vocab_size - original_vocab_size
+            wte[original_vocab_size:].copy_(
+                old_mean.unsqueeze(0).expand(num_new, -1)
+            )
+
+            # Special token initialization:
+            # BOS/EOS: Copy from GPT-2's <|endoftext|> token (ID 50256)
+            # This token has learned start/stop semantics
+            endoftext_embed = wte[50256].clone()
+            wte[bos_token_id].copy_(endoftext_embed)
+            wte[eos_token_id].copy_(endoftext_embed)
+
+            # PAD: Zero vector (should not contribute to attention)
+            wte[pad_token_id].zero_()
+
+            # Verify new embeddings
+            new_norm = wte[original_vocab_size:new_vocab_size].norm(dim=1).mean()
+            logger.info(
+                f"Initialized {num_new} new token embeddings: "
+                f"BOS={bos_token_id}, EOS={eos_token_id}, PAD={pad_token_id}"
+            )
+            logger.info(f"New embeddings mean norm: {new_norm:.2f} (target: {original_norm:.2f})")
 
     def forward(
         self,
