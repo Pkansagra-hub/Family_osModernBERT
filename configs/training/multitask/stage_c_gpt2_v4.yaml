@@ -176,7 +176,7 @@ training:
 generation:
   max_length: 256
   min_length: 20
-  temperature: 0.7
+  temperature: 0.5
   top_p: 0.9
   top_k: 50
   do_sample: true
