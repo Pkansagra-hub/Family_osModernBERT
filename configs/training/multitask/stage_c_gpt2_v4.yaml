@@ -111,7 +111,7 @@ training:
   checkpoint_dir: "checkpoints/ultrabert-gen-decoder-v4"
 
   # Training schedule (similar to v1 for fresh model)
-  num_train_epochs: 10          # Full training on fresh model
+  num_train_epochs: 8          # Full training on fresh model
   max_steps: -1
 
   # Batch configuration (A100 80GB optimized)
