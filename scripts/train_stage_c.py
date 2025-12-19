@@ -664,6 +664,182 @@ def load_datasets(
 
 
 # =============================================================================
+# Evaluation Callbacks
+# =============================================================================
+
+
+def _create_eval_callbacks(
+    config: dict[str, Any],
+    tokenizer: AutoTokenizer,
+    eval_dataset,
+    debug: bool = False,
+) -> list:
+    """
+    Create evaluation callbacks for decoder training.
+
+    Callbacks:
+        1. GenerationEvalCallback: Runs counterfactual quality metrics
+           (completion rate, format adherence, context fidelity)
+        2. PerplexityCallback: Logs perplexity during evaluation
+
+    Args:
+        config: Training configuration
+        tokenizer: Tokenizer for decoding
+        eval_dataset: Evaluation dataset for sampling
+        debug: Debug mode (fewer samples)
+
+    Returns:
+        List of TrainerCallback instances
+    """
+    from modeling_studio.trainers.decoder_trainer import GenerationEvalCallback
+
+    callbacks = []
+    eval_config = config.get("evaluation", {})
+
+    # Extract eval samples for generation quality evaluation
+    eval_samples = _extract_eval_samples(
+        eval_dataset=eval_dataset,
+        tokenizer=tokenizer,
+        num_samples=eval_config.get("num_gen_samples", 50 if not debug else 10),
+    )
+
+    if eval_samples:
+        # GenerationEvalCallback for counterfactual quality metrics
+        gen_callback = GenerationEvalCallback(
+            tokenizer=tokenizer,
+            eval_samples=eval_samples,
+            valence=eval_config.get("valence", "positive"),
+            eval_every_n_steps=eval_config.get("gen_eval_steps", 500 if not debug else 50),
+            max_new_tokens=eval_config.get("max_new_tokens", 64),
+            num_samples=eval_config.get("num_gen_samples", 50 if not debug else 10),
+            temperature=eval_config.get("temperature", 0.7),
+        )
+        callbacks.append(gen_callback)
+        logger.info(f"Added GenerationEvalCallback with {len(eval_samples)} samples")
+    else:
+        logger.warning("No eval samples available for GenerationEvalCallback")
+
+    # Add PerplexityLoggingCallback
+    ppl_callback = _create_perplexity_callback(config, debug)
+    if ppl_callback:
+        callbacks.append(ppl_callback)
+        logger.info("Added PerplexityLoggingCallback")
+
+    return callbacks
+
+
+def _extract_eval_samples(
+    eval_dataset,
+    tokenizer: AutoTokenizer,
+    num_samples: int = 50,
+) -> list[tuple[str, str]]:
+    """
+    Extract (input_text, reference_text) pairs from eval dataset.
+
+    Args:
+        eval_dataset: Evaluation dataset
+        tokenizer: Tokenizer for decoding
+        num_samples: Number of samples to extract
+
+    Returns:
+        List of (input_text, reference_text) tuples
+    """
+    samples = []
+    num_samples = min(num_samples, len(eval_dataset))
+
+    for i in range(num_samples):
+        try:
+            item = eval_dataset[i]
+
+            # Try to get input and output text
+            # Dataset might have different key names
+            input_text = None
+            reference_text = None
+
+            # Try common key names for input
+            for key in ["input_text", "input", "context", "source"]:
+                if key in item and isinstance(item[key], str):
+                    input_text = item[key]
+                    break
+
+            # Try common key names for reference
+            for key in ["output_text", "output", "target", "counterfactual", "reference"]:
+                if key in item and isinstance(item[key], str):
+                    reference_text = item[key]
+                    break
+
+            # If text not directly available, decode from token IDs
+            if input_text is None and "input_ids" in item:
+                input_ids = item["input_ids"]
+                if hasattr(input_ids, "tolist"):
+                    input_ids = input_ids.tolist()
+                input_text = tokenizer.decode(input_ids, skip_special_tokens=True)
+
+            if reference_text is None and "labels" in item:
+                labels = item["labels"]
+                if hasattr(labels, "tolist"):
+                    labels = labels.tolist()
+                # Filter out -100 padding
+                valid_labels = [l for l in labels if l != -100]
+                if valid_labels:
+                    reference_text = tokenizer.decode(valid_labels, skip_special_tokens=True)
+
+            if input_text and reference_text:
+                samples.append((input_text, reference_text))
+
+        except Exception as e:
+            logger.debug(f"Failed to extract sample {i}: {e}")
+            continue
+
+    logger.info(f"Extracted {len(samples)} eval samples for generation quality")
+    return samples
+
+
+def _create_perplexity_callback(config: dict[str, Any], debug: bool = False):
+    """
+    Create a callback that logs perplexity metrics during evaluation.
+
+    Returns:
+        PerplexityLoggingCallback or None if creation fails
+    """
+    from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
+
+    class PerplexityLoggingCallback(TrainerCallback):
+        """Callback to compute and log perplexity during evaluation."""
+
+        def on_evaluate(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            metrics: dict[str, float] | None = None,
+            **kwargs,
+        ) -> TrainerControl:
+            """Log perplexity from eval_loss."""
+            if metrics and "eval_loss" in metrics:
+                import math
+                eval_loss = metrics["eval_loss"]
+                perplexity = math.exp(eval_loss) if eval_loss < 100 else float("inf")
+                logger.info(f"[Perplexity] Step {state.global_step}: {perplexity:.4f}")
+
+                # Log to wandb if available
+                if state.is_world_process_zero:
+                    try:
+                        import wandb
+                        if wandb.run is not None:
+                            wandb.log({
+                                "eval/perplexity": perplexity,
+                                "eval/step": state.global_step,
+                            })
+                    except ImportError:
+                        pass
+
+            return control
+
+    return PerplexityLoggingCallback()
+
+
+# =============================================================================
 # Training Arguments
 # =============================================================================
 
@@ -919,11 +1095,19 @@ def train(
     )
 
     # Create trainer
-    from modeling_studio.trainers.decoder_trainer import DecoderTrainer
+    from modeling_studio.trainers.decoder_trainer import DecoderTrainer, GenerationEvalCallback
 
     decoder_config = config.get("decoder", {})
     aux_loss_weight = decoder_config.get("load_balancing_loss_weight", 0.01) + \
                       decoder_config.get("router_z_loss_weight", 0.001)
+
+    # Create evaluation callbacks
+    callbacks = _create_eval_callbacks(
+        config=config,
+        tokenizer=tokenizer,
+        eval_dataset=eval_dataset,
+        debug=args.debug,
+    )
 
     trainer = DecoderTrainer(
         model=model,
@@ -933,6 +1117,7 @@ def train(
         data_collator=data_collator,
         tokenizer=tokenizer,
         aux_loss_weight=aux_loss_weight,
+        callbacks=callbacks,
     )
 
     # Store trainer for signal handler
