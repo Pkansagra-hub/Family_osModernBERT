@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "familyos-ultrabert"
-version = "3.0.1"
+version = "3.0.2"
 description = "FamilyOS UltraBERT v3 - Multi-task NLP with decoder for counterfactual generation"
 readme = "README.md"
 license = "LicenseRef-Proprietary"

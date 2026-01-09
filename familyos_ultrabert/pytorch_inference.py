@@ -121,13 +121,23 @@ class EncoderCache:
 def _postprocess_token_classification(
     logits: torch.Tensor, tokens: List[str], schema: LabelSchema
 ) -> Dict[str, Any]:
-    """Extract entities from token classification logits."""
+    """Extract entities from token classification logits.
+    
+    Handles ModernBERT tokenization where:
+    - Tokens starting with 'Ġ' indicate word boundaries (space before token)
+    - Tokens starting with '##' indicate BERT-style subword continuations
+    - Tokens without these prefixes (after the first real token) are subword continuations
+    
+    This ensures subword tokens like ['Em', 'ma'] are merged into 'Emma' even if
+    the model incorrectly predicts B-* labels for continuation tokens.
+    """
     pred_ids = torch.argmax(logits, dim=-1)[0].cpu().numpy()
     pred_labels = [schema.id2label[int(i)] for i in pred_ids]
 
     entities = []
     current_entity = None
     special_tokens = {"[CLS]", "[SEP]", "[PAD]", "<s>", "</s>", "<pad>"}
+    first_real_token_seen = False
 
     for i, (token, label) in enumerate(zip(tokens, pred_labels)):
         if token in special_tokens:
@@ -136,20 +146,55 @@ def _postprocess_token_classification(
                 current_entity = None
             continue
 
-        if label.startswith("B-"):
+        # Determine if this token starts a new word based on tokenizer patterns
+        # ModernBERT: 'Ġ' prefix = word start; no prefix = subword continuation
+        # BERT: '##' prefix = subword continuation
+        is_subword_continuation = False
+        if token.startswith("##"):
+            # BERT-style subword continuation
+            is_subword_continuation = True
+            clean_token = token[2:]
+        elif token.startswith("Ġ"):
+            # ModernBERT word start (has space prefix)
+            is_subword_continuation = False
+            clean_token = token[1:]  # Remove Ġ prefix
+        elif first_real_token_seen:
+            # ModernBERT subword continuation (no Ġ prefix after first token)
+            is_subword_continuation = True
+            clean_token = token
+        else:
+            # First real token in sequence
+            clean_token = token
+        
+        first_real_token_seen = True
+
+        # Handle entity extraction with subword merging
+        if is_subword_continuation and current_entity:
+            # Always merge subword continuations with current entity
+            current_entity["text"] += clean_token
+            current_entity["end_token"] = i
+        elif label.startswith("B-"):
+            # Start of a new entity
             if current_entity:
                 entities.append(current_entity)
             current_entity = {
-                "text": token.replace("##", "").replace("Ġ", " ").strip(),
+                "text": clean_token,
                 "label": label[2:],
                 "start_token": i,
                 "end_token": i,
             }
         elif label.startswith("I-") and current_entity:
+            # Continuation with I- label (word boundary but same entity type)
             if label[2:] == current_entity["label"]:
-                current_entity["text"] += token.replace("##", "").replace("Ġ", " ")
+                # Add space before word-boundary tokens
+                current_entity["text"] += " " + clean_token
                 current_entity["end_token"] = i
+            else:
+                # Different entity type, close current
+                entities.append(current_entity)
+                current_entity = None
         else:
+            # O label or mismatched I- label
             if current_entity:
                 entities.append(current_entity)
                 current_entity = None
