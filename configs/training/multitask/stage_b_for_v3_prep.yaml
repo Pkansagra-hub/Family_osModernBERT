@@ -180,8 +180,7 @@ data:
 
   # Primary: Your 420K FamilyOS synthetic data directories
   familyos_data_dirs:
-    - data/familyos/unified/output_synthetic_healed
-    - data/familyos/unified/output_healed
+    - data/familyos/unified/output_healed_merged
 
   # Tasks to extract from unified data
   # These are classification/NER tasks stored in unified format
