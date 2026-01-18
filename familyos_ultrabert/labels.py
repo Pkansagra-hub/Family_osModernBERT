@@ -89,11 +89,9 @@ NER_GENERAL_LABELS = LabelSchema(
     label2id={
         "O": 0, "B-PER": 1, "I-PER": 2, "B-ORG": 3, "I-ORG": 4,
         "B-LOC": 5, "I-LOC": 6, "B-MISC": 7, "I-MISC": 8,
-        "B-DATE": 9, "I-DATE": 10, "B-TIME": 11, "I-TIME": 12,
-        "B-EVENT": 13, "I-EVENT": 14, "B-PRODUCT": 15, "I-PRODUCT": 16,
     },
     problem_type="token_classification",
-    description="General NER (17 BIO tags)",
+    description="General NER (9 BIO tags - matches checkpoint)",
 )
 
 SENTIMENT_LABELS = LabelSchema(

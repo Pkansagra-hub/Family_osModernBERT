@@ -13,7 +13,6 @@
     "relation",
     "intent"
   ],
-  "decoder_type": null,
   "epic_5_0": {
     "shared_pooler": null,
     "use_adapters": false,

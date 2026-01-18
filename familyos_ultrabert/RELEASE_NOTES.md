@@ -1,3 +1,45 @@
+# FamilyOS UltraBERT v3.0.3
+
+## NER General Head Fix
+
+Critical fix for NER_GENERAL head that was producing false positives after Stage B training.
+
+### Bug Fixes
+
+- **NER_GENERAL catastrophic forgetting**: Fixed issue where NER_GENERAL head was overtrained during Stage B, causing it to tag common words ("We", "go", "the") as entities
+- **Head weight transfer**: Restored NER_GENERAL head weights from properly-trained Stage A checkpoint
+- **Entity type accuracy**: Fixed incorrect entity type predictions (ORG tagged as LOC, etc.)
+
+### Root Cause
+
+During Stage B domain adaptation training, the NER_GENERAL head received only 3 training batches out of 15,500+ steps due to low replay weight (0.2). This caused catastrophic forgetting of the Stage A NER training.
+
+### Changes
+
+- Encoder weights updated to checkpoint-15500 with Stage A NER head
+- NER_GENERAL now correctly identifies: PER, ORG, LOC, MISC entities
+- No more false positive tagging of common words
+
+### Test Results
+
+| Head | Pass Rate |
+|------|-----------|
+| NER_GENERAL | 73% (fixed from 0%) |
+| NER_FAMILY | 100% |
+| Emotions | 100% |
+| Safety | 100% |
+| Overall | 94.1% |
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+The new encoder v2 weights will be automatically downloaded from HuggingFace Hub on first use.
+
+---
+
 # FamilyOS UltraBERT v3.0.1
 
 ## Decoder Quality Fix

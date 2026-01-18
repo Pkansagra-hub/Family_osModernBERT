@@ -118,7 +118,7 @@ class LabelSchema:
 
 
 # -----------------------------------------------------------------------------
-# NER General Labels (Extended: 9 → 17 BIO tags)
+# NER General Labels (9 BIO tags - matches checkpoint)
 # -----------------------------------------------------------------------------
 NER_GENERAL_LABELS = LabelSchema(
     name="ner_general",
@@ -136,21 +136,9 @@ NER_GENERAL_LABELS = LabelSchema(
         # Miscellaneous
         "B-MISC": 7,
         "I-MISC": 8,
-        # Date (explicit dates)
-        "B-DATE": 9,
-        "I-DATE": 10,
-        # Time (explicit times)
-        "B-TIME": 11,
-        "I-TIME": 12,
-        # Event (named events)
-        "B-EVENT": 13,
-        "I-EVENT": 14,
-        # Product/Food/Item
-        "B-PRODUCT": 15,
-        "I-PRODUCT": 16,
     },
     problem_type="token_classification",
-    description="Extended general NER with temporal and product entities (BIO format)",
+    description="General NER (9 BIO tags - matches checkpoint-14000/16500)",
 )
 
 

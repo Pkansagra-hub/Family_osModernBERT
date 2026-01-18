@@ -1,0 +1,63 @@
+{
+  "emotions": {
+    "hit_rate": 0.883,
+    "micro_f1": 0.6995903504779244,
+    "macro_f1": 0.6301056584854788,
+    "precision": 0.812797461660497,
+    "recall": 0.6140631242508989,
+    "num_samples": 1000
+  },
+  "sentiment": {
+    "accuracy": 0.802,
+    "direction_accuracy": 0.881,
+    "family_accuracy": 0.872,
+    "actionable_rate": 0.9816971713810316,
+    "macro_f1": 0.7732262554538736,
+    "num_samples": 1000
+  },
+  "ner_family": {
+    "f1": 0.8771442675552265,
+    "micro_f1": 0.8771442675552265,
+    "macro_f1": 0.28654020143311015,
+    "num_tokens": 16206
+  },
+  "safety_familyos": {
+    "accuracy": 0.962,
+    "direction_accuracy": 0.985,
+    "family_accuracy": 1.0,
+    "actionable_rate": 1.0,
+    "macro_f1": 0.9140074142622504,
+    "num_samples": 1000
+  },
+  "intent": {
+    "accuracy": 0.913,
+    "direction_accuracy": 0.971,
+    "family_accuracy": 0.946,
+    "actionable_rate": 0.9658273381294964,
+    "macro_f1": 0.8627395581188886,
+    "num_samples": 1000
+  },
+  "ingress": {
+    "accuracy": 0.846,
+    "direction_accuracy": 0.911,
+    "family_accuracy": 0.876,
+    "actionable_rate": 0.8598726114649682,
+    "macro_f1": 0.8111182763555717,
+    "num_samples": 1000
+  },
+  "relation": {
+    "hit_rate": 0.866,
+    "micro_f1": 0.8483389504092441,
+    "macro_f1": 0.7674410485052753,
+    "precision": 0.8654223968565815,
+    "recall": 0.8319169027384324,
+    "num_samples": 1000
+  },
+  "temporal": {
+    "f1": 0.8716999753269183,
+    "micro_f1": 0.8716999753269183,
+    "macro_f1": 0.2357309714358113,
+    "num_tokens": 16212
+  },
+  "weighted_avg_score": 0.8960012389906924
+}

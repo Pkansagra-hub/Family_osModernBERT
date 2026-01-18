@@ -77,7 +77,7 @@ def _check_huggingface_hub() -> bool:
 
 
 def download_encoder(
-    version: str = "v1",
+    version: str = "v2",
     quantization: QuantizationType = "int8",
     force: bool = False,
     cache_dir: Optional[Path] = None,
