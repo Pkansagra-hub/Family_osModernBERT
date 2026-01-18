@@ -712,7 +712,9 @@ class MultiTaskTrainer(Trainer):
             # The learned weights replace static weights - combining them causes double-weighting
         else:
             # Standard static task weighting (when uncertainty weighting is disabled)
-            task_weight = self.task_weights.get(task, 1.0)
+            # Handle _replay suffix: check both "task_replay" and "task" in task_weights
+            base_task = task[:-7] if task.endswith("_replay") else task
+            task_weight = self.task_weights.get(task, self.task_weights.get(base_task, 1.0))
             weighted_loss = loss * task_weight
 
         if return_outputs:

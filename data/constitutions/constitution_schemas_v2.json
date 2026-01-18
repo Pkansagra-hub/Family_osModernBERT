@@ -1,0 +1,277 @@
+{
+  "_meta": {
+    "version": "2.0.0",
+    "description": "FamilyOS Constitution Schemas - 3-Layer Architecture",
+    "schema": "familyos://constitution/v2",
+    "updated_at": "2025-12-19"
+  },
+
+  "family_values": {
+    "_description": "Layer 1: Static family values set during onboarding",
+
+    "gentle_parenting": {
+      "description": "Empathetic, connection-focused parenting emphasizing emotional validation",
+      "core_principles": ["empathy_first", "natural_consequences", "connection_over_correction"],
+      "positive_tokens": {
+        "understand": 2.5,
+        "feel": 2.5,
+        "connect": 2.5,
+        "together": 2.0,
+        "help": 2.0,
+        "support": 2.0,
+        "calm": 1.5,
+        "listen": 2.0,
+        "validate": 2.5,
+        "love": 1.5,
+        "safe": 1.5
+      },
+      "negative_tokens": {
+        "punish": -2.5,
+        "timeout": -2.0,
+        "obey": -2.0,
+        "consequence": -1.0,
+        "discipline": -1.0,
+        "in this situation": -3.0,
+        "you might consider": -2.5,
+        "perhaps you could": -2.0
+      },
+      "generation_params": {
+        "temperature": 0.65,
+        "repetition_penalty": 1.02,
+        "logits_strength": 1.5,
+        "top_p": 0.9,
+        "top_k": 50
+      },
+      "prefix_injection": false,
+      "prefix_pattern": [0.1, 0.4, -0.05, 0.2, 0.3, 0.2, -0.2, 0.1]
+    },
+
+    "traditional_strict": {
+      "description": "Clear boundaries, consistent rules, and structured expectations",
+      "core_principles": ["clear_expectations", "consistent_consequences", "respect_authority"],
+      "positive_tokens": {
+        "rule": 2.5,
+        "clear": 2.0,
+        "expectation": 2.0,
+        "respect": 2.5,
+        "consequence": 2.0,
+        "boundary": 2.0,
+        "structure": 1.5,
+        "consistent": 2.0,
+        "responsible": 2.0
+      },
+      "negative_tokens": {
+        "maybe": -1.5,
+        "perhaps": -1.5,
+        "might": -1.0,
+        "in this situation": -2.5
+      },
+      "generation_params": {
+        "temperature": 0.45,
+        "repetition_penalty": 1.10,
+        "logits_strength": 2.0,
+        "top_p": 0.85,
+        "top_k": 40
+      },
+      "prefix_injection": true,
+      "prefix_pattern": [0.8, 0.1, 0.9, -0.3, -0.4, 0.7, 0.2, 0.5]
+    },
+
+    "indian_joint_family": {
+      "description": "Emphasizes family unity, elder respect, and collective decision-making",
+      "core_principles": ["family_unity", "elder_respect", "collective_harmony"],
+      "positive_tokens": {
+        "family": 3.0,
+        "respect": 3.0,
+        "elder": 2.5,
+        "together": 2.5,
+        "home": 2.0,
+        "values": 2.5,
+        "tradition": 2.0,
+        "blessing": 1.5,
+        "harmony": 2.0,
+        "duty": 1.5
+      },
+      "negative_tokens": {
+        "alone": -1.5,
+        "ignore": -2.0,
+        "disrespect": -2.5,
+        "individual": -1.0,
+        "in this situation": -2.5
+      },
+      "generation_params": {
+        "temperature": 0.50,
+        "repetition_penalty": 1.05,
+        "logits_strength": 2.0,
+        "top_p": 0.9,
+        "top_k": 50
+      },
+      "prefix_injection": true,
+      "prefix_pattern": [0.3, 0.6, 0.4, 0.2, 0.5, -0.1, 0.3, 0.7]
+    },
+
+    "balanced_approach": {
+      "description": "Combines warmth with structure, flexibility with consistency",
+      "core_principles": ["warmth_and_structure", "flexible_boundaries", "mutual_respect"],
+      "positive_tokens": {
+        "balance": 2.0,
+        "both": 1.5,
+        "understand": 2.0,
+        "also": 1.5,
+        "while": 1.5,
+        "and": 1.0,
+        "respect": 2.0,
+        "fair": 2.0
+      },
+      "negative_tokens": {
+        "always": -1.0,
+        "never": -1.0,
+        "must": -1.0,
+        "in this situation": -2.0
+      },
+      "generation_params": {
+        "temperature": 0.55,
+        "repetition_penalty": 1.05,
+        "logits_strength": 1.5,
+        "top_p": 0.9,
+        "top_k": 50
+      },
+      "prefix_injection": false,
+      "prefix_pattern": [0.2, 0.3, 0.2, 0.3, 0.2, 0.3, 0.2, 0.3]
+    },
+
+    "authoritative": {
+      "description": "High warmth with high expectations, reasoning-based guidance",
+      "core_principles": ["high_warmth", "high_expectations", "explain_reasoning"],
+      "positive_tokens": {
+        "because": 2.0,
+        "reason": 2.0,
+        "understand": 2.0,
+        "expect": 1.5,
+        "capable": 2.0,
+        "trust": 2.0,
+        "grow": 1.5,
+        "learn": 2.0
+      },
+      "negative_tokens": {
+        "because I said so": -3.0,
+        "just do it": -2.5,
+        "in this situation": -2.0
+      },
+      "generation_params": {
+        "temperature": 0.50,
+        "repetition_penalty": 1.05,
+        "logits_strength": 1.8,
+        "top_p": 0.9,
+        "top_k": 50
+      },
+      "prefix_injection": false,
+      "prefix_pattern": [0.3, 0.4, 0.3, 0.4, 0.3, 0.4, 0.3, 0.4]
+    }
+  },
+
+  "individual_prefs": {
+    "_description": "Layer 2: Per-actor preferences (examples)",
+
+    "default": {
+      "response_length": "moderate",
+      "formality": "neutral",
+      "needs_validation_first": true,
+      "custom_positive_tokens": {},
+      "custom_negative_tokens": {}
+    },
+
+    "example_dad": {
+      "actor_id": "user_dad",
+      "response_length": "concise",
+      "formality": "casual",
+      "needs_validation_first": false,
+      "custom_positive_tokens": {
+        "straightforward": 0.3,
+        "practical": 0.3
+      },
+      "custom_negative_tokens": {
+        "emotional": -0.2
+      }
+    },
+
+    "example_mom": {
+      "actor_id": "user_mom",
+      "response_length": "moderate",
+      "formality": "warm",
+      "needs_validation_first": true,
+      "custom_positive_tokens": {
+        "nurturing": 0.3,
+        "caring": 0.3
+      },
+      "custom_negative_tokens": {}
+    }
+  },
+
+  "situational_rules": {
+    "_description": "Layer 3: Dynamic rules based on event signals",
+
+    "high_arousal": {
+      "condition": "affect_arousal > 0.7",
+      "actions": {
+        "force_deescalation": true,
+        "temperature_adjustment": -0.15,
+        "steering_weight_multiplier": 1.3,
+        "inject_tokens": {
+          "calm": 0.6,
+          "breathe": 0.5,
+          "pause": 0.4
+        }
+      }
+    },
+
+    "negative_valence": {
+      "condition": "affect_valence < -0.3",
+      "actions": {
+        "inject_empathy_prefix": true,
+        "needs_validation_first": true,
+        "inject_tokens": {
+          "understand": 0.5,
+          "feel": 0.5,
+          "hard": 0.3
+        }
+      }
+    },
+
+    "crisis_band": {
+      "condition": "affect_band == 'CRISIS'",
+      "actions": {
+        "force_deescalation": true,
+        "temperature_adjustment": -0.25,
+        "steering_weight_multiplier": 2.0,
+        "max_tokens": 50,
+        "inject_tokens": {
+          "safe": 0.8,
+          "help": 0.6,
+          "breathe": 0.6
+        }
+      }
+    },
+
+    "public_context": {
+      "condition": "social_context == 'public'",
+      "actions": {
+        "formality": "formal",
+        "inject_tokens": {
+          "appropriate": 0.3,
+          "consider": 0.3
+        },
+        "remove_tokens": ["private", "personal"]
+      }
+    },
+
+    "high_novelty": {
+      "condition": "novelty_score > 0.8",
+      "actions": {
+        "steering_weight_multiplier": 0.7,
+        "temperature_adjustment": 0.1,
+        "allow_creativity": true
+      }
+    }
+  }
+}

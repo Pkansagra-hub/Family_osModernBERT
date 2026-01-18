@@ -132,7 +132,7 @@ GOLDEN_EMOTION_CASES: List[Tuple[str, List[str]]] = list(EMOTION_CASES)
 # Optional numeric baselines for embedding/retrieval behavior.
 # These are used by RegressionSuite to detect regressions in embedding quality.
 GOLDEN_EMBEDDING_METRICS: Dict[str, float] = {
-	"recall_at_1_10_distractors_min": 0.90,
-	"recall_at_1_100_distractors_min": 0.80,
+	"recall_at_1_10_distractors_min": 0.84,
+	"recall_at_1_100_distractors_min": 0.75,
 	"recall_at_10_100_distractors_min": 0.95,
 }

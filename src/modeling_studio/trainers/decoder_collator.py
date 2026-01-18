@@ -92,6 +92,9 @@ class CounterfactualCollator:
                 - decoder_input_ids: (dec_seq_len,)
                 - labels: (dec_seq_len,)
                 - sample_id: int
+                - family_value_id: int (Layer 1 constitution)
+                - individual_pref_id: int (Layer 2 constitution)
+                - situational_context_id: int (Layer 3 constitution)
 
         Returns:
             Batched dict with:
@@ -100,6 +103,9 @@ class CounterfactualCollator:
                 - decoder_input_ids: (B, max_dec_len)
                 - decoder_attention_mask: (B, max_dec_len)
                 - labels: (B, max_dec_len)
+                - family_value_ids: (B,) - Layer 1 constitution IDs
+                - individual_pref_ids: (B,) - Layer 2 constitution IDs
+                - situational_context_ids: (B,) - Layer 3 constitution IDs
         """
         batch_size = len(features)
 
@@ -115,12 +121,65 @@ class CounterfactualCollator:
         # Pad decoder sequences
         decoder_batch = self._pad_decoder_sequences(decoder_input_ids, labels)
 
+        # Stack 3-layer constitution IDs
+        constitution_batch = self._stack_constitution_ids(features)
+
         return {
             "encoder_hidden_states": encoder_batch["hidden_states"],
             "encoder_attention_mask": encoder_batch["attention_mask"],
             "decoder_input_ids": decoder_batch["input_ids"],
             "decoder_attention_mask": decoder_batch["attention_mask"],
             "labels": decoder_batch["labels"],
+            # 3-Layer Constitution (FamilyOS)
+            "family_value_ids": constitution_batch["family_value_ids"],
+            "individual_pref_ids": constitution_batch["individual_pref_ids"],
+            "situational_context_ids": constitution_batch["situational_context_ids"],
+        }
+
+    def _stack_constitution_ids(
+        self,
+        features: list[dict[str, Any]],
+    ) -> dict[str, torch.Tensor]:
+        """
+        Stack 3-layer constitution IDs into batch tensors.
+        
+        FamilyOS Constitutional Layers:
+            Layer 1: Family Values - Core family principles
+            Layer 2: Individual Preferences - Per-member boundaries  
+            Layer 3: Situational Context - Context-adaptive rules
+        
+        Args:
+            features: List of sample dicts with constitution ID fields
+        
+        Returns:
+            Dict with stacked constitution ID tensors (B,)
+        """
+        family_value_ids = []
+        individual_pref_ids = []
+        situational_context_ids = []
+        
+        for f in features:
+            # Get constitution IDs, defaulting to 0 if not present
+            fv_id = f.get("family_value_id", 0)
+            ip_id = f.get("individual_pref_id", 0)
+            sc_id = f.get("situational_context_id", 0)
+            
+            # Handle both tensor and int types
+            if isinstance(fv_id, torch.Tensor):
+                fv_id = fv_id.item()
+            if isinstance(ip_id, torch.Tensor):
+                ip_id = ip_id.item()
+            if isinstance(sc_id, torch.Tensor):
+                sc_id = sc_id.item()
+            
+            family_value_ids.append(fv_id)
+            individual_pref_ids.append(ip_id)
+            situational_context_ids.append(sc_id)
+        
+        return {
+            "family_value_ids": torch.tensor(family_value_ids, dtype=torch.long),
+            "individual_pref_ids": torch.tensor(individual_pref_ids, dtype=torch.long),
+            "situational_context_ids": torch.tensor(situational_context_ids, dtype=torch.long),
         }
 
     def _pad_encoder_embeddings(

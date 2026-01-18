@@ -122,12 +122,12 @@ def _postprocess_token_classification(
     logits: torch.Tensor, tokens: List[str], schema: LabelSchema
 ) -> Dict[str, Any]:
     """Extract entities from token classification logits.
-    
+
     Handles ModernBERT tokenization where:
     - Tokens starting with 'Ġ' indicate word boundaries (space before token)
     - Tokens starting with '##' indicate BERT-style subword continuations
     - Tokens without these prefixes (after the first real token) are subword continuations
-    
+
     This ensures subword tokens like ['Em', 'ma'] are merged into 'Emma' even if
     the model incorrectly predicts B-* labels for continuation tokens.
     """
@@ -165,7 +165,7 @@ def _postprocess_token_classification(
         else:
             # First real token in sequence
             clean_token = token
-        
+
         first_real_token_seen = True
 
         # Handle entity extraction with subword merging

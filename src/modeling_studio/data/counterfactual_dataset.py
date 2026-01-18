@@ -245,12 +245,19 @@ class CounterfactualDataset(Dataset):
         # Tokenize counterfactual text for decoder
         decoder_out = self._tokenize_output(sample["counterfactual_full_text"])
 
+        # Extract 3-layer constitution IDs
+        constitution_out = self._get_constitution_fields(sample)
+
         return {
             "encoder_embeddings": encoder_out["embeddings"],
             "encoder_attention_mask": encoder_out["attention_mask"],
             "decoder_input_ids": decoder_out["input_ids"],
             "labels": decoder_out["labels"],
             "sample_id": sample.get("sample_id", sample_idx),
+            # 3-Layer Constitution (FamilyOS)
+            "family_value_id": constitution_out["family_value_id"],
+            "individual_pref_id": constitution_out["individual_pref_id"],
+            "situational_context_id": constitution_out["situational_context_id"],
         }
 
     def _get_precomputed_embeddings(self, sample_idx: int) -> dict[str, torch.Tensor]:
@@ -355,6 +362,33 @@ class CounterfactualDataset(Dataset):
         return {
             "input_ids": input_ids,
             "labels": labels,
+        }
+
+    def _get_constitution_fields(self, sample: dict) -> dict[str, torch.Tensor]:
+        """
+        Extract 3-layer constitution IDs from sample.
+        
+        FamilyOS Constitutional Layers:
+            Layer 1: Family Values - Core family principles
+            Layer 2: Individual Preferences - Per-member boundaries
+            Layer 3: Situational Context - Context-adaptive rules
+        
+        Args:
+            sample: Sample dict with constitution fields from preprocessing
+        
+        Returns:
+            Dict with constitution ID tensors
+        """
+        return {
+            "family_value_id": torch.tensor(
+                sample.get("family_value_id", 0), dtype=torch.long
+            ),
+            "individual_pref_id": torch.tensor(
+                sample.get("individual_pref_id", 0), dtype=torch.long
+            ),
+            "situational_context_id": torch.tensor(
+                sample.get("situational_context_id", 0), dtype=torch.long
+            ),
         }
 
     def close(self) -> None:

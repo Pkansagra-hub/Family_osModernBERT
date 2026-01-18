@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "familyos://decoder/output/v1",
+  "title": "Decoder Output Contract",
+  "description": "Standard output format from the FamilyOS Counterfactual Decoder (13th Head). Returned to P03 for storage and feedback loop.",
+  "type": "object",
+  "required": ["event_id", "counterfactual", "generation_meta"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Echo of the input event_id for correlation"
+    },
+    "counterfactual": {
+      "type": "string",
+      "description": "The generated counterfactual text"
+    },
+    "generation_meta": {
+      "type": "object",
+      "description": "Metadata about the generation process",
+      "required": ["constitution_applied", "latency_ms"],
+      "properties": {
+        "constitution_applied": {
+          "type": "string",
+          "description": "The family_values.key that was used"
+        },
+        "steering_weight_used": {
+          "type": "number",
+          "description": "The final steering weight applied"
+        },
+        "temperature_final": {
+          "type": "number",
+          "description": "The final temperature after adjustments"
+        },
+        "repetition_penalty_final": {
+          "type": "number",
+          "description": "The final repetition penalty used"
+        },
+        "tokens_generated": {
+          "type": "integer",
+          "description": "Number of tokens in the output"
+        },
+        "latency_ms": {
+          "type": "integer",
+          "description": "Generation time in milliseconds"
+        },
+        "model_version": {
+          "type": "string",
+          "description": "Version of the decoder model used"
+        }
+      }
+    },
+    "trace": {
+      "type": "object",
+      "description": "Trace information for debugging and P04 explainability",
+      "properties": {
+        "layers_applied": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Which constitution layers were active"
+        },
+        "deescalation_triggered": {
+          "type": "boolean",
+          "description": "Whether de-escalation mode was activated"
+        },
+        "empathy_prefix_injected": {
+          "type": "boolean",
+          "description": "Whether empathy prefix was injected"
+        },
+        "logits_bias_applied": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of tokens that received bias"
+        },
+        "normalization_method": {
+          "type": "string",
+          "description": "Embedding normalization method used"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if generation failed",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": ["INVALID_INPUT", "MODEL_ERROR", "TIMEOUT", "CONSTITUTION_NOT_FOUND"]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

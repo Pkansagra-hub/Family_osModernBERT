@@ -709,6 +709,64 @@ def reinitialize_emotions_head_for_stage_b(
         logger.warning("Emotions head not found in model, skipping reinitialization")
 
 
+def reinitialize_ner_head(
+    model: ModernBertMultiTaskModel,
+    head_name: str,
+    heads_config: dict[str, Any],
+) -> None:
+    """
+    Reinitialize NER head if num_labels differs from model default.
+
+    This is needed when config specifies a different num_labels than the label schema.
+    For example, Stage A uses 9-label CoNLL-2003 schema, but NER_GENERAL_LABELS has 17.
+
+    Args:
+        model: The multi-task model
+        head_name: Name of the head (e.g., "ner_general", "ner_family")
+        heads_config: Head configuration from YAML
+    """
+    from modeling_studio.models.heads import TokenClassificationHead
+
+    ner_cfg = heads_config.get(head_name, {})
+    if not ner_cfg.get("enabled", True):
+        return
+
+    cfg_num_labels = ner_cfg.get("num_labels")
+    if cfg_num_labels is None:
+        return  # Use model default
+
+    try:
+        current_head = model.get_head(head_name)
+        current_num_labels = getattr(current_head, "num_labels", None)
+
+        if cfg_num_labels == current_num_labels:
+            return  # Already correct
+
+        logger.info(
+            f"Reinitializing {head_name} head: {current_num_labels} -> {cfg_num_labels} labels"
+        )
+
+        hidden_size = model.config.hidden_size
+        new_head = TokenClassificationHead(
+            hidden_size=hidden_size,
+            num_labels=cfg_num_labels,
+            dropout=ner_cfg.get("dropout", 0.1),
+        )
+
+        # Move to same device/dtype as old head
+        device = next(current_head.parameters()).device
+        dtype = next(current_head.parameters()).dtype
+        new_head = new_head.to(device=device, dtype=dtype)
+
+        # Replace head in model
+        model.heads[head_name] = new_head
+
+        logger.info(f"{head_name} head reinitialized with {cfg_num_labels} labels")
+
+    except KeyError:
+        logger.warning(f"{head_name} head not found in model, skipping reinitialization")
+
+
 def add_stage_b_heads(
     model: ModernBertMultiTaskModel,
     config: dict[str, Any],
@@ -1011,10 +1069,13 @@ def _load_unified_familyos_data(
         ],
     )
 
-    # Get tasks to load
+    # Get tasks to load from unified FamilyOS data
+    # NOTE: ner_general, nli, safety_generic are NOT in unified data
+    # They come from replay datasets (HuggingFace public datasets)
     tasks = data_config.get(
         "familyos_tasks",
         [
+            # FamilyOS domain tasks (from unified synthetic data)
             "emotions",
             "sentiment",
             "ner_family",
@@ -1022,6 +1083,12 @@ def _load_unified_familyos_data(
             "intent",
             "ingress",
             "temporal",
+            "relation",
+            # NOTE: These are NOT available in unified format, loaded via replay:
+            # - ner_general (CoNLL-2003)
+            # - nli (SNLI/MNLI)
+            # - safety_generic (Civil Comments)
+            # - embedding (loaded separately below)
         ],
     )
 
@@ -1062,12 +1129,17 @@ def _load_unified_familyos_data(
         max_samples_tokenization=max_samples_tokenization,
     )
 
-    # Load embedding triplets if configured
-    embedding_config = data_config.get("embedding_familyos", {})
-    if embedding_config.get("enabled", False):
-        embedding_data_dir = embedding_config.get(
-            "data_dir", "data/familyos/embeddings/silver_synthetic"
-        )
+    # Load embedding triplets
+    # Check if embedding head is enabled (from heads config or familyos_heads)
+    heads_config = config.get("heads", {})
+    embedding_head_enabled = heads_config.get("embedding", {}).get("enabled", True)
+
+    # Default embedding data directory
+    embedding_data_dir = data_config.get(
+        "embedding_data_dir", "data/familyos/embeddings/silver_synthetic"
+    )
+
+    if embedding_head_enabled and Path(embedding_data_dir).exists():
         logger.info(f"Loading embedding triplets from: {embedding_data_dir}")
 
         # Load train and validation splits separately
@@ -1155,10 +1227,11 @@ def _load_unified_familyos_data(
                 eval_datasets[task] = eval_datasets[task].select(range(eval_cap))
 
     # Load replay datasets if configured
-    replay_config = data_config.get("replay", {})
+    # Check both top-level config and data config for replay settings
+    replay_config = config.get("replay", data_config.get("replay", {}))
     if replay_config.get("enabled", False):
         train_datasets, eval_datasets = _add_replay_datasets(
-            train_datasets, eval_datasets, replay_config, tokenizer, debug
+            train_datasets, eval_datasets, replay_config, tokenizer, debug, max_length
         )
 
     _log_dataset_stats(train_datasets, eval_datasets)
@@ -1233,6 +1306,10 @@ def _add_replay_datasets(
 
     Loads datasets from HuggingFace and tokenizes them to match
     the expected format for training.
+
+    Supports two config formats:
+    1. 'tasks' list: ["ner_general", "nli"] - uses default HF dataset mappings
+    2. 'datasets' list: [{"name": "conll2003", "task": "ner_general"}] - explicit config
     """
     from datasets import load_dataset
     from modeling_studio.data.tokenization import (
@@ -1241,7 +1318,28 @@ def _add_replay_datasets(
     )
 
     replay_ratio = replay_config.get("ratio", 0.15)
+
+    # Default HuggingFace dataset mappings for task names
+    # Used when config specifies 'tasks' list instead of 'datasets' list
+    DEFAULT_REPLAY_DATASETS = {
+        "ner_general": {"name": "eriktks/conll2003", "config": None, "task": "ner_general"},
+        "nli": {"name": "stanfordnlp/snli", "config": None, "task": "nli"},
+        "sentiment": {"name": "stanfordnlp/sst2", "config": None, "task": "sentiment"},
+        "emotions": {"name": "google-research-datasets/go_emotions", "config": "simplified", "task": "emotions"},
+        "safety_generic": {"name": "google/civil_comments", "config": None, "task": "safety_generic"},
+    }
+
+    # Build replay_datasets_config from either 'datasets' or 'tasks' key
     replay_datasets_config = replay_config.get("datasets", [])
+
+    # If 'datasets' is empty, try 'tasks' list and map to default datasets
+    if not replay_datasets_config:
+        tasks_list = replay_config.get("tasks", [])
+        for task_name in tasks_list:
+            if task_name in DEFAULT_REPLAY_DATASETS:
+                replay_datasets_config.append(DEFAULT_REPLAY_DATASETS[task_name])
+            else:
+                logger.warning(f"No default replay dataset mapping for task: {task_name}")
 
     logger.info(f"Adding {len(replay_datasets_config)} replay datasets (ratio={replay_ratio})")
 
@@ -1251,6 +1349,7 @@ def _add_replay_datasets(
         "ner_general": "token_classification",
         "nli": "nli",
         "emotions": "multilabel",
+        "safety_generic": "multilabel",
     }
 
     for ds_config in replay_datasets_config:
@@ -1918,9 +2017,13 @@ def train_stage_b(
     # Load Stage A model
     model = load_stage_a_model(stage_a_path)
 
-    # Reinitialize emotions head from 7 super-labels (Stage A) to 44 labels (Stage B)
+    # Reinitialize heads from Stage A to Stage B configuration
     heads_config = config.get("heads", {})
+    # Emotions: 7 super-labels (Stage A) -> 44 labels (Stage B)
     reinitialize_emotions_head_for_stage_b(model, heads_config)
+    # NER: Ensure num_labels matches config (Stage A may have 9, Stage B may need different)
+    reinitialize_ner_head(model, "ner_general", heads_config)
+    reinitialize_ner_head(model, "ner_family", heads_config)
 
     # Add Stage B heads
     model = add_stage_b_heads(model, config)

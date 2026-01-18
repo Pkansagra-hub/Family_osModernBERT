@@ -64,12 +64,66 @@ try:
 except ImportError:
     HAS_H5PY = False
 
+# Constitution registry for 3-layer constitutional training
+try:
+    from modeling_studio.data.constitution_registry import (
+        extract_constitution_from_sample,
+        get_default_registry,
+    )
+    HAS_CONSTITUTION_REGISTRY = True
+except ImportError:
+    HAS_CONSTITUTION_REGISTRY = False
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _extract_constitution_fields(sample: dict) -> dict:
+    """
+    Extract 3-layer constitution fields from a training sample.
+
+    FamilyOS Constitutional Layers:
+        Layer 1: Family Values - Core principles (privacy, respect, support)
+        Layer 2: Individual Preferences - Per-member boundaries
+        Layer 3: Situational Context - Context-adaptive rules
+
+    Args:
+        sample: Raw sample from JSONL
+
+    Returns:
+        Dict with constitution fields to merge into processed sample
+    """
+    if HAS_CONSTITUTION_REGISTRY:
+        try:
+            return extract_constitution_from_sample(sample)
+        except Exception as e:
+            logger.debug(f"Constitution extraction failed: {e}")
+
+    # Fallback: basic extraction without registry
+    metadata = sample.get("metadata", {})
+    cultural_context = metadata.get("cultural_context", "universal")
+
+    # Map cultural_context to family_value_id
+    CULTURAL_TO_ID = {
+        "universal": 0,
+        "indian": 5,    # indian_joint_family
+        "western": 6,   # western_nuclear
+        "asian": 7,     # asian_collectivist
+    }
+
+    return {
+        "family_value": cultural_context,
+        "family_value_id": CULTURAL_TO_ID.get(cultural_context, 0),
+        "individual_pref": "default",
+        "individual_pref_id": 0,
+        "situational_context": "normal",
+        "situational_context_id": 0,
+        "constitution_text": "",
+    }
 
 
 def load_counterfactual_samples(input_dir: Path) -> list[dict]:
@@ -119,6 +173,8 @@ def load_counterfactual_samples(input_dir: Path) -> list[dict]:
                             "counterfactual_outcome": sample.get("counterfactual", {}).get("predicted_outcome", ""),
                             "counterfactual_full_text": cf_text,
                             "metadata": sample.get("metadata", {}),
+                            # 3-Layer Constitution extraction
+                            **_extract_constitution_fields(sample),
                         })
                 except json.JSONDecodeError:
                     logger.warning(f"Invalid JSON in {shard.name}:{line_num}")
@@ -455,6 +511,11 @@ def save_training_data(
     domain_dist = Counter(s["domain"] for s in samples)
     subdomain_dist = Counter(s["subdomain"] for s in samples)
 
+    # 3-Layer Constitution statistics
+    family_value_dist = Counter(s.get("family_value", "universal") for s in samples)
+    individual_pref_dist = Counter(s.get("individual_pref", "default") for s in samples)
+    situational_context_dist = Counter(s.get("situational_context", "normal") for s in samples)
+
     manifest = {
         "created_at": datetime.now().isoformat(),
         "num_samples": num_samples,
@@ -464,6 +525,15 @@ def save_training_data(
         "avg_output_length": float(np.mean([len(s["counterfactual_full_text"]) for s in samples])),
         "train_size": split["train_size"],
         "val_size": split["val_size"],
+        # 3-Layer Constitution distributions
+        "constitution": {
+            "family_value_distribution": dict(family_value_dist.most_common()),
+            "individual_pref_distribution": dict(individual_pref_dist.most_common()),
+            "situational_context_distribution": dict(situational_context_dist.most_common()),
+            "num_family_values": len(family_value_dist),
+            "num_individual_prefs": len(individual_pref_dist),
+            "num_situational_contexts": len(situational_context_dist),
+        },
     }
 
     # Add embedding info based on mode

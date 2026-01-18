@@ -1,0 +1,27 @@
+{
+  "event_id": "sample_001",
+  "text": "My child threw a tantrum at the grocery store because I wouldn't buy candy.",
+  "constitution": {
+    "family_values": {
+      "key": "gentle_parenting",
+      "description": "Gentle parenting style"
+    },
+    "individual": {
+      "actor_id": "parent_demo",
+      "response_length": "moderate",
+      "needs_validation_first": true
+    },
+    "situational": {
+      "affect_arousal": 0.7,
+      "affect_valence": -0.4,
+      "affect_band": "AMBER",
+      "social_context": "public",
+      "salience_score": 0.6,
+      "novelty_score": 0.3
+    }
+  },
+  "context": {
+    "timestamp": "2025-01-16T10:00:00Z",
+    "source": "POC_demo"
+  }
+}

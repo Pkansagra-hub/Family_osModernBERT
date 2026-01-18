@@ -107,6 +107,13 @@ class GPT2DecoderConfig:
     num_prefix_tokens: int | None = None  # None = use full encoder sequence
     prefix_projection_layers: int = 1
 
+    # Enhanced encoder-decoder coupling (for new training runs)
+    use_projection_layer_norm: bool = True  # LayerNorm after projection
+    scale_projection_to_gpt2_norm: bool = False  # Scale to match GPT-2 embedding norms
+    use_cross_attention: bool = False  # Cross-attention bridge for stronger coupling
+    cross_attention_heads: int = 8  # Number of heads for cross-attention
+    use_gated_fusion: bool = False  # Gated fusion for dynamic balancing
+
     # Training configuration
     freeze_layers: int = 0
     dropout: float = 0.1

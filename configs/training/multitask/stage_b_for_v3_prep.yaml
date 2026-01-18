@@ -82,6 +82,9 @@ heads:
   ner_general:
     enabled: true
     freeze: false
+    type: token_classification
+    num_labels: 9  # CoNLL-2003 schema: O, B/I-PER, B/I-ORG, B/I-LOC, B/I-MISC
+    dropout: 0.1
 
   ner_family:
     enabled: true
@@ -96,6 +99,7 @@ heads:
   emotions:
     enabled: true
     freeze: false
+    num_labels: 44  # FamilyOS 44-emotion schema for Stage B
 
   safety_generic:
     enabled: true

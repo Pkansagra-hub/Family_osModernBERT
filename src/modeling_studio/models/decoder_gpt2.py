@@ -55,12 +55,25 @@ from modeling_studio.models.heads import BaseHead
 
 logger = logging.getLogger(__name__)
 
+# Target embedding norm for GPT-2 (computed from pretrained embeddings)
+GPT2_EMBEDDING_TARGET_NORM = 3.68
+
 
 class EncoderProjection(nn.Module):
     """
-    Projects encoder hidden states to GPT-2 hidden size.
+    Projects encoder hidden states to GPT-2 hidden size with proper normalization.
 
-    Supports both simple linear projection and multi-layer MLP.
+    CRITICAL: Includes LayerNorm and optional scaling to match GPT-2 embedding norms.
+    Without this, encoder embeddings can have 7x the magnitude of decoder
+    embeddings, causing attention confusion and hallucinations.
+
+    Args:
+        encoder_hidden_size: Size of encoder hidden states (768 for ModernBERT)
+        projection_hidden_size: Target size (1024 for GPT-2 Medium)
+        num_layers: Number of projection layers (1 = linear, >1 = MLP)
+        dropout: Dropout probability
+        use_layer_norm: Whether to apply LayerNorm after projection
+        scale_to_target: Whether to scale output to match GPT-2 embedding norms
     """
 
     def __init__(
@@ -69,10 +82,16 @@ class EncoderProjection(nn.Module):
         projection_hidden_size: int,
         num_layers: int = 1,
         dropout: float = 0.1,
+        use_layer_norm: bool = True,
+        scale_to_target: bool = False,
+        target_norm: float = GPT2_EMBEDDING_TARGET_NORM,
     ):
         super().__init__()
         self.encoder_hidden_size = encoder_hidden_size
         self.projection_hidden_size = projection_hidden_size
+        self.use_layer_norm = use_layer_norm
+        self.scale_to_target = scale_to_target
+        self.target_norm = target_norm
 
         if num_layers == 1:
             self.projection = nn.Linear(encoder_hidden_size, projection_hidden_size)
@@ -88,11 +107,164 @@ class EncoderProjection(nn.Module):
             layers.append(nn.Linear(current_size, projection_hidden_size))
             self.projection = nn.Sequential(*layers)
 
+        # LayerNorm for stable encoder-decoder coupling
+        if use_layer_norm:
+            self.layer_norm = nn.LayerNorm(projection_hidden_size)
+        else:
+            self.layer_norm = None
+
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        """Project encoder hidden states to GPT-2 dimension."""
-        return self.projection(hidden_states)
+        """
+        Project encoder hidden states to GPT-2 dimension.
+
+        Applies optional LayerNorm and scaling for proper encoder-decoder coupling.
+        """
+        projected = self.projection(hidden_states)
+
+        # Apply LayerNorm for stability
+        if self.layer_norm is not None:
+            projected = self.layer_norm(projected)
+
+        # Optional: Scale to match GPT-2 embedding norm
+        # Only enable this for NEW training runs, not existing checkpoints
+        if self.scale_to_target:
+            current_norm = projected.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+            projected = projected * (self.target_norm / current_norm.mean())
+
+        return projected
 
 
+class CrossAttentionBridge(nn.Module):
+    """
+    Optional cross-attention layer for explicit encoder-decoder coupling.
+
+    This provides a stronger encoder-decoder connection than pure prefix injection.
+    The decoder queries the encoder outputs at each layer, similar to T5/BART.
+
+    Use this for future training runs where you want stronger input grounding.
+    """
+
+    def __init__(
+        self,
+        hidden_size: int,
+        num_heads: int = 8,
+        dropout: float = 0.1,
+    ):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_heads = num_heads
+        self.head_dim = hidden_size // num_heads
+
+        self.q_proj = nn.Linear(hidden_size, hidden_size)
+        self.k_proj = nn.Linear(hidden_size, hidden_size)
+        self.v_proj = nn.Linear(hidden_size, hidden_size)
+        self.out_proj = nn.Linear(hidden_size, hidden_size)
+
+        self.layer_norm = nn.LayerNorm(hidden_size)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(
+        self,
+        decoder_hidden: torch.Tensor,
+        encoder_hidden: torch.Tensor,
+        encoder_mask: torch.Tensor = None,
+    ) -> torch.Tensor:
+        """
+        Apply cross-attention from decoder to encoder.
+
+        Args:
+            decoder_hidden: [batch, dec_len, hidden]
+            encoder_hidden: [batch, enc_len, hidden]
+            encoder_mask: [batch, enc_len] attention mask
+
+        Returns:
+            Cross-attended decoder hidden states
+        """
+        batch_size, dec_len, _ = decoder_hidden.shape
+        enc_len = encoder_hidden.shape[1]
+
+        # Project Q, K, V
+        q = self.q_proj(decoder_hidden)
+        k = self.k_proj(encoder_hidden)
+        v = self.v_proj(encoder_hidden)
+
+        # Reshape for multi-head attention
+        q = q.view(batch_size, dec_len, self.num_heads, self.head_dim).transpose(1, 2)
+        k = k.view(batch_size, enc_len, self.num_heads, self.head_dim).transpose(1, 2)
+        v = v.view(batch_size, enc_len, self.num_heads, self.head_dim).transpose(1, 2)
+
+        # Scaled dot-product attention
+        scale = self.head_dim ** -0.5
+        attn_scores = torch.matmul(q, k.transpose(-2, -1)) * scale
+
+        # Apply encoder mask
+        if encoder_mask is not None:
+            # [batch, 1, 1, enc_len]
+            mask = encoder_mask.unsqueeze(1).unsqueeze(2)
+            attn_scores = attn_scores.masked_fill(mask == 0, float('-inf'))
+
+        attn_probs = F.softmax(attn_scores, dim=-1)
+        attn_probs = self.dropout(attn_probs)
+
+        # Apply attention to values
+        attn_output = torch.matmul(attn_probs, v)
+
+        # Reshape back
+        attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, dec_len, self.hidden_size)
+        attn_output = self.out_proj(attn_output)
+
+        # Residual + LayerNorm
+        output = self.layer_norm(decoder_hidden + self.dropout(attn_output))
+
+        return output
+
+
+class GatedFusion(nn.Module):
+    """
+    Gated fusion layer to dynamically balance encoder and decoder signals.
+
+    Uses a learned gate to control how much encoder information flows
+    into the decoder at each position. This helps with:
+    1. Scenario grounding - keeping input information relevant
+    2. Constitution steering - maintaining style throughout generation
+    """
+
+    def __init__(self, hidden_size: int):
+        super().__init__()
+        self.gate = nn.Sequential(
+            nn.Linear(hidden_size * 2, hidden_size),
+            nn.Sigmoid()
+        )
+        self.layer_norm = nn.LayerNorm(hidden_size)
+
+    def forward(
+        self,
+        decoder_hidden: torch.Tensor,
+        encoder_summary: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Fuse encoder summary into decoder hidden states.
+
+        Args:
+            decoder_hidden: [batch, seq, hidden]
+            encoder_summary: [batch, hidden] - pooled encoder representation
+
+        Returns:
+            Fused hidden states
+        """
+        batch_size, seq_len, hidden = decoder_hidden.shape
+
+        # Expand encoder summary to match decoder sequence
+        encoder_expanded = encoder_summary.unsqueeze(1).expand(-1, seq_len, -1)
+
+        # Compute gate
+        combined = torch.cat([decoder_hidden, encoder_expanded], dim=-1)
+        gate = self.gate(combined)
+
+        # Apply gated fusion
+        fused = decoder_hidden + gate * encoder_expanded
+
+        return self.layer_norm(fused)
 class GPT2DecoderHead(BaseHead):
     """
     GPT-2 based decoder head for counterfactual generation.
@@ -132,12 +304,21 @@ class GPT2DecoderHead(BaseHead):
         self.vocab_size = config.vocab_size
 
         # Encoder projection (768 → 1024 for GPT-2 Medium)
+        # use_layer_norm=True for new training, False for loading existing checkpoints
+        use_layer_norm = getattr(config, 'use_projection_layer_norm', True)
+        scale_to_target = getattr(config, 'scale_projection_to_gpt2_norm', False)
+
         self.encoder_proj = EncoderProjection(
             encoder_hidden_size=encoder_hidden_size,
             projection_hidden_size=config.projection_hidden_size,
             num_layers=config.prefix_projection_layers,
             dropout=config.dropout,
+            use_layer_norm=use_layer_norm,
+            scale_to_target=scale_to_target,
         )
+
+        if use_layer_norm:
+            logger.info("Using LayerNorm in encoder projection for stable coupling")
 
         # Load pre-trained GPT-2
         logger.info(f"Loading GPT-2 from {config.gpt2_model_name}")
@@ -184,6 +365,28 @@ class GPT2DecoderHead(BaseHead):
             self.adapter = nn.Linear(config.projection_hidden_size, self.gpt2_hidden_size)
         else:
             self.adapter = None
+
+        # Optional: Cross-attention bridge for stronger encoder-decoder coupling
+        # Enable via config.use_cross_attention = True for new training runs
+        self.use_cross_attention = getattr(config, 'use_cross_attention', False)
+        if self.use_cross_attention:
+            self.cross_attention = CrossAttentionBridge(
+                hidden_size=self.gpt2_hidden_size,
+                num_heads=getattr(config, 'cross_attention_heads', 8),
+                dropout=config.dropout,
+            )
+            logger.info("Enabled cross-attention bridge for encoder-decoder coupling")
+        else:
+            self.cross_attention = None
+
+        # Optional: Gated fusion for dynamic encoder-decoder balancing
+        # Enable via config.use_gated_fusion = True for new training runs
+        self.use_gated_fusion = getattr(config, 'use_gated_fusion', False)
+        if self.use_gated_fusion:
+            self.gated_fusion = GatedFusion(hidden_size=self.gpt2_hidden_size)
+            logger.info("Enabled gated fusion for dynamic encoder-decoder balancing")
+        else:
+            self.gated_fusion = None
 
         # Freeze specified layers
         if config.freeze_layers > 0:
@@ -417,10 +620,44 @@ class GPT2DecoderHead(BaseHead):
             position_ids=position_ids,
             past_key_values=past_key_values,
             use_cache=use_cache,
-            output_hidden_states=False,
+            output_hidden_states=self.use_cross_attention or self.use_gated_fusion,
             output_attentions=False,
             return_dict=True,
         )
+
+        # Apply cross-attention bridge if enabled (for stronger encoder-decoder coupling)
+        if self.use_cross_attention and self.cross_attention is not None and past_key_values is None:
+            # Get last hidden state before LM head
+            last_hidden = outputs.hidden_states[-1] if hasattr(outputs, 'hidden_states') and outputs.hidden_states else None
+            if last_hidden is not None:
+                # Extract decoder part (skip prefix)
+                decoder_hidden = last_hidden[:, prefix_len:, :]
+                # Apply cross-attention from decoder to encoder
+                cross_attended = self.cross_attention(
+                    decoder_hidden=decoder_hidden,
+                    encoder_hidden=prefix_embeds,
+                    encoder_mask=attention_mask,
+                )
+                # Recompute logits with cross-attended hidden states
+                outputs.logits[:, prefix_len:, :] = self.gpt2.lm_head(cross_attended)
+
+        # Apply gated fusion if enabled (for dynamic encoder-decoder balancing)
+        if self.use_gated_fusion and self.gated_fusion is not None and past_key_values is None:
+            last_hidden = outputs.hidden_states[-1] if hasattr(outputs, 'hidden_states') and outputs.hidden_states else None
+            if last_hidden is not None:
+                # Pool encoder to single vector (mean pooling)
+                if attention_mask is not None:
+                    mask_expanded = attention_mask.unsqueeze(-1).float()
+                    encoder_summary = (prefix_embeds * mask_expanded).sum(dim=1) / mask_expanded.sum(dim=1).clamp(min=1e-8)
+                else:
+                    encoder_summary = prefix_embeds.mean(dim=1)
+
+                # Extract decoder part and apply gated fusion
+                decoder_hidden = last_hidden[:, prefix_len:, :]
+                fused_hidden = self.gated_fusion(decoder_hidden, encoder_summary)
+
+                # Recompute logits with fused hidden states
+                outputs.logits[:, prefix_len:, :] = self.gpt2.lm_head(fused_hidden)
 
         logits = outputs.logits  # (batch, total_seq, vocab_size)
 
@@ -493,6 +730,7 @@ class GPT2DecoderHead(BaseHead):
         no_repeat_ngram_size: int = 0,
         eos_token_id: int | None = None,
         pad_token_id: int | None = None,
+        logits_processor: Any | None = None,
     ) -> torch.Tensor:
         """
         Generate counterfactual text autoregressively.
@@ -511,6 +749,7 @@ class GPT2DecoderHead(BaseHead):
             no_repeat_ngram_size: Block n-grams of this size from repeating.
             eos_token_id: End of sequence token. Default from config.
             pad_token_id: Padding token. Default from config.
+            logits_processor: Optional LogitsProcessorList to modify logits.
 
         Returns:
             Generated token IDs. Shape: (batch, generated_length)
@@ -595,6 +834,10 @@ class GPT2DecoderHead(BaseHead):
             # Apply no-repeat n-gram blocking
             if no_repeat_ngram_size > 0 and generated.shape[1] >= no_repeat_ngram_size:
                 logits = self._block_repeat_ngrams(logits, generated, no_repeat_ngram_size)
+
+            # Apply logits processor
+            if logits_processor is not None:
+                logits = logits_processor(generated, logits)
 
             # Apply temperature
             if temperature != 1.0:

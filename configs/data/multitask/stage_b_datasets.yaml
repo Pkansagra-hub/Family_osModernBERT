@@ -199,36 +199,23 @@ datasets:
       label: relation
 
   # ============================================
-  # FAMILYOS: Embeddings (Gold + Silver)
-  # Gold: 800 train, 200 val | Silver: 17,216 samples
-  # Triplet format: anchor, positive, negative with cluster info
+  # FAMILYOS: Embeddings (Silver Synthetic Only)
+  # Silver: 17,216 samples in triplet format
+  # NOTE: Disabled - triplet files use different naming convention (triplets_*.jsonl)
+  #       Embedding task will use Stage A replay data instead
   # ============================================
-  familyos_embedding_gold:
-    task: embedding
-    source: local
-    data_dir: data/familyos/embeddings/gold
-    format: jsonl
-    loss_type: triplet  # anchor, positive, negative
-    splits:
-      train: train
-      validation: validation
-    column_mapping:
-      anchor: anchor
-      positive: positive
-      negative: negative
-
-  familyos_embedding_silver:
-    task: embedding
-    source: local
-    data_dir: data/familyos/embeddings/silver
-    format: jsonl
-    loss_type: triplet
-    splits:
-      train: train
-    column_mapping:
-      anchor: anchor
-      positive: positive
-      negative: negative
+  # familyos_embedding_silver:
+  #   task: embedding
+  #   source: local
+  #   data_dir: data/familyos/embeddings/silver_synthetic
+  #   format: jsonl
+  #   loss_type: triplet
+  #   splits:
+  #     train: train
+  #   column_mapping:
+  #     anchor: anchor
+  #     positive: positive
+  #     negative: negative
 
   # ============================================
   # FAMILYOS: Temporal Extraction (Gold + Silver) [NEW v2]

@@ -330,6 +330,64 @@ def reinitialize_emotions_head(
         logger.warning("Emotions head not found in model, skipping reinitialization")
 
 
+def reinitialize_ner_head(
+    model: ModernBertMultiTaskModel,
+    head_name: str,
+    heads_config: dict[str, Any],
+) -> None:
+    """
+    Reinitialize NER head if num_labels differs from model default.
+
+    This is needed when config specifies a different num_labels than the label schema.
+    For example, Stage A uses 9-label CoNLL-2003 schema, but NER_GENERAL_LABELS has 17.
+
+    Args:
+        model: The multi-task model
+        head_name: Name of the head (e.g., "ner_general", "ner_family")
+        heads_config: Head configuration from YAML
+    """
+    from modeling_studio.models.heads import TokenClassificationHead
+
+    ner_cfg = heads_config.get(head_name, {})
+    if not ner_cfg.get("enabled", True):
+        return
+
+    cfg_num_labels = ner_cfg.get("num_labels")
+    if cfg_num_labels is None:
+        return  # Use model default
+
+    try:
+        current_head = model.get_head(head_name)
+        current_num_labels = getattr(current_head, "num_labels", None)
+
+        if cfg_num_labels == current_num_labels:
+            return  # Already correct
+
+        logger.info(
+            f"Reinitializing {head_name} head: {current_num_labels} -> {cfg_num_labels} labels"
+        )
+
+        hidden_size = model.config.hidden_size
+        new_head = TokenClassificationHead(
+            hidden_size=hidden_size,
+            num_labels=cfg_num_labels,
+            dropout=ner_cfg.get("dropout", 0.1),
+        )
+
+        # Move to same device/dtype as old head
+        device = next(current_head.parameters()).device
+        dtype = next(current_head.parameters()).dtype
+        new_head = new_head.to(device=device, dtype=dtype)
+
+        # Replace head in model
+        model.heads[head_name] = new_head
+
+        logger.info(f"{head_name} head reinitialized with {cfg_num_labels} labels")
+
+    except KeyError:
+        logger.warning(f"{head_name} head not found in model, skipping reinitialization")
+
+
 def init_model(config: dict[str, Any]) -> ModernBertMultiTaskModel:
     """Initialize the multi-task model from config."""
     model_config = config.get("model", {})
@@ -926,9 +984,12 @@ def train(
     model = init_model(config)
     logger.info(f"Model initialized with {sum(p.numel() for p in model.parameters()):,} parameters")
 
-    # Reinitialize emotions head if num_labels differs from default (e.g., Stage A super-labels)
+    # Reinitialize heads if num_labels differs from default
     heads_config = config.get("heads", {})
     reinitialize_emotions_head(model, heads_config)
+    # Reinitialize NER heads (Stage A uses 9-label CoNLL schema, model defaults to 17)
+    reinitialize_ner_head(model, "ner_general", heads_config)
+    reinitialize_ner_head(model, "ner_family", heads_config)
 
     # Load datasets
     train_datasets, eval_datasets = load_datasets(

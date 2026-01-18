@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "familyos://decoder/input/v1",
+  "title": "Decoder Input Contract",
+  "description": "Standard input format for the FamilyOS Counterfactual Decoder (13th Head). P03 sends this during R5 (Dream Exploration) phase.",
+  "type": "object",
+  "required": ["event_id", "text", "constitution"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique identifier from st_hipp_events.event_id"
+    },
+    "text": {
+      "type": "string",
+      "description": "The scenario text from st_hipp_events.text (Col 55)"
+    },
+    "constitution": {
+      "type": "object",
+      "description": "The 3-layer constitution resolved by P03",
+      "required": ["family_values", "situational"],
+      "properties": {
+        "family_values": {
+          "$ref": "#/$defs/FamilyValuesLayer"
+        },
+        "individual": {
+          "$ref": "#/$defs/IndividualLayer"
+        },
+        "situational": {
+          "$ref": "#/$defs/SituationalLayer"
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Optional additional context from st_hipp_events",
+      "properties": {
+        "actor_id": { "type": "string" },
+        "tenant_id": { "type": "string" },
+        "space_id": { "type": "string" },
+        "topic": { "type": "string" },
+        "location_name": { "type": "string" },
+        "participants_json": { "type": "string" },
+        "activity_type": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "FamilyValuesLayer": {
+      "type": "object",
+      "description": "Layer 1: Static family values set during onboarding",
+      "required": ["key"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "enum": ["gentle_parenting", "traditional_strict", "balanced_approach", "indian_joint_family", "authoritative"],
+          "description": "The constitution key identifier"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this constitution"
+        },
+        "positive_tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Tokens to encourage during generation with their weights"
+        },
+        "negative_tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Tokens to penalize during generation with their weights"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 2.0,
+          "default": 0.7,
+          "description": "Base temperature for this constitution"
+        },
+        "repetition_penalty": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 2.0,
+          "default": 1.1,
+          "description": "Repetition penalty for this constitution"
+        },
+        "logits_strength": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "default": 0.5,
+          "description": "How strongly to apply token biases"
+        },
+        "prefix_injection": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to inject steering prefix into hidden states"
+        },
+        "prefix_pattern": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "The prefix vector pattern for hidden state steering"
+        }
+      }
+    },
+    "IndividualLayer": {
+      "type": "object",
+      "description": "Layer 2: Per-actor preferences and overrides",
+      "properties": {
+        "actor_id": {
+          "type": "string",
+          "description": "The actor these preferences belong to"
+        },
+        "response_length": {
+          "type": "string",
+          "enum": ["concise", "moderate", "detailed"],
+          "default": "moderate"
+        },
+        "formality": {
+          "type": "string",
+          "enum": ["casual", "neutral", "formal"],
+          "default": "neutral"
+        },
+        "needs_validation_first": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to lead with empathy before advice"
+        },
+        "custom_positive_tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Additional positive tokens specific to this actor"
+        },
+        "custom_negative_tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Additional negative tokens specific to this actor"
+        }
+      }
+    },
+    "SituationalLayer": {
+      "type": "object",
+      "description": "Layer 3: Dynamic context from the current event",
+      "properties": {
+        "affect_arousal": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "From st_hipp_events.affect_arousal (Col 81)"
+        },
+        "affect_valence": {
+          "type": "number",
+          "minimum": -1.0,
+          "maximum": 1.0,
+          "description": "From st_hipp_events.affect_valence (Col 80)"
+        },
+        "affect_band": {
+          "type": "string",
+          "enum": ["GREEN", "AMBER", "RED", "CRISIS"],
+          "description": "From st_hipp_events.affect_band (Col 82)"
+        },
+        "social_context": {
+          "type": "string",
+          "enum": ["private", "family", "public"],
+          "description": "From st_hipp_events.social_context (Col 53)"
+        },
+        "salience_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "From st_hipp_events.salience_score (Col 83)"
+        },
+        "novelty_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "From st_hipp_events.novelty_score (Col 67)"
+        },
+        "steering_weight": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2.5,
+          "default": 1.0,
+          "description": "Computed weight for constitution application"
+        },
+        "temperature_adjustment": {
+          "type": "number",
+          "minimum": -0.5,
+          "maximum": 0.5,
+          "default": 0.0,
+          "description": "Adjustment to base temperature"
+        },
+        "force_deescalation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Force de-escalation mode for high arousal"
+        },
+        "inject_empathy_prefix": {
+          "type": "boolean",
+          "default": false,
+          "description": "Inject empathy steering for negative valence"
+        }
+      }
+    }
+  }
+}
