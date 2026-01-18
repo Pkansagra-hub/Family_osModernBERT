@@ -1,7 +1,7 @@
 # FamilyOS UltraBERT - Complete Model Output Reference
 
-> **Version:** v3.0.2  
-> **Architecture:** ModernBERT-base (22 layers, 768-dim, 155M params) + GPT-2 Decoder (24 layers, 355M params)  
+> **Version:** v3.0.2
+> **Architecture:** ModernBERT-base (22 layers, 768-dim, 155M params) + GPT-2 Decoder (24 layers, 355M params)
 > **Total Parameters:** ~510M (encoder: 155M, decoder: 355M)
 
 ---
@@ -507,7 +507,7 @@ Dense vector representation for semantic similarity and retrieval.
 
 GPT-2 decoder for generating alternative reframes.
 
-**Input:** Negative family situation  
+**Input:** Negative family situation
 **Output:** Constructive alternative perspective
 
 ```python
@@ -540,30 +540,30 @@ class ClientResult:
     sentiment: str               # "very_positive", "positive", etc.
     sentiment_confidence: float  # 0.0-1.0
     sentiment_scores: Dict       # All class scores
-    
+
     emotions: List[str]          # ["joy", "love", ...]
     emotion_scores: Dict         # All 44 emotion scores
-    
+
     safety: str                  # "GREEN", "AMBER", "RED", "CRISIS"
     safety_confidence: float     # 0.0-1.0
     safety_scores: Dict          # All band probabilities
-    
+
     entities: List[Dict]         # Family NER entities
     general_entities: List[Dict] # General NER entities
     temporal: List[Dict]         # Temporal expressions
-    
+
     intent: str                  # User intent
     intent_confidence: float     # 0.0-1.0
-    
+
     ingress: str                 # Routing category
     relations: List[str]         # Detected relations
     nli: str                     # NLI prediction
-    
+
     embedding: List[float]       # 768-dim vector
     embedding_dim: int           # 768
-    
+
     latency_ms: float            # Inference time
-    
+
     # Convenience properties
     is_safe: bool                # safety == "GREEN"
     is_crisis: bool              # safety == "CRISIS"
