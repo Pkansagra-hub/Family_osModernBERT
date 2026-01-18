@@ -1134,9 +1134,10 @@ def _load_unified_familyos_data(
     heads_config = config.get("heads", {})
     embedding_head_enabled = heads_config.get("embedding", {}).get("enabled", True)
 
-    # Default embedding data directory
-    embedding_data_dir = data_config.get(
-        "embedding_data_dir", "data/familyos/embeddings/silver_synthetic"
+    # Get embedding config
+    embedding_config = data_config.get("embedding_familyos", {})
+    embedding_data_dir = embedding_config.get(
+        "data_dir", "data/familyos/embeddings/silver_synthetic"
     )
 
     if embedding_head_enabled and Path(embedding_data_dir).exists():

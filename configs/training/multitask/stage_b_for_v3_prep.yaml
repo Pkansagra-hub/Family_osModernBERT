@@ -192,7 +192,7 @@ data:
     - intent
     - ingress
     - temporal
-    - relations  # Family relationship classification
+    - relation  # Family relationship classification (singular!)
     # NOTE: embedding is NOT here - it uses separate triplet format below
 
   # FamilyOS Embedding Triplets (200K+ synthetic data)

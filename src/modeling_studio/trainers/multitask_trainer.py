@@ -421,13 +421,14 @@ class MultiTaskTrainer(Trainer):
         dummy_eval_dataset = list(self.eval_datasets.values())[0] if self.eval_datasets else None
 
         # Initialize parent Trainer
+        # Use processing_class instead of deprecated tokenizer parameter (transformers 5.0+)
         super().__init__(
             model=model,
             args=args,
             data_collator=data_collator,
             train_dataset=dummy_dataset,
             eval_dataset=dummy_eval_dataset,  # Required for eval_strategy != 'no'
-            tokenizer=tokenizer,
+            processing_class=tokenizer,
             compute_metrics=compute_metrics,
             callbacks=callbacks,
             optimizers=optimizers,
