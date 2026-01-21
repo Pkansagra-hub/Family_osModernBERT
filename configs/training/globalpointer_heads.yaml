@@ -1,0 +1,159 @@
+# =============================================================================
+# GlobalPointer Head Training Configuration
+# =============================================================================
+# Train span-based NER heads (GlobalPointer) with frozen encoder.
+# The encoder from checkpoint-18000 is proven excellent - we only train heads.
+#
+# Usage:
+#   python scripts/training/train_globalpointer_heads.py \
+#       --config configs/training/globalpointer_heads.yaml
+#
+# Output: outputs/globalpointer-heads-v1/
+
+# =============================================================================
+# Encoder Configuration (FROZEN)
+# =============================================================================
+encoder:
+  # Checkpoint with proven excellent encoder
+  checkpoint: outputs/modernbert-v2-for-v3-transfer/checkpoint-18000
+
+  # CRITICAL: Freeze encoder - we only train heads
+  freeze: true
+
+  # Hidden size (must match checkpoint)
+  hidden_size: 768
+
+  # Data type for inference (float32 for training stability)
+  dtype: float32
+
+# =============================================================================
+# Head Configuration
+# =============================================================================
+heads:
+  # Which heads to train (ner_general, ner_family, temporal)
+  enabled:
+    - ner_general
+    - ner_family
+    - temporal
+
+  # GlobalPointer architecture settings
+  architecture:
+    head_size: 64       # Per-label head dimension
+    use_rope: true      # Rotary Position Encoding
+    dropout: 0.1        # Dropout probability
+    loss_type: globalpointer  # "globalpointer" (SOTA) or "bce"
+
+  # Per-head label configurations
+  # These are auto-loaded from globalpointer_collator.py
+  # but can be overridden here if needed
+  ner_general:
+    # Labels: PER, ORG, LOC, MISC (4 labels)
+    enabled: true
+
+  ner_family:
+    # Labels: KINSHIP, MILESTONE, HEIRLOOM, PET, NICKNAME,
+    #         TRADITION, HEALTH_EVENT, ACHIEVEMENT, RELATIONSHIP, MEMORIAL (10 labels)
+    enabled: true
+
+  temporal:
+    # Labels: DATE_ABS, DATE_REL, TIME, DURATION, RECURRING (5 labels)
+    enabled: true
+
+# =============================================================================
+# Training Configuration
+# =============================================================================
+training:
+  # Optimization (heads only - encoder is frozen)
+  learning_rate: 1.0e-4       # Higher LR since heads train from scratch
+  encoder_lr: 0.0             # Encoder is frozen, no gradient updates
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-8
+  max_grad_norm: 1.0
+
+  # Schedule
+  lr_scheduler_type: linear
+  warmup_steps: 500           # 5% of expected steps
+  warmup_ratio: 0.0           # Use warmup_steps instead
+
+  # Training duration
+  # With ~1.3M total samples (500K ner_family + 400K temporal + 400K general)
+  # 3 epochs is sufficient for head training with frozen encoder
+  num_epochs: 3
+  max_steps: -1               # Use num_epochs
+
+  # Validation split
+  val_split: 0.1              # 10% for validation
+
+  # Batch size - optimized for A100 40GB
+  # Frozen encoder + 3.9M trainable head params = large batch possible
+  batch_size: 64
+  gradient_accumulation_steps: 2  # Effective batch = 128
+
+  # Evaluation & saving
+  eval_steps: 2000            # ~10 evals per epoch
+  save_steps: 4000            # Save every ~4K steps
+  save_total_limit: 5
+
+  # Logging
+  logging_steps: 100
+
+  # Reproducibility
+  seed: 42
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  # Root data directory
+  root: data
+
+  # Max sequence length
+  max_length: 256
+
+  # Number of data loader workers
+  num_workers: 4
+
+  # Per-head data sources (paths relative to data root)
+  # Supports multiple directories separated by comma
+  ner_general:
+    # Public NER datasets (already converted to span format)
+    train: ner_general_span
+    validation: ner_general_span/conll2003
+
+  ner_family:
+    # FamilyOS data sources:
+    # 1. Unified multi-task data (output_healed_merged)
+    # 2. Converted BIO gold/silver data (ner_family_span)
+    train: familyos/unified/output_healed_merged,familyos/ner_family_span
+    validation: ""
+
+  temporal:
+    # FamilyOS data sources:
+    # 1. Unified multi-task data (output_healed_merged)
+    # 2. Converted BIO gold/silver data (temporal_span)
+    train: familyos/unified/output_healed_merged,familyos/temporal_span
+    validation: ""
+
+# =============================================================================
+# Output Configuration
+# =============================================================================
+output:
+  # Output directory for checkpoints and logs
+  # NOTE: This saves the FULL model with all 12 heads (not just GlobalPointer heads)
+  dir: outputs/globalpointer-unified-v1
+
+  # What to save
+  save_encoder: true    # Save full model including encoder
+  save_heads: true      # Save all heads (12 capabilities)
+  save_optimizer: true  # Save optimizer state for resume
+  save_history: true    # Save training history JSON
+
+# =============================================================================
+# Debug Configuration
+# =============================================================================
+debug:
+  enabled: false
+  max_samples: 1000     # Limit samples when debugging
+  fast_dev_run: false   # Single batch for testing

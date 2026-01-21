@@ -1762,6 +1762,265 @@ class EmbeddingMixup(nn.Module):
 
 
 # =============================================================================
+# GlobalPointer Loss - Multi-Label Categorical Cross-Entropy for Span Detection
+# =============================================================================
+
+
+class GlobalPointerLoss(nn.Module):
+    """
+    Multi-Label Categorical Cross-Entropy Loss for GlobalPointer NER.
+
+    This loss function is specifically designed for span-based NER using the
+    GlobalPointer architecture (Su et al., 2022). It treats span detection as
+    a multi-label classification problem where each (start, end) position can
+    have multiple entity types.
+
+    The key insight is using the logsumexp trick to compute a stable version
+    of circle-loss style separation between positive and negative predictions.
+    This naturally handles the extreme class imbalance in span detection where
+    99%+ of positions are negative (non-entity spans).
+
+    Mathematical Formulation:
+        1. Flip sign for positive classes: y_pred = (1 - 2*y_true) * y_pred
+        2. Mask opposite predictions with -inf
+        3. Compute logsumexp for positive and negative separately
+        4. Total loss = neg_loss + pos_loss
+
+    Args:
+        reduction: How to reduce the loss ('mean', 'sum', or 'none')
+        mask_diagonal: Whether to exclude diagonal (single-token spans).
+            Default False allows single-token entities.
+
+    Reference:
+        Su et al. "Global Pointer: Novel Efficient Span-based Approach
+        for Named Entity Recognition" (arXiv:2208.03054)
+
+    Example:
+        >>> loss_fn = GlobalPointerLoss()
+        >>> scores = torch.randn(2, 4, 128, 128)  # B, num_labels, L, L
+        >>> labels = torch.zeros(2, 4, 128, 128)
+        >>> labels[0, 0, 5, 10] = 1  # Entity from token 5 to 10
+        >>> mask = torch.ones(2, 128)
+        >>> loss = loss_fn(scores, labels, mask)
+        >>> assert loss.requires_grad
+    """
+
+    def __init__(
+        self,
+        reduction: Literal["mean", "sum", "none"] = "mean",
+        mask_diagonal: bool = False,
+    ):
+        super().__init__()
+        self.reduction = reduction
+        self.mask_diagonal = mask_diagonal
+
+    def forward(
+        self,
+        y_pred: torch.Tensor,
+        y_true: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """
+        Compute GlobalPointer multi-label categorical cross-entropy loss.
+
+        Args:
+            y_pred: Span logits of shape (batch_size, num_labels, seq_len, seq_len).
+                Raw logits (before sigmoid), where y_pred[b, l, i, j] is the
+                score for entity type l spanning from token i to token j.
+            y_true: Binary span labels of shape (batch_size, num_labels, seq_len, seq_len).
+                1 indicates a true entity span, 0 otherwise.
+            attention_mask: Optional padding mask of shape (batch_size, seq_len).
+                1 for valid tokens, 0 for padding.
+
+        Returns:
+            Loss tensor. Shape depends on reduction:
+                - 'mean' or 'sum': scalar
+                - 'none': (batch_size * num_labels,)
+        """
+        batch_size, num_labels, seq_len, _ = y_pred.shape
+        device = y_pred.device
+
+        # Ensure y_true is on same device and float
+        y_true = y_true.to(device).float()
+
+        # Create upper triangular mask (valid spans only: start <= end)
+        diagonal = 1 if self.mask_diagonal else 0
+        triu_mask = torch.triu(
+            torch.ones(seq_len, seq_len, device=device, dtype=torch.bool),
+            diagonal=diagonal,
+        )
+
+        # Combine with padding mask if provided
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(device)
+            # Create 2D mask: position (i,j) is valid if both i and j are non-padding
+            mask_i = attention_mask.unsqueeze(-1)  # (B, L, 1)
+            mask_j = attention_mask.unsqueeze(-2)  # (B, 1, L)
+            pad_mask = (mask_i * mask_j).bool()  # (B, L, L)
+            # Combine with triu mask
+            valid_mask = triu_mask.unsqueeze(0) & pad_mask  # (B, L, L)
+        else:
+            valid_mask = triu_mask.unsqueeze(0).expand(
+                batch_size, seq_len, seq_len
+            )  # (B, L, L)
+
+        # Expand mask to include label dimension
+        valid_mask = valid_mask.unsqueeze(1).expand(
+            batch_size, num_labels, seq_len, seq_len
+        )  # (B, num_labels, L, L)
+
+        # Mask out invalid positions with large negative value
+        # Use dtype-appropriate masking value to avoid overflow in float16
+        mask_value = -1e4 if y_pred.dtype == torch.float16 else -1e12
+        y_pred = y_pred.masked_fill(~valid_mask, mask_value)
+        y_true = y_true.masked_fill(~valid_mask, 0.0)
+
+        # Reshape to (batch_size * num_labels, seq_len * seq_len)
+        y_pred_flat = y_pred.view(batch_size * num_labels, -1)
+        y_true_flat = y_true.view(batch_size * num_labels, -1)
+
+        # Compute multi-label categorical cross-entropy
+        return self._multilabel_categorical_crossentropy(y_pred_flat, y_true_flat)
+
+    def _multilabel_categorical_crossentropy(
+        self,
+        y_pred: torch.Tensor,
+        y_true: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Core loss computation using logsumexp trick.
+
+        This implements a circle-loss style separation where:
+        - Positive samples are pushed to have HIGH scores
+        - Negative samples are pushed to have LOW scores
+
+        The logsumexp provides a smooth approximation to max, making the
+        loss focus on the hardest examples (hardest negative and weakest positive).
+
+        Args:
+            y_pred: Flattened logits (batch_size * num_labels, seq_len * seq_len)
+            y_true: Flattened labels (batch_size * num_labels, seq_len * seq_len)
+
+        Returns:
+            Loss tensor with specified reduction applied
+        """
+        # Use dtype-appropriate masking value to avoid overflow in float16
+        mask_value = 1e4 if y_pred.dtype == torch.float16 else 1e12
+
+        # Flip sign: positive classes get negative prediction, negative get positive
+        # This inverts the optimization direction appropriately
+        y_pred_adjusted = (1 - 2 * y_true) * y_pred
+
+        # Mask out opposite class predictions with large negative value
+        # y_pred_neg: predictions for negative samples (mask out positives)
+        # y_pred_pos: predictions for positive samples (mask out negatives)
+        y_pred_neg = y_pred_adjusted - y_true * mask_value  # Keep negatives, mask positives
+        y_pred_pos = y_pred_adjusted - (1 - y_true) * mask_value  # Keep positives, mask negatives
+
+        # Add a zero option for numerical stability when no positives/negatives exist
+        # This prevents -inf from logsumexp of empty set
+        zeros = torch.zeros_like(y_pred[..., :1])
+        y_pred_neg = torch.cat([y_pred_neg, zeros], dim=-1)
+        y_pred_pos = torch.cat([y_pred_pos, zeros], dim=-1)
+
+        # LogSumExp aggregates scores in a soft-max-like fashion
+        # - neg_loss: penalizes high scores on negative samples
+        # - pos_loss: penalizes low scores on positive samples
+        neg_loss = torch.logsumexp(y_pred_neg, dim=-1)
+        pos_loss = torch.logsumexp(y_pred_pos, dim=-1)
+
+        # Combine losses
+        loss = neg_loss + pos_loss
+
+        # Apply reduction
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        return loss
+
+
+class FocalGlobalPointerLoss(GlobalPointerLoss):
+    """
+    GlobalPointer loss with focal loss weighting for extreme imbalance.
+
+    Extends GlobalPointerLoss by adding focal loss style (1-p)^gamma weighting
+    to further down-weight easy examples. Useful when positive spans are
+    extremely rare (e.g., <0.1% of positions).
+
+    Note: In practice, the standard GlobalPointerLoss often works well enough
+    due to the logsumexp aggregation naturally handling imbalance. Use this
+    variant only if you observe the model predicting too many false positives.
+
+    Args:
+        gamma: Focal loss focusing parameter. Higher values more aggressively
+            down-weight easy examples. Default: 2.0
+        reduction: How to reduce the loss ('mean', 'sum', or 'none')
+        mask_diagonal: Whether to exclude diagonal (single-token spans)
+
+    Example:
+        >>> loss_fn = FocalGlobalPointerLoss(gamma=2.0)
+        >>> scores = torch.randn(2, 4, 128, 128)
+        >>> labels = torch.zeros(2, 4, 128, 128)
+        >>> labels[0, 0, 5, 10] = 1
+        >>> mask = torch.ones(2, 128)
+        >>> loss = loss_fn(scores, labels, mask)
+    """
+
+    def __init__(
+        self,
+        gamma: float = 2.0,
+        reduction: Literal["mean", "sum", "none"] = "mean",
+        mask_diagonal: bool = False,
+    ):
+        super().__init__(reduction=reduction, mask_diagonal=mask_diagonal)
+        self.gamma = gamma
+
+    def _multilabel_categorical_crossentropy(
+        self,
+        y_pred: torch.Tensor,
+        y_true: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute focal-weighted multi-label categorical cross-entropy.
+
+        Applies (1-p)^gamma weighting to down-weight confident predictions.
+        """
+        # Use dtype-appropriate masking value to avoid overflow in float16
+        mask_value = 1e4 if y_pred.dtype == torch.float16 else 1e12
+
+        # Compute probabilities for focal weighting
+        probs = torch.sigmoid(y_pred)
+
+        # Focal weight: (1 - p_t)^gamma where p_t is prob of correct class
+        # For positives: p_t = sigmoid(y_pred), weight = (1 - sigmoid(y_pred))^gamma
+        # For negatives: p_t = 1 - sigmoid(y_pred), weight = sigmoid(y_pred)^gamma
+        pt = y_true * probs + (1 - y_true) * (1 - probs)
+        focal_weight = (1 - pt) ** self.gamma
+
+        # Standard GlobalPointer loss computation
+        y_pred_adjusted = (1 - 2 * y_true) * y_pred
+        y_pred_neg = y_pred_adjusted - y_true * mask_value
+        y_pred_pos = y_pred_adjusted - (1 - y_true) * mask_value
+
+        zeros = torch.zeros_like(y_pred[..., :1])
+        y_pred_neg = torch.cat([y_pred_neg, zeros], dim=-1)
+        y_pred_pos = torch.cat([y_pred_pos, zeros], dim=-1)
+
+        neg_loss = torch.logsumexp(y_pred_neg, dim=-1)
+        pos_loss = torch.logsumexp(y_pred_pos, dim=-1)
+
+        # Apply focal weighting (mean over sequence positions)
+        loss = (neg_loss + pos_loss) * focal_weight.mean(dim=-1)
+
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        return loss
+
+
+# =============================================================================
 # Exports
 # =============================================================================
 
@@ -1780,4 +2039,6 @@ __all__ = [
     "PGD",
     "MixupLoss",
     "EmbeddingMixup",
+    "GlobalPointerLoss",
+    "FocalGlobalPointerLoss",
 ]

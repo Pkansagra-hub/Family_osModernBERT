@@ -65,26 +65,31 @@ tag_name = NER_FAMILY_LABELS.decode(5)  # "B-NICKNAME"
 ## Cultural Coverage
 
 ### Indian English Kinship Terms
+
 - "didi" (elder sister), "bhai" (brother), "nana/nani" (maternal grandparents)
 - "dada/dadi" (paternal grandparents), "chacha/chachi" (paternal uncle/aunt)
 - "mama/masi" (maternal uncle/aunt), "bua" (paternal aunt)
 
 ### Western Kinship Terms
+
 - "mom/mum/mother", "dad/daddy/father", "grandma/granny", "grandpa"
 - "aunt/auntie", "uncle", "cousin", "sis/sister", "bro/brother"
 
 ## Annotation Guidelines
 
 ### Entity Boundaries
+
 - Include full entity spans: "Panda's birthday party" → B-NICKNAME + B-FAMILY_EVENT I-FAMILY_EVENT
 - Multi-word entities use I- continuation tags
 
 ### Ambiguous Cases
+
 - "mom" alone → B-KINSHIP
 - "Mom Sarah" → B-KINSHIP B-PERSON (if both are meaningful)
 - "Sunday brunch tradition" → B-TRADITION I-TRADITION I-TRADITION
 
 ### BIO Validation Rules
+
 - I-tags must immediately follow corresponding B-tags
 - No orphan I-tags (must have preceding B-tag of same type)
 

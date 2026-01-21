@@ -1,0 +1,200 @@
+{"text": "Family massage appointment at noon today", "entities": [{"start": 30, "end": 34, "label": "TIME", "text": "noon"}, {"start": 35, "end": 40, "label": "DATE_REL", "text": "today"}]}
+{"text": "Priya at age 8 loves daily chai", "entities": [{"start": 6, "end": 14, "label": "AGE", "text": "at age 8"}, {"start": 21, "end": 26, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "Family gathered on March 5th for all day event .", "entities": [{"start": 19, "end": 28, "label": "DATE_ABS", "text": "March 5th"}, {"start": 29, "end": 40, "label": "DURATION", "text": "for all day"}]}
+{"text": "At age 19 music lessons weekly", "entities": [{"start": 0, "end": 9, "label": "AGE", "text": "At age 19"}, {"start": 24, "end": 30, "label": "FREQUENCY", "text": "weekly"}]}
+{"text": "Daily decoration during festival season", "entities": [{"start": 0, "end": 5, "label": "FREQUENCY", "text": "Daily"}]}
+{"text": "Grandma knitted sweaters when she was 75 lasting winter", "entities": [{"start": 25, "end": 40, "label": "AGE", "text": "when she was 75"}, {"start": 41, "end": 48, "label": "DURATION", "text": "lasting"}]}
+{"text": "Grandma 's yoga yesterday .", "entities": [{"start": 16, "end": 25, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "Kids ' bedtime story lasts 20 minutes evening", "entities": [{"start": 27, "end": 37, "label": "DURATION", "text": "20 minutes"}, {"start": 38, "end": 45, "label": "TIME", "text": "evening"}]}
+{"text": "The family rangoli for Diwali lasted all day today .", "entities": [{"start": 19, "end": 22, "label": "DURATION", "text": "for"}, {"start": 37, "end": 44, "label": "DURATION", "text": "all day"}, {"start": 45, "end": 50, "label": "DATE_REL", "text": "today"}]}
+{"text": "Yesterday family doctor .", "entities": [{"start": 0, "end": 9, "label": "DATE_REL", "text": "Yesterday"}]}
+{"text": "Priya 's bedtime is 9pm .", "entities": [{"start": 9, "end": 16, "label": "TIME", "text": "bedtime"}, {"start": 20, "end": 23, "label": "TIME", "text": "9pm"}]}
+{"text": "I remember yesterday morning when my son was 5", "entities": [{"start": 11, "end": 20, "label": "DATE_REL", "text": "yesterday"}, {"start": 21, "end": 28, "label": "TIME", "text": "morning"}, {"start": 29, "end": 46, "label": "AGE", "text": "when my son was 5"}]}
+{"text": "Family doctor visit every month morning", "entities": [{"start": 20, "end": 31, "label": "FREQUENCY", "text": "every month"}, {"start": 32, "end": 39, "label": "TIME", "text": "morning"}]}
+{"text": "Priya's dance class went on for 2 hours morning", "entities": [{"start": 28, "end": 39, "label": "DURATION", "text": "for 2 hours"}, {"start": 40, "end": 47, "label": "TIME", "text": "morning"}]}
+{"text": "December 2nd family wedding", "entities": [{"start": 0, "end": 12, "label": "DATE_ABS", "text": "December 2nd"}]}
+{"text": "Priya does yoga every morning when she was in her 20s", "entities": [{"start": 16, "end": 29, "label": "FREQUENCY", "text": "every morning"}, {"start": 30, "end": 53, "label": "AGE", "text": "when she was in her 20s"}]}
+{"text": "Daily at noon grandma hugged when kids were 3 .", "entities": [{"start": 0, "end": 5, "label": "FREQUENCY", "text": "Daily"}, {"start": 6, "end": 8, "label": "TIME", "text": "at"}, {"start": 29, "end": 45, "label": "AGE", "text": "when kids were 3"}]}
+{"text": "The family reunion tomorrow lasts all day", "entities": [{"start": 19, "end": 27, "label": "DATE_REL", "text": "tomorrow"}, {"start": 34, "end": 41, "label": "DURATION", "text": "all day"}]}
+{"text": "My grandpa told stories when we were kids .", "entities": [{"start": 24, "end": 41, "label": "AGE", "text": "when we were kids"}]}
+{"text": "Kids play cricket all day on holidays .", "entities": [{"start": 18, "end": 25, "label": "DURATION", "text": "all day"}]}
+{"text": "Family gathered at age 60 for mom 's birthday .", "entities": [{"start": 16, "end": 25, "label": "AGE", "text": "at age 60"}, {"start": 26, "end": 29, "label": "DURATION", "text": "for"}]}
+{"text": "Kids school meeting today at noon", "entities": [{"start": 20, "end": 25, "label": "DATE_REL", "text": "today"}, {"start": 29, "end": 33, "label": "TIME", "text": "noon"}]}
+{"text": "I remember when my son was 5", "entities": [{"start": 11, "end": 28, "label": "AGE", "text": "when my son was 5"}]}
+{"text": "Today at age 29 Priya graduated long ago", "entities": [{"start": 0, "end": 5, "label": "DATE_REL", "text": "Today"}, {"start": 6, "end": 15, "label": "AGE", "text": "at age 29"}]}
+{"text": "Tomorrow morning family prayer", "entities": [{"start": 0, "end": 8, "label": "DATE_REL", "text": "Tomorrow"}, {"start": 9, "end": 16, "label": "TIME", "text": "morning"}]}
+{"text": "She turned 10 during our family trip that took 3 days", "entities": [{"start": 4, "end": 13, "label": "AGE", "text": "turned 10"}, {"start": 42, "end": 53, "label": "DURATION", "text": "took 3 days"}]}
+{"text": "Priya goes to market morning .", "entities": [{"start": 21, "end": 28, "label": "TIME", "text": "morning"}]}
+{"text": "Daily evenings at age 6 twilight songs .", "entities": [{"start": 0, "end": 5, "label": "FREQUENCY", "text": "Daily"}, {"start": 6, "end": 14, "label": "TIME", "text": "evenings"}, {"start": 15, "end": 23, "label": "AGE", "text": "at age 6"}, {"start": 24, "end": 32, "label": "TIME", "text": "twilight"}]}
+{"text": "Weekly Sundays are for family meals at noon", "entities": [{"start": 0, "end": 14, "label": "FREQUENCY", "text": "Weekly Sundays"}, {"start": 39, "end": 43, "label": "TIME", "text": "noon"}]}
+{"text": "Family yoga at 6pm yesterday", "entities": [{"start": 15, "end": 18, "label": "TIME", "text": "6pm"}, {"start": 19, "end": 28, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "December 25 family photo at noon", "entities": [{"start": 0, "end": 11, "label": "DATE_ABS", "text": "December 25"}, {"start": 28, "end": 32, "label": "TIME", "text": "noon"}]}
+{"text": "Columbus Day October 14th family outings all weekend", "entities": [{"start": 13, "end": 25, "label": "DATE_ABS", "text": "October 14th"}, {"start": 41, "end": 52, "label": "DURATION", "text": "all weekend"}]}
+{"text": "Bedtime stories for 15 minutes kids", "entities": [{"start": 16, "end": 30, "label": "DURATION", "text": "for 15 minutes"}]}
+{"text": "Priya December 29th daily today every year .", "entities": [{"start": 6, "end": 19, "label": "DATE_ABS", "text": "December 29th"}, {"start": 20, "end": 25, "label": "FREQUENCY", "text": "daily"}, {"start": 26, "end": 31, "label": "DATE_REL", "text": "today"}, {"start": 32, "end": 42, "label": "FREQUENCY", "text": "every year"}]}
+{"text": "Grandpa told tales when I was 6 weekly", "entities": [{"start": 19, "end": 31, "label": "AGE", "text": "when I was 6"}, {"start": 32, "end": 38, "label": "FREQUENCY", "text": "weekly"}]}
+{"text": "Priya swim class at 4pm today", "entities": [{"start": 20, "end": 23, "label": "DATE_REL", "text": "4pm"}, {"start": 24, "end": 29, "label": "DATE_REL", "text": "today"}]}
+{"text": "Tomorrow Priya has cardio check for 45 minutes .", "entities": [{"start": 0, "end": 8, "label": "DATE_REL", "text": "Tomorrow"}, {"start": 32, "end": 46, "label": "DURATION", "text": "for 45 minutes"}]}
+{"text": "Weekly family game night tomorrow", "entities": [{"start": 0, "end": 6, "label": "FREQUENCY", "text": "Weekly"}, {"start": 25, "end": 33, "label": "DATE_REL", "text": "tomorrow"}]}
+{"text": "Bi-weekly family meets", "entities": [{"start": 0, "end": 9, "label": "FREQUENCY", "text": "Bi-weekly"}]}
+{"text": "Back when Emma was 11 , February 14 love day .", "entities": [{"start": 5, "end": 21, "label": "AGE", "text": "when Emma was 11"}, {"start": 24, "end": 35, "label": "DATE_ABS", "text": "February 14"}]}
+{"text": "Grandpa fished for hours when he was young", "entities": [{"start": 15, "end": 24, "label": "DURATION", "text": "for hours"}, {"start": 25, "end": 42, "label": "AGE", "text": "when he was young"}]}
+{"text": "July 4 ,  family barbecue", "entities": [{"start": 0, "end": 6, "label": "DATE_ABS", "text": "July 4"}]}
+{"text": "Priya first trip June 5th 2024", "entities": [{"start": 17, "end": 25, "label": "DATE_ABS", "text": "June 5th"}, {"start": 26, "end": 30, "label": "DATE_ABS", "text": "2024"}]}
+{"text": "Mom's story hour is daily for kids .", "entities": [{"start": 20, "end": 25, "label": "FREQUENCY", "text": "daily"}, {"start": 26, "end": 29, "label": "DURATION", "text": "for"}]}
+{"text": "When my daughter was 9 today", "entities": [{"start": 0, "end": 22, "label": "AGE", "text": "When my daughter was 9"}, {"start": 23, "end": 28, "label": "DATE_REL", "text": "today"}]}
+{"text": "Family trip every summer on July 1st .", "entities": [{"start": 12, "end": 24, "label": "FREQUENCY", "text": "every summer"}, {"start": 28, "end": 36, "label": "DATE_ABS", "text": "July 1st"}]}
+{"text": "When she was 12 , family meals lasted all evening .", "entities": [{"start": 0, "end": 15, "label": "AGE", "text": "When she was 12"}, {"start": 38, "end": 49, "label": "DURATION", "text": "all evening"}]}
+{"text": "Grandma cooking class yesterday noon .", "entities": [{"start": 22, "end": 31, "label": "DATE_REL", "text": "yesterday"}, {"start": 32, "end": 36, "label": "TIME", "text": "noon"}]}
+{"text": "When grandpa was 80 he told stories every evening", "entities": [{"start": 0, "end": 19, "label": "AGE", "text": "When grandpa was 80"}, {"start": 36, "end": 41, "label": "FREQUENCY", "text": "every"}, {"start": 42, "end": 49, "label": "TIME", "text": "evening"}]}
+{"text": "Tomorrow when Priya was 7 morning", "entities": [{"start": 0, "end": 8, "label": "DATE_REL", "text": "Tomorrow"}, {"start": 9, "end": 25, "label": "AGE", "text": "when Priya was 7"}, {"start": 26, "end": 33, "label": "TIME", "text": "morning"}]}
+{"text": "Every Sunday Emma remembers 2024 graduation", "entities": [{"start": 0, "end": 12, "label": "FREQUENCY", "text": "Every Sunday"}, {"start": 28, "end": 32, "label": "DATE_ABS", "text": "2024"}]}
+{"text": "When kids were small park daily .", "entities": [{"start": 0, "end": 20, "label": "AGE", "text": "When kids were small"}, {"start": 26, "end": 31, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "Yesterday Mom waited all day for results .", "entities": [{"start": 0, "end": 9, "label": "DATE_REL", "text": "Yesterday"}, {"start": 21, "end": 28, "label": "DURATION", "text": "all day"}, {"start": 29, "end": 32, "label": "DURATION", "text": "for"}]}
+{"text": "Weekly songs on March 5", "entities": [{"start": 0, "end": 6, "label": "FREQUENCY", "text": "Weekly"}, {"start": 16, "end": 23, "label": "DATE_ABS", "text": "March 5"}]}
+{"text": "We have family massage all morning .", "entities": [{"start": 23, "end": 34, "label": "DURATION", "text": "all morning"}]}
+{"text": "Our family gathered on December 25 , 2023", "entities": [{"start": 23, "end": 34, "label": "DATE_ABS", "text": "December 25"}, {"start": 37, "end": 41, "label": "DATE_ABS", "text": "2023"}]}
+{"text": "Kids birthday party yesterday", "entities": [{"start": 20, "end": 29, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "She taught kids when she was 35 daily .", "entities": [{"start": 16, "end": 31, "label": "AGE", "text": "when she was 35"}, {"start": 32, "end": 37, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "The family trip is planned for December 15th .", "entities": [{"start": 31, "end": 44, "label": "DATE_ABS", "text": "December 15th"}]}
+{"text": "Emma daily 2024", "entities": [{"start": 5, "end": 10, "label": "FREQUENCY", "text": "daily"}, {"start": 11, "end": 15, "label": "DATE_ABS", "text": "2024"}]}
+{"text": "Family dinner is every Friday .", "entities": [{"start": 17, "end": 29, "label": "FREQUENCY", "text": "every Friday"}]}
+{"text": "Priya goes to temple weekly when she was 10 .", "entities": [{"start": 21, "end": 27, "label": "FREQUENCY", "text": "weekly"}, {"start": 28, "end": 43, "label": "AGE", "text": "when she was 10"}]}
+{"text": "Priya wakes at 5am today .", "entities": [{"start": 15, "end": 18, "label": "TIME", "text": "5am"}, {"start": 19, "end": 24, "label": "DATE_REL", "text": "today"}]}
+{"text": "When my brother was 8 , we ran around for hours", "entities": [{"start": 0, "end": 21, "label": "AGE", "text": "When my brother was 8"}, {"start": 38, "end": 47, "label": "DURATION", "text": "for hours"}]}
+{"text": "We had family game night yesterday", "entities": [{"start": 19, "end": 24, "label": "TIME", "text": "night"}, {"start": 25, "end": 34, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "Weekly family meals for Thanksgiving prep .", "entities": [{"start": 0, "end": 6, "label": "FREQUENCY", "text": "Weekly"}, {"start": 20, "end": 23, "label": "DURATION", "text": "for"}]}
+{"text": "Every Sunday bedtime stories with grandma", "entities": [{"start": 0, "end": 12, "label": "FREQUENCY", "text": "Every Sunday"}, {"start": 13, "end": 20, "label": "TIME", "text": "bedtime"}]}
+{"text": "When he was 3 kids played for hours .", "entities": [{"start": 0, "end": 13, "label": "AGE", "text": "When he was 3"}, {"start": 26, "end": 35, "label": "DURATION", "text": "for hours"}]}
+{"text": "Rema at age 4 sang songs every noon for 10 minutes", "entities": [{"start": 8, "end": 13, "label": "AGE", "text": "age 4"}, {"start": 25, "end": 30, "label": "FREQUENCY", "text": "every"}, {"start": 31, "end": 35, "label": "TIME", "text": "noon"}, {"start": 36, "end": 50, "label": "DURATION", "text": "for 10 minutes"}]}
+{"text": "Priya was 10 when Diwali came early", "entities": [{"start": 6, "end": 12, "label": "AGE", "text": "was 10"}, {"start": 13, "end": 17, "label": "AGE", "text": "when"}]}
+{"text": "Family dinner tomorrow 6pm .", "entities": [{"start": 14, "end": 22, "label": "DATE_REL", "text": "tomorrow"}, {"start": 23, "end": 26, "label": "TIME", "text": "6pm"}]}
+{"text": "Priya at age 14 brushes longer now .", "entities": [{"start": 6, "end": 15, "label": "AGE", "text": "at age 14"}]}
+{"text": "Priya turned 10 on her birthday January 5th .", "entities": [{"start": 32, "end": 43, "label": "DATE_ABS", "text": "January 5th"}]}
+{"text": "May 8th VE Day first victory parade story grandpa age 80", "entities": [{"start": 0, "end": 7, "label": "DATE_ABS", "text": "May 8th"}, {"start": 50, "end": 56, "label": "AGE", "text": "age 80"}]}
+{"text": "Grandpa 's checkup January 30th morning .", "entities": [{"start": 19, "end": 31, "label": "DATE_ABS", "text": "January 30th"}, {"start": 32, "end": 39, "label": "TIME", "text": "morning"}]}
+{"text": "January 15 family kite flying", "entities": [{"start": 0, "end": 10, "label": "DATE_ABS", "text": "January 15"}]}
+{"text": "2023 lessons learned .", "entities": [{"start": 0, "end": 4, "label": "DATE_ABS", "text": "2023"}]}
+{"text": "Emma October 28th every year tomorrow yesterday today .", "entities": [{"start": 5, "end": 17, "label": "DATE_ABS", "text": "October 28th"}, {"start": 18, "end": 28, "label": "FREQUENCY", "text": "every year"}, {"start": 29, "end": 37, "label": "DATE_REL", "text": "tomorrow"}, {"start": 38, "end": 47, "label": "DATE_REL", "text": "yesterday"}, {"start": 48, "end": 53, "label": "DATE_REL", "text": "today"}]}
+{"text": "Priya got married in her mid 20s", "entities": [{"start": 21, "end": 32, "label": "AGE", "text": "her mid 20s"}]}
+{"text": "Mom cooks special meals every Friday for hours .", "entities": [{"start": 24, "end": 36, "label": "FREQUENCY", "text": "every Friday"}, {"start": 37, "end": 46, "label": "DURATION", "text": "for hours"}]}
+{"text": "Kids play for 1 hour daily", "entities": [{"start": 10, "end": 20, "label": "DURATION", "text": "for 1 hour"}, {"start": 21, "end": 26, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "This morning tomorrow when Priya was 4", "entities": [{"start": 5, "end": 12, "label": "TIME", "text": "morning"}, {"start": 13, "end": 21, "label": "DATE_REL", "text": "tomorrow"}, {"start": 22, "end": 38, "label": "AGE", "text": "when Priya was 4"}]}
+{"text": "Family eye doctor June 21st every Tuesday all afternoon .", "entities": [{"start": 18, "end": 27, "label": "DATE_ABS", "text": "June 21st"}, {"start": 28, "end": 41, "label": "FREQUENCY", "text": "every Tuesday"}, {"start": 42, "end": 55, "label": "DURATION", "text": "all afternoon"}]}
+{"text": "Every Sunday family photos first milestones", "entities": [{"start": 0, "end": 12, "label": "FREQUENCY", "text": "Every Sunday"}]}
+{"text": "Daily meditation every Diwali season", "entities": [{"start": 0, "end": 5, "label": "FREQUENCY", "text": "Daily"}, {"start": 17, "end": 22, "label": "FREQUENCY", "text": "every"}, {"start": 23, "end": 29, "label": "DATE_ABS", "text": "Diwali"}]}
+{"text": "Kids schedule at 3pm 45 minutes therapy", "entities": [{"start": 14, "end": 20, "label": "TIME", "text": "at 3pm"}, {"start": 21, "end": 31, "label": "DURATION", "text": "45 minutes"}]}
+{"text": "Dad meditates for 1 hour daily .", "entities": [{"start": 14, "end": 24, "label": "DURATION", "text": "for 1 hour"}, {"start": 25, "end": 30, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "Kids schedule dentist for 20 minutes at 2pm", "entities": [{"start": 22, "end": 36, "label": "DURATION", "text": "for 20 minutes"}, {"start": 37, "end": 43, "label": "TIME", "text": "at 2pm"}]}
+{"text": "For the whole day , memories of when Priya was tiny", "entities": [{"start": 0, "end": 17, "label": "DURATION", "text": "For the whole day"}, {"start": 32, "end": 51, "label": "AGE", "text": "when Priya was tiny"}]}
+{"text": "In my 30s when daughter was 9 today feels nostalgic .", "entities": [{"start": 0, "end": 9, "label": "AGE", "text": "In my 30s"}, {"start": 10, "end": 29, "label": "AGE", "text": "when daughter was 9"}, {"start": 30, "end": 35, "label": "DATE_REL", "text": "today"}]}
+{"text": "All time tomorrow think when my son was 10", "entities": [{"start": 0, "end": 8, "label": "DURATION", "text": "All time"}, {"start": 9, "end": 17, "label": "DATE_REL", "text": "tomorrow"}, {"start": 24, "end": 42, "label": "AGE", "text": "when my son was 10"}]}
+{"text": "Family yoga session tomorrow 6am .", "entities": [{"start": 20, "end": 28, "label": "DATE_REL", "text": "tomorrow"}, {"start": 29, "end": 32, "label": "TIME", "text": "6am"}]}
+{"text": "Family outings every month", "entities": [{"start": 15, "end": 26, "label": "FREQUENCY", "text": "every month"}]}
+{"text": "Priya remembers when she was 5 during Diwali .", "entities": [{"start": 16, "end": 30, "label": "AGE", "text": "when she was 5"}]}
+{"text": "The 3pm moments daily when she was 5 timeless .", "entities": [{"start": 4, "end": 7, "label": "TIME", "text": "3pm"}, {"start": 16, "end": 21, "label": "FREQUENCY", "text": "daily"}, {"start": 22, "end": 36, "label": "AGE", "text": "when she was 5"}]}
+{"text": "Family game night every Friday .", "entities": [{"start": 18, "end": 30, "label": "FREQUENCY", "text": "every Friday"}]}
+{"text": "Arjun built kite all day today", "entities": [{"start": 17, "end": 24, "label": "DURATION", "text": "all day"}, {"start": 25, "end": 30, "label": "DATE_REL", "text": "today"}]}
+{"text": "Evening story session for kids tonight", "entities": [{"start": 0, "end": 7, "label": "TIME", "text": "Evening"}, {"start": 22, "end": 25, "label": "DURATION", "text": "for"}, {"start": 31, "end": 38, "label": "TIME", "text": "tonight"}]}
+{"text": "Family prays together every morning", "entities": [{"start": 22, "end": 27, "label": "FREQUENCY", "text": "every"}]}
+{"text": "Vijay calls mom every Sunday .", "entities": [{"start": 16, "end": 28, "label": "FREQUENCY", "text": "every Sunday"}]}
+{"text": "Arjun has eye exam every Sunday noon .", "entities": [{"start": 19, "end": 31, "label": "FREQUENCY", "text": "every Sunday"}, {"start": 32, "end": 36, "label": "TIME", "text": "noon"}]}
+{"text": "Priya October 20th tomorrow daily .", "entities": [{"start": 6, "end": 18, "label": "DATE_ABS", "text": "October 20th"}, {"start": 19, "end": 27, "label": "DATE_REL", "text": "tomorrow"}, {"start": 28, "end": 33, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "Kids ' karate every Saturday age 8", "entities": [{"start": 14, "end": 28, "label": "FREQUENCY", "text": "every Saturday"}, {"start": 29, "end": 34, "label": "AGE", "text": "age 8"}]}
+{"text": "Priya sleeps early since age 10 .", "entities": [{"start": 19, "end": 31, "label": "AGE", "text": "since age 10"}]}
+{"text": "Priya temple tomorrow morning", "entities": [{"start": 13, "end": 21, "label": "DATE_REL", "text": "tomorrow"}, {"start": 22, "end": 29, "label": "TIME", "text": "morning"}]}
+{"text": "Family pooja every Monday at home", "entities": [{"start": 13, "end": 25, "label": "FREQUENCY", "text": "every Monday"}]}
+{"text": "Rakhi ties August 19th sisters every year", "entities": [{"start": 11, "end": 22, "label": "DATE_ABS", "text": "August 19th"}, {"start": 31, "end": 41, "label": "FREQUENCY", "text": "every year"}]}
+{"text": "Priya fasts 16 hours weekly .", "entities": [{"start": 12, "end": 20, "label": "DURATION", "text": "16 hours"}]}
+{"text": "Gather family every Sunday for lunch", "entities": [{"start": 14, "end": 26, "label": "FREQUENCY", "text": "every Sunday"}, {"start": 27, "end": 30, "label": "DURATION", "text": "for"}]}
+{"text": "When grandkids were at age 10 every Friday noon sparkled .", "entities": [{"start": 0, "end": 19, "label": "AGE", "text": "When grandkids were"}, {"start": 20, "end": 29, "label": "AGE", "text": "at age 10"}, {"start": 30, "end": 42, "label": "FREQUENCY", "text": "every Friday"}, {"start": 43, "end": 47, "label": "TIME", "text": "noon"}]}
+{"text": "When I was 42 , dinner was family time .", "entities": [{"start": 0, "end": 13, "label": "AGE", "text": "When I was 42"}]}
+{"text": "Priya graduated high school at age 18", "entities": [{"start": 28, "end": 37, "label": "AGE", "text": "at age 18"}]}
+{"text": "Arjun sharpened knives for 15 minutes tomorrow", "entities": [{"start": 23, "end": 37, "label": "DURATION", "text": "for 15 minutes"}, {"start": 38, "end": 46, "label": "DATE_REL", "text": "tomorrow"}]}
+{"text": "Kids nap all day .", "entities": [{"start": 9, "end": 16, "label": "DURATION", "text": "all day"}]}
+{"text": "The family Diwali yesterday", "entities": [{"start": 18, "end": 27, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "Family reunion every year August 15th .", "entities": [{"start": 15, "end": 25, "label": "FREQUENCY", "text": "every year"}, {"start": 26, "end": 37, "label": "DATE_ABS", "text": "August 15th"}]}
+{"text": "For 2 hours straight , reminisce about yesterday when kids were small", "entities": [{"start": 0, "end": 20, "label": "DURATION", "text": "For 2 hours straight"}, {"start": 39, "end": 48, "label": "DATE_REL", "text": "yesterday"}, {"start": 49, "end": 69, "label": "AGE", "text": "when kids were small"}]}
+{"text": "Daily chai with grandma every evening", "entities": [{"start": 0, "end": 5, "label": "FREQUENCY", "text": "Daily"}, {"start": 24, "end": 29, "label": "FREQUENCY", "text": "every"}]}
+{"text": "Mom 's lunch yesterday lasted all day .", "entities": [{"start": 13, "end": 22, "label": "DATE_REL", "text": "yesterday"}, {"start": 30, "end": 37, "label": "DURATION", "text": "all day"}]}
+{"text": "They cooked for the family reunion all day long", "entities": [{"start": 12, "end": 15, "label": "DURATION", "text": "for"}, {"start": 35, "end": 42, "label": "DURATION", "text": "all day"}]}
+{"text": "Grandpa fished weekly when young at age 50 .", "entities": [{"start": 15, "end": 21, "label": "FREQUENCY", "text": "weekly"}, {"start": 22, "end": 32, "label": "AGE", "text": "when young"}, {"start": 33, "end": 42, "label": "AGE", "text": "at age 50"}]}
+{"text": "Priya February 12th every week tomorrow weekly .", "entities": [{"start": 6, "end": 19, "label": "DATE_ABS", "text": "February 12th"}, {"start": 20, "end": 30, "label": "FREQUENCY", "text": "every week"}, {"start": 31, "end": 39, "label": "DATE_REL", "text": "tomorrow"}, {"start": 40, "end": 46, "label": "FREQUENCY", "text": "weekly"}]}
+{"text": "Family Holi celebration on March 25th 2024 .", "entities": [{"start": 27, "end": 42, "label": "DATE_ABS", "text": "March 25th 2024"}]}
+{"text": "Yesterdays lunch was family time at noon", "entities": [{"start": 0, "end": 10, "label": "DATE_REL", "text": "Yesterdays"}, {"start": 36, "end": 40, "label": "TIME", "text": "noon"}]}
+{"text": "Morning walk daily with dad", "entities": [{"start": 0, "end": 7, "label": "TIME", "text": "Morning"}, {"start": 13, "end": 18, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "Family lunch at noon today", "entities": [{"start": 16, "end": 20, "label": "TIME", "text": "noon"}, {"start": 21, "end": 26, "label": "DATE_REL", "text": "today"}]}
+{"text": "Family dinner tonight after work .", "entities": [{"start": 14, "end": 21, "label": "TIME", "text": "tonight"}]}
+{"text": "Weekly music lessons when kid", "entities": [{"start": 0, "end": 6, "label": "FREQUENCY", "text": "Weekly"}, {"start": 21, "end": 29, "label": "AGE", "text": "when kid"}]}
+{"text": "Family yoga class lasts 90 minutes on January 15 .", "entities": [{"start": 24, "end": 34, "label": "DURATION", "text": "90 minutes"}, {"start": 38, "end": 48, "label": "DATE_ABS", "text": "January 15"}]}
+{"text": "The family dentist morning for 1 hour", "entities": [{"start": 19, "end": 26, "label": "TIME", "text": "morning"}, {"start": 27, "end": 37, "label": "DURATION", "text": "for 1 hour"}]}
+{"text": "Thanksgiving dinner November 22nd weekly family meets", "entities": [{"start": 20, "end": 33, "label": "DATE_ABS", "text": "November 22nd"}, {"start": 34, "end": 40, "label": "FREQUENCY", "text": "weekly"}]}
+{"text": "Arjun's cricket practice was for 3 hours tomorrow", "entities": [{"start": 29, "end": 40, "label": "DURATION", "text": "for 3 hours"}, {"start": 41, "end": 49, "label": "DATE_REL", "text": "tomorrow"}]}
+{"text": "September 30th family doctor .", "entities": [{"start": 0, "end": 14, "label": "DATE_ABS", "text": "September 30th"}]}
+{"text": "In her 30s Mom stitched daily", "entities": [{"start": 0, "end": 10, "label": "AGE", "text": "In her 30s"}, {"start": 24, "end": 29, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "Family movie night tomorrow evening", "entities": [{"start": 19, "end": 27, "label": "DATE_REL", "text": "tomorrow"}, {"start": 28, "end": 35, "label": "TIME", "text": "evening"}]}
+{"text": "When Arjun was 11 we had weekly picnics", "entities": [{"start": 0, "end": 17, "label": "AGE", "text": "When Arjun was 11"}, {"start": 25, "end": 39, "label": "FREQUENCY", "text": "weekly picnics"}]}
+{"text": "Family drove to Rishikesh for 6 hours March 22", "entities": [{"start": 26, "end": 37, "label": "DURATION", "text": "for 6 hours"}, {"start": 38, "end": 46, "label": "DATE_ABS", "text": "March 22"}]}
+{"text": "When she was 7 , my daughter loved drawing in the morning", "entities": [{"start": 0, "end": 14, "label": "AGE", "text": "When she was 7"}, {"start": 50, "end": 57, "label": "TIME", "text": "morning"}]}
+{"text": "Tomorrow noon when Arjun was in teens", "entities": [{"start": 0, "end": 8, "label": "DATE_REL", "text": "Tomorrow"}, {"start": 9, "end": 13, "label": "TIME", "text": "noon"}, {"start": 14, "end": 37, "label": "AGE", "text": "when Arjun was in teens"}]}
+{"text": "Yesterday the family movie night today repeated long .", "entities": [{"start": 0, "end": 9, "label": "DATE_REL", "text": "Yesterday"}, {"start": 33, "end": 38, "label": "DATE_REL", "text": "today"}]}
+{"text": "My sister's wedding in June 2024 took days", "entities": [{"start": 23, "end": 32, "label": "DATE_ABS", "text": "June 2024"}, {"start": 33, "end": 42, "label": "DURATION", "text": "took days"}]}
+{"text": "Weekly family yoga session .", "entities": [{"start": 0, "end": 6, "label": "FREQUENCY", "text": "Weekly"}]}
+{"text": "February 14th dawn with Priya at age 4 .", "entities": [{"start": 0, "end": 13, "label": "DATE_ABS", "text": "February 14th"}, {"start": 14, "end": 18, "label": "TIME", "text": "dawn"}, {"start": 30, "end": 38, "label": "AGE", "text": "at age 4"}]}
+{"text": "Family Diwali shopping on October 20th .", "entities": [{"start": 26, "end": 38, "label": "DATE_ABS", "text": "October 20th"}]}
+{"text": "Priya 's Diwali party lasts all day", "entities": [{"start": 28, "end": 35, "label": "DURATION", "text": "all day"}]}
+{"text": "Every Sunday we recall grandma 's birthday", "entities": [{"start": 0, "end": 12, "label": "FREQUENCY", "text": "Every Sunday"}]}
+{"text": "Today evening family time", "entities": [{"start": 0, "end": 5, "label": "DATE_REL", "text": "Today"}, {"start": 6, "end": 13, "label": "TIME", "text": "evening"}]}
+{"text": "Today family lunch scheduled", "entities": [{"start": 0, "end": 5, "label": "DATE_REL", "text": "Today"}]}
+{"text": "Noon appointment for sister today", "entities": [{"start": 0, "end": 4, "label": "TIME", "text": "Noon"}, {"start": 28, "end": 33, "label": "DATE_REL", "text": "today"}]}
+{"text": "Kids studied all day yesterday", "entities": [{"start": 13, "end": 20, "label": "DURATION", "text": "all day"}, {"start": 21, "end": 30, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "Priya 's speech therapy tomorrow noon", "entities": [{"start": 24, "end": 32, "label": "DATE_REL", "text": "tomorrow"}, {"start": 33, "end": 37, "label": "TIME", "text": "noon"}]}
+{"text": "Family puja daily in 2024 .", "entities": [{"start": 12, "end": 17, "label": "FREQUENCY", "text": "daily"}, {"start": 21, "end": 25, "label": "DATE_ABS", "text": "2024"}]}
+{"text": "Tomorrow family doctor visit .", "entities": [{"start": 0, "end": 8, "label": "DATE_REL", "text": "Tomorrow"}]}
+{"text": "Family doctor yesterday noon", "entities": [{"start": 14, "end": 23, "label": "DATE_REL", "text": "yesterday"}, {"start": 24, "end": 28, "label": "TIME", "text": "noon"}]}
+{"text": "Priya's wedding anniversary every February 14 .", "entities": [{"start": 28, "end": 33, "label": "FREQUENCY", "text": "every"}, {"start": 34, "end": 45, "label": "DATE_ABS", "text": "February 14"}]}
+{"text": "The family barbecue is set for July 15th .", "entities": [{"start": 31, "end": 40, "label": "DATE_ABS", "text": "July 15th"}]}
+{"text": "Family gathers when grandpa was 80 monthly .", "entities": [{"start": 15, "end": 34, "label": "AGE", "text": "when grandpa was 80"}, {"start": 35, "end": 42, "label": "FREQUENCY", "text": "monthly"}]}
+{"text": "Priya sleeps early evening .", "entities": [{"start": 19, "end": 26, "label": "TIME", "text": "evening"}]}
+{"text": "Back when Priya was 7 March 5th yesterday .", "entities": [{"start": 5, "end": 21, "label": "AGE", "text": "when Priya was 7"}, {"start": 22, "end": 31, "label": "DATE_ABS", "text": "March 5th"}, {"start": 32, "end": 41, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "Grandma taught cooking when she was 50 .", "entities": [{"start": 23, "end": 38, "label": "AGE", "text": "when she was 50"}]}
+{"text": "Priya at age 21 March 5th .", "entities": [{"start": 6, "end": 15, "label": "AGE", "text": "at age 21"}, {"start": 16, "end": 25, "label": "DATE_ABS", "text": "March 5th"}]}
+{"text": "Every month we donate for family wishes", "entities": [{"start": 0, "end": 11, "label": "FREQUENCY", "text": "Every month"}, {"start": 22, "end": 25, "label": "DURATION", "text": "for"}]}
+{"text": "Evening walk family .", "entities": [{"start": 0, "end": 7, "label": "TIME", "text": "Evening"}]}
+{"text": "Arjun 's taekwondo class tomorrow for 90 minutes", "entities": [{"start": 25, "end": 33, "label": "DATE_REL", "text": "tomorrow"}, {"start": 34, "end": 48, "label": "DURATION", "text": "for 90 minutes"}]}
+{"text": "My sister turned 16 on her sweet sixteen party March 15th . 2023 .", "entities": [{"start": 47, "end": 57, "label": "DATE_ABS", "text": "March 15th"}, {"start": 60, "end": 64, "label": "DATE_ABS", "text": "2023"}]}
+{"text": "When my son was 5 yesterday morning", "entities": [{"start": 0, "end": 17, "label": "AGE", "text": "When my son was 5"}, {"start": 18, "end": 27, "label": "DATE_REL", "text": "yesterday"}, {"start": 28, "end": 35, "label": "TIME", "text": "morning"}]}
+{"text": "Mom makes breakfast at 7am .", "entities": [{"start": 23, "end": 26, "label": "TIME", "text": "7am"}]}
+{"text": "Bedtime tomorrow for kids short .", "entities": [{"start": 8, "end": 16, "label": "DATE_REL", "text": "tomorrow"}, {"start": 17, "end": 20, "label": "DURATION", "text": "for"}]}
+{"text": "Priya daily diary since when 10", "entities": [{"start": 6, "end": 11, "label": "FREQUENCY", "text": "daily"}, {"start": 24, "end": 31, "label": "AGE", "text": "when 10"}]}
+{"text": "Ugadi New Year April 9th Telugu family cleans all day", "entities": [{"start": 15, "end": 24, "label": "DATE_ABS", "text": "April 9th"}, {"start": 46, "end": 53, "label": "DURATION", "text": "all day"}]}
+{"text": "Lakshmi cooks all day for the family .", "entities": [{"start": 14, "end": 21, "label": "DURATION", "text": "all day"}]}
+{"text": "The family gathering is on January 20 2024 .", "entities": [{"start": 27, "end": 42, "label": "DATE_ABS", "text": "January 20 2024"}]}
+{"text": "Priya reads to kids every night", "entities": [{"start": 20, "end": 25, "label": "FREQUENCY", "text": "every"}]}
+{"text": "Doctor appointment daily check for grandma", "entities": [{"start": 19, "end": 24, "label": "FREQUENCY", "text": "daily"}]}
+{"text": "Family Diwali puja on October 25th 2024 lasts for 2 hours when we were young in 20s .", "entities": [{"start": 22, "end": 39, "label": "DATE_ABS", "text": "October 25th 2024"}, {"start": 46, "end": 57, "label": "DURATION", "text": "for 2 hours"}, {"start": 58, "end": 83, "label": "AGE", "text": "when we were young in 20s"}]}
+{"text": "Priya 's tution class is at noon today", "entities": [{"start": 28, "end": 32, "label": "TIME", "text": "noon"}, {"start": 33, "end": 38, "label": "DATE_REL", "text": "today"}]}
+{"text": "Priya at age 25 started teaching .", "entities": [{"start": 6, "end": 15, "label": "AGE", "text": "at age 25"}]}
+{"text": "Kids ' swimming class this evening", "entities": [{"start": 22, "end": 26, "label": "DATE_REL", "text": "this"}, {"start": 27, "end": 34, "label": "TIME", "text": "evening"}]}
+{"text": "Kids play for hours every vacation day .", "entities": [{"start": 10, "end": 19, "label": "DURATION", "text": "for hours"}, {"start": 20, "end": 38, "label": "FREQUENCY", "text": "every vacation day"}]}
+{"text": "Grandparents visit every Diwali", "entities": [{"start": 19, "end": 24, "label": "FREQUENCY", "text": "every"}]}
+{"text": "Tomorrow family meeting 3pm .", "entities": [{"start": 0, "end": 8, "label": "DATE_REL", "text": "Tomorrow"}, {"start": 24, "end": 27, "label": "TIME", "text": "3pm"}]}
+{"text": "Kids tutoring yesterday evening .", "entities": [{"start": 14, "end": 23, "label": "DATE_REL", "text": "yesterday"}, {"start": 24, "end": 31, "label": "TIME", "text": "evening"}]}
+{"text": "When she was 5 she started monthly piano lessons .", "entities": [{"start": 0, "end": 14, "label": "AGE", "text": "When she was 5"}]}
+{"text": "Daily afternoons Priya twirled when she was 10 .", "entities": [{"start": 0, "end": 5, "label": "FREQUENCY", "text": "Daily"}, {"start": 6, "end": 16, "label": "TIME", "text": "afternoons"}, {"start": 31, "end": 46, "label": "AGE", "text": "when she was 10"}]}
+{"text": "Kids dentist tomorrow 3pm", "entities": [{"start": 13, "end": 21, "label": "DATE_REL", "text": "tomorrow"}, {"start": 22, "end": 25, "label": "TIME", "text": "3pm"}]}
+{"text": "In the morning mom has her checkup for 1 hour", "entities": [{"start": 3, "end": 14, "label": "TIME", "text": "the morning"}, {"start": 35, "end": 45, "label": "DURATION", "text": "for 1 hour"}]}
+{"text": "When Diya was 4 she sang first song", "entities": [{"start": 0, "end": 15, "label": "AGE", "text": "When Diya was 4"}]}
+{"text": "Kids ' birthday party on March 5 .", "entities": [{"start": 25, "end": 32, "label": "DATE_ABS", "text": "March 5"}]}
+{"text": "Priya visited the clinic yesterday .", "entities": [{"start": 25, "end": 34, "label": "DATE_REL", "text": "yesterday"}]}
+{"text": "Family therapy session tomorrow evening", "entities": [{"start": 23, "end": 31, "label": "DATE_REL", "text": "tomorrow"}, {"start": 32, "end": 39, "label": "TIME", "text": "evening"}]}
+{"text": "Arjun May 3rd every Sunday today .", "entities": [{"start": 6, "end": 13, "label": "DATE_ABS", "text": "May 3rd"}, {"start": 14, "end": 26, "label": "FREQUENCY", "text": "every Sunday"}, {"start": 27, "end": 32, "label": "DATE_REL", "text": "today"}]}
+{"text": "Kids school yesterday morning .", "entities": [{"start": 12, "end": 21, "label": "DATE_REL", "text": "yesterday"}, {"start": 22, "end": 29, "label": "TIME", "text": "morning"}]}
+{"text": "Guru Nanak Jayanti November 15 evening", "entities": [{"start": 0, "end": 18, "label": "DATE_ABS", "text": "Guru Nanak Jayanti"}, {"start": 19, "end": 30, "label": "DATE_ABS", "text": "November 15"}, {"start": 31, "end": 38, "label": "TIME", "text": "evening"}]}
+{"text": "When my son was 7 noon prayers weekly united us .", "entities": [{"start": 0, "end": 15, "label": "AGE", "text": "When my son was"}, {"start": 16, "end": 17, "label": "TIME", "text": "7"}, {"start": 23, "end": 30, "label": "FREQUENCY", "text": "prayers"}]}
+{"text": "September 12th today when son was 9 .", "entities": [{"start": 0, "end": 14, "label": "DATE_ABS", "text": "September 12th"}, {"start": 15, "end": 20, "label": "DATE_REL", "text": "today"}, {"start": 21, "end": 35, "label": "AGE", "text": "when son was 9"}]}
+{"text": "Priya 's dentist visit is on March 5th for 1 hour .", "entities": [{"start": 29, "end": 38, "label": "DATE_ABS", "text": "March 5th"}, {"start": 39, "end": 49, "label": "DURATION", "text": "for 1 hour"}]}
+{"text": "I remember when my son was 5 .", "entities": [{"start": 11, "end": 28, "label": "AGE", "text": "when my son was 5"}]}
+{"text": "Grandpa 's checkup yesterday noon .", "entities": [{"start": 19, "end": 28, "label": "DATE_REL", "text": "yesterday"}, {"start": 29, "end": 33, "label": "TIME", "text": "noon"}]}
+{"text": "Dad 's meeting at 10am tomorrow .", "entities": [{"start": 18, "end": 22, "label": "TIME", "text": "10am"}, {"start": 23, "end": 31, "label": "DATE_REL", "text": "tomorrow"}]}
+{"text": "Kids class yesterday evening .", "entities": [{"start": 11, "end": 20, "label": "DATE_REL", "text": "yesterday"}, {"start": 21, "end": 28, "label": "TIME", "text": "evening"}]}
