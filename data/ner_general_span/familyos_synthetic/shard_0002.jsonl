@@ -8940,3 +8940,37 @@
 {"text": "Arjun is now volunteering at the local animal shelter.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
 {"text": "We're all excited to see Aunt Priya and Uncle Rajesh at Diwali.", "entities": [{"start": 25, "end": 35, "label": "PER", "token": "Aunt Priya"}, {"start": 40, "end": 52, "label": "PER", "token": "Uncle Rajesh"}, {"start": 56, "end": 62, "label": "MISC", "token": "Diwali"}]}
 {"text": "Just wanted to share some happy news.", "entities": []}
+{"text": "The deadline for the presentation is fast approaching.", "entities": []}
+{"text": "Meeting with Sarah from the marketing team tomorrow.", "entities": [{"start": 13, "end": 18, "label": "PER", "token": "Sarah"}]}
+{"text": "Spending the weekend catching up on emails and reports.", "entities": []}
+{"text": "Meeting with Rajesh from HR to discuss performance reviews.", "entities": [{"start": 13, "end": 19, "label": "PER", "token": "Rajesh"}]}
+{"text": "Finally completed the training course at the company today.", "entities": []}
+{"text": "Uncle Rajesh is making laddoos for the festival.", "entities": [{"start": 6, "end": 12, "label": "PER", "token": "Rajesh"}]}
+{"text": "Planning a trip to Mumbai for Holi.", "entities": [{"start": 19, "end": 25, "label": "LOC", "token": "Mumbai"}, {"start": 30, "end": 34, "label": "MISC", "token": "Holi"}]}
+{"text": "Distribute sweets after the puja.", "entities": []}
+{"text": "Seema is preparing the Rangoli for the festival.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Seema"}]}
+{"text": "Call Dr. Sharma to confirm timings for the havan.", "entities": [{"start": 5, "end": 15, "label": "PER", "token": "Dr. Sharma"}]}
+{"text": "Prepare the thali for the aarti.", "entities": []}
+{"text": "Anjali is learning to play the harmonium.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Anjali"}]}
+{"text": "Celebrated Onam with family last week.", "entities": [{"start": 11, "end": 15, "label": "MISC", "token": "Onam"}]}
+{"text": "Distributing prasad after the prayers.", "entities": []}
+{"text": "Call Panditji to fix the date for the wedding.", "entities": []}
+{"text": "Prepare special dishes for the Ugadi festival.", "entities": [{"start": 31, "end": 36, "label": "MISC", "token": "Ugadi"}]}
+{"text": "Grandpa is excited to see everyone again.", "entities": []}
+{"text": "Emma and David are bringing their new puppy.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}, {"start": 9, "end": 14, "label": "PER", "token": "David"}]}
+{"text": "We will be sending out invitations via email soon.", "entities": []}
+{"text": "Professor Sharma will be speaking about Indian history.", "entities": [{"start": 0, "end": 16, "label": "PER", "token": "Professor Sharma"}]}
+{"text": "The event will be catered by a local restaurant.", "entities": []}
+{"text": "We are hoping for good weather during the reunion.", "entities": []}
+{"text": "Lunch break! Grandma made amazing sandwiches.", "entities": [{"start": 13, "end": 20, "label": "PER", "token": "Grandma"}]}
+{"text": "A visit from Uncle Ravi always brightens my day.", "entities": [{"start": 13, "end": 23, "label": "PER", "token": "Uncle Ravi"}]}
+{"text": "Grandpa is teaching me how to fix the leaky faucet.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}]}
+{"text": "Good morning! Time for breakfast before going to work.", "entities": []}
+{"text": "Arjun prefers his chai with a dash of ginger every morning.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Mom's making aloo paratha; it's my favourite breakfast!", "entities": []}
+{"text": "Did you remember to call Uncle Raj last night?", "entities": [{"start": 25, "end": 34, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "Grandma always makes the best mithai during the festive season.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "I love waking up to the smell of incense sticks every morning.", "entities": []}
+{"text": "Priya and Rajesh are planning a trip to Delhi.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 10, "end": 16, "label": "PER", "token": "Rajesh"}, {"start": 40, "end": 45, "label": "LOC", "token": "Delhi"}]}
+{"text": "What are your plans for the weekend?", "entities": []}
+{"text": "We celebrated Holi with great pomp at home.", "entities": [{"start": 14, "end": 18, "label": "MISC", "token": "Holi"}]}
