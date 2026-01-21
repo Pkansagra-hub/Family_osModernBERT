@@ -792,6 +792,7 @@ def train(
     device: torch.device,
     num_epochs: int,
     output_dir: Path,
+    tokenizer=None,
     save_steps: int = 1000,
     eval_steps: int = 500,
     gradient_accumulation_steps: int = 1,
@@ -884,6 +885,33 @@ def train(
                 optimizer.zero_grad()
                 global_step += 1
 
+                # Save checkpoint every save_steps (INSIDE accumulation block)
+                if global_step > 0 and global_step % save_steps == 0:
+                    logger.info(f"\nSaving checkpoint at step {global_step}...")
+                    save_checkpoint(model, output_dir / f"checkpoint-{global_step}", tokenizer, optimizer, scheduler)
+
+                # Mid-epoch evaluation (INSIDE accumulation block)
+                if global_step > 0 and global_step % eval_steps == 0 and val_loader is not None:
+                    print(f"\n=== Evaluation at Global Step {global_step} (Epoch Batch {step+1}/{len(train_loader)}) ===", flush=True)
+                    logger.info(f"\n--- Evaluation at Global Step {global_step} (Epoch Batch {step+1}/{len(train_loader)}) ---")
+                    sys.stdout.flush()
+                    eval_metrics = evaluate(model, val_loader, device, debug=debug)
+
+                    overall_f1 = eval_metrics["overall"]["f1"]
+                    print(f"Step {global_step} F1: {overall_f1:.4f}", flush=True)
+                    logger.info(f"Step {global_step} F1: {overall_f1:.4f}")
+                    sys.stdout.flush()
+
+                    # Save best model
+                    if overall_f1 > best_f1:
+                        best_f1 = overall_f1
+                        print(f"New best F1! Saving best checkpoint...", flush=True)
+                        logger.info(f"New best F1! Saving best checkpoint...")
+                        save_checkpoint(model, output_dir / "best", tokenizer, optimizer, scheduler)
+
+                    # Back to train mode
+                    model.train()
+
             epoch_loss += losses["total_loss"].item()
             for h in HEADS_TO_REPLACE:
                 if h in losses:
@@ -898,33 +926,6 @@ def train(
             if debug and step > 0 and step % 50 == 0:
                 avg_so_far = epoch_loss / epoch_steps
                 logger.info(f"  Step {step}: avg_loss={avg_so_far:.4f}, lr={lr:.2e}")
-
-            # Save checkpoint every save_steps
-            if global_step > 0 and global_step % save_steps == 0:
-                logger.info(f"\nSaving checkpoint at step {global_step}...")
-                save_checkpoint(model, output_dir / f"checkpoint-{global_step}")
-
-            # Mid-epoch evaluation
-            if global_step > 0 and global_step % eval_steps == 0 and val_loader is not None:
-                print(f"\n=== Evaluation at Step {global_step} ===", flush=True)
-                logger.info(f"\n--- Evaluation at Step {global_step} ---")
-                sys.stdout.flush()
-                eval_metrics = evaluate(model, val_loader, device, debug=debug)
-
-                overall_f1 = eval_metrics["overall"]["f1"]
-                print(f"Step {global_step} F1: {overall_f1:.4f}", flush=True)
-                logger.info(f"Step {global_step} F1: {overall_f1:.4f}")
-                sys.stdout.flush()
-
-                # Save best model
-                if overall_f1 > best_f1:
-                    best_f1 = overall_f1
-                    print(f"New best F1! Saving best checkpoint...", flush=True)
-                    logger.info(f"New best F1! Saving best checkpoint...")
-                    save_checkpoint(model, output_dir / "best")
-
-                # Back to train mode
-                model.train()
 
         avg_loss = epoch_loss / epoch_steps if epoch_steps > 0 else 0
         history["train_loss"].append(avg_loss)
@@ -952,30 +953,49 @@ def train(
             if overall_f1 > best_f1:
                 best_f1 = overall_f1
                 logger.info(f"New best F1! Saving best checkpoint...")
-                save_checkpoint(model, output_dir / "best")
+                save_checkpoint(model, output_dir / "best", tokenizer, optimizer, scheduler)
 
     # Save final checkpoint
     logger.info(f"\n{'='*80}")
     logger.info("TRAINING COMPLETE")
     logger.info(f"Best F1: {best_f1:.4f}")
     logger.info(f"{'='*80}")
-    save_checkpoint(model, output_dir / "final")
+    save_checkpoint(model, output_dir / "final", tokenizer, optimizer, scheduler)
 
     return history
 
 
-def save_checkpoint(model: ModernBertMultiTaskModel, checkpoint_dir: Path) -> None:
+def save_checkpoint(
+    model: ModernBertMultiTaskModel,
+    checkpoint_dir: Path,
+    tokenizer=None,
+    optimizer=None,
+    scheduler=None,
+) -> None:
     """
-    Save full model checkpoint with all 12 heads.
+    Save full model checkpoint with all heads, tokenizer, and optionally optimizer/scheduler.
 
     Args:
         model: The model
         checkpoint_dir: Output directory
+        tokenizer: Tokenizer to save
+        optimizer: Optimizer to save (optional)
+        scheduler: Scheduler to save (optional)
     """
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save using HuggingFace save_pretrained
+    # Save model using HuggingFace save_pretrained
     model.save_pretrained(checkpoint_dir)
+
+    # Save tokenizer
+    if tokenizer is not None:
+        tokenizer.save_pretrained(checkpoint_dir)
+
+    # Save optimizer and scheduler for resume
+    if optimizer is not None:
+        torch.save(optimizer.state_dict(), checkpoint_dir / "optimizer.pt")
+    if scheduler is not None:
+        torch.save(scheduler.state_dict(), checkpoint_dir / "scheduler.pt")
 
     # Save training metadata
     metadata = {
@@ -1192,6 +1212,7 @@ def main():
         device=device,
         num_epochs=num_epochs,
         output_dir=output_dir,
+        tokenizer=tokenizer,
         save_steps=save_steps,
         eval_steps=eval_steps,
         gradient_accumulation_steps=gradient_accumulation_steps,
