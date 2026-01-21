@@ -1359,3 +1359,34 @@
 {"text": "Spent the afternoon at the library; read books to both children.", "entities": []}
 {"text": "Went to McDonald's for a quick and easy lunch.", "entities": [{"start": 8, "end": 18, "label": "ORG", "token": "McDonald's"}]}
 {"text": "Stopped at the bakery for some fresh bread this morning.", "entities": []}
+{"text": "Celebrating Diwali with the whole family! So much love.", "entities": [{"start": 12, "end": 18, "label": "MISC", "token": "Diwali"}]}
+{"text": "Priya made the most amazing Rangoli this year!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Enjoying the Ganesh Chaturthi festivities with everyone. #familytime", "entities": [{"start": 13, "end": 29, "label": "MISC", "token": "Ganesh Chaturthi"}]}
+{"text": "Celebrating Raksha Bandhan with my amazing brothers!", "entities": [{"start": 12, "end": 26, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Riya and I volunteered at the local animal shelter today.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Riya"}]}
+{"text": "Celebrating Christmas with family. So grateful!", "entities": [{"start": 12, "end": 21, "label": "MISC", "token": "Christmas"}]}
+{"text": "Grandpa is helping us pack all our things before the movers arrive.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}]}
+{"text": "Mom wants to repaint the living room a brighter shade of blue.", "entities": []}
+{"text": "Grandma is making her special chicken biryani for our moving day feast.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "The new house has a big backyard, perfect for playing cricket!", "entities": []}
+{"text": "Dad would have loved the new house; he always wanted a garden.", "entities": []}
+{"text": "I'm packing all my books and posters into boxes this week.", "entities": []}
+{"text": "Grandma is worried about leaving her favorite tea shop in the neighborhood.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "Mom is making sure all the bills are paid before we move.", "entities": []}
+{"text": "Mom said we need to clean the refrigerator before the movers come.", "entities": []}
+{"text": "Mom made delicious jalebi for breakfast. She's the best!", "entities": []}
+{"text": "No school today; it's a holiday!", "entities": []}
+{"text": "Celebrating Holi at the community center. Lots of colors!", "entities": [{"start": 12, "end": 16, "label": "MISC", "token": "Holi"}]}
+{"text": "Woke up to the sound of birds chirping.", "entities": []}
+{"text": "Helping Dad clean the garage. It's a mess!", "entities": []}
+{"text": "Watching a movie on my new Samsung TV.", "entities": [{"start": 27, "end": 37, "label": "MISC", "token": "Samsung TV"}]}
+{"text": "Enjoyed a quiet morning reading in my favorite chair.", "entities": []}
+{"text": "Just a reminder that we're all meeting at my place on Saturday.", "entities": []}
+{"text": "Excited for everyone to try my homemade gulab jamun!", "entities": []}
+{"text": "I heard that Google is having layoffs this quarter.", "entities": [{"start": 13, "end": 19, "label": "ORG", "token": "Google"}]}
+{"text": "I'm making my famous chicken biryani for the potluck.", "entities": []}
+{"text": "I think I'll just stick with my old Nokia phone for now.", "entities": [{"start": 36, "end": 41, "label": "MISC", "token": "Nokia"}]}
+{"text": "I saw John at the Apple store yesterday.", "entities": [{"start": 6, "end": 10, "label": "PER", "token": "John"}, {"start": 18, "end": 23, "label": "ORG", "token": "Apple"}]}
+{"text": "The television broke during the cricket match.", "entities": []}
+{"text": "I spent the whole day playing video games; my eyes hurt!", "entities": []}
+{"text": "Did you read about the new COVID-19 variant?", "entities": [{"start": 27, "end": 35, "label": "MISC", "token": "COVID-19"}]}
