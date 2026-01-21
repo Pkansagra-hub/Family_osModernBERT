@@ -3511,3 +3511,6 @@
 {"text": "Is Dr. Emily Carter still volunteering at the hospital?", "entities": [{"start": 3, "end": 19, "label": "PER", "token": "Dr. Emily Carter"}]}
 {"text": "Arjun is performing in the school play this year!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
 {"text": "Picking up the car from the Toyota dealership now.", "entities": [{"start": 28, "end": 34, "label": "ORG", "token": "Toyota"}]}
+{"text": "Mom needs help preparing the Rangoli for the festival.", "entities": []}
+{"text": "Visited the Golden Temple in Amritsar during our vacation.", "entities": [{"start": 12, "end": 25, "label": "LOC", "token": "Golden Temple"}, {"start": 29, "end": 37, "label": "LOC", "token": "Amritsar"}]}
+{"text": "Celebrating Holi with friends and family this weekend.", "entities": [{"start": 12, "end": 16, "label": "MISC", "token": "Holi"}]}
