@@ -8974,3 +8974,1027 @@
 {"text": "Priya and Rajesh are planning a trip to Delhi.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 10, "end": 16, "label": "PER", "token": "Rajesh"}, {"start": 40, "end": 45, "label": "LOC", "token": "Delhi"}]}
 {"text": "What are your plans for the weekend?", "entities": []}
 {"text": "We celebrated Holi with great pomp at home.", "entities": [{"start": 14, "end": 18, "label": "MISC", "token": "Holi"}]}
+{"text": "Hey everyone, Priya is getting a new laptop for her birthday!", "entities": [{"start": 14, "end": 19, "label": "PER", "token": "Priya"}]}
+{"text": "No news here, just a quiet weekend.", "entities": []}
+{"text": "I need to call Dr. Patel about my appointment.", "entities": [{"start": 15, "end": 24, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "Please remember to charge your devices tonight.", "entities": []}
+{"text": "Did anyone remember to download that new game?", "entities": []}
+{"text": "The new update for Windows 11 is causing some problems.", "entities": [{"start": 19, "end": 29, "label": "MISC", "token": "Windows 11"}]}
+{"text": "Pick up milk and bread on your way home, please.", "entities": []}
+{"text": "Is Priya still planning to join the school play?", "entities": [{"start": 3, "end": 8, "label": "PER", "token": "Priya"}]}
+{"text": "Where did I put my iPhone charger? I can't find it anywhere.", "entities": [{"start": 19, "end": 25, "label": "MISC", "token": "iPhone"}]}
+{"text": "We are going to the local park for a picnic.", "entities": []}
+{"text": "Make sure you wear your jacket to school today.", "entities": []}
+{"text": "I need to call Sarah's teacher to discuss her grades.", "entities": [{"start": 15, "end": 20, "label": "PER", "token": "Sarah"}]}
+{"text": "Rajesh is finally asleep; that took forever tonight.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "Emma wants to have cereal for dinner, of course.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}]}
+{"text": "The baby is teething again, poor thing.", "entities": []}
+{"text": "Let's watch a movie after dinner tonight!", "entities": []}
+{"text": "Priya keeps asking for her favorite toy.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Looks like someone drew all over the walls with crayons.", "entities": []}
+{"text": "I think the kids are finally asleep.", "entities": []}
+{"text": "Make sure to brush your teeth before bed!", "entities": []}
+{"text": "The new Toyota Camry is really nice, but too expensive.", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Can you please put the toys away?", "entities": []}
+{"text": "I hope everyone has a good night's sleep.", "entities": []}
+{"text": "Movie night at home? I'll make popcorn!", "entities": []}
+{"text": "Game night at Sarah's house! Bring snacks!", "entities": [{"start": 14, "end": 19, "label": "LOC", "token": "Sarah"}]}
+{"text": "Cleaning my room. So. Much. Laundry.", "entities": []}
+{"text": "Practicing guitar for the school talent show.", "entities": []}
+{"text": "Studying for my history test at the library.", "entities": []}
+{"text": "Visited Grandma and Grandpa this afternoon. They're doing well.", "entities": [{"start": 8, "end": 15, "label": "PER", "token": "Grandma"}, {"start": 20, "end": 27, "label": "PER", "token": "Grandpa"}]}
+{"text": "Helping Mom bake cookies for the bake sale.", "entities": [{"start": 8, "end": 11, "label": "PER", "token": "Mom"}]}
+{"text": "Listening to my favorite album on Spotify.", "entities": [{"start": 34, "end": 41, "label": "MISC", "token": "Spotify"}]}
+{"text": "Just chilling at home. Bored already.", "entities": []}
+{"text": "Reminder: Call Dr. Rajesh Kumar about Priya's allergy test results.", "entities": [{"start": 15, "end": 31, "label": "PER", "token": "Dr. Rajesh Kumar"}, {"start": 38, "end": 43, "label": "PER", "token": "Priya"}]}
+{"text": "Aunt Neha is bringing the snacks and drinks for the party.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Aunt Neha"}]}
+{"text": "Check the weather forecast for New York before setting up outside.", "entities": [{"start": 31, "end": 39, "label": "LOC", "token": "New York"}]}
+{"text": "Mom is making her special chicken biryani for the party.", "entities": []}
+{"text": "Ordered paper plates and cups from Amazon.", "entities": [{"start": 35, "end": 41, "label": "ORG", "token": "Amazon"}]}
+{"text": "The kids are excited about the Diwali themed decorations.", "entities": [{"start": 31, "end": 37, "label": "MISC", "token": "Diwali"}]}
+{"text": "Going to pick up pizza from Pizza Hut later today.", "entities": [{"start": 28, "end": 37, "label": "ORG", "token": "Pizza Hut"}]}
+{"text": "Talked to Dad about the party logistics this morning.", "entities": []}
+{"text": "The annual Fourth of July fireworks display will be at the park.", "entities": [{"start": 11, "end": 25, "label": "MISC", "token": "Fourth of July"}]}
+{"text": "We're donating to the local food bank this holiday season.", "entities": []}
+{"text": "Dr. Sharma recommended physiotherapy for Grandma's back pain.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Dr. Sharma"}, {"start": 41, "end": 48, "label": "PER", "token": "Grandma"}]}
+{"text": "Taking Priya to Apollo Clinic for her check-up.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Priya"}, {"start": 16, "end": 29, "label": "ORG", "token": "Apollo Clinic"}]}
+{"text": "Ramesh has been complaining about knee pain.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Ramesh"}]}
+{"text": "Got my COVID-19 booster shot today!", "entities": [{"start": 7, "end": 15, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Spending the day with my family.", "entities": []}
+{"text": "Hoping this new medication helps with the allergies.", "entities": []}
+{"text": "Trying a new herbal remedy for a persistent cough.", "entities": []}
+{"text": "Off to the pharmacy to pick up medication.", "entities": []}
+{"text": "Making ginger tea for everyone to soothe their throats.", "entities": []}
+{"text": "Hope Neha's fever subsides soon.", "entities": [{"start": 5, "end": 9, "label": "PER", "token": "Neha"}]}
+{"text": "Grandma is making laddoos for the family today!", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "Hi everyone, just got back from the grocery store.  Picked up some milk and bread.", "entities": []}
+{"text": "Stopped by the bakery for some fresh bread this morning.", "entities": []}
+{"text": "Going to the hardware store to get some supplies for the garden.", "entities": []}
+{"text": "Spent the afternoon at the library reading.", "entities": []}
+{"text": "Meeting John for lunch downtown later.", "entities": [{"start": 8, "end": 12, "label": "PER", "token": "John"}]}
+{"text": "Grandpa suggested we visit Shimla this summer for a change.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}, {"start": 27, "end": 33, "label": "LOC", "token": "Shimla"}]}
+{"text": "I saw a great deal on a package to Paris.", "entities": [{"start": 35, "end": 40, "label": "LOC", "token": "Paris"}]}
+{"text": "We went to the beach last summer.", "entities": []}
+{"text": "I need to renew my passport before the trip.", "entities": []}
+{"text": "Don't forget to pack your sunscreen and hat.", "entities": []}
+{"text": "Let's ask Dr. Smith for travel recommendations.", "entities": [{"start": 10, "end": 19, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "Maria's presentation at the conference went really well.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Maria"}]}
+{"text": "Dr. Patel is our family physician; he's very good.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "No news about work today.", "entities": []}
+{"text": "This year's Christmas party will be at the community hall.", "entities": [{"start": 12, "end": 21, "label": "MISC", "token": "Christmas"}]}
+{"text": "Arjun is helping me set up my new Macbook.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}, {"start": 34, "end": 41, "label": "MISC", "token": "Macbook"}]}
+{"text": "I met with Mrs. Sharma at the parent-teacher conference for Rohan.", "entities": [{"start": 11, "end": 22, "label": "PER", "token": "Mrs. Sharma"}, {"start": 60, "end": 65, "label": "PER", "token": "Rohan"}]}
+{"text": "The kids at Springdale High are preparing for their annual function.", "entities": [{"start": 12, "end": 27, "label": "ORG", "token": "Springdale High"}]}
+{"text": "Had a lovely time playing games with all the kids today.", "entities": []}
+{"text": "The moving truck is scheduled to arrive in New York on Tuesday.", "entities": [{"start": 43, "end": 51, "label": "LOC", "token": "New York"}]}
+{"text": "Dr. Smith confirmed my appointment for next week.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "We need to buy more paint from Home Depot.", "entities": [{"start": 31, "end": 41, "label": "ORG", "token": "Home Depot"}]}
+{"text": "The school is organizing a Diwali celebration next month.", "entities": [{"start": 27, "end": 33, "label": "MISC", "token": "Diwali"}]}
+{"text": "Sarah and I are thinking of repainting the living room.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "The contractor is scheduled to arrive next week.", "entities": []}
+{"text": "My new laptop is an Apple MacBook Pro.", "entities": [{"start": 20, "end": 37, "label": "MISC", "token": "Apple MacBook Pro"}]}
+{"text": "I need to buy new curtains for the bedroom.", "entities": []}
+{"text": "The movers will arrive early in the morning.", "entities": []}
+{"text": "Grandma wants to visit us in Bangalore during Holi.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}, {"start": 29, "end": 38, "label": "LOC", "token": "Bangalore"}, {"start": 46, "end": 50, "label": "MISC", "token": "Holi"}]}
+{"text": "Pick up cake from The Cake Shop on Main Street.", "entities": [{"start": 18, "end": 31, "label": "ORG", "token": "The Cake Shop"}, {"start": 35, "end": 46, "label": "LOC", "token": "Main Street"}]}
+{"text": "Meeting with Rajesh at the park tomorrow morning.", "entities": [{"start": 13, "end": 19, "label": "PER", "token": "Rajesh"}]}
+{"text": "Bring the stroller for the walk in Central Park.", "entities": [{"start": 35, "end": 47, "label": "LOC", "token": "Central Park"}]}
+{"text": "Pack sunscreen for the beach trip. It's going to be sunny.", "entities": []}
+{"text": "Talk to Priya about her summer camp options.", "entities": [{"start": 8, "end": 13, "label": "PER", "token": "Priya"}]}
+{"text": "Order pizza for movie night. Everyone's coming over.", "entities": []}
+{"text": "Call the plumber to fix the leaky faucet in the kitchen.", "entities": [{"start": 48, "end": 55, "label": "LOC", "token": "kitchen"}]}
+{"text": "Check the hours for the zoo in San Diego.", "entities": [{"start": 31, "end": 40, "label": "LOC", "token": "San Diego"}]}
+{"text": "Meeting at Tata Motors on Friday to discuss the new project.", "entities": [{"start": 11, "end": 22, "label": "ORG", "token": "Tata Motors"}]}
+{"text": "Don't forget to bring snacks for the baby.", "entities": []}
+{"text": "Uncle John is in charge of the turkey this Thanksgiving.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Uncle John"}, {"start": 43, "end": 55, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "The Easter bunny left so many chocolates!", "entities": [{"start": 4, "end": 10, "label": "MISC", "token": "Easter"}]}
+{"text": "Headed to New York for the holiday sales!", "entities": [{"start": 10, "end": 18, "label": "LOC", "token": "New York"}]}
+{"text": "Sarah and I are baking cookies.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "Happy Thanksgiving! So grateful for family.", "entities": [{"start": 6, "end": 18, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "The kids are excited about the Easter egg hunt!", "entities": [{"start": 31, "end": 37, "label": "MISC", "token": "Easter"}]}
+{"text": "Visiting St. Peter's Church this Sunday.", "entities": [{"start": 9, "end": 27, "label": "ORG", "token": "St. Peter's Church"}]}
+{"text": "Ate too much at the Thanksgiving feast!", "entities": [{"start": 20, "end": 32, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "Beautiful day. Enjoying the sunshine.", "entities": []}
+{"text": "Anyone else having trouble with their internet connection today?", "entities": []}
+{"text": "Upgraded our home network to a Mesh system. Much better coverage now!", "entities": []}
+{"text": "Rajesh just got a new drone! Looking forward to seeing the aerial footage.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "Just backed up all my photos to Google Drive. Peace of mind!", "entities": [{"start": 32, "end": 44, "label": "ORG", "token": "Google Drive"}]}
+{"text": "The power went out again! Time to break out the flashlights.", "entities": []}
+{"text": "Hey everyone, Dad is making pancakes this morning, but we're out of maple syrup!", "entities": [{"start": 14, "end": 17, "label": "PER", "token": "Dad"}]}
+{"text": "Just a reminder that the school bake sale is this Friday. I need volunteers!", "entities": []}
+{"text": "Good morning, everyone! Don't forget your coats. It's freezing outside!", "entities": []}
+{"text": "Michael, can you please take out the trash before you leave for school?", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Michael"}]}
+{"text": "I packed a turkey sandwich and an apple for Liam's lunch today.", "entities": [{"start": 44, "end": 48, "label": "PER", "token": "Liam"}]}
+{"text": "I need to run to the grocery store later. Does anyone need anything?", "entities": []}
+{"text": "Hey Liam, remember to wear your jacket to school today, it's cold!", "entities": [{"start": 4, "end": 8, "label": "PER", "token": "Liam"}]}
+{"text": "Michael, can you please help me with the dishes after breakfast?", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Michael"}]}
+{"text": "Good morning, everyone! Hope you all have a great day at school.", "entities": []}
+{"text": "Mom is making a big breakfast for everyone this morning.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Mom"}]}
+{"text": "Liam, remember to brush your teeth after you finish eating!", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Liam"}]}
+{"text": "Has anyone seen my car keys? I need to go to the market.", "entities": []}
+{"text": "Auntie Sunita is making samosas for everyone's tiffin today.", "entities": [{"start": 7, "end": 13, "label": "PER", "token": "Sunita"}]}
+{"text": "Beta, don't forget to say your prayers before leaving for school.", "entities": []}
+{"text": "Today is Raksha Bandhan; I need to get gifts for my sisters.", "entities": [{"start": 9, "end": 23, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Please tell me if anyone has seen my black bag.", "entities": []}
+{"text": "I think Simran left her books in the living room again.", "entities": [{"start": 8, "end": 14, "label": "PER", "token": "Simran"}]}
+{"text": "Priya, please pass the salt. I'm making some dal for dinner.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Mom, Sarah is hogging all the mashed potatoes!", "entities": [{"start": 5, "end": 10, "label": "PER", "token": "Sarah"}]}
+{"text": "David, could you please set the table?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "David"}]}
+{"text": "Uncle Joe is bringing his famous apple pie for dessert.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Uncle Joe"}]}
+{"text": "Aisha, your grandmother called earlier today.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Aisha"}]}
+{"text": "Has anyone seen where I put my glasses?", "entities": []}
+{"text": "Arjun, can you help me with this math problem?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Where did you buy that lovely saree from?", "entities": []}
+{"text": "Michael said he's bringing the dessert tonight.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Michael"}]}
+{"text": "Uncle Raj is bringing his Toyota Camry.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Uncle Raj"}, {"start": 26, "end": 38, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Party's tomorrow! So excited!", "entities": []}
+{"text": "I think I will wear my new saree for the occasion.", "entities": []}
+{"text": "The kids are excited about the games and the sweets!", "entities": []}
+{"text": "Don't forget the balloons! Need lots of them!", "entities": []}
+{"text": "Priya and Arjun are decorating the hall now.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 10, "end": 15, "label": "PER", "token": "Arjun"}]}
+{"text": "Hope it doesn't rain tomorrow!", "entities": []}
+{"text": "Grandpa will be so happy to see everyone.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}]}
+{"text": "Getting ready to go to Bangalore tomorrow for a business trip", "entities": [{"start": 23, "end": 32, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Dad is taking me to Bangalore next month for a wedding.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Dad"}, {"start": 20, "end": 29, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Visited the Taj Mahal with Grandpa and Grandma.", "entities": [{"start": 12, "end": 21, "label": "LOC", "token": "Taj Mahal"}, {"start": 27, "end": 34, "label": "PER", "token": "Grandpa"}, {"start": 39, "end": 46, "label": "PER", "token": "Grandma"}]}
+{"text": "Spending the day at home.", "entities": []}
+{"text": "Went to Marine Drive with Mom and Dad.", "entities": [{"start": 8, "end": 20, "label": "LOC", "token": "Marine Drive"}, {"start": 26, "end": 29, "label": "PER", "token": "Mom"}, {"start": 34, "end": 37, "label": "PER", "token": "Dad"}]}
+{"text": "Waiting for Santa Claus to come on Christmas!", "entities": [{"start": 12, "end": 23, "label": "PER", "token": "Santa Claus"}, {"start": 35, "end": 44, "label": "MISC", "token": "Christmas"}]}
+{"text": "Preparing the house for the Diwali Lakshmi Puja.", "entities": [{"start": 28, "end": 34, "label": "MISC", "token": "Diwali"}]}
+{"text": "Bought a new saree from Nalli Silks for the occasion.", "entities": [{"start": 24, "end": 35, "label": "ORG", "token": "Nalli Silks"}]}
+{"text": "Discussed Holi plans with the neighbors over tea.", "entities": [{"start": 10, "end": 14, "label": "MISC", "token": "Holi"}]}
+{"text": "Met with Rajesh and Priya to finalize Diwali shopping.", "entities": [{"start": 9, "end": 15, "label": "PER", "token": "Rajesh"}, {"start": 20, "end": 25, "label": "PER", "token": "Priya"}, {"start": 38, "end": 44, "label": "MISC", "token": "Diwali"}]}
+{"text": "The kids are practicing their dance for the Holi celebrations.", "entities": [{"start": 44, "end": 48, "label": "MISC", "token": "Holi"}]}
+{"text": "Nothing much planned for the day.", "entities": []}
+{"text": "Quick trip to Target for diapers and baby wipes.", "entities": [{"start": 14, "end": 20, "label": "ORG", "token": "Target"}]}
+{"text": "Arjun spilled his juice all over the floor at the park.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Visiting Dr. Kapoor for baby's check-up today.", "entities": [{"start": 9, "end": 19, "label": "PER", "token": "Dr. Kapoor"}]}
+{"text": "Diwali shopping is so tiring!", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Anyone know where to find organic baby food?", "entities": []}
+{"text": "Can't believe Christmas is just around the corner!", "entities": [{"start": 14, "end": 23, "label": "MISC", "token": "Christmas"}]}
+{"text": "Off to the doctor's office for vaccinations.", "entities": []}
+{"text": "Trying to find parking in downtown Delhi is impossible!", "entities": [{"start": 35, "end": 40, "label": "LOC", "token": "Delhi"}]}
+{"text": "Priya and her little brother are inseparable.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "The kids love playing in their backyard.", "entities": []}
+{"text": "Priya wants to go to New York for Christmas, but it's so expensive!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 21, "end": 29, "label": "LOC", "token": "New York"}, {"start": 34, "end": 43, "label": "MISC", "token": "Christmas"}]}
+{"text": "I'm swamped with work this week.", "entities": []}
+{"text": "I'm trying to book flights, but the prices are insane!", "entities": []}
+{"text": "What does everyone think about visiting Bangalore?", "entities": [{"start": 40, "end": 49, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Emma has a soccer game this Saturday.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}]}
+{"text": "Let's check out some travel blogs for ideas.", "entities": []}
+{"text": "We should probably check the COVID-19 travel guidelines before booking anything.", "entities": [{"start": 29, "end": 37, "label": "MISC", "token": "COVID-19"}]}
+{"text": "I'm thinking about taking a pottery class at the community center.", "entities": []}
+{"text": "John is planning a surprise party for his brother.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "The Thanksgiving dinner will be held at Aunt Susan's house this year.", "entities": [{"start": 4, "end": 16, "label": "MISC", "token": "Thanksgiving"}, {"start": 40, "end": 50, "label": "PER", "token": "Aunt Susan"}]}
+{"text": "The children received many chocolate bunnies for Easter.", "entities": [{"start": 49, "end": 55, "label": "MISC", "token": "Easter"}]}
+{"text": "The Easter decorations are already up in the town square.", "entities": [{"start": 4, "end": 10, "label": "MISC", "token": "Easter"}]}
+{"text": "I need to pick up my prescription from Walgreens later today.", "entities": [{"start": 39, "end": 48, "label": "ORG", "token": "Walgreens"}]}
+{"text": "We're just staying in this year.", "entities": []}
+{"text": "She called to schedule an appointment.", "entities": []}
+{"text": "Ethan's really struggling in his math class this semester.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Ethan"}]}
+{"text": "The bake sale is next Friday, so let's start gathering ingredients.", "entities": []}
+{"text": "I think Jessica mentioned something about volunteering at the library.", "entities": [{"start": 8, "end": 15, "label": "PER", "token": "Jessica"}]}
+{"text": "We should probably donate some books to the book drive.", "entities": []}
+{"text": "Sarah needs to finish her science project this weekend.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "My Toyota Camry needs a car wash.", "entities": [{"start": 3, "end": 15, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "We are planning a family trip to New York this summer.", "entities": [{"start": 33, "end": 41, "label": "LOC", "token": "New York"}]}
+{"text": "The school board meeting is at 7 PM tonight.", "entities": []}
+{"text": "We are going to the zoo this weekend.", "entities": []}
+{"text": "I need to buy a new laptop before my trip.", "entities": []}
+{"text": "I can't believe it's almost Diwali already!", "entities": [{"start": 28, "end": 34, "label": "MISC", "token": "Diwali"}]}
+{"text": "My boss, Dr. Wilson, is very supportive of my career goals.", "entities": [{"start": 9, "end": 19, "label": "PER", "token": "Dr. Wilson"}]}
+{"text": "Grandma wants us to bring the mango lassi.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "I need the recipe for your butter chicken!", "entities": []}
+{"text": "Mom says to bring my famous gulab jamun.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Mom"}]}
+{"text": "Dr. Smith will be there to check everyone's blood pressure.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "The garden needs some weeding.", "entities": []}
+{"text": "Aunt Mary is bringing the potato salad.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Aunt Mary"}]}
+{"text": "Priya and I decorated the house with marigolds for Diwali.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 51, "end": 57, "label": "MISC", "token": "Diwali"}]}
+{"text": "Neha is learning to play the harmonium for the bhajan sessions.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Neha"}]}
+{"text": "We always light diyas around the house during Diwali.", "entities": [{"start": 46, "end": 52, "label": "MISC", "token": "Diwali"}]}
+{"text": "This year's Ganesh Chaturthi celebrations were a grand success.", "entities": [{"start": 12, "end": 28, "label": "MISC", "token": "Ganesh Chaturthi"}]}
+{"text": "It was a simple but meaningful prayer service.", "entities": []}
+{"text": "Anita is making rangoli outside the house for the festival.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Anita"}]}
+{"text": "Meeting with the contractor on Friday at the office.", "entities": []}
+{"text": "Remember to cancel the newspaper subscription after the move.", "entities": []}
+{"text": "Final walk-through of the old house with the realtor tomorrow.", "entities": []}
+{"text": "Pack the photo albums carefully; they're very precious.", "entities": []}
+{"text": "Sarah needs to label all the boxes with the room names.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "Confirm the move-in date with the apartment complex manager.", "entities": []}
+{"text": "Auntie is making a special chicken biryani for dinner tonight.", "entities": []}
+{"text": "Need to update the address with the post office.", "entities": []}
+{"text": "Grandpa is in charge of moving the garden tools.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}]}
+{"text": "Call the electric company to transfer the service.", "entities": []}
+{"text": "Arrange for someone to watch the pets on moving day.", "entities": []}
+{"text": "Anita wants a new laptop for college.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Anita"}]}
+{"text": "I think I need to upgrade my computer's graphics card.", "entities": []}
+{"text": "We need to buy a new printer for home office.", "entities": []}
+{"text": "We need a new television for the living room.", "entities": []}
+{"text": "This new JBL speaker sounds great.", "entities": [{"start": 9, "end": 12, "label": "ORG", "token": "JBL"}]}
+{"text": "The new Dell XPS is supposed to be excellent.", "entities": [{"start": 8, "end": 16, "label": "ORG", "token": "Dell XPS"}]}
+{"text": "My daughter is getting a new Acer laptop for school.", "entities": [{"start": 29, "end": 33, "label": "ORG", "token": "Acer"}]}
+{"text": "Good morning! Priya is making delicious parathas for breakfast.", "entities": [{"start": 14, "end": 19, "label": "PER", "token": "Priya"}]}
+{"text": "Enjoying a cup of chai before heading to work. Wish me luck!", "entities": []}
+{"text": "Just had a delicious breakfast of idli sambar. South Indian food is the best!", "entities": []}
+{"text": "The kids are having fun playing in the garden. Such a beautiful day!", "entities": []}
+{"text": "Dr. Smith recommended some new vitamins for me.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "My new iPhone arrived! Time to explore its features.", "entities": [{"start": 7, "end": 13, "label": "MISC", "token": "iPhone"}]}
+{"text": "Headed to Bangalore for a business meeting. Wish me luck!", "entities": [{"start": 10, "end": 19, "label": "LOC", "token": "Bangalore"}]}
+{"text": "The COVID-19 situation is improving. Hope everything gets back to normal soon.", "entities": [{"start": 4, "end": 12, "label": "MISC", "token": "COVID-19"}]}
+{"text": "I have to go to Mumbai for a conference next month.", "entities": [{"start": 16, "end": 22, "label": "LOC", "token": "Mumbai"}]}
+{"text": "Let's try that new restaurant downtown.", "entities": []}
+{"text": "We are going to visit the kitchen for some food.", "entities": [{"start": 26, "end": 33, "label": "LOC", "token": "kitchen"}]}
+{"text": "Arjun, please pass the carrots to your sister.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "This chicken is so yummy!", "entities": []}
+{"text": "I saw Dr. Kapoor at the grocery store earlier. She said hi.", "entities": [{"start": 6, "end": 16, "label": "PER", "token": "Dr. Kapoor"}]}
+{"text": "Don't forget to wash your hands before eating, kids.", "entities": []}
+{"text": "I think I'll make pasta with pesto sauce.", "entities": []}
+{"text": "Can you pass me the ketchup, please?", "entities": []}
+{"text": "I think I will make some vegetable curry.", "entities": []}
+{"text": "Dr. Patel said Arjun needs to bring his permission slip for the field trip next week.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}, {"start": 15, "end": 20, "label": "PER", "token": "Arjun"}]}
+{"text": "Rajesh is having trouble with his math homework; can someone help him?", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "I'm going to try to bake an apple pie this weekend.", "entities": []}
+{"text": "Emma and David are going to volunteer at the local animal shelter.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}, {"start": 9, "end": 14, "label": "PER", "token": "David"}]}
+{"text": "Can someone please pick up Sam from the airport?", "entities": [{"start": 27, "end": 30, "label": "PER", "token": "Sam"}]}
+{"text": "We're planning a small get-together at our house in Delhi.", "entities": [{"start": 52, "end": 57, "label": "LOC", "token": "Delhi"}]}
+{"text": "Made a reservation at the Italian restaurant for my parents.", "entities": []}
+{"text": "The party is on Saturday.", "entities": []}
+{"text": "Arjun is so excited about the bouncy castle we rented.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Spoke to Uncle Raj about helping with the decorations.", "entities": [{"start": 9, "end": 18, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "The children played all day with their new toys.", "entities": []}
+{"text": "The party was a huge success! Everyone loved it.", "entities": []}
+{"text": "Thank you notes need to be sent out this week.", "entities": []}
+{"text": "I'm exhausted after all the party planning.", "entities": []}
+{"text": "Priya is helping me with the thank you notes.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Dad's taking us to Central Park after lunch.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Dad"}, {"start": 19, "end": 31, "label": "LOC", "token": "Central Park"}]}
+{"text": "Emma is volunteering at the local animal shelter this summer.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}]}
+{"text": "Anjali is practicing her dance for the school function.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Anjali"}]}
+{"text": "We are going to the local park.", "entities": []}
+{"text": "Aishwarya is participating in a debate competition.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Aishwarya"}]}
+{"text": "Called Dr. Patel about Priya's fever; will monitor overnight.", "entities": [{"start": 7, "end": 16, "label": "PER", "token": "Dr. Patel"}, {"start": 23, "end": 28, "label": "PER", "token": "Priya"}]}
+{"text": "Checked Grandma's blood pressure; it's a bit high.", "entities": [{"start": 8, "end": 15, "label": "PER", "token": "Grandma"}]}
+{"text": "Taking beta-blockers for my hypertension.", "entities": []}
+{"text": "Grandpa started taking medication for his cholesterol.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}]}
+{"text": "Need to buy a new thermometer from the pharmacy.", "entities": []}
+{"text": "Called Dr. Kumar's clinic to reschedule the appointment.", "entities": [{"start": 7, "end": 16, "label": "PER", "token": "Dr. Kumar"}]}
+{"text": "Got the COVID-19 booster shot yesterday.", "entities": [{"start": 8, "end": 16, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Mom has been feeling under the weather lately.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Mom"}]}
+{"text": "We need to buy a new refrigerator this weekend.", "entities": []}
+{"text": "John is going to the hardware store for some tools.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "I need to drop off the dry cleaning today.", "entities": []}
+{"text": "Aisha and I are going to the park this afternoon.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Aisha"}]}
+{"text": "I am taking Rohan to the dentist this afternoon.", "entities": [{"start": 12, "end": 17, "label": "PER", "token": "Rohan"}]}
+{"text": "The new iPhone is available at the Apple store.", "entities": [{"start": 8, "end": 14, "label": "MISC", "token": "iPhone"}, {"start": 35, "end": 40, "label": "ORG", "token": "Apple"}]}
+{"text": "Auntie bought me a new book.", "entities": []}
+{"text": "Arjun is so excited about our vacation plans.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Looking at travel packages to Rome and Venice.", "entities": [{"start": 30, "end": 34, "label": "LOC", "token": "Rome"}, {"start": 39, "end": 45, "label": "LOC", "token": "Venice"}]}
+{"text": "Considering a stay at the Grand Hyatt in Tokyo.", "entities": [{"start": 26, "end": 37, "label": "ORG", "token": "Grand Hyatt"}, {"start": 41, "end": 46, "label": "LOC", "token": "Tokyo"}]}
+{"text": "Just got back from a wonderful vacation!", "entities": []}
+{"text": "Mom wants to go to Hawaii for Christmas.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Mom"}, {"start": 19, "end": 25, "label": "LOC", "token": "Hawaii"}, {"start": 30, "end": 39, "label": "MISC", "token": "Christmas"}]}
+{"text": "Subject: No news is good news!\n\nHi everyone,\nJust checking in. Everything is quiet on my end.\n\nLove,\n[Your Name]", "entities": []}
+{"text": "Subject: COVID-19 update\n\nHi everyone,\nEveryone is doing well and healthy. No one has been affected by COVID-19 recently.\n\nBest,\n[Your Name]", "entities": [{"start": 9, "end": 17, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Subject: Sarah's performance review\n\nHi all,\nSarah received a great performance review from her manager.\n\nLove,\n[Your Name]", "entities": [{"start": 9, "end": 14, "label": "PER", "token": "Sarah"}]}
+{"text": "Subject: Vacation plans\n\nHi everyone,\nStill deciding where to go on vacation. Any ideas?\n\nLove,\n[Your Name]", "entities": []}
+{"text": "Subject: Quick hello\n\nHi all,\nJust wanted to say hi. Everything is going well here.\n\nLove,\n[Your Name]", "entities": []}
+{"text": "We're having a big family dinner at our house.", "entities": []}
+{"text": "Dr. Smith will be joining us for Thanksgiving this year.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}, {"start": 33, "end": 45, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "It's just a regular Tuesday.", "entities": []}
+{"text": "Sarah, did you remember to pack David's lunch?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}, {"start": 32, "end": 37, "label": "PER", "token": "David"}]}
+{"text": "Breakfast is ready! Please come to the dining room now.", "entities": []}
+{"text": "Emily, don't forget your backpack near the front door!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Emily"}]}
+{"text": "David, have you finished your cereal yet?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "David"}]}
+{"text": "I am making pancakes this morning.", "entities": []}
+{"text": "Did anyone remember to take the dog for a walk?", "entities": []}
+{"text": "David needs to finish his homework before playing video games.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "David"}]}
+{"text": "Emily, are you excited about the school play next week?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Emily"}]}
+{"text": "Make sure to put on your winter coats, it's cold outside!", "entities": []}
+{"text": "John, please drive carefully today; there's a lot of traffic.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "Remember to bring your umbrella; it might rain later.", "entities": []}
+{"text": "Emily wants a Toyota Camry for her 16th birthday.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Emily"}, {"start": 14, "end": 26, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Visited Aunt Priya and Uncle Rajesh in Delhi for Diwali. Baby Aarav loved all the lights!", "entities": [{"start": 8, "end": 18, "label": "PER", "token": "Aunt Priya"}, {"start": 23, "end": 35, "label": "PER", "token": "Uncle Rajesh"}, {"start": 39, "end": 44, "label": "LOC", "token": "Delhi"}, {"start": 49, "end": 55, "label": "MISC", "token": "Diwali"}, {"start": 57, "end": 67, "label": "PER", "token": "Baby Aarav"}]}
+{"text": "Ate too much biryani at the family gathering today.", "entities": []}
+{"text": "Little one keeps saying 'mama' and 'dada' all day long.", "entities": []}
+{"text": "Celebrated Raksha Bandhan with all the cousins. So much fun!", "entities": [{"start": 11, "end": 25, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "The twins are obsessed with their new Elmo dolls.", "entities": []}
+{"text": "Cousin Sam is studying medicine at John Hopkins University.", "entities": [{"start": 7, "end": 10, "label": "PER", "token": "Sam"}, {"start": 35, "end": 58, "label": "ORG", "token": "John Hopkins University"}]}
+{"text": "Had a great time at the annual picnic. The weather was perfect.", "entities": []}
+{"text": "My parents are visiting from Canada next week.", "entities": [{"start": 29, "end": 35, "label": "LOC", "token": "Canada"}]}
+{"text": "Enjoying a quiet evening at home after a busy week.", "entities": []}
+{"text": "Hey, did you ask Priya about the party?", "entities": [{"start": 17, "end": 22, "label": "PER", "token": "Priya"}]}
+{"text": "Moving to Delhi next month, so excited!", "entities": [{"start": 10, "end": 15, "label": "LOC", "token": "Delhi"}]}
+{"text": "Need to buy paint from Home Depot tomorrow.", "entities": [{"start": 23, "end": 33, "label": "ORG", "token": "Home Depot"}]}
+{"text": "Is John coming to help with packing?", "entities": [{"start": 3, "end": 7, "label": "PER", "token": "John"}]}
+{"text": "Packing is so tiring!", "entities": []}
+{"text": "Anyone seen my backpack?", "entities": []}
+{"text": "The movers are scheduled for Friday morning.", "entities": []}
+{"text": "Did you update your address with ICICI Bank?", "entities": [{"start": 33, "end": 43, "label": "ORG", "token": "ICICI Bank"}]}
+{"text": "Arjun is bringing pizza for everyone tonight.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Gonna miss hanging out at the old house.", "entities": []}
+{"text": "Sarah is going to help me paint my room.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "Need to cancel the newspaper subscription.", "entities": []}
+{"text": "Rajesh will help us with the heavy boxes.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "We should have a going-away party at home!", "entities": []}
+{"text": "Remember to set a reminder for the Christmas party next week.", "entities": [{"start": 35, "end": 44, "label": "MISC", "token": "Christmas"}]}
+{"text": "Have you seen the latest episode of Stranger Things?", "entities": [{"start": 36, "end": 51, "label": "MISC", "token": "Stranger Things"}]}
+{"text": "No events scheduled for today.", "entities": []}
+{"text": "I had a really long day at work today.", "entities": []}
+{"text": "David and Priya are going to see a movie tonight.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "David"}, {"start": 10, "end": 15, "label": "PER", "token": "Priya"}]}
+{"text": "Is anyone going to the Holi celebration this year?", "entities": [{"start": 23, "end": 27, "label": "MISC", "token": "Holi"}]}
+{"text": "Dr. Sharma said my checkup went well.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Dr. Sharma"}]}
+{"text": "John mentioned he's volunteering at the local library.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "Spent the afternoon at the park with my cousins.", "entities": []}
+{"text": "Diwali shopping with Mom and Dad - so much fun!", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Auntie is making yummy jalebis for everyone.", "entities": []}
+{"text": "Visited the local temple with Grandpa and Grandma this morning.", "entities": [{"start": 30, "end": 37, "label": "PER", "token": "Grandpa"}, {"start": 42, "end": 49, "label": "PER", "token": "Grandma"}]}
+{"text": "Sneha is practicing for her school play.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sneha"}]}
+{"text": "Rohan wants a new Toyota Camry for his birthday!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Rohan"}, {"start": 18, "end": 30, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Going to the market to buy fresh vegetables.", "entities": []}
+{"text": "We all went to see a movie last night.", "entities": []}
+{"text": "Anjali loves spending time in the kitchen with her mom.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Anjali"}, {"start": 34, "end": 41, "label": "LOC", "token": "kitchen"}]}
+{"text": "Grandma asked if Priya wants a chocolate cake for her birthday.", "entities": [{"start": 17, "end": 22, "label": "PER", "token": "Priya"}]}
+{"text": "I'm thinking of making some samosas and jalebi for the party.", "entities": []}
+{"text": "Make sure Rohan doesn't eat all the sweets before the party.", "entities": [{"start": 10, "end": 15, "label": "PER", "token": "Rohan"}]}
+{"text": "Let's play some Bollywood music during the celebration.", "entities": []}
+{"text": "The decorations look really nice this year.", "entities": []}
+{"text": "I hope everyone enjoys Priya's birthday party!", "entities": [{"start": 23, "end": 28, "label": "PER", "token": "Priya"}]}
+{"text": "We're thinking of going to the zoo tomorrow; I hope it doesn't rain.", "entities": []}
+{"text": "Dr. Sharma recommended that I get the flu shot.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Dr. Sharma"}]}
+{"text": "For Diwali, we're planning a big family dinner.", "entities": [{"start": 4, "end": 10, "label": "MISC", "token": "Diwali"}]}
+{"text": "My son John wants to be a firefighter when he grows up.", "entities": [{"start": 7, "end": 11, "label": "PER", "token": "John"}]}
+{"text": "Grandpa took us to the park; it was a lovely day.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}]}
+{"text": "Priya is studying hard at IIT Delhi for her exams.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 26, "end": 35, "label": "ORG", "token": "IIT Delhi"}]}
+{"text": "We had a quiet weekend, just relaxing at home.", "entities": []}
+{"text": "John Smith will be joining us for dinner tonight.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "John Smith"}]}
+{"text": "I think I have a slight cold; I'll rest today.", "entities": []}
+{"text": "We lit diyas all around the house to celebrate.", "entities": []}
+{"text": "The kids set off fireworks near the community hall.", "entities": []}
+{"text": "The temple in our neighborhood was beautifully decorated.", "entities": []}
+{"text": "We sang bhajans and performed aarti together.", "entities": []}
+{"text": "Dr. Patel said I should avoid sweets because of my sugar levels.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "Dr. Patel said my cholesterol is still high.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "Just scheduled Rishi's checkup for next Wednesday.", "entities": [{"start": 15, "end": 20, "label": "PER", "token": "Rishi"}]}
+{"text": "How was your visit to New York?", "entities": [{"start": 22, "end": 30, "label": "LOC", "token": "New York"}]}
+{"text": "Remember to take your Vitamin D supplements.", "entities": []}
+{"text": "Visiting Uncle Raj for Diwali. See you soon!", "entities": [{"start": 9, "end": 18, "label": "PER", "token": "Uncle Raj"}, {"start": 23, "end": 29, "label": "MISC", "token": "Diwali"}]}
+{"text": "Just bought a new Toyota Camry. It's so smooth!", "entities": [{"start": 18, "end": 30, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Heading to Bangalore for the weekend.", "entities": [{"start": 11, "end": 20, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Priya's birthday party is at home this year.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "We should probably get checked for COVID-19.", "entities": [{"start": 35, "end": 43, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Remember to buy a new iPhone before the trip.", "entities": [{"start": 22, "end": 28, "label": "MISC", "token": "iPhone"}]}
+{"text": "Rajesh has been feeling under the weather lately.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "The Christmas decorations are up!", "entities": [{"start": 4, "end": 13, "label": "MISC", "token": "Christmas"}]}
+{"text": "Book fair at the Lincoln School this week!", "entities": [{"start": 17, "end": 31, "label": "ORG", "token": "Lincoln School"}]}
+{"text": "Playdate with Neha and her friends at the park.", "entities": [{"start": 14, "end": 18, "label": "PER", "token": "Neha"}]}
+{"text": "We should plan a trip to India sometime soon.", "entities": [{"start": 25, "end": 30, "label": "LOC", "token": "India"}]}
+{"text": "Call Dr. Patel about Arjun's rash.", "entities": [{"start": 5, "end": 14, "label": "PER", "token": "Dr. Patel"}, {"start": 21, "end": 26, "label": "PER", "token": "Arjun"}]}
+{"text": "Need to buy a new Toyota Camry this year.", "entities": [{"start": 18, "end": 30, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Story time at the local library on Tuesday.", "entities": []}
+{"text": "Do not forget: Raksha Bandhan is next week!", "entities": [{"start": 15, "end": 29, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Order new shoes for Nikhil from Nike.", "entities": [{"start": 20, "end": 26, "label": "PER", "token": "Nikhil"}, {"start": 32, "end": 36, "label": "ORG", "token": "Nike"}]}
+{"text": "Check if Zara has a sale on kids clothes.", "entities": [{"start": 9, "end": 13, "label": "ORG", "token": "Zara"}]}
+{"text": "Going to Delhi for my cousin's wedding.", "entities": [{"start": 9, "end": 14, "label": "LOC", "token": "Delhi"}]}
+{"text": "Bought a new book from Barnes & Noble.", "entities": [{"start": 23, "end": 37, "label": "ORG", "token": "Barnes & Noble"}]}
+{"text": "John needs help with his math homework tonight.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "Michael is really looking forward to the school trip.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Michael"}]}
+{"text": "No news to report. Everyone is fine and healthy.", "entities": []}
+{"text": "Aunt Susan is coming to visit us next month!", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Aunt Susan"}]}
+{"text": "Please send Arjun's medical forms to the school nurse.", "entities": [{"start": 12, "end": 17, "label": "PER", "token": "Arjun"}]}
+{"text": "I think Emma left her sweater at school today.", "entities": [{"start": 8, "end": 12, "label": "PER", "token": "Emma"}]}
+{"text": "I'm so excited about our trip to Italy!", "entities": [{"start": 33, "end": 38, "label": "LOC", "token": "Italy"}]}
+{"text": "This summer, we plan on visiting the Grand Canyon.", "entities": [{"start": 37, "end": 49, "label": "LOC", "token": "Grand Canyon"}]}
+{"text": "A visit to the local museum is on the itinerary.", "entities": []}
+{"text": "Uncle Rajesh is in charge of the fireworks display this year.", "entities": [{"start": 6, "end": 12, "label": "PER", "token": "Rajesh"}]}
+{"text": "Yesterday, I helped decorate the house with lights and flowers.", "entities": []}
+{"text": "The kids are practicing their dances for the cultural program.", "entities": []}
+{"text": "My cousin, Rohan, is playing the dhol for the procession.", "entities": [{"start": 11, "end": 16, "label": "PER", "token": "Rohan"}]}
+{"text": "Mom made her famous ladoos for the special occasion.", "entities": []}
+{"text": "We bought new clothes from Fabindia for the festive season.", "entities": [{"start": 27, "end": 35, "label": "ORG", "token": "Fabindia"}]}
+{"text": "I'm so glad we could all gather together this year.", "entities": []}
+{"text": "Dad helped install the new lights on the balcony.", "entities": []}
+{"text": "A special Pooja was held in the morning for the family's well-being.", "entities": []}
+{"text": "Little Meera is learning to sing devotional songs.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Meera"}]}
+{"text": "The whole family visited the local Gurudwara this morning.", "entities": []}
+{"text": "Cousin Samira is helping with the rangoli designs.", "entities": [{"start": 7, "end": 13, "label": "PER", "token": "Samira"}]}
+{"text": "Lunch with Priya and Rajesh discussing the new project at Wipro.", "entities": [{"start": 11, "end": 16, "label": "PER", "token": "Priya"}, {"start": 21, "end": 27, "label": "PER", "token": "Rajesh"}, {"start": 58, "end": 63, "label": "ORG", "token": "Wipro"}]}
+{"text": "Working late tonight. Deadline for the presentation is tomorrow.", "entities": []}
+{"text": "Visited the Bangalore office for a team-building event.", "entities": [{"start": 12, "end": 21, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Celebrating Diwali with my colleagues at work!", "entities": [{"start": 12, "end": 18, "label": "MISC", "token": "Diwali"}]}
+{"text": "Headed to Mumbai for a conference next week.", "entities": [{"start": 10, "end": 16, "label": "LOC", "token": "Mumbai"}]}
+{"text": "Enjoying a relaxing weekend at home.", "entities": []}
+{"text": "Networking with colleagues at the industry event.", "entities": []}
+{"text": "Met with Rajesh Kumar from the HR department today.", "entities": [{"start": 9, "end": 21, "label": "PER", "token": "Rajesh Kumar"}]}
+{"text": "Uncle Rajesh is bringing the sweets for Diwali this year.", "entities": [{"start": 6, "end": 12, "label": "PER", "token": "Rajesh"}, {"start": 40, "end": 46, "label": "MISC", "token": "Diwali"}]}
+{"text": "I'm thinking of applying to IIT Delhi for my masters degree.", "entities": [{"start": 28, "end": 37, "label": "ORG", "token": "IIT Delhi"}]}
+{"text": "We had a lovely time at the beach today.", "entities": []}
+{"text": "The Diwali decorations are up all over the house.", "entities": [{"start": 4, "end": 10, "label": "MISC", "token": "Diwali"}]}
+{"text": "Arjun is going to visit his cousins in Canada this summer.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}, {"start": 39, "end": 45, "label": "LOC", "token": "Canada"}]}
+{"text": "Grandpa is really excited to finally move into the new house in New York.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}, {"start": 64, "end": 72, "label": "LOC", "token": "New York"}]}
+{"text": "I hope the new refrigerator fits through the doorway.", "entities": []}
+{"text": "Ordered a new rug online from Amazon.", "entities": [{"start": 30, "end": 36, "label": "ORG", "token": "Amazon"}]}
+{"text": "Arjun is in charge of packing up all the books.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "I can't believe we are finally moving away from this place.", "entities": []}
+{"text": "We're going to have a yard sale to get rid of unwanted items.", "entities": []}
+{"text": "The annual Easter egg hunt will be held at Central Park this year.", "entities": [{"start": 11, "end": 17, "label": "MISC", "token": "Easter"}, {"start": 43, "end": 55, "label": "LOC", "token": "Central Park"}]}
+{"text": "The school play rehearsal will take place in the auditorium.", "entities": []}
+{"text": "The bake sale to support the school is happening next week.", "entities": []}
+{"text": "Please send your child to school with a warm coat today.", "entities": []}
+{"text": "The deadline for the school project is fast approaching.", "entities": []}
+{"text": "The school board meeting will be held next Tuesday evening.", "entities": []}
+{"text": "We are excited to announce the school's holiday concert.", "entities": []}
+{"text": "Please remember to sign up for a slot to volunteer at the school fair.", "entities": []}
+{"text": "Little Priya is refusing to eat her peas tonight.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Priya"}]}
+{"text": "Someone please tell me how to get a toddler to eat broccoli!", "entities": []}
+{"text": "Rajesh just spilled his milk everywhere!", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "Trying a new pasta recipe tonight; hope the kids like it!", "entities": []}
+{"text": "Is it bedtime yet? This dinner battle is exhausting!", "entities": []}
+{"text": "My husband, John, is grilling burgers tonight. Yum!", "entities": [{"start": 12, "end": 16, "label": "PER", "token": "John"}]}
+{"text": "Anyone else's kid only eat mac and cheese for dinner?", "entities": []}
+{"text": "Tonight we're trying the new Indian restaurant downtown.", "entities": []}
+{"text": "Aarav just learned how to say 'more' at dinner! So cute!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Aarav"}]}
+{"text": "Visiting Uncle Raj in Bangalore this weekend. #familytime", "entities": [{"start": 9, "end": 18, "label": "PER", "token": "Uncle Raj"}, {"start": 22, "end": 31, "label": "LOC", "token": "Bangalore"}]}
+{"text": "My iPhone's acting up again. Ugh.", "entities": [{"start": 3, "end": 9, "label": "MISC", "token": "iPhone"}]}
+{"text": "Need a new phone. Any suggestions?", "entities": []}
+{"text": "Grandpa keeps calling the tablet a 'tele-puter' lol.", "entities": []}
+{"text": "Just got a notification from Google about a new feature.", "entities": [{"start": 29, "end": 35, "label": "ORG", "token": "Google"}]}
+{"text": "This new app is draining my battery so fast!", "entities": []}
+{"text": "Mom's getting a new robot vacuum cleaner. So lazy!", "entities": []}
+{"text": "I am thinking of getting a new drone.", "entities": []}
+{"text": "My smart watch is constantly buzzing.", "entities": []}
+{"text": "Need to upgrade my operating system soon.", "entities": []}
+{"text": "Reminder: Raksha Bandhan lunch at Priya's house on Sunday.", "entities": [{"start": 10, "end": 24, "label": "MISC", "token": "Raksha Bandhan"}, {"start": 34, "end": 39, "label": "PER", "token": "Priya"}]}
+{"text": "Neha, please get ready for school. Your bus is coming.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Neha"}]}
+{"text": "I'm making chai and toast this morning.", "entities": []}
+{"text": "Rohan, please pack your bags for our trip.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Rohan"}]}
+{"text": "I need to book the community hall in Delhi for the party.", "entities": [{"start": 37, "end": 42, "label": "LOC", "token": "Delhi"}]}
+{"text": "I'm thinking of hiring a clown for the entertainment.", "entities": []}
+{"text": "We need to buy gifts for all the children attending.", "entities": []}
+{"text": "I hope Arjun can make it; he's been so busy with work lately.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Arjun"}]}
+{"text": "I'm making a list of all the attendees and their dietary restrictions.", "entities": []}
+{"text": "The weather forecast says it might rain, so we should have a backup plan.", "entities": []}
+{"text": "Did you finish reading that book for Ms. Kapoor's class?", "entities": [{"start": 37, "end": 47, "label": "PER", "token": "Ms. Kapoor"}]}
+{"text": "We are thinking of watching a movie tonight.", "entities": []}
+{"text": "Could you please take Zara to her dance class?", "entities": [{"start": 22, "end": 26, "label": "PER", "token": "Zara"}]}
+{"text": "Let's go to the mall for some shopping.", "entities": []}
+{"text": "Please send me the report by Friday morning.", "entities": []}
+{"text": "I saw Emma at the library yesterday afternoon.", "entities": [{"start": 6, "end": 10, "label": "PER", "token": "Emma"}]}
+{"text": "The COVID-19 pandemic affected everyone around the world.", "entities": [{"start": 4, "end": 12, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Dr. Rajesh prescribed some medicine for my back pain today.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Dr. Rajesh"}]}
+{"text": "Took Grandpa to Apollo Hospital for his check-up.", "entities": [{"start": 5, "end": 12, "label": "PER", "token": "Grandpa"}, {"start": 16, "end": 31, "label": "ORG", "token": "Apollo Hospital"}]}
+{"text": "Discussed Grandma's health issues with the family over dinner.", "entities": [{"start": 10, "end": 17, "label": "PER", "token": "Grandma"}]}
+{"text": "The local chemist prescribed a cough syrup.", "entities": []}
+{"text": "Took the kids to see Dr. Singh for their vaccinations.", "entities": [{"start": 21, "end": 30, "label": "PER", "token": "Dr. Singh"}]}
+{"text": "Ordered some supplements online.", "entities": []}
+{"text": "Priya is feeling under the weather, so she stayed home today.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Making soup for everyone. Hopefully, it helps with the sniffles.", "entities": []}
+{"text": "Got a flu shot at the local clinic.", "entities": []}
+{"text": "Consulted Dr. Verma about possible allergies.", "entities": [{"start": 10, "end": 19, "label": "PER", "token": "Dr. Verma"}]}
+{"text": "Spent the day relaxing at home, reading a book.", "entities": []}
+{"text": "Running to the grocery store for milk and bread.", "entities": []}
+{"text": "Need to stop by the bank before heading home.", "entities": []}
+{"text": "Emma's at dance practice. I'll pick her up later.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}]}
+{"text": "Going to the post office to mail a package.", "entities": []}
+{"text": "Just saw Dr. John Smith at the supermarket.", "entities": [{"start": 9, "end": 23, "label": "PER", "token": "Dr. John Smith"}]}
+{"text": "Picking up pizza for dinner tonight.", "entities": []}
+{"text": "The kids are at Lincoln School today.", "entities": [{"start": 16, "end": 30, "label": "ORG", "token": "Lincoln School"}]}
+{"text": "Need to renew my driver's license at the DMV.", "entities": []}
+{"text": "Headed to the mall to buy a new iPhone.", "entities": [{"start": 32, "end": 38, "label": "MISC", "token": "iPhone"}]}
+{"text": "Checking out the new exhibits at the museum.", "entities": []}
+{"text": "Just bought a new book at Barnes & Noble.", "entities": [{"start": 26, "end": 40, "label": "ORG", "token": "Barnes & Noble"}]}
+{"text": "The kids are excited about the Eid al-Fitr celebrations.", "entities": [{"start": 31, "end": 42, "label": "MISC", "token": "Eid al-Fitr"}]}
+{"text": "The school play is this Friday, right?", "entities": []}
+{"text": "I need to buy more wrapping paper.", "entities": []}
+{"text": "What time are we leaving?", "entities": []}
+{"text": "I heard that Rajesh accepted a position at Google in New York.", "entities": [{"start": 13, "end": 19, "label": "PER", "token": "Rajesh"}, {"start": 43, "end": 49, "label": "ORG", "token": "Google"}, {"start": 53, "end": 61, "label": "LOC", "token": "New York"}]}
+{"text": "We had a lovely time at the park yesterday.", "entities": []}
+{"text": "The entire family is traveling to India for Christmas this year.", "entities": [{"start": 34, "end": 39, "label": "LOC", "token": "India"}, {"start": 44, "end": 53, "label": "MISC", "token": "Christmas"}]}
+{"text": "My son is studying hard for his exams.", "entities": []}
+{"text": "Grandma is excited for our trip to Disneyland in California!", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}, {"start": 35, "end": 45, "label": "LOC", "token": "Disneyland"}, {"start": 49, "end": 59, "label": "LOC", "token": "California"}]}
+{"text": "Need to buy sunscreen and new sunglasses for the beach.", "entities": []}
+{"text": "Talked to Uncle Ravi about driving us to the airport.", "entities": [{"start": 10, "end": 20, "label": "PER", "token": "Uncle Ravi"}]}
+{"text": "Pack light! We can always buy things in New York.", "entities": [{"start": 40, "end": 48, "label": "LOC", "token": "New York"}]}
+{"text": "Bought a new travel adapter from Best Buy.", "entities": [{"start": 33, "end": 41, "label": "ORG", "token": "Best Buy"}]}
+{"text": "Make sure to pack your medications.", "entities": []}
+{"text": "Stopped by CVS Pharmacy to pick up travel-sized toiletries.", "entities": [{"start": 11, "end": 23, "label": "ORG", "token": "CVS Pharmacy"}]}
+{"text": "Remember to bring your camera to capture the memories!", "entities": []}
+{"text": "Grandma packed some delicious snacks for the plane ride.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "Happy Raksha Bandhan to everyone! May this day bring joy.", "entities": [{"start": 6, "end": 20, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Celebrating Holi with friends and family. So much fun!", "entities": [{"start": 12, "end": 16, "label": "MISC", "token": "Holi"}]}
+{"text": "Diwali lights and sweets! The kids are having a blast.", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "My daughter got an A+ in her English class.", "entities": []}
+{"text": "Celebrating Raksha Bandhan with my brother. So much love!", "entities": [{"start": 12, "end": 26, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "We celebrated Holi with all our relatives this year.", "entities": [{"start": 14, "end": 18, "label": "MISC", "token": "Holi"}]}
+{"text": "I need to buy a new Samsung Galaxy for my dad.", "entities": [{"start": 20, "end": 34, "label": "MISC", "token": "Samsung Galaxy"}]}
+{"text": "Our flight to Delhi was delayed due to the fog.", "entities": [{"start": 14, "end": 19, "label": "LOC", "token": "Delhi"}]}
+{"text": "We spent the afternoon playing in the backyard.", "entities": []}
+{"text": "I saw Priya and Arjun playing in the park today.", "entities": [{"start": 6, "end": 11, "label": "PER", "token": "Priya"}, {"start": 16, "end": 21, "label": "PER", "token": "Arjun"}]}
+{"text": "We had such a fun time at the family picnic.", "entities": []}
+{"text": "I need to call Dr. Wilson to reschedule the appointment.", "entities": [{"start": 15, "end": 25, "label": "PER", "token": "Dr. Wilson"}]}
+{"text": "Uncle David will be arriving on Thursday evening.", "entities": [{"start": 0, "end": 11, "label": "PER", "token": "Uncle David"}]}
+{"text": "We miss you all and hope to see you soon!", "entities": []}
+{"text": "Sending you warm wishes for a joyous holiday season.", "entities": []}
+{"text": "Sarah's graduation ceremony is scheduled for June.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "We are so thankful for all of you.", "entities": []}
+{"text": "John and I are thinking of adopting a puppy.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "Good morning! Did Lily finish her homework?", "entities": [{"start": 18, "end": 22, "label": "PER", "token": "Lily"}]}
+{"text": "Dad's making pancakes again!", "entities": []}
+{"text": "Quick, grab your backpacks! School starts soon.", "entities": []}
+{"text": "Is Emily ready for her soccer game?", "entities": [{"start": 3, "end": 8, "label": "PER", "token": "Emily"}]}
+{"text": "Traffic is crazy this morning.", "entities": []}
+{"text": "Don't forget the permission slip for the field trip!", "entities": []}
+{"text": "Can someone grab the newspaper from the porch?", "entities": []}
+{"text": "We're out of milk. Adding it to the grocery list.", "entities": []}
+{"text": "Leaving now! See you all later.", "entities": []}
+{"text": "Be careful on the way to school!", "entities": []}
+{"text": "Is the Toyota Camry ready to go?", "entities": [{"start": 7, "end": 19, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Okay, bye! Love you!", "entities": []}
+{"text": "Bye, Mom! See ya!", "entities": []}
+{"text": "David is taking the bus today.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "David"}]}
+{"text": "Mom said Priya needs to start applying to colleges soon.", "entities": [{"start": 9, "end": 14, "label": "PER", "token": "Priya"}]}
+{"text": "John wants to get a Toyota Camry for his first car.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}, {"start": 20, "end": 32, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "I need to buy new lights for the living room.", "entities": []}
+{"text": "Aisha is going to Lincoln School for her high school.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Aisha"}, {"start": 18, "end": 32, "label": "ORG", "token": "Lincoln School"}]}
+{"text": "I'm going to help Grandma paint the spare bedroom.", "entities": [{"start": 18, "end": 25, "label": "PER", "token": "Grandma"}]}
+{"text": "The new sofa should be delivered next Tuesday.", "entities": []}
+{"text": "I wish Arjun would clean his room more often.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Arjun"}]}
+{"text": "Don't forget to wish your friend a happy Raksha Bandhan!", "entities": [{"start": 41, "end": 55, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Have you seen Mom's new purse?", "entities": []}
+{"text": "Let's go to India this summer for vacation!", "entities": [{"start": 12, "end": 17, "label": "LOC", "token": "India"}]}
+{"text": "The new office is getting everyone excited.", "entities": []}
+{"text": "Spent the afternoon trying to fix the Wi-Fi; it's always something.", "entities": []}
+{"text": "Heard that Google is releasing a new AI model soon.", "entities": [{"start": 11, "end": 17, "label": "ORG", "token": "Google"}]}
+{"text": "Spent hours last night trying to understand blockchain technology.", "entities": []}
+{"text": "Uncle Raj is finally getting a smartphone; he's so excited!", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "Please pass the salt, darling.", "entities": []}
+{"text": "Arjun, could you please set the table?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "John, remember to call your grandmother tonight.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "Let's visit Bangalore during the summer holidays.", "entities": [{"start": 12, "end": 21, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Did anyone see my reading glasses?", "entities": []}
+{"text": "I heard the new James Bond movie is coming out soon.", "entities": [{"start": 16, "end": 26, "label": "PER", "token": "James Bond"}]}
+{"text": "Who wants a second helping of dessert?", "entities": []}
+{"text": "Wash your hands before eating dinner, please.", "entities": []}
+{"text": "Got my COVID-19 booster shot at the local clinic.", "entities": [{"start": 7, "end": 15, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Relaxing Sunday afternoon with a good book.", "entities": []}
+{"text": "Celebrating Diwali with the whole family. So much fun!", "entities": [{"start": 12, "end": 18, "label": "MISC", "token": "Diwali"}]}
+{"text": "Enjoying Christmas carols with hot chocolate!", "entities": [{"start": 9, "end": 18, "label": "MISC", "token": "Christmas"}]}
+{"text": "Reading Harry Potter with Arjun before bedtime.", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Harry Potter"}, {"start": 26, "end": 31, "label": "PER", "token": "Arjun"}]}
+{"text": "Celebrating Raksha Bandhan with cousins today!", "entities": [{"start": 12, "end": 26, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Dr. Patel gave Priya her flu shot today.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}, {"start": 15, "end": 20, "label": "PER", "token": "Priya"}]}
+{"text": "Enjoying a quiet evening.", "entities": []}
+{"text": "Did you remember to pack Neha's lunch today?", "entities": [{"start": 25, "end": 29, "label": "PER", "token": "Neha"}]}
+{"text": "Anika is practicing for her dance competition after school.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Anika"}]}
+{"text": "I heard the new iPhone 16 is coming out soon!", "entities": [{"start": 16, "end": 25, "label": "MISC", "token": "iPhone 16"}]}
+{"text": "Diwali shopping is planned for next week.", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Anita and I are volunteering at the local library.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Anita"}]}
+{"text": "Please ask Sharmaji about the community event at the park.", "entities": [{"start": 11, "end": 19, "label": "PER", "token": "Sharmaji"}]}
+{"text": "Neha, can you please handle the decorations? Maybe something with a Diwali theme?", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Neha"}, {"start": 68, "end": 74, "label": "MISC", "token": "Diwali"}]}
+{"text": "I spoke to Dr. Sharma about Grandpa's health; he said he's doing great!", "entities": [{"start": 11, "end": 21, "label": "PER", "token": "Dr. Sharma"}]}
+{"text": "Don't forget to bring your gifts!  No pressure, though.", "entities": []}
+{"text": "Mom is making her famous biryani for the party.  Everyone loves it!", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Mom"}]}
+{"text": "Sarah helped me choose the perfect outfit for Grandpa.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "The kids are practicing a dance routine for the party.", "entities": []}
+{"text": "The surprise party is going to be so much fun!", "entities": []}
+{"text": "Remember when we threw a surprise party for Grandma last year?", "entities": [{"start": 44, "end": 51, "label": "PER", "token": "Grandma"}]}
+{"text": "See you all on Saturday! Love, Mom and Dad.", "entities": []}
+{"text": "The kids are excited about the fireworks display at the community center.", "entities": []}
+{"text": "Asha decorated the entire house with colorful rangoli.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Asha"}]}
+{"text": "Rohan helped his dad decorate the house for the occasion.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Rohan"}]}
+{"text": "The whole family will be together for the festivities.", "entities": []}
+{"text": "The kids are looking forward to the school break.", "entities": []}
+{"text": "Neha wore a beautiful lehenga for the evening.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Neha"}]}
+{"text": "We always make sure to visit the orphanage during Diwali.", "entities": [{"start": 50, "end": 56, "label": "MISC", "token": "Diwali"}]}
+{"text": "Arjun and Priya are practicing dance for the cultural program.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}, {"start": 10, "end": 15, "label": "PER", "token": "Priya"}]}
+{"text": "The priest recited mantras and blessed our home.", "entities": []}
+{"text": "We had a potluck lunch at the community center after Holi celebrations.", "entities": [{"start": 53, "end": 57, "label": "MISC", "token": "Holi"}]}
+{"text": "During Raksha Bandhan, sisters tie rakhis on their brothers' wrists.", "entities": [{"start": 7, "end": 21, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "I need to call Dr. Ramirez and schedule an appointment.", "entities": [{"start": 15, "end": 26, "label": "PER", "token": "Dr. Ramirez"}]}
+{"text": "Let's drive to the park later this afternoon.", "entities": []}
+{"text": "My new iPhone's screen cracked already!", "entities": [{"start": 7, "end": 13, "label": "MISC", "token": "iPhone"}]}
+{"text": "Arjun is visiting his grandparents in Bangalore.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}, {"start": 38, "end": 47, "label": "LOC", "token": "Bangalore"}]}
+{"text": "I can't believe how fast the kids are growing up.", "entities": []}
+{"text": "Is everyone ready for the school trip to Central Park?", "entities": [{"start": 41, "end": 53, "label": "LOC", "token": "Central Park"}]}
+{"text": "I'm so tired of homework tonight!", "entities": []}
+{"text": "Mom's making biryani tonight, yum!", "entities": []}
+{"text": "Can someone help me with this COVID-19 assignment?", "entities": [{"start": 30, "end": 38, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Sarah and I are going to the movies tonight.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "Ran into Priya at the bakery – she's so good with kids.", "entities": [{"start": 9, "end": 14, "label": "PER", "token": "Priya"}]}
+{"text": "The new iPhone is a lifesaver for entertaining the baby during errands.", "entities": [{"start": 8, "end": 14, "label": "MISC", "token": "iPhone"}]}
+{"text": "Long day of errands, but Arjun was a real trooper.", "entities": [{"start": 25, "end": 30, "label": "PER", "token": "Arjun"}]}
+{"text": "Finally got Rishi enrolled in the daycare program.", "entities": [{"start": 12, "end": 17, "label": "PER", "token": "Rishi"}]}
+{"text": "The Toyota Camry is surprisingly spacious for car seats.", "entities": [{"start": 4, "end": 16, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "No time for a proper lunch today, just grabbed a quick bite.", "entities": []}
+{"text": "Diwali shopping is so hectic this year!", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Sarah wants to take the kids to Disneyland next month.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}, {"start": 32, "end": 42, "label": "LOC", "token": "Disneyland"}]}
+{"text": "Had a great time at the park this afternoon.", "entities": []}
+{"text": "Picking up groceries at Whole Foods Market after daycare.", "entities": [{"start": 24, "end": 42, "label": "ORG", "token": "Whole Foods Market"}]}
+{"text": "Liam has been coughing a lot, might need to call Kaiser Permanente.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Liam"}, {"start": 49, "end": 66, "label": "ORG", "token": "Kaiser Permanente"}]}
+{"text": "Need to schedule a dentist appointment.", "entities": []}
+{"text": "The new iPhone is launching next month, pre-order!", "entities": [{"start": 8, "end": 14, "label": "MISC", "token": "iPhone"}]}
+{"text": "Remember to pick up groceries from Trader Joe's.", "entities": [{"start": 35, "end": 47, "label": "ORG", "token": "Trader Joe's"}]}
+{"text": "Meeting with the team at the Mumbai office tomorrow.", "entities": [{"start": 29, "end": 35, "label": "LOC", "token": "Mumbai"}]}
+{"text": "Called Mom to wish her a happy birthday.", "entities": []}
+{"text": "Discuss travel plans to Canada with Emma and Rajesh.", "entities": [{"start": 24, "end": 30, "label": "LOC", "token": "Canada"}, {"start": 36, "end": 40, "label": "PER", "token": "Emma"}, {"start": 45, "end": 51, "label": "PER", "token": "Rajesh"}]}
+{"text": "Need to buy a new laptop for work.", "entities": []}
+{"text": "Dr. Wilson recommended a follow-up appointment.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Dr. Wilson"}]}
+{"text": "The annual Christmas concert will be held in the school auditorium.", "entities": [{"start": 11, "end": 20, "label": "MISC", "token": "Christmas"}]}
+{"text": "John and I are attending the parent-teacher conference next Tuesday.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "The bake sale will be held on the school lawn this Saturday.", "entities": []}
+{"text": "Sarah's art project won first place in the district competition.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "All parents are invited to the volunteer appreciation breakfast.", "entities": []}
+{"text": "This year's fundraising goal is to purchase new computers for the library.", "entities": []}
+{"text": "Mark your calendars for the spring concert on April 20th.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Mark"}]}
+{"text": "Volunteers are needed for the book fair next week.", "entities": []}
+{"text": "Mrs. Davis is organizing the student council elections.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Mrs. Davis"}]}
+{"text": "Don't forget to sign up for the school picnic this Saturday.", "entities": []}
+{"text": "Rajesh will be leading the chess club this semester.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "Beautiful Raksha Bandhan celebrations at home this year.", "entities": [{"start": 10, "end": 24, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Spent the morning volunteering at St. Joseph's Church.", "entities": [{"start": 34, "end": 53, "label": "ORG", "token": "St. Joseph's Church"}]}
+{"text": "Trying out a new recipe from Tarla Dalal's cookbook!", "entities": [{"start": 29, "end": 40, "label": "PER", "token": "Tarla Dalal"}]}
+{"text": "Celebrating Christmas with family. So much joy!", "entities": [{"start": 12, "end": 21, "label": "MISC", "token": "Christmas"}]}
+{"text": "Just bought a new Samsung Galaxy S23 Ultra!", "entities": [{"start": 18, "end": 42, "label": "MISC", "token": "Samsung Galaxy S23 Ultra"}]}
+{"text": "Spent the day cleaning and decorating the puja room.", "entities": []}
+{"text": "Aunt Neha suggested we get a new Toyota Camry.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Aunt Neha"}, {"start": 33, "end": 45, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "We're thinking of moving to Bangalore next year.", "entities": [{"start": 28, "end": 37, "label": "LOC", "token": "Bangalore"}]}
+{"text": "The new sofa barely fits in the living room.", "entities": [{"start": 32, "end": 43, "label": "LOC", "token": "living room"}]}
+{"text": "I saw Priya at the hardware store earlier today.", "entities": [{"start": 6, "end": 11, "label": "PER", "token": "Priya"}]}
+{"text": "Grandma is making her famous chicken curry.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "I can't find my keys anywhere.", "entities": []}
+{"text": "The movers are arriving early in the morning.", "entities": []}
+{"text": "Arjun, can you fix the Wi-Fi router again?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Where did I put my Kindle?", "entities": [{"start": 19, "end": 25, "label": "MISC", "token": "Kindle"}]}
+{"text": "I need help setting up my new Bluetooth speaker.", "entities": []}
+{"text": "I think I need a new antivirus software for my computer.", "entities": []}
+{"text": "Can you order a new HDMI cable from Amazon?", "entities": [{"start": 36, "end": 42, "label": "ORG", "token": "Amazon"}]}
+{"text": "My smart watch needs to be charged again.", "entities": []}
+{"text": "Off to St. Michael's School after a quick breakfast.", "entities": [{"start": 7, "end": 27, "label": "ORG", "token": "St. Michael's School"}]}
+{"text": "Started the day with some yoga; feeling refreshed.", "entities": []}
+{"text": "A quick trip to the market to buy flowers for Diwali.", "entities": [{"start": 46, "end": 52, "label": "MISC", "token": "Diwali"}]}
+{"text": "Listening to devotional songs this morning.", "entities": []}
+{"text": "Made some masala chai for everyone.", "entities": []}
+{"text": "Checking emails from work before the festivities begin.", "entities": []}
+{"text": "Ate jalebi for breakfast and read the newspaper.", "entities": []}
+{"text": "Just wanted to share a quick update. Everything is going well!", "entities": []}
+{"text": "Ayesha is volunteering at the local animal shelter this weekend.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Ayesha"}]}
+{"text": "Please send your updated addresses to Sheila before next week.", "entities": [{"start": 38, "end": 44, "label": "PER", "token": "Sheila"}]}
+{"text": "Just relaxing at home. Hope everyone is doing well.", "entities": []}
+{"text": "Dr. Patel said the kids need more Vitamin D.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "The Thanksgiving parade is on TV; come watch!", "entities": [{"start": 4, "end": 16, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "Easter egg hunt is at the park this year!", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Easter"}]}
+{"text": "Can you ask Mrs. Smith about the bake sale?", "entities": [{"start": 12, "end": 22, "label": "PER", "token": "Mrs. Smith"}]}
+{"text": "Leaving for work now, see you later!", "entities": []}
+{"text": "Bought a Toyota Camry today. It's so smooth!", "entities": [{"start": 9, "end": 21, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "My iPhone needs a new screen, it cracked!", "entities": [{"start": 3, "end": 9, "label": "MISC", "token": "iPhone"}]}
+{"text": "Rahul, can you set the table, please?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Rahul"}]}
+{"text": "I need to call Dr. Sharma about the baby's appointment.", "entities": [{"start": 15, "end": 25, "label": "PER", "token": "Dr. Sharma"}]}
+{"text": "We are going to Delhi next month for the wedding.", "entities": [{"start": 16, "end": 21, "label": "LOC", "token": "Delhi"}]}
+{"text": "Anika, please pass the salt.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Anika"}]}
+{"text": "Drink your milk!", "entities": []}
+{"text": "Aisha, eat your vegetables.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Aisha"}]}
+{"text": "Where did you put the Toyota Camry keys?", "entities": [{"start": 22, "end": 34, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Uncle Raj is bringing dessert.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "Please don't make a mess.", "entities": []}
+{"text": "The baby is sleeping in the bedroom.", "entities": []}
+{"text": "I heard that Lincoln School won the debate competition.", "entities": [{"start": 13, "end": 27, "label": "ORG", "token": "Lincoln School"}]}
+{"text": "John Smith is coaching the debate team this year.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "John Smith"}]}
+{"text": "Uncle Raj is coming over for dinner this evening.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "We need to buy a new washing machine this weekend.", "entities": []}
+{"text": "The new COVID-19 guidelines are being discussed.", "entities": [{"start": 8, "end": 16, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Priya and Rajesh are going to see a movie tonight.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 10, "end": 16, "label": "PER", "token": "Rajesh"}]}
+{"text": "Sarah is having a birthday party next month.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "The football match is being held at the stadium.", "entities": []}
+{"text": "Could you please pass me the iPhone charger?", "entities": [{"start": 29, "end": 35, "label": "MISC", "token": "iPhone"}]}
+{"text": "John is helping me with my science project.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "Rajesh got a brand new PlayStation 5 for his birthday!", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}, {"start": 23, "end": 36, "label": "MISC", "token": "PlayStation 5"}]}
+{"text": "The kids had a blast at the bounce house!", "entities": []}
+{"text": "Cake, balloons, and lots of happy faces!", "entities": []}
+{"text": "Enjoying the beautiful weather in Bangalore for Neha's birthday.", "entities": [{"start": 34, "end": 43, "label": "LOC", "token": "Bangalore"}, {"start": 48, "end": 52, "label": "PER", "token": "Neha"}]}
+{"text": "Prepping the goodie bags for the party!", "entities": []}
+{"text": "Spending the day celebrating with family and friends.", "entities": []}
+{"text": "The kids are so excited to open their presents!", "entities": []}
+{"text": "Celebrating Krishna's 7th birthday with all of his favourite people!", "entities": [{"start": 12, "end": 19, "label": "PER", "token": "Krishna"}]}
+{"text": "A special shoutout to Tata Motors for sponsoring the event.", "entities": [{"start": 22, "end": 33, "label": "ORG", "token": "Tata Motors"}]}
+{"text": "Visiting my brother in New York for his birthday!", "entities": [{"start": 12, "end": 19, "label": "PER", "token": "brother"}, {"start": 23, "end": 31, "label": "LOC", "token": "New York"}]}
+{"text": "This year's theme was superhero themed!", "entities": []}
+{"text": "Little Lily is excited for her birthday party next month.", "entities": [{"start": 7, "end": 11, "label": "PER", "token": "Lily"}]}
+{"text": "Michael is really looking forward to trick-or-treating on Halloween.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Michael"}, {"start": 58, "end": 67, "label": "MISC", "token": "Halloween"}]}
+{"text": "The kids are already talking about their birthday wishlists.", "entities": []}
+{"text": "Emily and Ben are excited about the school's winter concert.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Emily"}, {"start": 10, "end": 13, "label": "PER", "token": "Ben"}]}
+{"text": "Remember to send cards to Aunt Susan for her anniversary.", "entities": [{"start": 26, "end": 36, "label": "PER", "token": "Aunt Susan"}]}
+{"text": "Spent the afternoon at the community pool with friends.", "entities": []}
+{"text": "Making plans for a summer BBQ, hope everyone can make it!", "entities": []}
+{"text": "Saw Rajesh at the grocery store yesterday, he's looking great.", "entities": [{"start": 4, "end": 10, "label": "PER", "token": "Rajesh"}]}
+{"text": "Priya's complaining about a headache again.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Rajesh needs to schedule his physiotherapy appointment.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "I'm going to make some ginger tea for Arjun's sore throat.", "entities": [{"start": 38, "end": 43, "label": "PER", "token": "Arjun"}]}
+{"text": "Make sure you take your multivitamin every day.", "entities": []}
+{"text": "Grandfather is recovering well after his cataract surgery.", "entities": [{"start": 0, "end": 11, "label": "PER", "token": "Grandfather"}]}
+{"text": "I have a bad cough.", "entities": []}
+{"text": "Did the doctor prescribe any antibiotics for your infection?", "entities": []}
+{"text": "We should probably grab lunch at Panera Bread.", "entities": [{"start": 33, "end": 45, "label": "ORG", "token": "Panera Bread"}]}
+{"text": "I need to return this faulty Samsung phone.", "entities": [{"start": 29, "end": 36, "label": "MISC", "token": "Samsung"}]}
+{"text": "I need to stop by the bank later.", "entities": []}
+{"text": "Can you ask Grandma if she needs anything from the store?", "entities": [{"start": 12, "end": 19, "label": "PER", "token": "Grandma"}]}
+{"text": "John is taking the car to the mechanic this afternoon.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "She bought a beautiful silk saree from Nalli Silks in Chennai.", "entities": [{"start": 39, "end": 50, "label": "ORG", "token": "Nalli Silks"}, {"start": 54, "end": 61, "label": "LOC", "token": "Chennai"}]}
+{"text": "Maybe we should just order pizza tonight.", "entities": []}
+{"text": "July 23: Enjoyed some delicious Goan cuisine. Back to the hotel now.", "entities": []}
+{"text": "July 24: Time to head back home. The kids are already asking about our next trip.", "entities": []}
+{"text": "July 25: Unpacked everything. Back to reality tomorrow.", "entities": []}
+{"text": "July 29: Grandma is planning a surprise birthday party for me.", "entities": [{"start": 9, "end": 16, "label": "PER", "token": "Grandma"}]}
+{"text": "Priya started her internship at Google today!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 32, "end": 38, "label": "ORG", "token": "Google"}]}
+{"text": "Heard back from IIT Delhi, waiting for their response.", "entities": [{"start": 16, "end": 25, "label": "ORG", "token": "IIT Delhi"}]}
+{"text": "Planning a trip to New York for Christmas.", "entities": [{"start": 19, "end": 27, "label": "LOC", "token": "New York"}, {"start": 32, "end": 41, "label": "MISC", "token": "Christmas"}]}
+{"text": "Applying for jobs in Mumbai.", "entities": [{"start": 21, "end": 27, "label": "LOC", "token": "Mumbai"}]}
+{"text": "Need a break!", "entities": []}
+{"text": "Auntie is at the market.", "entities": []}
+{"text": "Celebrating Diwali with the family this year.", "entities": [{"start": 12, "end": 18, "label": "MISC", "token": "Diwali"}]}
+{"text": "Met with Sarah from HR today.", "entities": [{"start": 9, "end": 14, "label": "PER", "token": "Sarah"}]}
+{"text": "My boss, Dr. Wilson, gave me a raise!", "entities": [{"start": 9, "end": 19, "label": "PER", "token": "Dr. Wilson"}]}
+{"text": "Visiting Delhi for a conference next month.", "entities": [{"start": 9, "end": 14, "label": "LOC", "token": "Delhi"}]}
+{"text": "Is Priya working from home today?", "entities": [{"start": 3, "end": 8, "label": "PER", "token": "Priya"}]}
+{"text": "Just ordered a new iPhone.", "entities": [{"start": 19, "end": 25, "label": "MISC", "token": "iPhone"}]}
+{"text": "Grandma is resting now.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "Heard back from Apollo Hospital about the application.", "entities": [{"start": 16, "end": 31, "label": "ORG", "token": "Apollo Hospital"}]}
+{"text": "Need to pick up groceries.", "entities": []}
+{"text": "Our annual Easter brunch will be held at the community center.", "entities": [{"start": 11, "end": 17, "label": "MISC", "token": "Easter"}]}
+{"text": "We are traveling to New York for the Christmas holidays.", "entities": [{"start": 20, "end": 28, "label": "LOC", "token": "New York"}, {"start": 37, "end": 46, "label": "MISC", "token": "Christmas"}]}
+{"text": "The Christmas tree lighting will take place downtown.", "entities": [{"start": 4, "end": 13, "label": "MISC", "token": "Christmas"}]}
+{"text": "This Thanksgiving, let's remember those in need.", "entities": [{"start": 5, "end": 17, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "Thanksgiving break is just around the corner!", "entities": [{"start": 0, "end": 12, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "We're having a quiet holiday this year.", "entities": []}
+{"text": "A day at the beach with my favorite people.", "entities": []}
+{"text": "Diwali celebrations were extra special this year.", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "The kids loved the puppet show at the community center.", "entities": []}
+{"text": "Celebrating Rohan's first birthday with all our loved ones.", "entities": [{"start": 12, "end": 17, "label": "PER", "token": "Rohan"}]}
+{"text": "A quick trip to New York with my siblings!", "entities": [{"start": 16, "end": 24, "label": "LOC", "token": "New York"}]}
+{"text": "Spending time with family is the best feeling.", "entities": []}
+{"text": "The kids are excited about the upcoming Holi festival.", "entities": [{"start": 40, "end": 44, "label": "MISC", "token": "Holi"}]}
+{"text": "The family is planning a trip to Mumbai next year.", "entities": [{"start": 33, "end": 39, "label": "LOC", "token": "Mumbai"}]}
+{"text": "Sarah has a doctor's appointment tomorrow.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "The kids have a holiday on account of Holi.", "entities": [{"start": 38, "end": 42, "label": "MISC", "token": "Holi"}]}
+{"text": "Did you see the news about Tata Motors?", "entities": [{"start": 27, "end": 38, "label": "ORG", "token": "Tata Motors"}]}
+{"text": "Rohan is excited about the Christmas party.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Rohan"}, {"start": 27, "end": 36, "label": "MISC", "token": "Christmas"}]}
+{"text": "We are going to visit Agra for a weekend trip.", "entities": [{"start": 22, "end": 26, "label": "LOC", "token": "Agra"}]}
+{"text": "Rajesh got an A on his history test; we're so proud!", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "The new sofa from IKEA should be delivered on Tuesday.", "entities": [{"start": 18, "end": 22, "label": "ORG", "token": "IKEA"}]}
+{"text": "Dr. Smith called to reschedule the appointment.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "I saw Sarah and John at the park yesterday afternoon.", "entities": [{"start": 6, "end": 11, "label": "PER", "token": "Sarah"}, {"start": 16, "end": 20, "label": "PER", "token": "John"}]}
+{"text": "The meeting with the architect is at 2 PM today.", "entities": []}
+{"text": "Let's watch a movie tonight; any suggestions?", "entities": []}
+{"text": "Call Priya later to confirm the dinner plans for Friday.", "entities": [{"start": 5, "end": 10, "label": "PER", "token": "Priya"}]}
+{"text": "Grandma is having trouble using her new tablet.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "I need to call Apple support to fix my laptop.", "entities": [{"start": 15, "end": 20, "label": "ORG", "token": "Apple"}]}
+{"text": "The new smart TV has amazing picture quality.", "entities": []}
+{"text": "Have you updated your computer's operating system?", "entities": []}
+{"text": "I'm trying to reduce my screen time before bed.", "entities": []}
+{"text": "I heard that Tata Consultancy Services is hiring.", "entities": [{"start": 13, "end": 38, "label": "ORG", "token": "Tata Consultancy Services"}]}
+{"text": "Olivia, please set the table while I make the pancakes.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Olivia"}]}
+{"text": "Dad, can you drive me to school today?", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Dad"}]}
+{"text": "The weather in New York is supposed to be sunny today.", "entities": [{"start": 15, "end": 23, "label": "LOC", "token": "New York"}]}
+{"text": "Everyone, please remember to brush your teeth before you leave.", "entities": []}
+{"text": "Dr. Smith said I should get more sleep.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "I think Priya is coming over after school today.", "entities": [{"start": 8, "end": 13, "label": "PER", "token": "Priya"}]}
+{"text": "Is Aloo Gobi ready? I'm starving!", "entities": [{"start": 3, "end": 12, "label": "MISC", "token": "Aloo Gobi"}]}
+{"text": "Can someone pass the naan, please?", "entities": []}
+{"text": "Grandma made her famous gulab jamun for dessert!", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}, {"start": 24, "end": 35, "label": "MISC", "token": "gulab jamun"}]}
+{"text": "Rajesh, can you help me clear the table?", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "Your mom said she's making butter chicken tonight.", "entities": []}
+{"text": "Did anyone hear from Uncle Joe today?", "entities": [{"start": 21, "end": 30, "label": "PER", "token": "Uncle Joe"}]}
+{"text": "The dog is sleeping under the dining table.", "entities": []}
+{"text": "Wash your hands before you come to the table.", "entities": []}
+{"text": "Priya's school play is next week. She's been practicing her lines non-stop.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Mom packed samosas for everyone's lunch today. They'll be a nice treat.", "entities": []}
+{"text": "Little Meera drew a lovely picture of Central Park in her art class.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Meera"}, {"start": 38, "end": 50, "label": "LOC", "token": "Central Park"}]}
+{"text": "Diwali is just around the corner! The kids are so excited.", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Called Dr. Sharma to reschedule my appointment. Hopefully, next week works.", "entities": [{"start": 7, "end": 17, "label": "PER", "token": "Dr. Sharma"}]}
+{"text": "The new Toyota Camry looks amazing! Maybe someday...", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "I need to book tickets for the museum soon. It's been on my list for ages.", "entities": []}
+{"text": "Diwali shopping at the market is scheduled for tomorrow.", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Call John about the school project; he's working late.", "entities": [{"start": 5, "end": 9, "label": "PER", "token": "John"}]}
+{"text": "Volunteer work at the local animal shelter.", "entities": []}
+{"text": "Arjun has a football match this Sunday at the stadium.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Kids have a school trip to the zoo next Friday.", "entities": []}
+{"text": "Remember to wish Sarah on her promotion tomorrow.", "entities": [{"start": 17, "end": 22, "label": "PER", "token": "Sarah"}]}
+{"text": "We are going to Bangalore for a week next month.", "entities": [{"start": 16, "end": 25, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Rajesh is in charge of decorations and the music playlist.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "Neha and I are putting together a slideshow of old family photos.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Neha"}]}
+{"text": "Don't forget to bring a gift!", "entities": []}
+{"text": "The party favors will include small boxes of Indian sweets.", "entities": []}
+{"text": "The children are practicing a special dance performance.", "entities": []}
+{"text": "The party is scheduled for next Saturday at 7 PM.", "entities": []}
+{"text": "A big thank you to everyone who helped organize this event!", "entities": []}
+{"text": "John is in charge of setting up the sound system.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "The venue is decorated with colorful lights and flowers.", "entities": []}
+{"text": "Happy Diwali from the Sharma family! We hope your day is filled with light and joy.", "entities": [{"start": 6, "end": 12, "label": "MISC", "token": "Diwali"}, {"start": 22, "end": 28, "label": "PER", "token": "Sharma"}]}
+{"text": "Holi celebrations at home are always the best! So much color!", "entities": [{"start": 0, "end": 4, "label": "MISC", "token": "Holi"}]}
+{"text": "Spent the day with family. So grateful for these moments.", "entities": []}
+{"text": "The kids are excited about lighting diyas tonight.", "entities": []}
+{"text": "This year's Raksha Bandhan was extra special. So much love!", "entities": [{"start": 12, "end": 26, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "We visited the Birla Mandir in Delhi for Diwali. Such a beautiful place!", "entities": [{"start": 15, "end": 27, "label": "ORG", "token": "Birla Mandir"}, {"start": 31, "end": 36, "label": "LOC", "token": "Delhi"}, {"start": 41, "end": 47, "label": "MISC", "token": "Diwali"}]}
+{"text": "Celebrating Diwali with friends and family in our beautiful home.", "entities": [{"start": 12, "end": 18, "label": "MISC", "token": "Diwali"}]}
+{"text": "I heard flights to Delhi are super cheap in November.", "entities": [{"start": 19, "end": 24, "label": "LOC", "token": "Delhi"}]}
+{"text": "Grandma says she prefers a quiet staycation this year.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "I want to buy a new Toyota Camry for the trip.", "entities": [{"start": 20, "end": 32, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Let's ask Dr. Smith for travel advice.", "entities": [{"start": 10, "end": 19, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "I need to renew my passport at the post office.", "entities": []}
+{"text": "I'm packing my bags for the trip; it's going to be awesome!", "entities": []}
+{"text": "I need to pick up diapers from Target later today.", "entities": [{"start": 31, "end": 37, "label": "ORG", "token": "Target"}]}
+{"text": "Dr. Smith said baby needs more Vitamin D.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}, {"start": 31, "end": 40, "label": "MISC", "token": "Vitamin D"}]}
+{"text": "Can you ask Rajesh to bring some snacks?", "entities": [{"start": 12, "end": 18, "label": "PER", "token": "Rajesh"}]}
+{"text": "I saw Maya playing in the sandbox earlier.", "entities": [{"start": 6, "end": 10, "label": "PER", "token": "Maya"}]}
+{"text": "Going to Grandma's house for dinner tonight.", "entities": [{"start": 9, "end": 16, "label": "PER", "token": "Grandma"}]}
+{"text": "We celebrated Diwali with the whole family last week.", "entities": [{"start": 14, "end": 20, "label": "MISC", "token": "Diwali"}]}
+{"text": "We are going to India for a family vacation.", "entities": [{"start": 16, "end": 21, "label": "LOC", "token": "India"}]}
+{"text": "Emma loves to read books in her room.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}]}
+{"text": "Arjun's school is having a bake sale tomorrow.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Can you please grab the milk from the fridge?", "entities": []}
+{"text": "Thanksgiving at Grandma's house was so much fun this year.", "entities": [{"start": 0, "end": 12, "label": "MISC", "token": "Thanksgiving"}, {"start": 16, "end": 23, "label": "PER", "token": "Grandma"}]}
+{"text": "Had a check-up at the clinic today; everything looks good.", "entities": []}
+{"text": "Arjun and I are volunteering at the local soup kitchen.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Mom wants to try that new Italian place downtown.", "entities": []}
+{"text": "Sarah, did you remember to pick up the turkey for Thanksgiving?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}, {"start": 50, "end": 62, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "Going to the store for groceries; be back later.", "entities": []}
+{"text": "Dr. Patel recommended physical therapy for my back pain.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "The new Toyota Camry is so fuel efficient.", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Don't forget to bring cookies to the bake sale at Lincoln Elementary.", "entities": [{"start": 50, "end": 68, "label": "ORG", "token": "Lincoln Elementary"}]}
+{"text": "I'm volunteering at the book fair on Friday.", "entities": []}
+{"text": "See you at the PTA meeting tonight!", "entities": []}
+{"text": "The bake sale is at the school gymnasium.", "entities": []}
+{"text": "Can someone remind me when Back to School night is?", "entities": []}
+{"text": "I think I will volunteer at the school fair.", "entities": []}
+{"text": "The kids have a field trip to New York next month, so exciting!", "entities": [{"start": 30, "end": 38, "label": "LOC", "token": "New York"}]}
+{"text": "We should probably order some spirit wear from the school store.", "entities": []}
+{"text": "Did anyone see if they announced the winners of the science fair?", "entities": []}
+{"text": "Are you going to help out at the holiday party at school?", "entities": []}
+{"text": "Picking up William from soccer at 5.", "entities": [{"start": 11, "end": 18, "label": "PER", "token": "William"}]}
+{"text": "John's having a hard time in his math class.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "The deadline to sign up for the STEM program is Friday!", "entities": []}
+{"text": "Meeting with Dr. Patel tomorrow to discuss the new research project.", "entities": [{"start": 13, "end": 22, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "Priya is flying to Bangalore for a conference next week.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 19, "end": 28, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Finished the presentation slides for the project. Exhausted!", "entities": []}
+{"text": "Spoke with Uncle Raj about investment opportunities today.", "entities": [{"start": 11, "end": 20, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "Mom is preparing special dishes for Holi tomorrow.", "entities": [{"start": 36, "end": 40, "label": "MISC", "token": "Holi"}]}
+{"text": "The whole family is going to the temple tomorrow morning.", "entities": []}
+{"text": "Call Pandit Sharma to confirm the Muhurat for the ceremony.", "entities": [{"start": 5, "end": 18, "label": "PER", "token": "Pandit Sharma"}]}
+{"text": "Anita will be in charge of the Rangoli this year.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Anita"}]}
+{"text": "Did you invite Rahul and his family for the celebrations?", "entities": [{"start": 15, "end": 20, "label": "PER", "token": "Rahul"}]}
+{"text": "Let's go to New York for a holiday sometime.", "entities": [{"start": 12, "end": 20, "label": "LOC", "token": "New York"}]}
+{"text": "Diwali vacation plans are still being discussed.", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Dr. Rajesh Kumar will be giving the welcome speech at the family reunion.", "entities": [{"start": 0, "end": 16, "label": "PER", "token": "Dr. Rajesh Kumar"}]}
+{"text": "The family reunion will be held at Central Park this year.", "entities": [{"start": 35, "end": 47, "label": "LOC", "token": "Central Park"}]}
+{"text": "Priya and David are in charge of the entertainment for the evening.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}, {"start": 10, "end": 15, "label": "PER", "token": "David"}]}
+{"text": "Please bring a dish to share for the potluck dinner.", "entities": []}
+{"text": "Grandpa is eager to see everyone at the reunion.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}]}
+{"text": "Rajesh will be leading the family sing-along.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "The kids are excited to play cricket in the backyard.", "entities": []}
+{"text": "A professional photographer from Picture Perfect Studios will be present.", "entities": [{"start": 33, "end": 56, "label": "ORG", "token": "Picture Perfect Studios"}]}
+{"text": "We will have a special performance of classical dance from Bangalore.", "entities": [{"start": 59, "end": 68, "label": "LOC", "token": "Bangalore"}]}
+{"text": "John Smith is organizing the outdoor games.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "John Smith"}]}
+{"text": "Remember to wear comfortable shoes for the day.", "entities": []}
+{"text": "The reunion committee has planned a fun-filled agenda.", "entities": []}
+{"text": "Grandpa Rajesh is helping me fix the leaky faucet in the bathroom. So grateful!", "entities": [{"start": 8, "end": 14, "label": "PER", "token": "Rajesh"}]}
+{"text": "Packing up all the books for the move. So many memories!", "entities": []}
+{"text": "Priya wants to paint her room purple. Such a kid!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Uncle Arjun is helping assemble the new IKEA bookshelf.", "entities": [{"start": 6, "end": 11, "label": "PER", "token": "Arjun"}, {"start": 40, "end": 44, "label": "ORG", "token": "IKEA"}]}
+{"text": "Sent the change of address to Lincoln School.", "entities": [{"start": 30, "end": 44, "label": "ORG", "token": "Lincoln School"}]}
+{"text": "Taking a break with some chai before getting back to work.", "entities": []}
+{"text": "Neha made her famous chai; everyone loves it.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Neha"}]}
+{"text": "Dad is reading the newspaper at the dining table.", "entities": []}
+{"text": "We are going to the temple later today.", "entities": []}
+{"text": "I prefer coffee in the morning, not tea.", "entities": []}
+{"text": "Mom is making parathas for breakfast; it smells amazing!", "entities": []}
+{"text": "The kids are excited about the upcoming Christmas holidays.", "entities": [{"start": 40, "end": 49, "label": "MISC", "token": "Christmas"}]}
+{"text": "After breakfast, I am going to Central Park with Sarah.", "entities": [{"start": 31, "end": 43, "label": "LOC", "token": "Central Park"}, {"start": 49, "end": 54, "label": "PER", "token": "Sarah"}]}
+{"text": "Radha is helping her mother with the morning chores.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Radha"}]}
+{"text": "Let's plan a get-together for Holi this year!", "entities": [{"start": 30, "end": 34, "label": "MISC", "token": "Holi"}]}
+{"text": "Dr. Smith will be giving a talk at the community center this evening.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "Thanksgiving dinner was so delicious this year!", "entities": [{"start": 0, "end": 12, "label": "MISC", "token": "Thanksgiving"}]}
+{"text": "Did you see that Priya got the lead role in the school play?", "entities": [{"start": 17, "end": 22, "label": "PER", "token": "Priya"}]}
+{"text": "Sarah is learning to code using courses from IIT Delhi online.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}, {"start": 45, "end": 54, "label": "ORG", "token": "IIT Delhi"}]}
+{"text": "Anyone know how to fix the Wi-Fi router? It keeps disconnecting!", "entities": []}
+{"text": "Dad wants to replace his old Nokia phone with a newer model.", "entities": [{"start": 29, "end": 34, "label": "ORG", "token": "Nokia"}]}
+{"text": "Baby Aisha is finally asleep after her shots at St. Jude's.", "entities": [{"start": 5, "end": 10, "label": "PER", "token": "Aisha"}, {"start": 48, "end": 58, "label": "ORG", "token": "St. Jude's"}]}
+{"text": "Arjun keeps asking for more mashed potatoes.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Grandpa Rajesh is visiting this weekend. The kids are thrilled!", "entities": [{"start": 8, "end": 14, "label": "PER", "token": "Rajesh"}]}
+{"text": "Time for bed. No more stories tonight.", "entities": []}
+{"text": "I think I'll make dal makhani tomorrow night.", "entities": []}
+{"text": "Just finished my homework for Mr. Sharma's class.", "entities": [{"start": 30, "end": 40, "label": "PER", "token": "Mr. Sharma"}]}
+{"text": "Movie night at home tonight?", "entities": []}
+{"text": "Don't forget Grandma's birthday is next week!", "entities": [{"start": 13, "end": 20, "label": "PER", "token": "Grandma"}]}
+{"text": "Visited the new exhibit at the museum today.", "entities": []}
+{"text": "I need to finish my project for history class.", "entities": []}
+{"text": "Is Uncle Raj coming over for dinner tonight?", "entities": [{"start": 3, "end": 12, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "Remember to buy milk from the grocery store.", "entities": []}
+{"text": "The book report is on Shakespeare.", "entities": [{"start": 22, "end": 33, "label": "PER", "token": "Shakespeare"}]}
+{"text": "Going to visit Dr. Smith at the clinic tomorrow.", "entities": [{"start": 15, "end": 24, "label": "PER", "token": "Dr. Smith"}]}
+{"text": "Rajesh is so excited for his birthday party!", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "Location for the party: Community Hall, near Central Park.", "entities": [{"start": 24, "end": 38, "label": "LOC", "token": "Community Hall"}, {"start": 45, "end": 57, "label": "LOC", "token": "Central Park"}]}
+{"text": "Cake flavor: Chocolate with vanilla frosting.", "entities": []}
+{"text": "The birthday theme is superheroes this year.", "entities": []}
+{"text": "Don't forget to charge the camera!", "entities": []}
+{"text": "Gift from Grandma and Grandpa: A brand new bicycle!", "entities": [{"start": 10, "end": 17, "label": "PER", "token": "Grandma"}, {"start": 22, "end": 29, "label": "PER", "token": "Grandpa"}]}
+{"text": "Arrived at the party venue.", "entities": []}
+{"text": "Playing pin the tail on the donkey was a hit!", "entities": []}
+{"text": "Later, we will open the gifts.", "entities": []}
+{"text": "Rohan was so happy with his new toy car.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Rohan"}]}
+{"text": "I need to thank Sarah for helping out.", "entities": [{"start": 16, "end": 21, "label": "PER", "token": "Sarah"}]}
+{"text": "Next year, we should have the party at the park.", "entities": []}
+{"text": "Cleanup is tomorrow morning.", "entities": []}
+{"text": "The children will be performing in the school play.", "entities": []}
+{"text": "Sarah is in charge of baking cookies this year.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "The family is planning a vacation, but the destination is still undecided.", "entities": []}
+{"text": "Aunt Susan is sending us a gift from Bangalore.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "Aunt Susan"}, {"start": 37, "end": 46, "label": "LOC", "token": "Bangalore"}]}
+{"text": "The kids are having a sleepover at their friend's house.", "entities": []}
+{"text": "Dr. Patel said my cholesterol is high; need to cut back on the sweets!", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "Visiting Dr. Sharma at Apollo Clinic tomorrow for my appointment.", "entities": [{"start": 9, "end": 19, "label": "PER", "token": "Dr. Sharma"}, {"start": 23, "end": 36, "label": "ORG", "token": "Apollo Clinic"}]}
+{"text": "Priya is feeling much better after her visit to the pediatrician.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Cousin Rohan needs to see a dentist about his wisdom teeth.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Rohan"}]}
+{"text": "Dr. Singh recommended physical therapy for my back pain.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Singh"}]}
+{"text": "Had a checkup today; feeling relieved!", "entities": []}
+{"text": "Mom is making her famous ginger tea for my cold.", "entities": []}
+{"text": "Getting ready for my yoga session; need to stay healthy!", "entities": []}
+{"text": "Visiting Dr. Gupta for a second opinion on my diagnosis.", "entities": [{"start": 9, "end": 18, "label": "PER", "token": "Dr. Gupta"}]}
+{"text": "My blood sugar levels are stable, thanks to regular exercise and a healthy diet.", "entities": []}
+{"text": "Taking my medicine as prescribed; feeling much better!", "entities": []}
+{"text": "Grandma's feeling under the weather today; hoping she feels better soon.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}]}
+{"text": "Consulted with Dr. Khan about my concerns. Feeling heard!", "entities": [{"start": 15, "end": 23, "label": "PER", "token": "Dr. Khan"}]}
+{"text": "Anika and I are going to the park later this afternoon.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Anika"}]}
+{"text": "I'm thinking of buying an iPad Air for my birthday.", "entities": [{"start": 26, "end": 34, "label": "MISC", "token": "iPad Air"}]}
+{"text": "Did someone pick up the dry cleaning from Johnson Cleaners?", "entities": [{"start": 42, "end": 58, "label": "ORG", "token": "Johnson Cleaners"}]}
+{"text": "I need to stop by the post office before heading home.", "entities": []}
+{"text": "Arjun, did you manage to get the tickets for the concert?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Don't forget to pay the electricity bill this week.", "entities": []}
+{"text": "My sister just got a job at the local library.", "entities": []}
+{"text": "My cousin is interning at IIT Delhi this summer.", "entities": [{"start": 26, "end": 35, "label": "ORG", "token": "IIT Delhi"}]}
+{"text": "Professor Sharma is giving a lecture at the university.", "entities": [{"start": 0, "end": 16, "label": "PER", "token": "Professor Sharma"}]}
+{"text": "Diwali is just around the corner! Need to buy gifts.", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Diwali"}]}
+{"text": "Raksha Bandhan was so much fun this year; Arjun tied rakhi on everyone.", "entities": [{"start": 0, "end": 14, "label": "MISC", "token": "Raksha Bandhan"}, {"start": 42, "end": 47, "label": "PER", "token": "Arjun"}]}
+{"text": "Little Aisha is participating in the school play.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Aisha"}]}
+{"text": "The new Toyota Camry is so smooth; I love it.", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "Received a beautiful Rakhi from my sister this year.", "entities": []}
+{"text": "Attended the Holi celebrations at the community center; it was vibrant!", "entities": [{"start": 13, "end": 17, "label": "MISC", "token": "Holi"}]}
+{"text": "Met with Sarah Wilson to discuss the school fundraiser.", "entities": [{"start": 9, "end": 21, "label": "PER", "token": "Sarah Wilson"}]}
+{"text": "The annual function at Lincoln School was a grand success.", "entities": [{"start": 23, "end": 37, "label": "ORG", "token": "Lincoln School"}]}
+{"text": "Grandpa wants to take us all to Disneyland for Christmas!", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandpa"}, {"start": 32, "end": 42, "label": "LOC", "token": "Disneyland"}, {"start": 47, "end": 56, "label": "MISC", "token": "Christmas"}]}
+{"text": "Mom is thinking about a trip to New York City, but it's so expensive.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Mom"}, {"start": 32, "end": 45, "label": "LOC", "token": "New York City"}]}
+{"text": "I've always wanted to see the Eiffel Tower in Paris.", "entities": [{"start": 30, "end": 42, "label": "LOC", "token": "Eiffel Tower"}, {"start": 46, "end": 51, "label": "LOC", "token": "Paris"}]}
+{"text": "No, I don't want to spend my vacation in that house.", "entities": []}
+{"text": "Grandma wants to take us on a cruise to the Caribbean.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}, {"start": 44, "end": 53, "label": "LOC", "token": "Caribbean"}]}
+{"text": "We should book our hotel through Marriott Hotels.", "entities": [{"start": 33, "end": 48, "label": "ORG", "token": "Marriott Hotels"}]}
+{"text": "I saw an advertisement for a tour of Central Park in New York.", "entities": [{"start": 37, "end": 49, "label": "LOC", "token": "Central Park"}, {"start": 53, "end": 61, "label": "LOC", "token": "New York"}]}
+{"text": "A visit to the Louvre Museum might be too crowded.", "entities": [{"start": 15, "end": 28, "label": "ORG", "token": "Louvre Museum"}]}
+{"text": "I need to renew my passport before traveling internationally.", "entities": []}
+{"text": "A holiday in Switzerland sounds wonderful, but it's expensive.", "entities": [{"start": 13, "end": 24, "label": "LOC", "token": "Switzerland"}]}
+{"text": "Reminder: Doctor Patel appointment on Tuesday.", "entities": [{"start": 10, "end": 22, "label": "PER", "token": "Doctor Patel"}]}
+{"text": "Visit to the park with the children tomorrow.", "entities": []}
+{"text": "Need to buy more diapers from Target.", "entities": [{"start": 30, "end": 36, "label": "ORG", "token": "Target"}]}
+{"text": "Order pizza for the kids tonight.", "entities": []}
+{"text": "Ask Sarah to bring her famous apple pie to the party.", "entities": [{"start": 4, "end": 9, "label": "PER", "token": "Sarah"}]}
+{"text": "Remember to call Dr. Wilson regarding the baby's checkup.", "entities": [{"start": 17, "end": 27, "label": "PER", "token": "Dr. Wilson"}]}
+{"text": "Send thank you notes to everyone after the party.", "entities": []}
+{"text": "The baby is teething, need to get some pain relief.", "entities": []}
+{"text": "Make sure to pack the little one's favorite blanket.", "entities": []}
+{"text": "Mom wants to repaint the living room this weekend.", "entities": []}
+{"text": "The new Toyota Camry is parked in the driveway.", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Toyota Camry"}]}
+{"text": "The contractor will be here on Monday to start renovations.", "entities": []}
+{"text": "The kids are planning a surprise party for Dad's birthday.", "entities": [{"start": 43, "end": 46, "label": "PER", "token": "Dad"}]}
+{"text": "I think Priya is going to be valedictorian.", "entities": [{"start": 8, "end": 13, "label": "PER", "token": "Priya"}]}
+{"text": "The plumber is coming to fix the leaky faucet.", "entities": []}
+{"text": "John Smith will be leading the volunteer team this year.", "entities": [{"start": 0, "end": 10, "label": "PER", "token": "John Smith"}]}
+{"text": "Let's not forget to water the plants.", "entities": []}
+{"text": "Easter egg hunt at Central Park this year!  Bring the kids!", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Easter"}, {"start": 19, "end": 31, "label": "LOC", "token": "Central Park"}]}
+{"text": "Happy Easter from our family to yours!", "entities": [{"start": 6, "end": 12, "label": "MISC", "token": "Easter"}]}
+{"text": "Did you get your shopping done for Christmas?", "entities": [{"start": 35, "end": 44, "label": "MISC", "token": "Christmas"}]}
+{"text": "Going to visit my cousins in Bangalore soon.", "entities": [{"start": 29, "end": 38, "label": "LOC", "token": "Bangalore"}]}
+{"text": "Time to start planning for Diwali next!", "entities": [{"start": 27, "end": 33, "label": "MISC", "token": "Diwali"}]}
+{"text": "Neha's school is having a bake sale next week.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Neha"}]}
+{"text": "Please don't forget your lunchbox, beta.", "entities": []}
+{"text": "Mom is making parathas for everyone this morning.", "entities": []}
+{"text": "The kids are excited about the Diwali vacation.", "entities": [{"start": 31, "end": 37, "label": "MISC", "token": "Diwali"}]}
+{"text": "We need to buy sweets for the Raksha Bandhan celebration.", "entities": [{"start": 30, "end": 44, "label": "MISC", "token": "Raksha Bandhan"}]}
+{"text": "Good morning! Sarah and I are making pancakes. Hope you have a great day at work!", "entities": [{"start": 14, "end": 19, "label": "PER", "token": "Sarah"}]}
+{"text": "Timmy, please remember to pack your lunch for school today.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Timmy"}]}
+{"text": "Good morning, everyone! Don't forget your coats; it's cold outside.", "entities": []}
+{"text": "Kevin, make sure you finish your orange juice before heading out.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Kevin"}]}
+{"text": "I'm taking the car to the shop; it needs a new battery.", "entities": []}
+{"text": "I packed sandwiches with salami for lunch today, hope that's okay.", "entities": []}
+{"text": "John needs to finish his science project tonight.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "The news said there's a bad flu going around; wash your hands!", "entities": []}
+{"text": "I think I left my keys in the living room again.", "entities": []}
+{"text": "Remember to take your vitamins before you leave for school.", "entities": []}
+{"text": "Good morning, everyone! The temperature in New York is freezing!", "entities": [{"start": 43, "end": 51, "label": "LOC", "token": "New York"}]}
+{"text": "Make sure you feed the dog before you leave for school, please.", "entities": []}
+{"text": "Driving Lily to soccer practice after breakfast.", "entities": [{"start": 8, "end": 12, "label": "PER", "token": "Lily"}]}
+{"text": "Upgraded my home office with a new monitor from LG.", "entities": [{"start": 48, "end": 50, "label": "ORG", "token": "LG"}]}
+{"text": "Looking for a good portable Bluetooth speaker. Any suggestions?", "entities": []}
+{"text": "Rajesh is always on his new tablet.", "entities": [{"start": 0, "end": 6, "label": "PER", "token": "Rajesh"}]}
+{"text": "I'm thinking of switching to a standing desk from IKEA.", "entities": [{"start": 50, "end": 54, "label": "ORG", "token": "IKEA"}]}
+{"text": "John prefers to use his iPad for reading books.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}, {"start": 24, "end": 28, "label": "MISC", "token": "iPad"}]}
+{"text": "Don't forget, Diwali is next month, kids!", "entities": [{"start": 14, "end": 20, "label": "MISC", "token": "Diwali"}]}
+{"text": "John, can you help me set the table, please?", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "I read a great article in the New York Times today.", "entities": [{"start": 30, "end": 44, "label": "ORG", "token": "New York Times"}]}
+{"text": "I bought some really nice mangoes from the market.", "entities": []}
+{"text": "The kids want to visit the zoo this weekend.", "entities": []}
+{"text": "Arjun, can you set up the table in the backyard?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "I hope everyone likes the chocolate cake!", "entities": []}
+{"text": "Make sure to tell everyone it starts at 7 PM.", "entities": []}
+{"text": "Let's decorate the living room with streamers.", "entities": []}

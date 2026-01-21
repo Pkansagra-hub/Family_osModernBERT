@@ -758,7 +758,9 @@ def evaluate(
         total_gold += head_gold
         total_correct += head_correct
 
+        print(f"  {head_name}: P={precision:.4f}, R={recall:.4f}, F1={f1:.4f} (pred={head_pred}, gold={head_gold}, correct={head_correct})", flush=True)
         logger.info(f"  {head_name}: P={precision:.4f}, R={recall:.4f}, F1={f1:.4f} (pred={head_pred}, gold={head_gold}, correct={head_correct})")
+        sys.stdout.flush()  # Force flush for Colab
 
     # Overall metrics
     overall_p = total_correct / total_pred if total_pred > 0 else 0.0
@@ -774,7 +776,9 @@ def evaluate(
         "correct": total_correct,
     }
 
+    print(f"  OVERALL: P={overall_p:.4f}, R={overall_r:.4f}, F1={overall_f1:.4f}", flush=True)
     logger.info(f"  OVERALL: P={overall_p:.4f}, R={overall_r:.4f}, F1={overall_f1:.4f}")
+    sys.stdout.flush()  # Force flush for Colab
 
     return metrics
 
@@ -893,10 +897,32 @@ def train(
                 avg_so_far = epoch_loss / epoch_steps
                 logger.info(f"  Step {step}: avg_loss={avg_so_far:.4f}, lr={lr:.2e}")
 
-            # Save checkpoint
+            # Save checkpoint every save_steps
             if global_step > 0 and global_step % save_steps == 0:
                 logger.info(f"\nSaving checkpoint at step {global_step}...")
                 save_checkpoint(model, output_dir / f"checkpoint-{global_step}")
+
+            # Mid-epoch evaluation every 500 steps
+            if global_step > 0 and global_step % 500 == 0 and val_loader is not None:
+                print(f"\n=== Evaluation at Step {global_step} ===", flush=True)
+                logger.info(f"\n--- Evaluation at Step {global_step} ---")
+                sys.stdout.flush()
+                eval_metrics = evaluate(model, val_loader, device, debug=debug)
+
+                overall_f1 = eval_metrics["overall"]["f1"]
+                print(f"Step {global_step} F1: {overall_f1:.4f}", flush=True)
+                logger.info(f"Step {global_step} F1: {overall_f1:.4f}")
+                sys.stdout.flush()
+
+                # Save best model
+                if overall_f1 > best_f1:
+                    best_f1 = overall_f1
+                    print(f"New best F1! Saving best checkpoint...", flush=True)
+                    logger.info(f"New best F1! Saving best checkpoint...")
+                    save_checkpoint(model, output_dir / "best")
+
+                # Back to train mode
+                model.train()
 
         avg_loss = epoch_loss / epoch_steps if epoch_steps > 0 else 0
         history["train_loss"].append(avg_loss)
