@@ -9374,3 +9374,56 @@
 {"text": "I need to pick up groceries after work.", "entities": []}
 {"text": "Visited Central Park with Emily and her family.", "entities": [{"start": 8, "end": 20, "label": "LOC", "token": "Central Park"}, {"start": 26, "end": 31, "label": "PER", "token": "Emily"}]}
 {"text": "The team from Lincoln School will visit our office.", "entities": [{"start": 14, "end": 28, "label": "ORG", "token": "Lincoln School"}]}
+{"text": "Sarah's science project on renewable energy is due next Friday.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "John and I are volunteering at the school carnival this Saturday.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "This year's spring concert will feature songs from around the world.", "entities": []}
+{"text": "Emily received an award for her outstanding performance in math.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Emily"}]}
+{"text": "Mr. Thompson will be available after school for extra help sessions.", "entities": [{"start": 0, "end": 12, "label": "PER", "token": "Mr. Thompson"}]}
+{"text": "Lisa is excited to participate in the upcoming science fair.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Lisa"}]}
+{"text": "The new playground equipment has been installed on the school grounds.", "entities": []}
+{"text": "Visiting the Golden Temple in Amritsar for Gurpurab this year. Such a spiritual experience!", "entities": [{"start": 13, "end": 26, "label": "LOC", "token": "Golden Temple"}, {"start": 30, "end": 38, "label": "LOC", "token": "Amritsar"}, {"start": 43, "end": 51, "label": "MISC", "token": "Gurpurab"}]}
+{"text": "Happy to be home for the holidays!", "entities": []}
+{"text": "A visit to Siddhivinayak Temple is always so peaceful.", "entities": [{"start": 11, "end": 31, "label": "LOC", "token": "Siddhivinayak Temple"}]}
+{"text": "Celebrating Baisakhi with lots of dancing and delicious food!", "entities": [{"start": 12, "end": 20, "label": "MISC", "token": "Baisakhi"}]}
+{"text": "Spending time with family during Pongal. Happy Pongal!", "entities": [{"start": 33, "end": 39, "label": "MISC", "token": "Pongal"}]}
+{"text": "Off to mass at Our Lady of Lourdes Church this morning.", "entities": [{"start": 15, "end": 41, "label": "ORG", "token": "Our Lady of Lourdes Church"}]}
+{"text": "Priya is always on her phone chatting with friends.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "I need to call Vodafone to sort out my mobile plan.", "entities": [{"start": 15, "end": 23, "label": "ORG", "token": "Vodafone"}]}
+{"text": "I need to get a new case for my Samsung phone.", "entities": [{"start": 32, "end": 39, "label": "ORG", "token": "Samsung"}]}
+{"text": "This Zoom call is never-ending!", "entities": [{"start": 5, "end": 9, "label": "MISC", "token": "Zoom"}]}
+{"text": "My sister, Anjali, is making rangoli near the front door.", "entities": [{"start": 11, "end": 17, "label": "PER", "token": "Anjali"}]}
+{"text": "Dad went to the market to get some flowers for the puja.", "entities": [{"start": 0, "end": 3, "label": "PER", "token": "Dad"}]}
+{"text": "The kids are excited to light sparklers later this evening.", "entities": []}
+{"text": "Aarti is helping decorate the house with lights and diyas.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Aarti"}]}
+{"text": "Enjoyed a simple breakfast of toast and tea.", "entities": []}
+{"text": "The air quality in Mumbai is getting worse; need to get an air purifier.", "entities": [{"start": 19, "end": 25, "label": "LOC", "token": "Mumbai"}]}
+{"text": "Saw Rohan playing cricket with his friends in the park.", "entities": [{"start": 4, "end": 9, "label": "PER", "token": "Rohan"}]}
+{"text": "Need to order an Uber to get to the airport on time.", "entities": [{"start": 17, "end": 21, "label": "MISC", "token": "Uber"}]}
+{"text": "Had a lovely morning chai and biscuits with the family.", "entities": []}
+{"text": "Just wanted to let you know that John's graduation ceremony is on June 15th.", "entities": [{"start": 33, "end": 37, "label": "PER", "token": "John"}]}
+{"text": "Hope to see everyone at the family reunion this summer!", "entities": []}
+{"text": "I heard COVID-19 cases are rising again in some areas.", "entities": [{"start": 8, "end": 16, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Aunt Neha is bringing over some delicious snacks for the helpers.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Aunt Neha"}]}
+{"text": "This house feels more like home than our old apartment.", "entities": []}
+{"text": "Make sure you lock all the windows before leaving.", "entities": []}
+{"text": "I think the color of the walls in the bedroom is too dark.", "entities": []}
+{"text": "Heading to Central Park with the kids after school. Wanna join?", "entities": [{"start": 11, "end": 23, "label": "LOC", "token": "Central Park"}]}
+{"text": "Is Sam still at baseball practice?", "entities": [{"start": 3, "end": 6, "label": "PER", "token": "Sam"}]}
+{"text": "Easter egg hunt at the community center. See you there!", "entities": [{"start": 0, "end": 6, "label": "MISC", "token": "Easter"}]}
+{"text": "Meeting Dr. Patel at the clinic tomorrow.", "entities": [{"start": 8, "end": 17, "label": "PER", "token": "Dr. Patel"}]}
+{"text": "Remember to buy gifts for Christmas!", "entities": [{"start": 26, "end": 35, "label": "MISC", "token": "Christmas"}]}
+{"text": "Forgot my keys at home!", "entities": []}
+{"text": "Is John coming to the picnic?", "entities": [{"start": 3, "end": 7, "label": "PER", "token": "John"}]}
+{"text": "Gotta run to the grocery store.", "entities": []}
+{"text": "See you at the park later!", "entities": []}
+{"text": "Priya, can you set the table for us, please?", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Priya"}]}
+{"text": "Make sure everyone washes their hands before eating.", "entities": []}
+{"text": "Remember, we're having pizza tonight!", "entities": []}
+{"text": "Is there enough for everyone?", "entities": []}
+{"text": "Don't forget your vitamins, kids!", "entities": []}
+{"text": "Rahul, please help clear the table after dinner.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Rahul"}]}
+{"text": "I think I'll have a glass of water.", "entities": []}
+{"text": "John, have you seen my car keys anywhere?", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "John"}]}
+{"text": "The baby spilled milk all over the floor!", "entities": []}
+{"text": "Remember, Arjun has a soccer game tomorrow.", "entities": [{"start": 10, "end": 15, "label": "PER", "token": "Arjun"}]}
+{"text": "Did you remember to call Uncle Raj back?", "entities": [{"start": 25, "end": 34, "label": "PER", "token": "Uncle Raj"}]}
