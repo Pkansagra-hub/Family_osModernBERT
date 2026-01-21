@@ -92,8 +92,8 @@ training:
   gradient_accumulation_steps: 2  # Effective batch = 128
 
   # Evaluation & saving
-  eval_steps: 2000            # ~10 evals per epoch
-  save_steps: 4000            # Save every ~4K steps
+  eval_steps: 300            # ~10 evals per epoch
+  save_steps: 300           # Save every ~4K steps
   save_total_limit: 5
 
   # Logging

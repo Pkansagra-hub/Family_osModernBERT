@@ -76,13 +76,20 @@ from modeling_studio.models.modernbert_multitask import (
     Capability,
 )
 
-# Configure logging
+# Configure logging with force flush for Colab compatibility
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
+    force=True,  # Reset any existing handlers
 )
 logger = logging.getLogger(__name__)
+
+# Force immediate output in Colab/notebooks
+import sys
+for handler in logging.root.handlers:
+    handler.stream = sys.stdout
+    handler.flush = lambda: sys.stdout.flush()
 
 
 # =============================================================================
