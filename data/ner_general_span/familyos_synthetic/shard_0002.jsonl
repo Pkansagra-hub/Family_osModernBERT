@@ -8926,3 +8926,17 @@
 {"text": "We celebrated Holi with our neighbours last year.", "entities": [{"start": 14, "end": 18, "label": "MISC", "token": "Holi"}]}
 {"text": "Little Maya loves to play with her dolls.", "entities": [{"start": 7, "end": 11, "label": "PER", "token": "Maya"}]}
 {"text": "I need to pick up some eggs from the store.", "entities": []}
+{"text": "Little Timmy has a soccer match today!", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Timmy"}]}
+{"text": "Anyone know when the Christmas concert is?", "entities": [{"start": 21, "end": 30, "label": "MISC", "token": "Christmas"}]}
+{"text": "Remember to bring cookies for the bake sale at school!", "entities": []}
+{"text": "Is Priya still planning to come over this weekend?", "entities": [{"start": 3, "end": 8, "label": "PER", "token": "Priya"}]}
+{"text": "The school play is this Friday!", "entities": []}
+{"text": "Getting ready for the big game tonight!", "entities": []}
+{"text": "Just finished reading a great book by Jane Austen.", "entities": [{"start": 38, "end": 49, "label": "PER", "token": "Jane Austen"}]}
+{"text": "We need to book our summer vacation soon!", "entities": []}
+{"text": "Grandma is feeling much better after her visit to Mayo Clinic.", "entities": [{"start": 0, "end": 7, "label": "PER", "token": "Grandma"}, {"start": 50, "end": 61, "label": "ORG", "token": "Mayo Clinic"}]}
+{"text": "Just a quick update - everything is fine here.", "entities": []}
+{"text": "I'm not sure what to get Rohan for his birthday this year.", "entities": [{"start": 25, "end": 30, "label": "PER", "token": "Rohan"}]}
+{"text": "Arjun is now volunteering at the local animal shelter.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "We're all excited to see Aunt Priya and Uncle Rajesh at Diwali.", "entities": [{"start": 25, "end": 35, "label": "PER", "token": "Aunt Priya"}, {"start": 40, "end": 52, "label": "PER", "token": "Uncle Rajesh"}, {"start": 56, "end": 62, "label": "MISC", "token": "Diwali"}]}
+{"text": "Just wanted to share some happy news.", "entities": []}
