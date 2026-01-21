@@ -3491,3 +3491,23 @@
 {"text": "The new Toyota Camry is so much nicer than the old one.", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Toyota Camry"}]}
 {"text": "The weather in Bangalore has been quite pleasant this week.", "entities": [{"start": 15, "end": 24, "label": "LOC", "token": "Bangalore"}]}
 {"text": "I am considering switching to Verizon for my phone service.", "entities": [{"start": 30, "end": 37, "label": "ORG", "token": "Verizon"}]}
+{"text": "Don't forget to buy a new car seat from Walmart.", "entities": [{"start": 40, "end": 47, "label": "ORG", "token": "Walmart"}]}
+{"text": "I saw Rajesh at the supermarket earlier today.", "entities": [{"start": 6, "end": 12, "label": "PER", "token": "Rajesh"}]}
+{"text": "I need to go to the post office this afternoon.", "entities": []}
+{"text": "I'm taking the kids to McDonald's for lunch.", "entities": [{"start": 23, "end": 33, "label": "ORG", "token": "McDonald's"}]}
+{"text": "I'm going to pick up pizza from Domino's.", "entities": [{"start": 32, "end": 40, "label": "ORG", "token": "Domino's"}]}
+{"text": "The kids want to visit the aquarium next weekend.", "entities": []}
+{"text": "Emma's presentation was well-received by the board.", "entities": [{"start": 0, "end": 4, "label": "PER", "token": "Emma"}]}
+{"text": "Spoke with my manager at Infosys about career development.", "entities": [{"start": 25, "end": 32, "label": "ORG", "token": "Infosys"}]}
+{"text": "Heard from Uncle Raj about his retirement plans.", "entities": [{"start": 11, "end": 20, "label": "PER", "token": "Uncle Raj"}]}
+{"text": "Need to book flights for the conference in Delhi.", "entities": [{"start": 43, "end": 48, "label": "LOC", "token": "Delhi"}]}
+{"text": "Celebrating Diwali with the team this year.", "entities": [{"start": 12, "end": 18, "label": "MISC", "token": "Diwali"}]}
+{"text": "Picking up Emily from school now.", "entities": [{"start": 11, "end": 16, "label": "PER", "token": "Emily"}]}
+{"text": "Field trip to New York next month!", "entities": [{"start": 14, "end": 22, "label": "LOC", "token": "New York"}]}
+{"text": "Is Priya coming to the school fair this year?", "entities": [{"start": 3, "end": 8, "label": "PER", "token": "Priya"}]}
+{"text": "We're going to the park after school today.", "entities": []}
+{"text": "Did you sign the permission slip for the zoo?", "entities": []}
+{"text": "Kevin got an award at the ceremony.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Kevin"}]}
+{"text": "Is Dr. Emily Carter still volunteering at the hospital?", "entities": [{"start": 3, "end": 19, "label": "PER", "token": "Dr. Emily Carter"}]}
+{"text": "Arjun is performing in the school play this year!", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Arjun"}]}
+{"text": "Picking up the car from the Toyota dealership now.", "entities": [{"start": 28, "end": 34, "label": "ORG", "token": "Toyota"}]}
