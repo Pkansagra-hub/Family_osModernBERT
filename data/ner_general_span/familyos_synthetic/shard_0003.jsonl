@@ -9357,3 +9357,20 @@
 {"text": "Sarah and I are planning our itinerary.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
 {"text": "Make sure you have travel insurance!", "entities": []}
 {"text": "I'm worried about getting COVID-19 on the plane.", "entities": [{"start": 26, "end": 34, "label": "MISC", "token": "COVID-19"}]}
+{"text": "Little Arjun spilled his juice all over the floor at the grocery store.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Arjun"}]}
+{"text": "Dr. Patel said Priya needs her shots next week.", "entities": [{"start": 0, "end": 9, "label": "PER", "token": "Dr. Patel"}, {"start": 15, "end": 20, "label": "PER", "token": "Priya"}]}
+{"text": "Stopped by the pharmacy to pick up medicine for the kids.", "entities": []}
+{"text": "Visiting Central Park this weekend with the kids.", "entities": [{"start": 9, "end": 21, "label": "LOC", "token": "Central Park"}]}
+{"text": "Aisha loves her new teddy bear from the toy store.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Aisha"}]}
+{"text": "Sarah wants to go to the park later today.", "entities": [{"start": 0, "end": 5, "label": "PER", "token": "Sarah"}]}
+{"text": "Spent the morning at the library for story time.", "entities": []}
+{"text": "The baby keeps grabbing my iPhone while I'm trying to shop.", "entities": [{"start": 27, "end": 33, "label": "MISC", "token": "iPhone"}]}
+{"text": "Ran into John at the supermarket this afternoon.", "entities": [{"start": 9, "end": 13, "label": "PER", "token": "John"}]}
+{"text": "Little Aisha fell asleep during our shopping trip.", "entities": [{"start": 7, "end": 12, "label": "PER", "token": "Aisha"}]}
+{"text": "Meeting with Dr. Rajesh Kumar at Apollo Clinic is scheduled for Tuesday.", "entities": [{"start": 13, "end": 29, "label": "PER", "token": "Dr. Rajesh Kumar"}, {"start": 33, "end": 46, "label": "ORG", "token": "Apollo Clinic"}]}
+{"text": "Don't forget Priya's birthday party at home on Saturday.", "entities": [{"start": 13, "end": 18, "label": "PER", "token": "Priya"}]}
+{"text": "Presentation at Google headquarters next Friday.", "entities": [{"start": 16, "end": 22, "label": "ORG", "token": "Google"}]}
+{"text": "The new Toyota Camry is perfect for our road trip to Bangalore.", "entities": [{"start": 8, "end": 20, "label": "MISC", "token": "Toyota Camry"}, {"start": 53, "end": 62, "label": "LOC", "token": "Bangalore"}]}
+{"text": "I need to pick up groceries after work.", "entities": []}
+{"text": "Visited Central Park with Emily and her family.", "entities": [{"start": 8, "end": 20, "label": "LOC", "token": "Central Park"}, {"start": 26, "end": 31, "label": "PER", "token": "Emily"}]}
+{"text": "The team from Lincoln School will visit our office.", "entities": [{"start": 14, "end": 28, "label": "ORG", "token": "Lincoln School"}]}
