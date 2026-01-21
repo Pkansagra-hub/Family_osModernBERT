@@ -793,6 +793,7 @@ def train(
     num_epochs: int,
     output_dir: Path,
     save_steps: int = 1000,
+    eval_steps: int = 500,
     gradient_accumulation_steps: int = 1,
     max_grad_norm: float = 1.0,
     debug: bool = False,
@@ -834,6 +835,7 @@ def train(
     logger.info(f"  Train batches: {len(train_loader)}")
     logger.info(f"  Val batches: {len(val_loader) if val_loader else 'None'}")
     logger.info(f"  Save steps: {save_steps}")
+    logger.info(f"  Eval steps: {eval_steps}")
     logger.info(f"  Gradient accumulation: {gradient_accumulation_steps}")
     logger.info(f"  Max grad norm: {max_grad_norm}")
     logger.info(f"  Debug mode: {debug}")
@@ -902,8 +904,8 @@ def train(
                 logger.info(f"\nSaving checkpoint at step {global_step}...")
                 save_checkpoint(model, output_dir / f"checkpoint-{global_step}")
 
-            # Mid-epoch evaluation every 500 steps
-            if global_step > 0 and global_step % 500 == 0 and val_loader is not None:
+            # Mid-epoch evaluation
+            if global_step > 0 and global_step % eval_steps == 0 and val_loader is not None:
                 print(f"\n=== Evaluation at Step {global_step} ===", flush=True)
                 logger.info(f"\n--- Evaluation at Step {global_step} ---")
                 sys.stdout.flush()
@@ -1045,9 +1047,11 @@ def main():
     max_length = data_config.get("max_length", 256)
     warmup_steps = training_config.get("warmup_steps", 500)
     save_steps = training_config.get("save_steps", 1000)
+    eval_steps = training_config.get("eval_steps", 500)
     gradient_accumulation_steps = training_config.get("gradient_accumulation_steps", 1)
     max_grad_norm = training_config.get("max_grad_norm", 1.0)
     val_split = training_config.get("val_split", 0.1)
+    num_workers = data_config.get("num_workers", 4)
 
     # Head architecture
     head_size = heads_config.get("architecture", {}).get("head_size", 64)
@@ -1128,22 +1132,28 @@ def main():
     )
 
     # Create dataloaders
-    # Note: num_workers=0 on Windows to avoid multiprocessing issues
+    # Use num_workers from config (0 for Windows, 4+ for Linux/Colab)
+    import platform
+    effective_workers = 0 if platform.system() == "Windows" else num_workers
+    logger.info(f"DataLoader workers: {effective_workers}")
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
         collate_fn=collator,
-        num_workers=0,
+        num_workers=effective_workers,
         pin_memory=True,
+        persistent_workers=effective_workers > 0,
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
         collate_fn=collator,
-        num_workers=0,
+        num_workers=effective_workers,
         pin_memory=True,
+        persistent_workers=effective_workers > 0,
     )
     logger.info(f"Train batches: {len(train_loader)}")
     logger.info(f"Val batches: {len(val_loader)}")
@@ -1183,6 +1193,7 @@ def main():
         num_epochs=num_epochs,
         output_dir=output_dir,
         save_steps=save_steps,
+        eval_steps=eval_steps,
         gradient_accumulation_steps=gradient_accumulation_steps,
         max_grad_norm=max_grad_norm,
         debug=debug_mode,

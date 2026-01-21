@@ -91,9 +91,9 @@ training:
   batch_size: 64
   gradient_accumulation_steps: 2  # Effective batch = 128
 
-  # Evaluation & saving - eval every 500 steps
-  eval_steps: 300             # Eval every 500 steps
-  save_steps: 300             # Save every 500 steps
+  # Evaluation & saving
+  eval_steps: 500             # Eval every 500 steps
+  save_steps: 500             # Save every 500 steps
   save_total_limit: 5
 
   # Logging
@@ -113,7 +113,7 @@ data:
   max_length: 256
 
   # Number of data loader workers
-  num_workers: 4
+  num_workers: 8
 
   # Per-head data sources (paths relative to data root)
   # Supports multiple directories separated by comma
