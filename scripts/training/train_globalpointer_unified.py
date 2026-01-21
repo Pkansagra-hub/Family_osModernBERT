@@ -655,7 +655,7 @@ def evaluate(
     all_preds = {h: [] for h in HEADS_TO_REPLACE}
     all_golds = {h: [] for h in HEADS_TO_REPLACE}
 
-    for batch_idx, batch in enumerate(tqdm(val_loader, desc="Evaluating")):
+    for batch_idx, batch in enumerate(val_loader):
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         head_names = batch["head_names"]
