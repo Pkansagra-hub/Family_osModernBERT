@@ -1242,7 +1242,95 @@ heads:
 
 ---
 
-## 🤝 Contributing
+## 🚀 Releases
+
+### Automated Release Process
+
+FamilyOS UltraBERT uses automated releases that exclude model weights (hosted on HuggingFace) for lightweight distributions.
+
+#### Release Workflow
+
+1. **Prepare Release** (Local)
+
+   ```bash
+   # Set version and prepare release
+   make release-prep VERSION=4.0.0
+
+   # Test package installation
+   make release-test VERSION=4.0.0
+   ```
+
+2. **Create GitHub Release**
+   - Go to [GitHub Releases](https://github.com/Pkansagra-hub/Family_osModernBERT/releases)
+   - Click "Create a new release"
+   - Tag: `v4.0.0` (with 'v' prefix)
+   - Title: `FamilyOS UltraBERT v4.0.0`
+   - Description: Copy from generated `RELEASE_NOTES_v4.0.0.md`
+
+3. **Automated Publishing**
+   - GitHub Actions automatically builds and publishes to PyPI
+   - Release assets are attached to the GitHub release
+   - Weights are downloaded from HuggingFace at runtime
+
+#### Package Contents
+
+The released package **excludes weights** for:
+
+- **Smaller size**: ~50MB vs ~700MB with weights
+- **Faster installs**: No large model files
+- **Automatic updates**: Weights downloaded on first use
+- **Security**: No sensitive model artifacts in distribution
+
+**Included in release:**
+
+```text
+familyos_ultrabert/
+├── __init__.py          # Package initialization
+├── client.py            # Main inference client
+├── model.py             # Model architecture
+├── weights_manager.py   # HuggingFace weight management
+├── labels.py            # Label definitions
+├── onnx_inference.py    # ONNX runtime support
+├── pytorch_inference.py # PyTorch inference
+├── runtime.py           # Runtime utilities
+├── benchmarks/          # Benchmark suite
+├── examples/            # Usage examples
+└── tests/               # Test suite
+```
+
+**Excluded from release:**
+
+- `weights/` directory (636MB model files)
+- Build artifacts and caches
+- Development files
+
+#### Installation from PyPI
+
+```bash
+# Install the lightweight package
+pip install familyos-ultrabert==4.0.0
+
+# First run automatically downloads weights from HuggingFace
+python -c "import familyos_ultrabert; client = familyos_ultrabert.Client()"
+```
+
+#### Manual Release Process
+
+If you need to release manually:
+
+```bash
+# 1. Prepare package
+cd familyos_ultrabert
+python -m build
+
+# 2. Test installation
+pip install dist/familyos_ultrabert-4.0.0-py3-none-any.whl --force-reinstall
+
+# 3. Upload to PyPI
+twine upload dist/*
+```
+
+---
 
 We welcome contributions! Please see our contribution guidelines for details.
 

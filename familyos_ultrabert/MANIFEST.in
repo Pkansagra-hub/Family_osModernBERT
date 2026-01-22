@@ -1,6 +1,9 @@
 # Packaging exclusions for the standalone familyos-ultrabert distribution
 # (built from the `familyos_ultrabert/` subproject).
 
+# Exclude weights (downloaded from HuggingFace at runtime)
+recursive-exclude weights *
+
 # Exclude local benchmark report artifacts
 exclude benchmark_*.json
 exclude benchmark_*.md

@@ -1,4 +1,4 @@
-.PHONY: install install-dev format lint test clean
+.PHONY: install install-dev format lint test clean clean-outputs pre-commit-install release-prep release-test
 
 # Installation
 install:
@@ -26,17 +26,24 @@ test:
 test-cov:
 	pytest tests/ -v --cov=src/modeling_studio --cov-report=html
 
+# Release preparation
+release-prep:
+	python scripts/prepare_release.py --version $(VERSION) --create-notes
+
+release-test:
+	python scripts/prepare_release.py --version $(VERSION) --test-install
+
 # Cleaning
 clean:
-	rm -rf build/
-	rm -rf dist/
-	rm -rf *.egg-info
-	rm -rf .pytest_cache
-	rm -rf .mypy_cache
-	rm -rf .ruff_cache
-	rm -rf htmlcov/
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
+	if exist build rmdir /s /q build
+	if exist dist rmdir /s /q dist
+	if exist *.egg-info rmdir /s /q *.egg-info
+	if exist .pytest_cache rmdir /s /q .pytest_cache
+	if exist .mypy_cache rmdir /s /q .mypy_cache
+	if exist .ruff_cache rmdir /s /q .ruff_cache
+	if exist htmlcov rmdir /s /q htmlcov
+	for /d /r . %%d in (__pycache__) do if exist "%%d" rmdir /s /q "%%d"
+	del /s /q *.pyc 2>nul || echo.
 
 clean-outputs:
 	rm -rf outputs/
