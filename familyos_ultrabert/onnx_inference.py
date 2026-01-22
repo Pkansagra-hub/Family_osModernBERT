@@ -1,9 +1,10 @@
 """
-FamilyOS UltraBERT v2 - ONNX Inference Backend
+FamilyOS UltraBERT v4 - ONNX Inference Backend
 
 Lightweight inference using ONNX Runtime with:
 - CPU and GPU execution providers
 - Dynamic INT8 quantized models for faster CPU inference
+- GlobalPointer span-based NER decoding (v4)
 - No PyTorch dependency required
 
 Note: ONNX models run each capability independently (no shared encoder),
@@ -28,9 +29,23 @@ except ImportError:
 
 from transformers import AutoTokenizer
 
-from .labels import CAPABILITY_TO_LABELS, Capability, LabelSchema
+from .labels import CAPABILITY_TO_LABELS, CAPABILITY_TO_GP_LABELS, Capability, LabelSchema
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Per-Head Thresholds (optimal values from validation)
+# =============================================================================
+
+# These are logit thresholds - optimized via per-head grid search on validation
+# Lower = more entities detected (higher recall), Higher = fewer entities (higher precision)
+# Optimized for best model (familyos_ultrabert/weights/pytorch) with 0.1 granularity
+DEFAULT_THRESHOLDS = {
+    "ner_general": -1.0,  # F1=0.730 (P=0.740, R=0.720)
+    "ner_family": -0.7,  # F1=0.812 (P=0.922, R=0.726)
+    "temporal": -1.9,  # F1=0.639 (P=0.651, R=0.627)
+}
 
 
 # =============================================================================
@@ -159,11 +174,127 @@ def _postprocess_safety(logits: np.ndarray, schema: LabelSchema) -> Dict[str, An
     }
 
 
-def postprocess(capability: str, logits: np.ndarray, tokens: List[str]) -> Dict[str, Any]:
-    """Post-process output based on capability type."""
-    schema = CAPABILITY_TO_LABELS.get(Capability(capability))
+def _postprocess_globalpointer(
+    logits: np.ndarray,
+    text: str,
+    offset_mapping: List[tuple[int, int]],
+    schema: LabelSchema,
+    threshold: float = -1.0,
+) -> Dict[str, Any]:
+    """
+    Decode GlobalPointer span scores to entity format.
+
+    GlobalPointer outputs a (batch, num_labels, seq_len, seq_len) tensor where
+    logits[b, l, i, j] represents the score for entity type l spanning from
+    token i to token j (inclusive).
+
+    Args:
+        logits: (batch, num_labels, seq_len, seq_len) span scores
+        text: Original input text for extracting entity strings
+        offset_mapping: Token offset mapping from tokenizer
+        schema: LabelSchema with id2label mapping
+        threshold: Minimum logit threshold for entity detection (default -1.0)
+
+    Returns:
+        Dict with 'entities' list containing detected spans
+    """
+    entities = []
+
+    # Remove batch dimension: (num_labels, seq_len, seq_len)
+    span_scores = logits[0]
+
+    num_labels = span_scores.shape[0]
+    seq_len = span_scores.shape[1]
+
+    for label_id in range(num_labels):
+        # Only check upper triangle (start <= end)
+        for tok_start in range(seq_len):
+            for tok_end in range(tok_start, seq_len):
+                logit = float(span_scores[label_id, tok_start, tok_end])
+                if logit > threshold:
+                    # Convert token span to character span
+                    if tok_start >= len(offset_mapping) or tok_end >= len(offset_mapping):
+                        continue
+
+                    char_start, _ = offset_mapping[tok_start]
+                    _, char_end = offset_mapping[tok_end]
+
+                    # Skip special tokens (offsets are (0, 0))
+                    if char_start == 0 and char_end == 0 and tok_start > 0:
+                        continue
+
+                    entity_text = text[char_start:char_end]
+                    if not entity_text.strip():
+                        continue
+
+                    # Convert logit to probability for output score
+                    prob = 1.0 / (1.0 + np.exp(-logit))
+
+                    entities.append(
+                        {
+                            "text": entity_text,
+                            "label": schema.id2label[label_id],
+                            "start": char_start,
+                            "end": char_end,
+                            "start_token": tok_start,
+                            "end_token": tok_end,
+                            "score": round(float(prob), 4),
+                        }
+                    )
+
+    # Sort by start position, then by score (descending)
+    entities.sort(key=lambda x: (x["start"], -x["score"]))
+
+    # Remove overlapping entities (keep highest score)
+    filtered = []
+    for entity in entities:
+        overlap = False
+        for kept in filtered:
+            # Check for overlap
+            if not (entity["end"] <= kept["start"] or entity["start"] >= kept["end"]):
+                overlap = True
+                break
+        if not overlap:
+            filtered.append(entity)
+
+    return {"entities": filtered}
+
+
+def postprocess(
+    capability: str,
+    logits: np.ndarray,
+    tokens: List[str],
+    text: str = "",
+    offset_mapping: Optional[List[tuple[int, int]]] = None,
+    threshold: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Post-process output based on capability type.
+
+    Args:
+        capability: The capability name
+        logits: Model output logits
+        tokens: Tokenized input tokens (for BIO-based NER fallback)
+        text: Original input text (for GlobalPointer span extraction)
+        offset_mapping: Token offset mapping (for GlobalPointer)
+        threshold: Override threshold for GlobalPointer (uses DEFAULT_THRESHOLDS if None)
+
+    Returns:
+        Dict with processed predictions
+    """
+    cap_enum = Capability(capability)
+    schema = CAPABILITY_TO_LABELS.get(cap_enum)
 
     if capability in ["ner_general", "ner_family", "temporal"]:
+        # GlobalPointer: 4D output (batch, num_labels, seq, seq)
+        if logits.ndim == 4 and offset_mapping is not None:
+            # Use GlobalPointer label schema (no BIO format)
+            gp_schema = CAPABILITY_TO_GP_LABELS.get(cap_enum, schema)
+            # Use provided threshold or default per-head threshold
+            thresh = threshold if threshold is not None else DEFAULT_THRESHOLDS.get(capability, 0.0)
+            return _postprocess_globalpointer(
+                logits, text, offset_mapping, gp_schema, threshold=thresh
+            )
+        # Fallback: BIO token classification (3D: batch, seq, num_labels)
         return _postprocess_token_classification(logits, tokens, schema)
     elif capability == "embedding":
         return _postprocess_embedding(logits)
@@ -330,8 +461,15 @@ class ONNXInferenceEngine:
         if not capabilities:
             raise ValueError(f"No valid capabilities. Available: {self.capabilities}")
 
-        # Tokenize
-        inputs = self.tokenizer(text, truncation=True, max_length=512, return_tensors="np")
+        # Tokenize with offset mapping for GlobalPointer
+        inputs = self.tokenizer(
+            text,
+            truncation=True,
+            max_length=512,
+            return_tensors="np",
+            return_offsets_mapping=True,
+        )
+        offset_mapping = inputs.pop("offset_mapping")[0].tolist()
         tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
         ort_inputs = {k: v for k, v in inputs.items()}
 
@@ -345,7 +483,13 @@ class ONNXInferenceEngine:
             outputs = self.sessions[cap].run(None, ort_inputs)
             logits = outputs[0]
 
-            output = postprocess(cap, logits, tokens)
+            output = postprocess(
+                cap,
+                logits,
+                tokens,
+                text=text,
+                offset_mapping=offset_mapping,
+            )
             cap_ms = (time.perf_counter() - cap_start) * 1000
 
             results[cap] = InferenceResult(capability=cap, output=output, latency_ms=cap_ms)

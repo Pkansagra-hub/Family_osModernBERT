@@ -1,9 +1,10 @@
 """
-FamilyOS UltraBERT v2 - PyTorch Inference Backend
+FamilyOS UltraBERT v4 - PyTorch Inference Backend
 
 High-performance inference using PyTorch with:
 - Single encoder pass for multiple capabilities
 - Parallel head execution via CUDA streams
+- GlobalPointer span-based NER decoding (v4)
 - Optional encoder output caching
 
 This module loads the full multi-task model from the training codebase.
@@ -24,9 +25,23 @@ import numpy as np
 import torch
 from transformers import AutoTokenizer
 
-from .labels import CAPABILITY_TO_LABELS, Capability, LabelSchema
+from .labels import CAPABILITY_TO_LABELS, CAPABILITY_TO_GP_LABELS, Capability, LabelSchema
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Per-Head Thresholds (optimal values from validation)
+# =============================================================================
+
+# These are logit thresholds - optimized via per-head grid search on validation
+# Lower = more entities detected (higher recall), Higher = fewer entities (higher precision)
+# Optimized for best model (familyos_ultrabert/weights/pytorch) with 0.1 granularity
+DEFAULT_THRESHOLDS = {
+    "ner_general": -1.0,  # F1=0.730 (P=0.740, R=0.720)
+    "ner_family": -0.7,  # F1=0.812 (P=0.922, R=0.726)
+    "temporal": -1.9,  # F1=0.639 (P=0.651, R=0.627)
+}
 
 
 # =============================================================================
@@ -207,11 +222,153 @@ def _postprocess_safety(logits: torch.Tensor, schema: LabelSchema) -> Dict[str, 
     }
 
 
-def postprocess(capability: str, logits: torch.Tensor, tokens: List[str]) -> Dict[str, Any]:
-    """Post-process head output based on capability type."""
-    schema = CAPABILITY_TO_LABELS.get(Capability(capability))
+def _postprocess_globalpointer(
+    logits: torch.Tensor,
+    text: str,
+    offset_mapping: List[tuple[int, int]],
+    schema: LabelSchema,
+    threshold: float = -1.0,
+) -> Dict[str, Any]:
+    """
+    Decode GlobalPointer span scores to entity format.
+
+    GlobalPointer outputs a (batch, num_labels, seq_len, seq_len) tensor where
+    logits[b, l, i, j] represents the score for entity type l spanning from
+    token i to token j (inclusive).
+
+    Uses vectorized operations for O(k) complexity where k = number of spans
+    above threshold, instead of O(n^2) Python loops.
+
+    Args:
+        logits: (batch, num_labels, seq_len, seq_len) span scores
+        text: Original input text for extracting entity strings
+        offset_mapping: Token offset mapping from tokenizer
+        schema: LabelSchema with id2label mapping
+        threshold: Minimum logit threshold for entity detection (default: -1.0)
+
+    Returns:
+        Dict with 'entities' list containing detected spans
+    """
+    entities = []
+
+    # Remove batch dimension: (num_labels, seq_len, seq_len)
+    span_scores = logits[0]
+
+    num_labels = span_scores.shape[0]
+    seq_len = span_scores.shape[1]
+    offset_len = len(offset_mapping)
+
+    # Vectorized: find all positions above threshold using torch.where
+    # Create upper triangular mask (start <= end)
+    triu_mask = torch.triu(
+        torch.ones(seq_len, seq_len, dtype=torch.bool, device=span_scores.device)
+    )
+
+    for label_id in range(num_labels):
+        label_scores = span_scores[label_id]
+
+        # Apply mask and threshold in one operation
+        masked_scores = label_scores.masked_fill(~triu_mask, float("-inf"))
+
+        # Find positions above threshold (vectorized)
+        above_thresh = masked_scores > threshold
+        positions = torch.nonzero(above_thresh, as_tuple=False)
+
+        if positions.shape[0] == 0:
+            continue
+
+        # Extract all spans at once
+        tok_starts = positions[:, 0]
+        tok_ends = positions[:, 1]
+        logit_values = masked_scores[tok_starts, tok_ends]
+        score_values = torch.sigmoid(logit_values)
+
+        # Convert to Python and process
+        for idx in range(positions.shape[0]):
+            tok_start = tok_starts[idx].item()
+            tok_end = tok_ends[idx].item()
+            score = score_values[idx].item()
+
+            # Bounds check
+            if tok_start >= offset_len or tok_end >= offset_len:
+                continue
+
+            char_start, _ = offset_mapping[tok_start]
+            _, char_end = offset_mapping[tok_end]
+
+            # Skip special tokens (offsets are (0, 0))
+            if char_start == 0 and char_end == 0 and tok_start > 0:
+                continue
+
+            entity_text = text[char_start:char_end]
+            if not entity_text.strip():
+                continue
+
+            entities.append(
+                {
+                    "text": entity_text,
+                    "label": schema.id2label[label_id],
+                    "start": char_start,
+                    "end": char_end,
+                    "start_token": tok_start,
+                    "end_token": tok_end,
+                    "score": round(score, 4),
+                }
+            )
+
+    # Sort by start position, then by score (descending)
+    entities.sort(key=lambda x: (x["start"], -x["score"]))
+
+    # Remove overlapping entities (keep highest score)
+    filtered = []
+    for entity in entities:
+        overlap = False
+        for kept in filtered:
+            # Check for overlap
+            if not (entity["end"] <= kept["start"] or entity["start"] >= kept["end"]):
+                overlap = True
+                break
+        if not overlap:
+            filtered.append(entity)
+
+    return {"entities": filtered}
+
+
+def postprocess(
+    capability: str,
+    logits: torch.Tensor,
+    tokens: List[str],
+    text: str = "",
+    offset_mapping: Optional[List[tuple[int, int]]] = None,
+    threshold: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Post-process head output based on capability type.
+
+    Args:
+        capability: The capability name
+        logits: Model output logits
+        tokens: Tokenized input tokens (for BIO-based NER fallback)
+        text: Original input text (for GlobalPointer span extraction)
+        offset_mapping: Token offset mapping (for GlobalPointer)
+        threshold: Override threshold for GlobalPointer (uses DEFAULT_THRESHOLDS if None)
+
+    Returns:
+        Dict with processed predictions
+    """
+    cap_enum = Capability(capability)
+    schema = CAPABILITY_TO_LABELS.get(cap_enum)
 
     if capability in ["ner_general", "ner_family", "temporal"]:
+        # GlobalPointer: 4D output (batch, num_labels, seq, seq)
+        if logits.dim() == 4 and offset_mapping is not None:
+            # Use GlobalPointer label schema (no BIO format)
+            gp_schema = CAPABILITY_TO_GP_LABELS.get(cap_enum, schema)
+            # Use provided threshold or default per-head threshold
+            thresh = threshold if threshold is not None else DEFAULT_THRESHOLDS.get(capability, 0.0)
+            return _postprocess_globalpointer(
+                logits, text, offset_mapping, gp_schema, threshold=thresh
+            )
+        # Fallback: BIO token classification (3D: batch, seq, num_labels)
         return _postprocess_token_classification(logits, tokens, schema)
     elif capability == "embedding":
         return _postprocess_embedding(logits)
@@ -248,6 +405,7 @@ class PyTorchInferenceEngine:
     Features:
     - Single encoder pass for multiple capabilities
     - Parallel head execution via CUDA streams
+    - Per-head threshold configuration for GlobalPointer
     - Optional encoder output caching
     """
 
@@ -259,12 +417,18 @@ class PyTorchInferenceEngine:
         device: str = "cuda",
         enable_cache: bool = True,
         cache_size: int = 1000,
+        thresholds: Optional[Dict[str, float]] = None,
     ):
         self.model = model
         self.model.eval()
         self.tokenizer = tokenizer
         self.capabilities = capabilities
         self.device = device
+
+        # Per-head thresholds (merge with defaults)
+        self.thresholds = {**DEFAULT_THRESHOLDS}
+        if thresholds:
+            self.thresholds.update(thresholds)
 
         self.encoder = self.model.get_encoder()
         self.heads = self.model.heads
@@ -304,18 +468,29 @@ class PyTorchInferenceEngine:
         )
 
     def _encode(self, text: str, use_cache: bool = True) -> tuple:
-        """Encode text to hidden states."""
+        """Encode text to hidden states.
+
+        Returns:
+            Tuple of (hidden_states, attention_mask, tokens, offset_mapping, from_cache)
+        """
+        # Tokenize (always need offset_mapping for GlobalPointer)
+        inputs = self.tokenizer(
+            text,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt",
+            return_offsets_mapping=True,
+        )
+        offset_mapping = inputs.pop("offset_mapping")[0].tolist()
+        tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0].cpu().numpy())
+
         # Check cache
         if use_cache and self.cache:
             cached = self.cache.get(text)
             if cached:
-                tokens = self.tokenizer.tokenize(text)
-                return cached[0], cached[1], tokens, True
+                return cached[0], cached[1], tokens, offset_mapping, True
 
-        # Tokenize
-        inputs = self.tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
-        tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0].cpu().numpy())
 
         # Encode
         with torch.no_grad():
@@ -331,7 +506,7 @@ class PyTorchInferenceEngine:
         if use_cache and self.cache:
             self.cache.put(text, hidden_states, attention_mask)
 
-        return hidden_states, attention_mask, tokens, False
+        return hidden_states, attention_mask, tokens, offset_mapping, False
 
     def _run_heads(
         self, hidden_states: torch.Tensor, attention_mask: torch.Tensor, capabilities: List[str]
@@ -375,7 +550,9 @@ class PyTorchInferenceEngine:
 
         # Encode (single pass)
         encode_start = time.perf_counter()
-        hidden_states, attention_mask, tokens, from_cache = self._encode(text, use_cache)
+        hidden_states, attention_mask, tokens, offset_mapping, from_cache = self._encode(
+            text, use_cache
+        )
         encoder_ms = (time.perf_counter() - encode_start) * 1000
 
         # Run heads
@@ -389,7 +566,14 @@ class PyTorchInferenceEngine:
             if cap not in head_outputs:
                 continue
             pp_start = time.perf_counter()
-            output = postprocess(cap, head_outputs[cap], tokens)
+            output = postprocess(
+                cap,
+                head_outputs[cap],
+                tokens,
+                text=text,
+                offset_mapping=offset_mapping,
+                threshold=self.thresholds.get(cap),
+            )
             pp_ms = (time.perf_counter() - pp_start) * 1000
             results[cap] = InferenceResult(capability=cap, output=output, latency_ms=pp_ms)
 

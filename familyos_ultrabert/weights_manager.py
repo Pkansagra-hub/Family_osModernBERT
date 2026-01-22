@@ -6,20 +6,16 @@ Supports version selection and quantization variants.
 
 Features:
     - Download encoder weights (once)
-    - Download decoder weights (on demand)
     - Cache in ~/.cache/familyos_ultrabert/
     - Resume interrupted downloads
     - Checksum verification
     - Progress bar
 
 Usage:
-    from familyos_ultrabert.weights_manager import download_encoder, download_decoder
+    from familyos_ultrabert.weights_manager import download_encoder
 
     # Download encoder (first time downloads, subsequent calls use cache)
     encoder_path = download_encoder(version="v1", quantization="int8")
-
-    # Download decoder (for counterfactual generation)
-    decoder_path = download_decoder(version="v3", quantization="int8")
 
     # Clear cache
     clear_cache()
@@ -71,6 +67,7 @@ def _check_huggingface_hub() -> bool:
     """Check if huggingface_hub is installed."""
     try:
         import huggingface_hub
+
         return True
     except ImportError:
         return False
@@ -147,76 +144,6 @@ def download_encoder(
         raise RuntimeError(f"Failed to download encoder v{version} ({quantization}): {e}")
 
 
-def download_decoder(
-    version: str = "v3",
-    quantization: QuantizationType = "int8",
-    force: bool = False,
-    cache_dir: Optional[Path] = None,
-) -> Path:
-    """Download decoder weights from HuggingFace Hub.
-
-    Downloads the GPT-2 decoder weights if not already cached. The decoder
-    is used for counterfactual generation (Capability.COUNTERFACTUAL).
-
-    Args:
-        version: Decoder version (default: v3)
-        quantization: "fp32", "fp16", or "int8" (default: int8)
-        force: Re-download even if cached
-        cache_dir: Custom cache directory (default: ~/.cache/familyos_ultrabert/)
-
-    Returns:
-        Path to local weights directory
-
-    Raises:
-        ImportError: If huggingface_hub is not installed
-        RuntimeError: If download fails
-
-    Example:
-        >>> decoder_path = download_decoder(version="v3", quantization="int8")
-        >>> print(decoder_path)
-        /home/user/.cache/familyos_ultrabert/decoder/v3/int8
-    """
-    if not _check_huggingface_hub():
-        raise ImportError(
-            "huggingface_hub is required for weight downloading. "
-            "Install with: pip install huggingface-hub>=0.20.0"
-        )
-
-    from huggingface_hub import snapshot_download
-
-    cache = cache_dir or get_cache_dir()
-    cache_path = cache / f"decoder/{version}/{quantization}"
-
-    if cache_path.exists() and not force:
-        # Verify the cache has files
-        files = list(cache_path.glob("*"))
-        if files:
-            logger.info(f"Using cached decoder: {cache_path}")
-            return cache_path
-        else:
-            logger.warning(f"Cache directory empty, re-downloading: {cache_path}")
-
-    logger.info(f"Downloading decoder v{version} ({quantization})...")
-
-    try:
-        pattern = f"decoder/{version}/{quantization}/*"
-
-        snapshot_download(
-            repo_id=HF_REPO,
-            allow_patterns=[pattern],
-            local_dir=cache,
-            local_dir_use_symlinks=False,
-            resume_download=True,
-        )
-
-        logger.info(f"Downloaded decoder to {cache_path}")
-        return cache_path
-
-    except Exception as e:
-        logger.error(f"Failed to download decoder: {e}")
-        raise RuntimeError(f"Failed to download decoder v{version} ({quantization}): {e}")
-
-
 def get_cache_size() -> float:
     """Get total cache size in megabytes.
 
@@ -231,11 +158,11 @@ def get_cache_size() -> float:
     return total_bytes / (1024 * 1024)
 
 
-def clear_cache(component: Optional[Literal["encoder", "decoder"]] = None) -> None:
+def clear_cache(component: Optional[Literal["encoder"]] = None) -> None:
     """Clear cached weights.
 
     Args:
-        component: "encoder", "decoder", or None (clear all)
+        component: "encoder" or None (clear all)
     """
     cache = get_cache_dir()
 
@@ -256,34 +183,33 @@ def list_cached_versions() -> dict[str, list[str]]:
     """List all cached versions and quantization variants.
 
     Returns:
-        Dictionary with "encoder" and "decoder" keys, each containing
+        Dictionary with "encoder" key containing
         a list of cached variants like "v1/int8".
     """
     cache = get_cache_dir()
-    result = {"encoder": [], "decoder": []}
+    result = {"encoder": []}
 
-    for component in ["encoder", "decoder"]:
-        component_path = cache / component
-        if component_path.exists():
-            for version_dir in component_path.iterdir():
-                if version_dir.is_dir():
-                    for quant_dir in version_dir.iterdir():
-                        if quant_dir.is_dir():
-                            result[component].append(f"{version_dir.name}/{quant_dir.name}")
+    component_path = cache / "encoder"
+    if component_path.exists():
+        for version_dir in component_path.iterdir():
+            if version_dir.is_dir():
+                for quant_dir in version_dir.iterdir():
+                    if quant_dir.is_dir():
+                        result["encoder"].append(f"{version_dir.name}/{quant_dir.name}")
 
     return result
 
 
 def is_cached(
-    component: Literal["encoder", "decoder"],
+    component: Literal["encoder"],
     version: str,
     quantization: QuantizationType = "int8",
 ) -> bool:
     """Check if a specific version is cached.
 
     Args:
-        component: "encoder" or "decoder"
-        version: Version string (e.g., "v1", "v3")
+        component: "encoder"
+        version: Version string (e.g., "v1", "v2-checkpoint-18000")
         quantization: Quantization variant
 
     Returns:
@@ -356,7 +282,6 @@ def is_offline_mode() -> bool:
 __all__ = [
     # Core functions
     "download_encoder",
-    "download_decoder",
     # Cache management
     "get_cache_dir",
     "get_cache_size",

@@ -72,6 +72,7 @@ logger = logging.getLogger(__name__)
 from familyos_ultrabert.models.heads import (  # noqa: E402
     EmbeddingHead,
     EnhancedSafetyHead,
+    GlobalPointerNERHead,
     HierarchicalEmotionHead,
     IntentHead,
     NLIHead,
@@ -81,11 +82,6 @@ from familyos_ultrabert.models.heads import (  # noqa: E402
     TemporalHead,
     TokenClassificationHead,
 )
-
-# Import decoder head (Stage C - Issue 14.1.2)
-# NOTE: MoE decoder deprecated due to Chinchilla scaling failure (22M tokens << 8.4B required)
-# Using pre-trained GPT-2 Medium with prefix injection instead
-from familyos_ultrabert.models.decoder_gpt2 import GPT2DecoderHead  # noqa: E402
 
 # Import Epic 5.0 components (optional - for enhanced mode)
 try:
@@ -143,10 +139,10 @@ def get_task_group(capability: Capability) -> str:
 
 
 CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
-    # Token classification heads
-    Capability.NER_GENERAL: TokenClassificationHead,
-    Capability.NER_FAMILY: TokenClassificationHead,
-    Capability.TEMPORAL: TemporalHead,  # NEW
+    # GlobalPointer NER heads (v4 SOTA span-based NER)
+    Capability.NER_GENERAL: GlobalPointerNERHead,
+    Capability.NER_FAMILY: GlobalPointerNERHead,
+    Capability.TEMPORAL: GlobalPointerNERHead,  # Temporal expressions as spans
     # Sequence classification heads
     Capability.SENTIMENT: SequenceClassificationHead,
     Capability.EMOTIONS: HierarchicalEmotionHead,  # FIXED: Use enhanced head with 44 emotions
@@ -158,8 +154,6 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.NLI: NLIHead,
     Capability.RELATION: RelationHead,  # NEW
     Capability.EMBEDDING: EmbeddingHead,
-    # Decoder heads (Stage C)
-    Capability.COUNTERFACTUAL: GPT2DecoderHead,  # GPT-2 Medium with prefix injection (MoE deprecated)
 }
 
 
@@ -272,6 +266,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         adapter_bottleneck_size: int = 64,
         use_pair_encoder: bool = False,
         pair_encoder_num_layers: int = 1,
+        # GlobalPointer config (from checkpoint metadata)
+        _globalpointer_config: dict | None = None,
     ):
         super().__init__(config)
 
@@ -279,6 +275,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         self.capabilities = self._normalize_capabilities(capabilities)
         self.freeze_encoder = freeze_encoder
         self.head_dropout = head_dropout
+        self._globalpointer_config = _globalpointer_config or {}
 
         # Epic 5.0 configuration
         self._shared_pooler_type = shared_pooler
@@ -376,6 +373,21 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     hidden_size=hidden_size,
                     normalize=True,
                 )
+            elif capability in (Capability.NER_GENERAL, Capability.NER_FAMILY, Capability.TEMPORAL):
+                # GlobalPointer heads for span-based NER (v4)
+                # Use config from checkpoint metadata if available
+                cap_key = capability.value
+                gp_info = self._globalpointer_config.get(cap_key, {})
+                gp_num_labels = gp_info.get("num_labels", num_labels)
+                gp_head_size = gp_info.get("head_size", 64)
+                head = head_cls(
+                    hidden_size=hidden_size,
+                    num_labels=gp_num_labels,
+                    head_size=gp_head_size,
+                    dropout=self.head_dropout,
+                    use_rope=True,
+                    loss_type="globalpointer",
+                )
             elif capability == Capability.SAFETY_FAMILYOS:
                 # SafetyHead: 4 bands with 13 subcategories (indices 0-12)
                 # Used for Stage B FamilyOS domain adaptation
@@ -450,24 +462,6 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     asl_gamma_pos=1.0,  # Standard ASL
                     asl_clip=0.05,  # Probability clipping
                     pos_weight=safety_pos_weight,  # Mild reweighting for balanced data
-                )
-            elif capability == Capability.COUNTERFACTUAL:
-                # GPT2DecoderHead: Pre-trained GPT-2 with prefix injection
-                # NOTE: MoE decoder deprecated - Chinchilla scaling failure
-                # GPT-2 Medium (355M) pre-trained on 40GB WebText provides strong prior
-                from familyos_ultrabert.models.decoder_gpt2_config import GPT2DecoderConfig
-
-                # Use vocab_size from encoder config to match tokenizer
-                vocab_size = getattr(self.config, "vocab_size", 50368)
-                decoder_config = GPT2DecoderConfig(
-                    vocab_size=vocab_size,
-                    pad_token_id=50283,  # ModernBERT [PAD]
-                    bos_token_id=50281,  # ModernBERT [CLS]
-                    eos_token_id=50282,  # ModernBERT [SEP]
-                )
-                head = head_cls(
-                    config=decoder_config,
-                    encoder_hidden_size=hidden_size,
                 )
             else:
                 head = head_cls(
@@ -654,7 +648,6 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         caps_file = checkpoint_path / "capabilities.json"  # type: ignore
         capabilities = None
         epic_5_config = {}
-        decoder_type = None
         if caps_file.exists():
             with open(caps_file) as f:
                 caps_data = json.load(f)
@@ -666,8 +659,18 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                         capabilities = [Capability(c) for c in caps_data["capabilities"]]
                     if "epic_5_0" in caps_data:
                         epic_5_config = caps_data["epic_5_0"]
-                    if "decoder_type" in caps_data:
-                        decoder_type = caps_data["decoder_type"]
+
+        # Load GlobalPointer metadata if available (for correct num_labels)
+        gp_metadata_file = checkpoint_path / "globalpointer_metadata.json"  # type: ignore
+        globalpointer_config = {}
+        if gp_metadata_file.exists():
+            with open(gp_metadata_file) as f:
+                gp_data = json.load(f)
+                if "head_info" in gp_data:
+                    globalpointer_config = gp_data["head_info"]
+                    logger.info(
+                        f"Loaded GlobalPointer config for: {list(globalpointer_config.keys())}"
+                    )
 
         # Load config - use local_files_only to avoid HuggingFace Hub validation issues
         config = AutoConfig.from_pretrained(str(checkpoint_path), local_files_only=True)
@@ -683,6 +686,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             adapter_bottleneck_size=epic_5_config.get("adapter_bottleneck_size", 64),
             use_pair_encoder=epic_5_config.get("use_pair_encoder", False),
             pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
+            _globalpointer_config=globalpointer_config,  # Pass to __init__ for correct head init
         )
 
         # Load state dict - try safetensors first, then pytorch format
@@ -717,41 +721,6 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 pair_encoder_state[key] = value
             elif key.startswith("shared_pooler."):
                 pooler_state[key] = value
-
-        # Auto-detect decoder type from weight keys if not specified in config
-        # This handles legacy checkpoints that don't have decoder_type in capabilities.json
-        if decoder_type is None and capabilities and Capability.COUNTERFACTUAL in capabilities:
-            has_gpt2_keys = any("heads.counterfactual.gpt2." in k for k in state_dict.keys())
-            has_moe_keys = any("heads.counterfactual.layers." in k for k in state_dict.keys())
-            if has_gpt2_keys:
-                decoder_type = "GPT2DecoderHead"
-                logger.info("Auto-detected GPT-2 decoder from checkpoint weights")
-            elif has_moe_keys:
-                decoder_type = "CounterfactualDecoderHead"
-                logger.warning(
-                    "Auto-detected MoE decoder from checkpoint weights. "
-                    "MoE decoder is DEPRECATED - consider retraining with GPT-2 decoder."
-                )
-
-        # Replace decoder head if checkpoint uses different type than model default
-        # Model default is now GPT2DecoderHead, but checkpoint might be MoE (deprecated)
-        if (
-            decoder_type == "CounterfactualDecoderHead"
-            and capabilities
-            and Capability.COUNTERFACTUAL in capabilities
-        ):
-            # Legacy MoE checkpoint - replace with MoE decoder for compatibility
-            logger.warning("Loading legacy MoE decoder (deprecated)")
-            from familyos_ultrabert.models.decoder_config import DecoderMoEConfig
-            from familyos_ultrabert.models.decoder_moe import CounterfactualDecoderHead as MoEDecoder
-
-            vocab_size = getattr(config, "vocab_size", 50368)
-            hidden_size = getattr(config, "hidden_size", 768)
-            moe_config = DecoderMoEConfig(vocab_size=vocab_size)
-            model.heads[Capability.COUNTERFACTUAL.value] = MoEDecoder(
-                config=moe_config,
-                encoder_hidden_size=hidden_size,
-            )
 
         # Initialize encoder - from checkpoint if available, else from pretrained
         if encoder_state:
@@ -921,17 +890,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Save capabilities and Epic 5.0 config
         capabilities_path = os.path.join(save_directory, "capabilities.json")
 
-        # Detect decoder type for proper loading
-        decoder_type = None
-        if Capability.COUNTERFACTUAL in self.capabilities:
-            capability_key = Capability.COUNTERFACTUAL.value
-            head = self.heads[capability_key] if capability_key in self.heads else None
-            if head is not None:
-                decoder_type = type(head).__name__  # "GPT2DecoderHead" or "CounterfactualDecoderHead"
-
         config_data = {
             "capabilities": [c.value for c in self.capabilities],
-            "decoder_type": decoder_type,  # NEW: For proper decoder loading
             "epic_5_0": {
                 "shared_pooler": self._shared_pooler_type,
                 "use_adapters": self._use_adapters,

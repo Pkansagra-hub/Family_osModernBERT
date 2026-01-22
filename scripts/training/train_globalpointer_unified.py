@@ -645,7 +645,7 @@ def evaluate(
     val_loader: DataLoader,
     device: torch.device,
     debug: bool = False,
-    threshold: float = 2.0,  # Logit threshold: 2.0 = prob > 0.88, reduces FP for untrained models
+    threshold: float = 0.0,  # Logit threshold: 0.0 = prob > 0.5 (balanced P/R for true F1)
 ) -> dict[str, Any]:
     """
     Evaluate model on validation set using decode_batch_efficient.

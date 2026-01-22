@@ -155,6 +155,22 @@ NER_GENERAL_LABELS = LabelSchema(
 
 
 # -----------------------------------------------------------------------------
+# GlobalPointer NER Labels (v4 - span-based, no BIO)
+# -----------------------------------------------------------------------------
+NER_GENERAL_GP_LABELS = LabelSchema(
+    name="ner_general_gp",
+    label2id={
+        "PER": 0,  # Person
+        "ORG": 1,  # Organization
+        "LOC": 2,  # Location
+        "MISC": 3,  # Miscellaneous
+    },
+    problem_type="span_classification",
+    description="GlobalPointer NER labels (span-based, no BIO)",
+)
+
+
+# -----------------------------------------------------------------------------
 # Sentiment Labels (Enhanced: 3 → 5 classes)
 # -----------------------------------------------------------------------------
 SENTIMENT_LABELS = LabelSchema(
@@ -550,6 +566,25 @@ NER_FAMILY_LABELS = LabelSchema(
     description="Family-specific NER with traditions, milestones, and heirlooms (21 BIO tags)",
 )
 
+# GlobalPointer version (span-based, no BIO)
+NER_FAMILY_GP_LABELS = LabelSchema(
+    name="ner_family_gp",
+    label2id={
+        "PERSON": 0,  # Full names
+        "KINSHIP": 1,  # mom, dad, uncle, etc.
+        "NICKNAME": 2,  # Panda, Bunny, etc.
+        "PET": 3,  # Max, Whiskers, etc.
+        "HOME_LOC": 4,  # kitchen, backyard, etc.
+        "FAMILY_EVENT": 5,  # birthday, anniversary, etc.
+        "ROUTINE": 6,  # school run, dinner time, etc.
+        "TRADITION": 7,  # Sunday brunch, movie night, etc.
+        "MILESTONE": 8,  # first steps, first word, etc.
+        "HEIRLOOM": 9,  # grandma's ring, dad's watch, etc.
+    },
+    problem_type="span_classification",
+    description="GlobalPointer NER Family labels (span-based, no BIO)",
+)
+
 
 # -----------------------------------------------------------------------------
 # Ingress Labels (Enhanced: 7 → 12 domains)
@@ -736,6 +771,21 @@ TEMPORAL_LABELS = LabelSchema(
     description="Temporal expression extraction for timeline construction (13 BIO tags)",
 )
 
+# GlobalPointer version (span-based, no BIO)
+TEMPORAL_GP_LABELS = LabelSchema(
+    name="temporal_gp",
+    label2id={
+        "DATE_ABS": 0,  # "January 15, 2024"
+        "DATE_REL": 1,  # "yesterday", "last week"
+        "TIME": 2,  # "3pm", "morning"
+        "DURATION": 3,  # "for 2 hours", "all day"
+        "FREQUENCY": 4,  # "every Sunday", "weekly"
+        "AGE": 5,  # "when she was 5", "in my 20s"
+    },
+    problem_type="span_classification",
+    description="GlobalPointer Temporal labels (span-based, no BIO)",
+)
+
 
 # =============================================================================
 # Capability Enum (Maps to Tasks/Heads) - Enhanced v2: 9 → 12 Capabilities
@@ -765,7 +815,6 @@ class Capability(str, Enum):
     SAFETY_FAMILYOS = "safety_familyos"
     RELATION = "relation"  # NEW: Family relationship extraction
     INTENT = "intent"  # NEW: User intent classification
-    COUNTERFACTUAL = "counterfactual"  # GPT-2 decoder for counterfactual generation
 
     def __str__(self) -> str:
         return self.value
@@ -791,7 +840,13 @@ CAPABILITY_TO_LABELS: dict[Capability, LabelSchema | None] = {
     Capability.SAFETY_FAMILYOS: SAFETY_FAMILYOS_LABELS,
     Capability.RELATION: RELATION_LABELS,  # NEW
     Capability.INTENT: INTENT_LABELS,  # NEW
-    Capability.COUNTERFACTUAL: None,  # GPT-2 decoder, no labels
+}
+
+# GlobalPointer label schemas (span-based NER, no BIO format)
+CAPABILITY_TO_GP_LABELS: dict[Capability, LabelSchema | None] = {
+    Capability.NER_GENERAL: NER_GENERAL_GP_LABELS,
+    Capability.NER_FAMILY: NER_FAMILY_GP_LABELS,
+    Capability.TEMPORAL: TEMPORAL_GP_LABELS,
 }
 
 
@@ -862,8 +917,13 @@ __all__ = [
     "BAND_TO_SUBCATEGORY_IDS",  # Issue 3.6.8
     "RELATION_LABELS",  # NEW
     "INTENT_LABELS",  # NEW
+    # GlobalPointer labels (v4 span-based NER)
+    "NER_GENERAL_GP_LABELS",
+    "NER_FAMILY_GP_LABELS",
+    "TEMPORAL_GP_LABELS",
     # Mappings
     "CAPABILITY_TO_LABELS",
+    "CAPABILITY_TO_GP_LABELS",
     "ALL_LABEL_SCHEMAS",
     # Helpers
     "get_labels_for_capability",

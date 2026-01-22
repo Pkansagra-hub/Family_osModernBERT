@@ -1,9 +1,8 @@
 """
-FamilyOS UltraBERT v3 - Multi-Task Language Model for Family Communication
+FamilyOS UltraBERT v4 - Multi-Task Language Model for Family Communication
 
-A high-performance NLP package providing 13 capabilities for analyzing
-family communication: sentiment, emotions, safety, NER, intent, counterfactual
-generation, and more.
+A high-performance NLP package providing 12 capabilities for analyzing
+family communication: sentiment, emotions, safety, NER, intent, and more.
 
 Quick Start (Recommended - with auto warmup):
     >>> from familyos_ultrabert import Client
@@ -18,9 +17,8 @@ Direct Model Access:
     >>> model = UltraBERT.load()
     >>> results = model.analyze("Mom picked up Panda from school")
 
-v3 Features:
-    - 13 NLP capabilities including counterfactual generation
-    - Lazy decoder loading for memory efficiency
+v4 Features:
+    - 12 NLP capabilities with GlobalPointer NER
     - Automatic weight downloading from HuggingFace Hub
     - NPU/GPU/CPU backend auto-detection
     - PyTorch (GPU) and ONNX (CPU/GPU/NPU) backends
@@ -35,37 +33,32 @@ Capabilities:
     - safety_generic: Multi-label safety categories
     - intent: User intent classification
     - ingress: Message routing/category
-    - ner_family: Family member entity recognition
-    - ner_general: General named entity recognition
-    - temporal: Temporal expression extraction
+    - ner_family: Family member entity recognition (GlobalPointer)
+    - ner_general: General named entity recognition (GlobalPointer)
+    - temporal: Temporal expression extraction (GlobalPointer)
     - relation: Relationship type classification
     - nli: Natural language inference
     - embedding: 768-dim sentence embeddings
-    - counterfactual: Generate alternative phrasings (v3, requires decoder)
 
 License: Proprietary - All Rights Reserved
 """
 
-__version__ = "3.0.0"
+__version__ = "4.0.0"
 __author__ = "FamilyOS Team"
 
 from familyos_ultrabert.model import UltraBERT
-from familyos_ultrabert.labels import CAPABILITIES, Capability, DECODER_CAPABILITIES
+from familyos_ultrabert.labels import CAPABILITIES, Capability
 from familyos_ultrabert.client import Client, ClientResult, analyze
 
-# v3: Weight management
+# Weight management
 from familyos_ultrabert.weights_manager import (
     download_encoder,
-    download_decoder,
     get_cache_dir,
     get_cache_size,
     clear_cache,
     is_cached,
     get_weights_info,
 )
-
-# v3: Lazy decoder loading
-from familyos_ultrabert.decoder_session import DecoderSession
 
 # Alias for backward compatibility
 FamilyOSModel = UltraBERT
@@ -80,17 +73,13 @@ __all__ = [
     "FamilyOSModel",  # Backward compatibility
     "CAPABILITIES",
     "Capability",
-    "DECODER_CAPABILITIES",
-    # v3: Weight management
+    # Weight management
     "download_encoder",
-    "download_decoder",
     "get_cache_dir",
     "get_cache_size",
     "clear_cache",
     "is_cached",
     "get_weights_info",
-    # v3: Lazy decoder loading
-    "DecoderSession",
     # Version
     "__version__",
 ]

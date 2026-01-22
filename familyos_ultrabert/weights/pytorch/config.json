@@ -40,6 +40,6 @@
   "sep_token_id": 50282,
   "sparse_pred_ignore_index": -100,
   "sparse_prediction": false,
-  "transformers_version": "4.57.2",
+  "transformers_version": "4.57.6",
   "vocab_size": 50368
 }

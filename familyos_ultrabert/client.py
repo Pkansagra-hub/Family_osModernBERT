@@ -39,17 +39,17 @@ from . import __version__
 _UNICODE_NORMALIZE_MAP = {
     "\u2018": "'",  # LEFT SINGLE QUOTATION MARK
     "\u2019": "'",  # RIGHT SINGLE QUOTATION MARK (curly apostrophe)
-    "\u201A": "'",  # SINGLE LOW-9 QUOTATION MARK
-    "\u201B": "'",  # SINGLE HIGH-REVERSED-9 QUOTATION MARK
-    "\u201C": '"',  # LEFT DOUBLE QUOTATION MARK
-    "\u201D": '"',  # RIGHT DOUBLE QUOTATION MARK
-    "\u201E": '"',  # DOUBLE LOW-9 QUOTATION MARK
-    "\u201F": '"',  # DOUBLE HIGH-REVERSED-9 QUOTATION MARK
+    "\u201a": "'",  # SINGLE LOW-9 QUOTATION MARK
+    "\u201b": "'",  # SINGLE HIGH-REVERSED-9 QUOTATION MARK
+    "\u201c": '"',  # LEFT DOUBLE QUOTATION MARK
+    "\u201d": '"',  # RIGHT DOUBLE QUOTATION MARK
+    "\u201e": '"',  # DOUBLE LOW-9 QUOTATION MARK
+    "\u201f": '"',  # DOUBLE HIGH-REVERSED-9 QUOTATION MARK
     "\u2032": "'",  # PRIME
     "\u2033": '"',  # DOUBLE PRIME
     "\u2014": "-",  # EM DASH
     "\u2013": "-",  # EN DASH
-    "\u00A0": " ",  # NON-BREAKING SPACE
+    "\u00a0": " ",  # NON-BREAKING SPACE
     "\u2026": "...",  # HORIZONTAL ELLIPSIS
 }
 
@@ -66,7 +66,10 @@ _SAFETY_PATTERNS = [
     (_re.compile(r"\bI'm\s+going\s+to\s+harm\b", _re.IGNORECASE), "I am going to harm"),
     (_re.compile(r"\bI'm\s+going\s+to\s+end\b", _re.IGNORECASE), "I am going to end"),
     # Self-harm patterns
-    (_re.compile(r"\bI'm\s+going\s+to\s+hurt\s+myself\b", _re.IGNORECASE), "I am going to hurt myself"),
+    (
+        _re.compile(r"\bI'm\s+going\s+to\s+hurt\s+myself\b", _re.IGNORECASE),
+        "I am going to hurt myself",
+    ),
     (_re.compile(r"\bI'm\s+going\s+to\s+cut\b", _re.IGNORECASE), "I am going to cut"),
     # Colloquial forms
     (_re.compile(r"\bgonna\s+hurt\b", _re.IGNORECASE), "going to hurt"),
@@ -157,7 +160,6 @@ class Client:
         warmup_rounds: Number of warmup inferences to run. Default 3.
         lazy_load: If True, defer loading until first call. Default False.
         verbose: If True, print loading/warmup info. Default False.
-        load_decoder: If True, load decoder for counterfactual generation. Default False.
 
     Example:
         >>> client = Client()  # Loads and warms up automatically
@@ -166,7 +168,7 @@ class Client:
         >>> print(result.safety)     # "GREEN"
     """
 
-    VERSION = "3.0.0"
+    VERSION = "4.0.0"
 
     def __init__(
         self,
@@ -176,16 +178,13 @@ class Client:
         warmup_rounds: int = 3,
         lazy_load: bool = False,
         verbose: bool = False,
-        load_decoder: bool = False,
     ):
         self._backend_preference = backend
         self._device_preference = device
         self._warmup_enabled = warmup
         self._warmup_rounds = warmup_rounds
         self._verbose = verbose
-        self._load_decoder = load_decoder
         self._model: Optional[UltraBERT] = None
-        self._decoder_session: Optional[Any] = None
         self._is_ready = False
         self._lock = threading.Lock()
         self._stats = LatencyStats()
@@ -629,161 +628,6 @@ class Client:
         """
         self._stats = LatencyStats()
 
-    # =========================================================================
-    # v3: Decoder Methods for Counterfactual Generation
-    # =========================================================================
-
-    def create_decoder_session(
-        self,
-        version: str = "v3",
-        quantization: str = "int8",
-        device: str = "auto",
-        backend: str = "pytorch",
-    ) -> "DecoderSession":
-        """
-        Create a decoder session for batch counterfactual generation.
-
-        The decoder is loaded when entering the context and automatically
-        unloaded when exiting, freeing memory. This is ideal for R5 dream
-        exploration phases in P03 consolidation.
-
-        Args:
-            version: Decoder version (default: "v3")
-            quantization: Weight format - "fp32", "fp16", or "int8"
-            device: Hardware - "auto", "npu", "cuda", or "cpu"
-            backend: Inference backend - "pytorch" or "onnx" (default: "pytorch")
-
-        Returns:
-            DecoderSession context manager
-
-        Example:
-            >>> with client.create_decoder_session() as decoder:
-            ...     for text in texts:
-            ...         encoder_output = client.encode(text)
-            ...         suggestion = decoder.generate(encoder_output)
-            >>> # Decoder automatically unloaded, memory freed
-        """
-        from .decoder_session import DecoderSession
-        return DecoderSession(
-            version=version,
-            quantization=quantization,
-            device=device,
-            backend=backend,
-        )
-
-    def encode(self, text: str) -> "np.ndarray":
-        """
-        Get encoder hidden states for a text.
-
-        This returns the raw encoder output that can be passed to
-        DecoderSession.generate() for counterfactual generation.
-
-        Note: This method requires the PyTorch backend to access full
-        encoder hidden states. ONNX backend will raise an error.
-
-        Args:
-            text: Text to encode
-
-        Returns:
-            Encoder hidden states as numpy array.
-            Shape: (1, seq_len, 768) - full sequence hidden states
-
-        Example:
-            >>> encoder_output = client.encode("I hate this situation")
-            >>> with client.create_decoder_session() as decoder:
-            ...     suggestion = decoder.generate(encoder_output)
-        """
-        import numpy as np
-
-        self._ensure_ready()
-
-        # Access the underlying engine to get full hidden states
-        engine = self._model._engine
-
-        # Check if we have PyTorch backend with _encode method
-        if hasattr(engine, "_encode"):
-            # PyTorch backend - get full sequence hidden states
-            hidden_states, attention_mask, tokens, from_cache = engine._encode(text)
-            # Convert to numpy: (batch=1, seq_len, 768)
-            return hidden_states.cpu().numpy().astype(np.float32)
-        else:
-            # ONNX backend - cannot get hidden states directly
-            # ONNX models output final logits, not intermediate hidden states
-            raise RuntimeError(
-                "encode() requires PyTorch backend for full hidden states. "
-                "ONNX backend only outputs final logits per capability. "
-                "Initialize with: Client(backend='pytorch') or use PyTorch model."
-            )
-
-    def suggest_alternative(
-        self,
-        text: str,
-        max_new_tokens: int = 128,
-        temperature: float = 0.8,
-    ) -> str:
-        """
-        Generate a counterfactual suggestion for the given text.
-
-        This is a convenience method that loads the decoder temporarily,
-        generates a suggestion, and unloads the decoder. For processing
-        multiple texts, use create_decoder_session() instead.
-
-        Args:
-            text: Text to generate alternative for
-            max_new_tokens: Maximum tokens to generate
-            temperature: Sampling temperature (higher = more random)
-
-        Returns:
-            Generated counterfactual text
-
-        Example:
-            >>> suggestion = client.suggest_alternative("I hate this")
-            "I'm not satisfied with this"
-        """
-        encoder_output = self.encode(text)
-
-        with self.create_decoder_session() as decoder:
-            return decoder.generate(
-                encoder_output,
-                max_new_tokens=max_new_tokens,
-                temperature=temperature,
-            )
-
-    def suggest_alternative_structured(
-        self,
-        text: str,
-        max_new_tokens: int = 128,
-    ) -> Dict[str, Any]:
-        """
-        Generate counterfactual with structured output including procedural insights.
-
-        This extracts actionable insights from the generated counterfactual,
-        useful for P03 memory consolidation.
-
-        Args:
-            text: Text to generate alternative for
-            max_new_tokens: Maximum tokens to generate
-
-        Returns:
-            Dictionary with:
-                - "text": Cleaned generated text
-                - "raw": Raw generated text
-                - "generation_time_ms": Generation time
-                - "procedural_insight": Extracted insight dict
-
-        Example:
-            >>> result = client.suggest_alternative_structured("I felt overwhelmed")
-            >>> print(result["procedural_insight"])
-            {"trigger": "feeling overwhelmed", "action": "schedule break", ...}
-        """
-        encoder_output = self.encode(text)
-
-        with self.create_decoder_session() as decoder:
-            return decoder.generate_structured(
-                encoder_output,
-                max_new_tokens=max_new_tokens,
-            )
-
     def __repr__(self) -> str:
         status = "ready" if self._is_ready else "not loaded"
         backend = self._model.backend if self._model else "N/A"
@@ -812,7 +656,7 @@ class ClientResult:
     def __init__(self, raw: AnalysisOutput, latency_ms: float):
         self._raw = raw
         self._latency_ms = latency_ms
-        self._caps = raw.capabilities if hasattr(raw, 'capabilities') else {}
+        self._caps = raw.capabilities if hasattr(raw, "capabilities") else {}
 
     @property
     def text(self) -> str:
@@ -972,6 +816,7 @@ class ClientResult:
     def to_json(self) -> str:
         """Convert to JSON string."""
         import json
+
         return json.dumps(self.to_dict(), indent=2)
 
     @property

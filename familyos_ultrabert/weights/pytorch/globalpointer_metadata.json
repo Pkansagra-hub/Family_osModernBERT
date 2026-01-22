@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-01-22T02:38:02.691177",
+  "replaced_heads": [
+    "ner_general",
+    "ner_family",
+    "temporal"
+  ],
+  "head_architecture": "GlobalPointerNERHead",
+  "head_info": {
+    "ner_general": {
+      "class": "GlobalPointerNERHead",
+      "num_labels": 4,
+      "head_size": 64
+    },
+    "sentiment": {
+      "class": "SequenceClassificationHead",
+      "num_labels": 5,
+      "head_size": null
+    },
+    "emotions": {
+      "class": "HierarchicalEmotionHead",
+      "num_labels": null,
+      "head_size": null
+    },
+    "safety_generic": {
+      "class": "SequenceClassificationHead",
+      "num_labels": 8,
+      "head_size": null
+    },
+    "nli": {
+      "class": "NLIHead",
+      "num_labels": 3,
+      "head_size": null
+    },
+    "embedding": {
+      "class": "EmbeddingHead",
+      "num_labels": null,
+      "head_size": null
+    },
+    "temporal": {
+      "class": "GlobalPointerNERHead",
+      "num_labels": 6,
+      "head_size": 64
+    },
+    "ner_family": {
+      "class": "GlobalPointerNERHead",
+      "num_labels": 10,
+      "head_size": 64
+    },
+    "ingress": {
+      "class": "SequenceClassificationHead",
+      "num_labels": 12,
+      "head_size": null
+    },
+    "safety_familyos": {
+      "class": "SafetyHead",
+      "num_labels": 4,
+      "head_size": null
+    },
+    "relation": {
+      "class": "RelationHead",
+      "num_labels": 15,
+      "head_size": null
+    },
+    "intent": {
+      "class": "IntentHead",
+      "num_labels": 8,
+      "head_size": null
+    }
+  },
+  "label_configs": {
+    "ner_general": {
+      "PER": 0,
+      "ORG": 1,
+      "LOC": 2,
+      "MISC": 3
+    },
+    "ner_family": {
+      "PERSON": 0,
+      "KINSHIP": 1,
+      "NICKNAME": 2,
+      "PET": 3,
+      "HOME_LOC": 4,
+      "FAMILY_EVENT": 5,
+      "ROUTINE": 6,
+      "TRADITION": 7,
+      "MILESTONE": 8,
+      "HEIRLOOM": 9
+    },
+    "temporal": {
+      "DATE_ABS": 0,
+      "DATE_REL": 1,
+      "TIME": 2,
+      "DURATION": 3,
+      "FREQUENCY": 4,
+      "AGE": 5
+    }
+  },
+  "optimal_thresholds": {
+    "ner_general": -1.0,
+    "ner_family": -0.7,
+    "temporal": -1.9
+  },
+  "threshold_metrics": {
+    "ner_general": {"f1": 0.730, "precision": 0.740, "recall": 0.720},
+    "ner_family": {"f1": 0.812, "precision": 0.922, "recall": 0.726},
+    "temporal": {"f1": 0.639, "precision": 0.651, "recall": 0.627}
+  }
+}

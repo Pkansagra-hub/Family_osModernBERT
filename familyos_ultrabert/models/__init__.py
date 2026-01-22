@@ -4,6 +4,7 @@ Contains the multi-task model architecture and all task-specific heads.
 """
 
 from familyos_ultrabert.models.modernbert_multitask import (
+    CAPABILITY_TO_HEAD_TYPE,
     ModernBertMultiTaskModel,
     MultiTaskOutput,
 )
@@ -28,19 +29,11 @@ from familyos_ultrabert.models.losses import (
     FocalGlobalPointerLoss,
 )
 
-# Decoder exports (v3)
-from familyos_ultrabert.models.decoder_gpt2 import GPT2DecoderHead, EncoderProjection
-from familyos_ultrabert.models.decoder_gpt2_config import (
-    GPT2DecoderConfig,
-    get_edge_config,
-    get_small_config,
-    get_quality_config,
-)
-
 __all__ = [
     # Core model
     "ModernBertMultiTaskModel",
     "MultiTaskOutput",
+    "CAPABILITY_TO_HEAD_TYPE",
     # Task heads
     "EmbeddingHead",
     "EnhancedSafetyHead",
@@ -52,14 +45,7 @@ __all__ = [
     "SequenceClassificationHead",
     "TemporalHead",
     "TokenClassificationHead",
-    # Decoder (v3)
-    "GPT2DecoderHead",
-    "EncoderProjection",
-    "GPT2DecoderConfig",
-    "get_edge_config",
-    "get_small_config",
-    "get_quality_config",
-    # GlobalPointer (v2 heads)
+    # GlobalPointer (v4 heads)
     "GlobalPointerNERHead",
     "create_globalpointer_head",
     "GlobalPointerLoss",

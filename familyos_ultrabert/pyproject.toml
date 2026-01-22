@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "familyos-ultrabert"
-version = "3.0.1"
-description = "FamilyOS UltraBERT v3 - Multi-task NLP with decoder for counterfactual generation"
+version = "4.0.0"
+description = "FamilyOS UltraBERT v4 - Multi-task NLP with GlobalPointer NER"
 readme = "README.md"
 license = "LicenseRef-Proprietary"
 authors = [
@@ -15,7 +15,7 @@ keywords = [
     "nlp", "transformers", "sentiment-analysis", "ner",
     "emotion-detection", "family", "multi-task-learning",
     "safety-classification", "onnx", "pytorch", "ultrabert", "modernbert",
-    "counterfactual-generation", "text-generation"
+    "globalpointer", "span-extraction"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
