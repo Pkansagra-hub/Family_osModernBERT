@@ -74,8 +74,8 @@ def _check_huggingface_hub() -> bool:
 
 
 def download_encoder(
-    version: str = "v1",
-    quantization: QuantizationType = "int8",
+    version: str = "v2",
+    quantization: QuantizationType = "fp32",
     force: bool = False,
     cache_dir: Optional[Path] = None,
 ) -> Path:
@@ -85,8 +85,8 @@ def download_encoder(
     the ModernBERT backbone that powers all 12 capabilities.
 
     Args:
-        version: Encoder version (default: v1)
-        quantization: "fp32", "fp16", or "int8" (default: int8)
+        version: Encoder version (default: v2)
+        quantization: "fp32", "fp16", or "int8" (default: fp32)
         force: Re-download even if cached
         cache_dir: Custom cache directory (default: ~/.cache/familyos_ultrabert/)
 
@@ -98,9 +98,9 @@ def download_encoder(
         RuntimeError: If download fails
 
     Example:
-        >>> encoder_path = download_encoder(version="v1", quantization="int8")
+        >>> encoder_path = download_encoder(version="v2", quantization="fp32")
         >>> print(encoder_path)
-        /home/user/.cache/familyos_ultrabert/encoder/v1/int8
+        /home/user/.cache/familyos_ultrabert/encoder/v2/fp32
     """
     if not _check_huggingface_hub():
         raise ImportError(
@@ -203,7 +203,7 @@ def list_cached_versions() -> dict[str, list[str]]:
 def is_cached(
     component: Literal["encoder"],
     version: str,
-    quantization: QuantizationType = "int8",
+    quantization: QuantizationType = "fp32",
 ) -> bool:
     """Check if a specific version is cached.
 

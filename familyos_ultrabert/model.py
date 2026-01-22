@@ -111,7 +111,7 @@ class UltraBERT:
         device: Literal["auto", "cpu", "cuda", "npu"] = "auto",
         enable_cache: bool = True,
         cache_size: int = 1000,
-        encoder_version: str = "v2-checkpoint-18000",
+        encoder_version: str = "v2",
         quantization: Literal["fp32", "fp16", "int8"] = "int8",
     ) -> "UltraBERT":
         """
@@ -123,7 +123,7 @@ class UltraBERT:
             device: "auto" (default), "cpu", "cuda", or "npu"
             enable_cache: Enable encoder caching (PyTorch only)
             cache_size: Max cached encodings
-            encoder_version: Version of encoder weights (default: v2-checkpoint-18000)
+            encoder_version: Version of encoder weights (default: v2)
             quantization: Weight format - "fp32", "fp16", "int8" (default: int8)
 
         Returns:
