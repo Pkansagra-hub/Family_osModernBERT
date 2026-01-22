@@ -72,6 +72,7 @@ logger = logging.getLogger(__name__)
 from modeling_studio.models.heads import (  # noqa: E402
     EmbeddingHead,
     EnhancedSafetyHead,
+    GlobalPointerNERHead,  # NEW - v2 SOTA span-based NER (Epic 3.3.1)
     HierarchicalEmotionHead,
     IntentHead,
     NLIHead,
@@ -80,6 +81,7 @@ from modeling_studio.models.heads import (  # noqa: E402
     SequenceClassificationHead,
     TemporalHead,
     TokenClassificationHead,
+    create_globalpointer_head,  # Factory function for GlobalPointer heads
 )
 
 # Import decoder head (Stage C - Issue 14.1.2)
@@ -142,8 +144,13 @@ def get_task_group(capability: Capability) -> str:
 # =============================================================================
 
 
+# Default mapping uses TokenClassificationHead for BIO-based NER (backward compatibility)
+# For SOTA span-based NER, use GlobalPointerNERHead via:
+#   - Direct head attachment with create_globalpointer_head()
+#   - Training config: head_type: "globalpointer" (see train_globalpointer_heads.py)
 CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
-    # Token classification heads
+    # Token classification heads (BIO format - default for backward compatibility)
+    # Use GlobalPointerNERHead for span-based training (v2 SOTA)
     Capability.NER_GENERAL: TokenClassificationHead,
     Capability.NER_FAMILY: TokenClassificationHead,
     Capability.TEMPORAL: TemporalHead,  # NEW
@@ -978,6 +985,9 @@ __all__ = [
     "MultiTaskOutput",
     "CAPABILITY_TO_HEAD_TYPE",
     "get_problem_type",
+    # GlobalPointer head support (Epic 3.3)
+    "GlobalPointerNERHead",
+    "create_globalpointer_head",
 ]
 #   - Instantiate appropriate head classes
 #   - Handle frozen vs trainable heads

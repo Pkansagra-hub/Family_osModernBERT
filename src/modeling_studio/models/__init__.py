@@ -67,6 +67,8 @@ from modeling_studio.models.decoder_moe import (
 from modeling_studio.models.heads import (
     BaseHead,
     EmbeddingHead,
+    GlobalPointerNERHead,  # NEW - v2 SOTA span-based NER
+    create_globalpointer_head,  # Factory function
     IntentHead,
     NLIHead,
     RelationHead,
@@ -131,6 +133,8 @@ __all__ = [
     "BaseHead",
     "SequenceClassificationHead",
     "TokenClassificationHead",
+    "GlobalPointerNERHead",  # NEW - v2 SOTA span-based NER
+    "create_globalpointer_head",  # Factory function
     "EmbeddingHead",
     "NLIHead",
     "SafetyHead",

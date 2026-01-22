@@ -152,8 +152,26 @@ __all__ = [
     "normalize_indian_english",
     "is_venting",
     "get_kinship_variants",
+    # GlobalPointer collator for span-based NER (Epic 3.3.3)
+    "GlobalPointerCollator",
+    "create_ner_general_collator",
+    "create_ner_family_collator",
+    "create_temporal_collator",
+    "GP_NER_GENERAL_LABELS",
+    "GP_NER_FAMILY_LABELS",
+    "GP_TEMPORAL_LABELS",
 ]
 
+# Export GlobalPointer collator (Epic 3.3.3)
+from modeling_studio.data.globalpointer_collator import (
+    GlobalPointerCollator,
+    create_ner_general_collator,
+    create_ner_family_collator,
+    create_temporal_collator,
+    NER_GENERAL_LABELS as GP_NER_GENERAL_LABELS,
+    NER_FAMILY_LABELS as GP_NER_FAMILY_LABELS,
+    TEMPORAL_LABELS as GP_TEMPORAL_LABELS,
+)
 
 # Export loaders
 # Export Indian English support (Issue 3.6.7)

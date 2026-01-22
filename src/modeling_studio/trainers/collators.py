@@ -54,6 +54,17 @@ from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 # Import decoder collator (Issue 14.2.2)
 from modeling_studio.trainers.decoder_collator import CounterfactualCollator
 
+# Import GlobalPointer collator for span-based NER (Epic 3.3.3)
+from modeling_studio.data.globalpointer_collator import (
+    GlobalPointerCollator,
+    create_ner_general_collator,
+    create_ner_family_collator,
+    create_temporal_collator,
+    NER_GENERAL_LABELS,
+    NER_FAMILY_LABELS,
+    TEMPORAL_LABELS,
+)
+
 logger = logging.getLogger(__name__)
 
 # Label value to ignore in loss computation (special tokens, padding)
@@ -78,6 +89,17 @@ __all__ = [
     "TASK_COLLATOR_MAPPING",
     # Decoder collator (Milestone 12)
     "CounterfactualCollator",
+    # GlobalPointer collator for span-based NER (Epic 3.3.3)
+    "GlobalPointerCollator",
+    "create_ner_general_collator",
+    "create_ner_family_collator",
+    "create_temporal_collator",
+    "NER_GENERAL_LABELS",
+    "NER_FAMILY_LABELS",
+    "TEMPORAL_LABELS",
+    # GlobalPointer collator routing (Epic 3.3.4)
+    "GLOBALPOINTER_COLLATOR_MAPPING",
+    "get_globalpointer_collator",
 ]
 
 
@@ -749,6 +771,7 @@ class RelationCollator(BaseCollator):
 
 
 # Task to collator type mapping based on problem_type from labels.py
+# For span-based NER (GlobalPointer), use GLOBALPOINTER_COLLATOR_MAPPING below
 TASK_COLLATOR_MAPPING: dict[str, type] = {
     # Single-label classification tasks
     "sentiment": SequenceClassificationCollator,
@@ -759,7 +782,7 @@ TASK_COLLATOR_MAPPING: dict[str, type] = {
     "emotions": MultiLabelCollator,
     "safety_generic": MultiLabelCollator,
     "relation": MultiLabelCollator,  # Sentence-level multi-label (not entity-level RE)
-    # Token classification tasks
+    # Token classification tasks (BIO format - default for backward compatibility)
     "ner_general": TokenClassificationCollator,
     "ner_family": TokenClassificationCollator,
     "temporal": TokenClassificationCollator,
@@ -768,6 +791,52 @@ TASK_COLLATOR_MAPPING: dict[str, type] = {
     # Embedding task
     "embedding": EmbeddingCollator,
 }
+
+
+# GlobalPointer collator factory functions for span-based NER (Epic 3.3.4)
+# Use these instead of TASK_COLLATOR_MAPPING when training with GlobalPointerNERHead
+GLOBALPOINTER_COLLATOR_MAPPING: dict[str, callable] = {
+    "ner_general": create_ner_general_collator,
+    "ner_family": create_ner_family_collator,
+    "temporal": create_temporal_collator,
+}
+
+
+def get_globalpointer_collator(
+    task: str,
+    tokenizer,
+    max_length: int = 512,
+) -> GlobalPointerCollator:
+    """
+    Factory function to get a GlobalPointer collator for span-based NER tasks.
+
+    Use this instead of get_task_collator when training with GlobalPointerNERHead
+    for span-based NER (v2 SOTA).
+
+    Args:
+        task: Task name (ner_general, ner_family, or temporal)
+        tokenizer: HuggingFace tokenizer with offset_mapping support
+        max_length: Maximum sequence length (default: 512)
+
+    Returns:
+        Configured GlobalPointerCollator for the task
+
+    Raises:
+        ValueError: If task is not a supported GlobalPointer task
+
+    Example:
+        >>> collator = get_globalpointer_collator("ner_general", tokenizer)
+        >>> batch = collator(samples)
+        >>> assert "span_labels" in batch  # (B, num_labels, L, L)
+    """
+    if task not in GLOBALPOINTER_COLLATOR_MAPPING:
+        raise ValueError(
+            f"Task '{task}' not supported for GlobalPointer. "
+            f"Supported tasks: {list(GLOBALPOINTER_COLLATOR_MAPPING.keys())}"
+        )
+
+    factory_fn = GLOBALPOINTER_COLLATOR_MAPPING[task]
+    return factory_fn(tokenizer=tokenizer, max_length=max_length)
 
 
 @dataclass

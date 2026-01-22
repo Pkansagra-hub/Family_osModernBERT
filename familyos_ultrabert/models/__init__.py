@@ -18,6 +18,14 @@ from familyos_ultrabert.models.heads import (
     SequenceClassificationHead,
     TemporalHead,
     TokenClassificationHead,
+    GlobalPointerNERHead,
+    create_globalpointer_head,
+)
+
+# Loss functions
+from familyos_ultrabert.models.losses import (
+    GlobalPointerLoss,
+    FocalGlobalPointerLoss,
 )
 
 # Decoder exports (v3)
@@ -51,4 +59,9 @@ __all__ = [
     "get_edge_config",
     "get_small_config",
     "get_quality_config",
+    # GlobalPointer (v2 heads)
+    "GlobalPointerNERHead",
+    "create_globalpointer_head",
+    "GlobalPointerLoss",
+    "FocalGlobalPointerLoss",
 ]

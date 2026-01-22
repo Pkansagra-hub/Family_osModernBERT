@@ -765,6 +765,7 @@ class Capability(str, Enum):
     SAFETY_FAMILYOS = "safety_familyos"
     RELATION = "relation"  # NEW: Family relationship extraction
     INTENT = "intent"  # NEW: User intent classification
+    COUNTERFACTUAL = "counterfactual"  # GPT-2 decoder for counterfactual generation
 
     def __str__(self) -> str:
         return self.value
@@ -790,6 +791,7 @@ CAPABILITY_TO_LABELS: dict[Capability, LabelSchema | None] = {
     Capability.SAFETY_FAMILYOS: SAFETY_FAMILYOS_LABELS,
     Capability.RELATION: RELATION_LABELS,  # NEW
     Capability.INTENT: INTENT_LABELS,  # NEW
+    Capability.COUNTERFACTUAL: None,  # GPT-2 decoder, no labels
 }
 
 

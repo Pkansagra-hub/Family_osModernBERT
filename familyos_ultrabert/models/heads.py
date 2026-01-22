@@ -1962,6 +1962,694 @@ class TemporalHead(TokenClassificationHead):
 
 
 # =============================================================================
+# Global Pointer NER Head (v2 - SOTA span-based NER)
+# =============================================================================
+
+
+class GlobalPointerNERHead(nn.Module):
+    """
+    Global Pointer head for span-based Named Entity Recognition.
+
+    Instead of BIO tagging, directly predicts span (start, end, label) tuples.
+    Uses RoPE-style relative position encoding to naturally enforce the
+    i <= j constraint (start before or equal to end).
+
+    Architecture:
+        hidden_states -> Q_proj -> RoPE rotation
+        hidden_states -> K_proj -> RoPE rotation
+        scores = Q @ K.T / sqrt(head_size) -> upper_triangular_mask
+        output: (B, num_labels, L, L) span scores
+
+    Key Advantages over BIO tagging:
+        - No invalid B-I transitions possible (eliminates garbage entities)
+        - Direct span output (no post-processing needed)
+        - Naturally handles nested entities
+        - SOTA performance (93%+ F1 on CoNLL-2003)
+
+    Args:
+        hidden_size: Encoder hidden dimension (768 for ModernBERT)
+        num_labels: Number of entity types (4 for ner_general, 10 for ner_family)
+        head_size: Dimension per label head (default: 64)
+        dropout: Dropout probability (default: 0.1)
+        use_rope: Whether to use Rotary Position Encoding (default: True)
+        rope_base: Base for RoPE frequency computation (default: 10000.0)
+
+    Reference:
+        "Global Pointer: Novel Efficient Span-based Approach for NER"
+        https://arxiv.org/abs/2208.03054
+
+    Example:
+        >>> head = GlobalPointerNERHead(768, num_labels=4)
+        >>> hidden = torch.randn(2, 128, 768)
+        >>> output = head(hidden)
+        >>> print(output["logits"].shape)  # [2, 4, 128, 128]
+    """
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        num_labels: int = 4,
+        head_size: int = 64,
+        dropout: float = 0.1,
+        use_rope: bool = True,
+        rope_base: float = 10000.0,
+        loss_type: str = "globalpointer",
+    ):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_labels = num_labels
+        self.head_size = head_size
+        self.use_rope = use_rope
+        self.loss_type = loss_type
+
+        # Per-label Q/K projections
+        # Output dim: num_labels * head_size * 2 (the *2 is for RoPE sin/cos split)
+        self.q_proj = nn.Linear(hidden_size, num_labels * head_size * 2)
+        self.k_proj = nn.Linear(hidden_size, num_labels * head_size * 2)
+
+        self.dropout = nn.Dropout(dropout)
+
+        # RoPE for relative position encoding
+        if use_rope:
+            self._init_rope(head_size, rope_base)
+        else:
+            self.register_buffer("cos_cached", None)
+            self.register_buffer("sin_cached", None)
+
+        # Loss function selection
+        if loss_type == "globalpointer":
+            from familyos_ultrabert.models.losses import GlobalPointerLoss
+            self.loss_fn = GlobalPointerLoss(reduction="mean")
+        elif loss_type == "focal_globalpointer":
+            from familyos_ultrabert.models.losses import FocalGlobalPointerLoss
+            self.loss_fn = FocalGlobalPointerLoss(gamma=2.0, reduction="mean")
+        else:
+            # BCE fallback
+            self.loss_fn = None
+
+        self._init_weights()
+
+    def _init_rope(self, dim: int, base: float = 10000.0, max_seq_len: int = 512) -> None:
+        """Initialize Rotary Position Embedding buffers."""
+        # Compute inverse frequencies
+        inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float() / dim))
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
+
+        # Precompute cos/sin for max_seq_len
+        t = torch.arange(max_seq_len, dtype=inv_freq.dtype)
+        freqs = torch.outer(t, inv_freq)
+        emb = torch.cat([freqs, freqs], dim=-1)
+
+        self.register_buffer("cos_cached", emb.cos(), persistent=False)
+        self.register_buffer("sin_cached", emb.sin(), persistent=False)
+
+    def _init_weights(self) -> None:
+        """Initialize projection weights."""
+        nn.init.xavier_uniform_(self.q_proj.weight)
+        nn.init.zeros_(self.q_proj.bias)
+        nn.init.xavier_uniform_(self.k_proj.weight)
+        nn.init.zeros_(self.k_proj.bias)
+
+    def _rotate_half(self, x: torch.Tensor) -> torch.Tensor:
+        """Rotate half the hidden dims for RoPE."""
+        x1 = x[..., : x.shape[-1] // 2]
+        x2 = x[..., x.shape[-1] // 2 :]
+        return torch.cat([-x2, x1], dim=-1)
+
+    def _apply_rope(
+        self,
+        q: torch.Tensor,
+        k: torch.Tensor,
+        seq_len: int,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Apply Rotary Position Embedding to Q and K.
+
+        Args:
+            q: Query tensor (B, num_labels, L, head_size)
+            k: Key tensor (B, num_labels, L, head_size)
+            seq_len: Sequence length
+
+        Returns:
+            Rotated (q, k) tensors
+        """
+        # Get cos/sin for this sequence length
+        cos = self.cos_cached[:seq_len].unsqueeze(0).unsqueeze(0)  # (1, 1, L, head_size)
+        sin = self.sin_cached[:seq_len].unsqueeze(0).unsqueeze(0)  # (1, 1, L, head_size)
+
+        # Move to correct device/dtype
+        cos = cos.to(q.dtype).to(q.device)
+        sin = sin.to(q.dtype).to(q.device)
+
+        # Apply rotation: q' = q * cos + rotate_half(q) * sin
+        q_embed = (q * cos) + (self._rotate_half(q) * sin)
+        k_embed = (k * cos) + (self._rotate_half(k) * sin)
+
+        return q_embed, k_embed
+
+    def _get_triu_mask(self, seq_len: int, device: torch.device) -> torch.Tensor:
+        """
+        Get upper-triangular mask for i <= j constraint.
+
+        The mask ensures only valid spans are considered:
+        - Diagonal (i == j): single-token entities
+        - Above diagonal (i < j): multi-token entities
+        - Below diagonal (i > j): invalid (masked out)
+
+        Returns:
+            Boolean mask (1, 1, L, L) where True = valid position
+        """
+        mask = torch.triu(torch.ones(seq_len, seq_len, device=device, dtype=torch.bool))
+        return mask.unsqueeze(0).unsqueeze(0)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        span_labels: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """
+        Forward pass computing span scores.
+
+        Args:
+            hidden_states: Encoder output (B, L, hidden_size)
+            attention_mask: Padding mask (B, L), 1 for valid, 0 for pad
+            span_labels: Target spans (B, num_labels, L, L), 1 for entity, 0 otherwise
+
+        Returns:
+            Dictionary with:
+                - "logits": Span scores (B, num_labels, L, L)
+                - "loss": Scalar loss (if span_labels provided)
+        """
+        batch_size, seq_len, _ = hidden_states.shape
+
+        # Project to Q and K with dropout
+        # Shape: (B, L, num_labels * head_size * 2)
+        q = self.q_proj(self.dropout(hidden_states))
+        k = self.k_proj(self.dropout(hidden_states))
+
+        # Reshape to per-label heads
+        # (B, L, num_labels * head_size * 2) -> (B, L, num_labels, head_size * 2)
+        q = q.view(batch_size, seq_len, self.num_labels, self.head_size * 2)
+        k = k.view(batch_size, seq_len, self.num_labels, self.head_size * 2)
+
+        # Transpose: (B, num_labels, L, head_size * 2)
+        q = q.permute(0, 2, 1, 3)
+        k = k.permute(0, 2, 1, 3)
+
+        # Split for RoPE: take first head_size dims for actual computation
+        # The *2 output allows us to have head_size after the split
+        q = q[..., :self.head_size]
+        k = k[..., :self.head_size]
+
+        # Apply RoPE if enabled
+        if self.use_rope and self.cos_cached is not None:
+            q, k = self._apply_rope(q, k, seq_len)
+
+        # Compute span scores via einsum
+        # q: (B, num_labels, L, head_size)
+        # k: (B, num_labels, L, head_size)
+        # scores: (B, num_labels, L, L) where [b, n, i, j] = score for span [i, j] of type n
+        scores = torch.einsum("bnlh,bnmh->bnlm", q, k)
+
+        # Scale by sqrt(head_size)
+        scores = scores / (self.head_size ** 0.5)
+
+        # Apply upper-triangular mask (i <= j constraint)
+        triu_mask = self._get_triu_mask(seq_len, scores.device)
+        scores = scores.masked_fill(~triu_mask, -1e12)
+
+        # Apply attention/padding mask if provided
+        if attention_mask is not None:
+            # Create 2D mask: valid only where both i and j are non-pad
+            # (B, L) -> (B, 1, L, 1) and (B, 1, 1, L)
+            mask_i = attention_mask.unsqueeze(1).unsqueeze(-1)  # (B, 1, L, 1)
+            mask_j = attention_mask.unsqueeze(1).unsqueeze(2)   # (B, 1, 1, L)
+            pad_mask = mask_i * mask_j  # (B, 1, L, L)
+            scores = scores.masked_fill(pad_mask == 0, -1e12)
+
+        output = {"logits": scores}
+
+        # Compute loss if labels provided
+        if span_labels is not None:
+            loss = self.compute_loss(scores, span_labels, attention_mask)
+            output["loss"] = loss
+
+        return output
+
+    def compute_loss(
+        self,
+        scores: torch.Tensor,
+        span_labels: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """
+        Compute loss for span prediction.
+
+        Uses GlobalPointerLoss (multi-label categorical cross-entropy) by default,
+        which is specifically designed for span-based NER and handles class
+        imbalance naturally. Falls back to BCE if loss_type="bce".
+
+        Args:
+            scores: Predicted span scores (B, num_labels, L, L)
+            span_labels: Target labels (B, num_labels, L, L)
+            attention_mask: Padding mask (B, L)
+
+        Returns:
+            Scalar loss tensor
+        """
+        # Use GlobalPointerLoss if available (default)
+        if self.loss_fn is not None:
+            return self.loss_fn(scores, span_labels, attention_mask)
+
+        # Fallback to BCE with logits (legacy behavior)
+        batch_size, num_labels, seq_len, _ = scores.shape
+
+        # Create valid position mask
+        # Upper triangular (valid spans)
+        triu_mask = self._get_triu_mask(seq_len, scores.device)
+
+        # Combine with padding mask if provided
+        if attention_mask is not None:
+            mask_i = attention_mask.unsqueeze(1).unsqueeze(-1)
+            mask_j = attention_mask.unsqueeze(1).unsqueeze(2)
+            pad_mask = (mask_i * mask_j).bool()  # (B, 1, L, L)
+            # Expand triu_mask to match and combine
+            valid_mask = triu_mask.expand(batch_size, 1, seq_len, seq_len) & pad_mask
+            valid_mask = valid_mask.expand(batch_size, num_labels, seq_len, seq_len)
+        else:
+            valid_mask = triu_mask.expand(batch_size, num_labels, seq_len, seq_len)
+
+        # Flatten for loss computation
+        # Move span_labels to same device as scores
+        span_labels = span_labels.to(scores.device)
+        scores_flat = scores[valid_mask]
+        labels_flat = span_labels[valid_mask].float()
+
+        # BCE with logits loss
+        if scores_flat.numel() == 0:
+            return torch.tensor(0.0, device=scores.device, requires_grad=True)
+
+        loss = F.binary_cross_entropy_with_logits(
+            scores_flat,
+            labels_flat,
+            reduction="mean",
+        )
+
+        return loss
+
+    def decode(
+        self,
+        scores: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        threshold: float = 0.0,
+        id2label: dict[int, str] | None = None,
+    ) -> list[list[dict]]:
+        """
+        Decode span scores to entity predictions.
+
+        Args:
+            scores: Span scores (B, num_labels, L, L)
+            attention_mask: Padding mask (B, L)
+            threshold: Score threshold for prediction (default: 0.0, i.e., prob > 0.5)
+            id2label: Mapping from label ID to name
+
+        Returns:
+            List of entities per batch item, each entity is:
+                {"start": int, "end": int, "label": str, "score": float}
+        """
+        batch_size, num_labels, seq_len, _ = scores.shape
+        batch_entities = []
+
+        for b in range(batch_size):
+            entities = []
+
+            for label_id in range(num_labels):
+                # Get scores for this label type
+                label_scores = scores[b, label_id]  # (L, L)
+
+                # Find positions above threshold
+                # Only consider upper triangle (valid spans)
+                for i in range(seq_len):
+                    for j in range(i, seq_len):  # j >= i
+                        # Check attention mask
+                        if attention_mask is not None:
+                            if attention_mask[b, i] == 0 or attention_mask[b, j] == 0:
+                                continue
+
+                        score = label_scores[i, j].item()
+                        if score > threshold:
+                            label_name = id2label[label_id] if id2label else str(label_id)
+                            entities.append({
+                                "start": i,
+                                "end": j,
+                                "label": label_name,
+                                "score": score,
+                            })
+
+            # Sort by score descending
+            entities.sort(key=lambda x: x["score"], reverse=True)
+            batch_entities.append(entities)
+
+        return batch_entities
+
+    def decode_batch_efficient(
+        self,
+        scores: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        threshold: float = 0.0,
+        id2label: dict[int, str] | None = None,
+    ) -> list[list[dict]]:
+        """
+        Efficient batch decoding using tensor operations.
+
+        Faster than decode() for large batches by using vectorized operations.
+
+        Args:
+            scores: Span scores (B, num_labels, L, L)
+            attention_mask: Padding mask (B, L)
+            threshold: Score threshold for prediction
+            id2label: Mapping from label ID to name
+
+        Returns:
+            List of entities per batch item
+        """
+        batch_size = scores.shape[0]
+
+        # Apply sigmoid and threshold
+        probs = torch.sigmoid(scores)
+
+        # Create upper-triangular mask
+        triu_mask = self._get_triu_mask(scores.shape[2], scores.device)
+
+        # Apply masks
+        if attention_mask is not None:
+            mask_i = attention_mask.unsqueeze(1).unsqueeze(-1)
+            mask_j = attention_mask.unsqueeze(1).unsqueeze(2)
+            valid_mask = triu_mask & (mask_i * mask_j).bool()
+        else:
+            valid_mask = triu_mask.expand_as(probs)
+
+        # Mask invalid positions
+        probs = probs.masked_fill(~valid_mask, 0.0)
+
+        batch_entities = []
+        for b in range(batch_size):
+            # Find all positions above threshold
+            indices = torch.where(probs[b] > (1 / (1 + torch.exp(torch.tensor(-threshold)))))
+
+            entities = []
+            for idx in range(len(indices[0])):
+                label_id = indices[0][idx].item()
+                start = indices[1][idx].item()
+                end = indices[2][idx].item()
+                score = scores[b, label_id, start, end].item()
+
+                label_name = id2label[label_id] if id2label else str(label_id)
+                entities.append({
+                    "start": start,
+                    "end": end,
+                    "label": label_name,
+                    "score": score,
+                })
+
+            entities.sort(key=lambda x: x["score"], reverse=True)
+            batch_entities.append(entities)
+
+        return batch_entities
+
+    def _spans_overlap(self, a: dict, b: dict) -> bool:
+        """
+        Check if two spans have any character/token overlap.
+
+        Assumes inclusive end (span covers tokens from start to end inclusive).
+        """
+        # For inclusive end: overlap if a.start <= b.end AND b.start <= a.end
+        return a["start"] <= b["end"] and b["start"] <= a["end"]
+
+    def _calculate_iou(self, a: dict, b: dict) -> float:
+        """Calculate Intersection over Union for two spans."""
+        intersection_start = max(a["start"], b["start"])
+        intersection_end = min(a["end"], b["end"])
+        intersection = max(0, intersection_end - intersection_start + 1)
+
+        len_a = a["end"] - a["start"] + 1
+        len_b = b["end"] - b["start"] + 1
+        union = len_a + len_b - intersection
+
+        return intersection / union if union > 0 else 0.0
+
+    def nms_spans(
+        self,
+        entities: list[dict],
+        iou_threshold: float = 0.0,
+        cross_type: bool = False,
+    ) -> list[dict]:
+        """
+        Non-maximum suppression for overlapping spans.
+
+        Uses greedy selection: iterates through entities sorted by score,
+        keeping each entity only if it doesn't overlap with already-kept ones.
+
+        Args:
+            entities: List of {"start", "end", "label", "score"}
+            iou_threshold: IoU threshold for suppression
+                - 0.0 = suppress any overlap (default)
+                - 0.5 = allow partial overlaps up to 50%
+                - 1.0 = only suppress exact matches
+            cross_type: If True, suppress across different label types.
+                If False, only suppress same-type overlaps.
+
+        Returns:
+            Filtered list with overlapping lower-score spans removed.
+
+        Example:
+            >>> entities = [
+            ...     {"start": 0, "end": 3, "label": "PER", "score": 0.9},
+            ...     {"start": 1, "end": 4, "label": "PER", "score": 0.7},
+            ... ]
+            >>> nms_spans(entities, iou_threshold=0.0)
+            [{"start": 0, "end": 3, "label": "PER", "score": 0.9}]
+        """
+        if not entities:
+            return []
+
+        # Sort by score descending
+        sorted_entities = sorted(entities, key=lambda x: x["score"], reverse=True)
+
+        kept = []
+        for entity in sorted_entities:
+            overlaps = False
+            for kept_entity in kept:
+                # Skip cross-type check if not enabled
+                if not cross_type and entity["label"] != kept_entity["label"]:
+                    continue
+
+                # Check overlap
+                if self._spans_overlap(entity, kept_entity):
+                    if iou_threshold > 0:
+                        iou = self._calculate_iou(entity, kept_entity)
+                        if iou >= iou_threshold:
+                            overlaps = True
+                            break
+                    else:
+                        overlaps = True
+                        break
+
+            if not overlaps:
+                kept.append(entity)
+
+        return kept
+
+    def _token_to_char_span(
+        self,
+        offset_mapping: list[tuple[int, int]],
+        tok_start: int,
+        tok_end: int,
+    ) -> tuple[int, int]:
+        """
+        Convert token span to character span.
+
+        Args:
+            offset_mapping: List of (char_start, char_end) per token
+            tok_start: Start token index (inclusive)
+            tok_end: End token index (inclusive)
+
+        Returns:
+            (char_start, char_end) tuple
+        """
+        char_start = offset_mapping[tok_start][0]
+        char_end = offset_mapping[tok_end][1]
+        return char_start, char_end
+
+    def decode_with_nms(
+        self,
+        scores: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        offset_mapping: list[list[tuple[int, int]]] | None = None,
+        threshold: float = 0.0,
+        id2label: dict[int, str] | None = None,
+        nms_threshold: float = 0.0,
+        cross_type_nms: bool = False,
+        return_probabilities: bool = True,
+        temperature: float = 1.0,
+    ) -> list[list[dict]]:
+        """
+        Full decoding pipeline: threshold -> NMS -> char mapping.
+
+        This is the recommended method for production inference.
+
+        Args:
+            scores: Span scores (B, num_labels, L, L)
+            attention_mask: Padding mask (B, L)
+            offset_mapping: Token-to-char mapping from tokenizer.
+                List of (B) lists, each containing (L) tuples of (char_start, char_end).
+                If provided, output includes char_start/char_end.
+            threshold: Score threshold for prediction (default: 0.0, i.e., prob > 0.5)
+            id2label: Mapping from label ID to name
+            nms_threshold: IoU threshold for NMS (0.0 = suppress any overlap)
+            cross_type_nms: If True, apply NMS across different label types
+            return_probabilities: If True, include calibrated confidence scores
+            temperature: Temperature for probability calibration (1.0 = no change)
+
+        Returns:
+            List of entities per batch item. Each entity contains:
+            - "start" or "token_start": Token start index
+            - "end" or "token_end": Token end index
+            - "char_start", "char_end": Character indices (if offset_mapping provided)
+            - "label": Entity type name
+            - "score": Raw logit score
+            - "confidence": Calibrated probability (if return_probabilities=True)
+
+        Example:
+            >>> scores = head(hidden_states)  # (B, num_labels, L, L)
+            >>> entities = head.decode_with_nms(
+            ...     scores,
+            ...     attention_mask=attention_mask,
+            ...     offset_mapping=encoding.offset_mapping,
+            ...     threshold=0.0,
+            ...     id2label={0: "PER", 1: "ORG", 2: "LOC", 3: "MISC"},
+            ...     nms_threshold=0.0,
+            ...     return_probabilities=True,
+            ... )
+            >>> # entities[0] = [{"char_start": 0, "char_end": 4, ...}, ...]
+        """
+        # 1. Basic threshold decode
+        batch_entities = self.decode_batch_efficient(
+            scores, attention_mask, threshold, id2label
+        )
+
+        # 2. Apply NMS per batch item
+        batch_entities = [
+            self.nms_spans(entities, nms_threshold, cross_type_nms)
+            for entities in batch_entities
+        ]
+
+        # 3. Add char spans and confidence
+        for b, entities in enumerate(batch_entities):
+            for entity in entities:
+                # Add confidence
+                if return_probabilities:
+                    calibrated_score = entity["score"] / temperature
+                    entity["confidence"] = float(
+                        torch.sigmoid(torch.tensor(calibrated_score)).item()
+                    )
+
+                # Add char spans
+                if offset_mapping is not None:
+                    try:
+                        char_start, char_end = self._token_to_char_span(
+                            offset_mapping[b], entity["start"], entity["end"]
+                        )
+                        entity["char_start"] = char_start
+                        entity["char_end"] = char_end
+                        entity["token_start"] = entity.pop("start")
+                        entity["token_end"] = entity.pop("end")
+                    except (IndexError, TypeError):
+                        # Token out of range in offset_mapping
+                        entity["token_start"] = entity.pop("start")
+                        entity["token_end"] = entity.pop("end")
+                        entity["char_start"] = None
+                        entity["char_end"] = None
+
+        return batch_entities
+
+    def freeze(self) -> None:
+        """Freeze all parameters in this head."""
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def unfreeze(self) -> None:
+        """Unfreeze all parameters in this head."""
+        for param in self.parameters():
+            param.requires_grad = True
+
+    def extra_repr(self) -> str:
+        return (
+            f"hidden_size={self.hidden_size}, "
+            f"num_labels={self.num_labels}, "
+            f"head_size={self.head_size}, "
+            f"use_rope={self.use_rope}"
+        )
+
+
+def create_globalpointer_head(
+    capability: str,
+    hidden_size: int = 768,
+    head_size: int = 64,
+    dropout: float = 0.1,
+    **kwargs,
+) -> GlobalPointerNERHead:
+    """
+    Factory function to create GlobalPointerNERHead for a capability.
+
+    Args:
+        capability: "ner_general", "ner_family", or "temporal"
+        hidden_size: Encoder hidden size (default: 768)
+        head_size: Per-label head dimension (default: 64)
+        dropout: Dropout probability (default: 0.1)
+        **kwargs: Additional arguments passed to GlobalPointerNERHead
+
+    Returns:
+        Configured GlobalPointerNERHead
+
+    Raises:
+        ValueError: If capability is unknown
+
+    Example:
+        >>> head = create_globalpointer_head("ner_general", hidden_size=768)
+        >>> print(head.num_labels)  # 4
+    """
+    # Import label configs from collator
+    from familyos_ultrabert.data.globalpointer_collator import (
+        NER_GENERAL_LABELS,
+        NER_FAMILY_LABELS,
+        TEMPORAL_LABELS,
+    )
+
+    label_configs = {
+        "ner_general": NER_GENERAL_LABELS,
+        "ner_family": NER_FAMILY_LABELS,
+        "temporal": TEMPORAL_LABELS,
+    }
+
+    labels = label_configs.get(capability)
+    if labels is None:
+        raise ValueError(
+            f"Unknown capability: {capability}. "
+            f"Supported: {list(label_configs.keys())}"
+        )
+
+    return GlobalPointerNERHead(
+        hidden_size=hidden_size,
+        num_labels=len(labels),
+        head_size=head_size,
+        dropout=dropout,
+        **kwargs,
+    )
+
+
+# =============================================================================
 # Hierarchical Emotion Head (v2 - Issue 3.6.6)
 # =============================================================================
 
@@ -2998,6 +3686,8 @@ __all__ = [
     "BaseHead",
     "SequenceClassificationHead",
     "TokenClassificationHead",
+    "GlobalPointerNERHead",  # NEW - v2 SOTA span-based NER
+    "create_globalpointer_head",  # Factory function
     "EmbeddingHead",
     "NLIHead",
     "SafetyHead",

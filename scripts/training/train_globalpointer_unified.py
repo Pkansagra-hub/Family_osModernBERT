@@ -64,32 +64,57 @@ if str(project_root) not in sys.path:
 
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
-from modeling_studio.data.globalpointer_collator import (
+# Use centralized collator exports from trainers.collators (Epic 3.3)
+from modeling_studio.trainers.collators import (
     GlobalPointerCollator,
+    get_globalpointer_collator,
+    GLOBALPOINTER_COLLATOR_MAPPING,
     NER_GENERAL_LABELS,
     NER_FAMILY_LABELS,
     TEMPORAL_LABELS,
 )
-from modeling_studio.models.heads import GlobalPointerNERHead
+
+# Use centralized model exports from modernbert_multitask (Epic 3.3.1-3.3.2)
 from modeling_studio.models.modernbert_multitask import (
     ModernBertMultiTaskModel,
     Capability,
+    GlobalPointerNERHead,
+    create_globalpointer_head,
 )
 
-# Configure logging with force flush for Colab compatibility
+# Configure logging
 logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    format="%(asctime)s | %(levelname)-8s | %(message)s",
+    datefmt="%H:%M:%S",
     level=logging.INFO,
-    force=True,  # Reset any existing handlers
+    force=True,
 )
 logger = logging.getLogger(__name__)
 
-# Force immediate output in Colab/notebooks
-import sys
-for handler in logging.root.handlers:
-    handler.stream = sys.stdout
-    handler.flush = lambda: sys.stdout.flush()
+# Suppress noisy loggers
+logging.getLogger("transformers").setLevel(logging.WARNING)
+logging.getLogger("tokenizers").setLevel(logging.WARNING)
+
+
+def log_section(title: str) -> None:
+    """Log a section header."""
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info(f"  {title}")
+    logger.info("=" * 60)
+
+
+def log_table(headers: list[str], rows: list[list], col_widths: list[int] | None = None) -> None:
+    """Log a formatted table."""
+    if col_widths is None:
+        col_widths = [max(len(str(row[i])) for row in [headers] + rows) + 2 for i in range(len(headers))]
+
+    header_line = "".join(str(h).ljust(w) for h, w in zip(headers, col_widths))
+    logger.info(header_line)
+    logger.info("-" * sum(col_widths))
+    for row in rows:
+        row_line = "".join(str(c).ljust(w) for c, w in zip(row, col_widths))
+        logger.info(row_line)
 
 
 # =============================================================================
@@ -164,12 +189,10 @@ class MultiHeadSpanDataset(Dataset):
                 if max_samples_per_head and len(head_samples) >= max_samples_per_head:
                     break
 
-            logger.info(f"Loaded {len(head_samples)} samples for {head_name}")
             self.samples.extend(head_samples)
 
         # Shuffle all samples together
         random.shuffle(self.samples)
-        logger.info(f"Total samples: {len(self.samples)}")
 
     def _extract_sample(self, raw: dict, head_name: str) -> dict | None:
         """Extract text and entities, tag with head_name.
@@ -394,7 +417,7 @@ def load_model_and_replace_heads(
         if k.startswith("encoder.")
     }
     model.encoder.load_state_dict(encoder_state, strict=True)
-    logger.info(f"Loaded encoder weights: {len(encoder_state)} tensors")
+    logger.info(f"  Loaded encoder: {len(encoder_state)} tensors")
 
     # Load head weights (keys start with "heads.")
     for head_name in model.heads.keys():
@@ -407,39 +430,33 @@ def load_model_and_replace_heads(
         if head_state:
             try:
                 model.heads[head_name].load_state_dict(head_state, strict=True)
-                logger.info(f"Loaded {head_name} head: {len(head_state)} tensors")
             except Exception as e:
                 logger.warning(f"Could not load {head_name} head: {e}")
 
     hidden_size = model.config.hidden_size
-    logger.info(f"Loaded model with hidden_size={hidden_size}")
+    logger.info(f"  Loaded {len(model.heads)} heads, hidden_size={hidden_size}")
 
-    # Log original heads
-    logger.info("Original heads:")
-    for name, head in model.heads.items():
-        param_count = sum(p.numel() for p in head.parameters())
-        logger.info(f"  {name}: {type(head).__name__} ({param_count:,} params)")
-
-    # Replace NER heads with GlobalPointer
+    # Replace NER heads with GlobalPointer using factory function (Epic 3.3)
+    logger.info(f"  Replacing heads: {', '.join(HEADS_TO_REPLACE)}")
     for head_name in HEADS_TO_REPLACE:
         if head_name not in model.heads:
             logger.warning(f"Head {head_name} not found in model, skipping")
             continue
 
-        labels = LABEL_CONFIGS[head_name]
-        new_head = GlobalPointerNERHead(
+        # Use factory function for consistent head creation
+        new_head = create_globalpointer_head(
+            capability=head_name,
             hidden_size=hidden_size,
-            num_labels=len(labels),
             head_size=head_size,
-            use_rope=True,
             dropout=dropout,
+            use_rope=True,
             loss_type="globalpointer",
         )
 
         # Replace in ModuleDict
         model.heads[head_name] = new_head
-
-        logger.info(f"Replaced {head_name} with GlobalPointerNERHead ({len(labels)} labels)")
+        num_labels = len(LABEL_CONFIGS[head_name])
+        logger.info(f"Replaced {head_name} with GlobalPointerNERHead ({num_labels} labels)")
 
     return model
 
@@ -464,17 +481,14 @@ def freeze_model_except_heads(
         for param in head.parameters():
             param.requires_grad = name in trainable_heads
 
-    # Log status
+    # Log summary
     encoder_params = sum(p.numel() for p in model.encoder.parameters())
-    encoder_trainable = sum(p.numel() for p in model.encoder.parameters() if p.requires_grad)
+    trainable_total = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    head_params = {h: sum(p.numel() for p in model.heads[h].parameters()) for h in trainable_heads}
 
-    logger.info(f"Encoder: {encoder_params:,} params, {encoder_trainable:,} trainable")
-
-    for name, head in model.heads.items():
-        total = sum(p.numel() for p in head.parameters())
-        trainable = sum(p.numel() for p in head.parameters() if p.requires_grad)
-        status = "TRAINABLE" if name in trainable_heads else "FROZEN"
-        logger.info(f"Head {name}: {total:,} params, {trainable:,} trainable [{status}]")
+    logger.info(f"  Encoder: {encoder_params:,} params (frozen)")
+    logger.info(f"  Trainable heads: {', '.join(f'{h}={head_params[h]:,}' for h in trainable_heads)}")
+    logger.info(f"  Total trainable: {trainable_total:,} params")
 
 
 def get_trainable_params(model: ModernBertMultiTaskModel) -> list[nn.Parameter]:
@@ -525,15 +539,12 @@ def get_data_paths(data_config: dict, data_root: Path) -> dict[str, list[Path]]:
                 if not dir_paths:
                     dir_paths = list(train_dir.glob("**/*.jsonl"))
                 head_paths.extend(dir_paths)
-                logger.info(f"  {head_name}: {len(dir_paths)} files from {train_dir}")
             elif train_dir.exists():
                 head_paths.append(train_dir)
-                logger.info(f"  {head_name}: 1 file from {train_dir}")
             else:
-                logger.warning(f"Train path not found for {head_name}: {train_dir}")
+                logger.warning(f"Path not found: {train_dir}")
 
         paths[head_name] = head_paths
-        logger.info(f"{head_name}: {len(head_paths)} total files")
 
     return paths
 
@@ -634,9 +645,10 @@ def evaluate(
     val_loader: DataLoader,
     device: torch.device,
     debug: bool = False,
+    threshold: float = 2.0,  # Logit threshold: 2.0 = prob > 0.88, reduces FP for untrained models
 ) -> dict[str, Any]:
     """
-    Evaluate model on validation set using decode_with_nms.
+    Evaluate model on validation set using decode_batch_efficient.
 
     Computes precision, recall, F1 per head and overall.
 
@@ -687,11 +699,11 @@ def evaluate(
             logits = output["logits"]
 
             # Decode predictions using FAST batch decode method
-            # MUST pass id2label so labels match gold format
+            # Use threshold to reduce false positives (0.5 = logit threshold for ~0.62 prob)
             preds = head.decode_batch_efficient(
                 logits,
                 attention_mask=attention_mask,
-                threshold=0.0,
+                threshold=threshold,
                 id2label=id2label,
             )
 
@@ -758,9 +770,7 @@ def evaluate(
         total_gold += head_gold
         total_correct += head_correct
 
-        print(f"  {head_name}: P={precision:.4f}, R={recall:.4f}, F1={f1:.4f} (pred={head_pred}, gold={head_gold}, correct={head_correct})", flush=True)
-        logger.info(f"  {head_name}: P={precision:.4f}, R={recall:.4f}, F1={f1:.4f} (pred={head_pred}, gold={head_gold}, correct={head_correct})")
-        sys.stdout.flush()  # Force flush for Colab
+        logger.info(f"  {head_name}: P={precision:.3f} R={recall:.3f} F1={f1:.3f} | pred={head_pred} gold={head_gold} correct={head_correct}")
 
     # Overall metrics
     overall_p = total_correct / total_pred if total_pred > 0 else 0.0
@@ -776,9 +786,7 @@ def evaluate(
         "correct": total_correct,
     }
 
-    print(f"  OVERALL: P={overall_p:.4f}, R={overall_r:.4f}, F1={overall_f1:.4f}", flush=True)
-    logger.info(f"  OVERALL: P={overall_p:.4f}, R={overall_r:.4f}, F1={overall_f1:.4f}")
-    sys.stdout.flush()  # Force flush for Colab
+    logger.info(f"  {'OVERALL':12} P={overall_p:.3f} R={overall_r:.3f} F1={overall_f1:.3f} | pred={total_pred} gold={total_gold} correct={total_correct}")
 
     return metrics
 
@@ -830,22 +838,13 @@ def train(
         "eval_metrics": [],
     }
 
-    logger.info("=" * 80)
-    logger.info("TRAINING START")
-    logger.info(f"  Epochs: {num_epochs}")
-    logger.info(f"  Train batches: {len(train_loader)}")
-    logger.info(f"  Val batches: {len(val_loader) if val_loader else 'None'}")
-    logger.info(f"  Save steps: {save_steps}")
-    logger.info(f"  Eval steps: {eval_steps}")
-    logger.info(f"  Gradient accumulation: {gradient_accumulation_steps}")
-    logger.info(f"  Max grad norm: {max_grad_norm}")
-    logger.info(f"  Debug mode: {debug}")
-    logger.info("=" * 80)
+    log_section("TRAINING")
+    logger.info(f"  Epochs: {num_epochs} | Batches: {len(train_loader)} | Grad accum: {gradient_accumulation_steps}")
+    logger.info(f"  Save: every {save_steps} steps | Eval: every {eval_steps} steps")
 
     for epoch in range(num_epochs):
-        logger.info(f"\n{'='*80}")
-        logger.info(f"EPOCH {epoch + 1}/{num_epochs}")
-        logger.info(f"{'='*80}")
+        logger.info("")
+        logger.info(f"--- Epoch {epoch + 1}/{num_epochs} ---")
 
         epoch_loss = 0.0
         epoch_head_losses = {h: 0.0 for h in HEADS_TO_REPLACE}
@@ -892,21 +891,17 @@ def train(
 
                 # Mid-epoch evaluation (INSIDE accumulation block)
                 if global_step > 0 and global_step % eval_steps == 0 and val_loader is not None:
-                    print(f"\n=== Evaluation at Global Step {global_step} (Epoch Batch {step+1}/{len(train_loader)}) ===", flush=True)
-                    logger.info(f"\n--- Evaluation at Global Step {global_step} (Epoch Batch {step+1}/{len(train_loader)}) ---")
-                    sys.stdout.flush()
+                    logger.info(f"")
+                    logger.info(f"--- Eval @ step {global_step} ---")
                     eval_metrics = evaluate(model, val_loader, device, debug=debug)
 
                     overall_f1 = eval_metrics["overall"]["f1"]
-                    print(f"Step {global_step} F1: {overall_f1:.4f}", flush=True)
-                    logger.info(f"Step {global_step} F1: {overall_f1:.4f}")
-                    sys.stdout.flush()
+                    logger.info(f"Overall F1: {overall_f1:.4f}")
 
                     # Save best model
                     if overall_f1 > best_f1:
                         best_f1 = overall_f1
-                        print(f"New best F1! Saving best checkpoint...", flush=True)
-                        logger.info(f"New best F1! Saving best checkpoint...")
+                        logger.info(f"New best F1={best_f1:.4f}! Saving...")
                         save_checkpoint(model, output_dir / "best", tokenizer, optimizer, scheduler)
 
                     # Back to train mode
@@ -935,31 +930,28 @@ def train(
             avg_h_loss = epoch_head_losses[h] / epoch_steps if epoch_steps > 0 else 0
             history["per_head_loss"][h].append(avg_h_loss)
 
-        logger.info(f"\nEpoch {epoch + 1} Training Complete:")
-        logger.info(f"  Avg loss: {avg_loss:.4f}")
-        for h in HEADS_TO_REPLACE:
-            logger.info(f"  {h} avg loss: {epoch_head_losses[h] / epoch_steps:.4f}")
+        # Build loss summary
+        head_losses_str = " | ".join(f"{h}={epoch_head_losses[h]/epoch_steps:.3f}" for h in HEADS_TO_REPLACE)
+        logger.info(f"Epoch {epoch + 1} loss: {avg_loss:.4f} ({head_losses_str})")
 
         # Evaluate after each epoch
         if val_loader is not None:
-            logger.info(f"\n--- Evaluation Epoch {epoch + 1} ---")
+            logger.info(f"--- Eval epoch {epoch + 1} ---")
             eval_metrics = evaluate(model, val_loader, device, debug=debug)
             history["eval_metrics"].append(eval_metrics)
 
             overall_f1 = eval_metrics["overall"]["f1"]
-            logger.info(f"Overall F1: {overall_f1:.4f}")
 
             # Save best model
             if overall_f1 > best_f1:
                 best_f1 = overall_f1
-                logger.info(f"New best F1! Saving best checkpoint...")
+                logger.info(f"New best F1={best_f1:.4f}! Saving...")
                 save_checkpoint(model, output_dir / "best", tokenizer, optimizer, scheduler)
 
     # Save final checkpoint
-    logger.info(f"\n{'='*80}")
-    logger.info("TRAINING COMPLETE")
-    logger.info(f"Best F1: {best_f1:.4f}")
-    logger.info(f"{'='*80}")
+    log_section("TRAINING COMPLETE")
+    logger.info(f"  Best F1: {best_f1:.4f}")
+    logger.info(f"  Output: {output_dir}")
     save_checkpoint(model, output_dir / "final", tokenizer, optimizer, scheduler)
 
     return history
@@ -975,6 +967,8 @@ def save_checkpoint(
     """
     Save full model checkpoint with all heads, tokenizer, and optionally optimizer/scheduler.
 
+    Saves heads individually with class type info so GlobalPointer heads can be restored.
+
     Args:
         model: The model
         checkpoint_dir: Output directory
@@ -982,10 +976,27 @@ def save_checkpoint(
         optimizer: Optimizer to save (optional)
         scheduler: Scheduler to save (optional)
     """
+    from safetensors.torch import save_file
+
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save model using HuggingFace save_pretrained
-    model.save_pretrained(checkpoint_dir)
+    # Build full state dict with proper prefixes
+    state_dict = {}
+
+    # Encoder weights
+    for name, param in model.encoder.state_dict().items():
+        state_dict[f"encoder.{name}"] = param
+
+    # Head weights
+    for head_name, head in model.heads.items():
+        for name, param in head.state_dict().items():
+            state_dict[f"heads.{head_name}.{name}"] = param
+
+    # Save weights
+    save_file(state_dict, checkpoint_dir / "model.safetensors")
+
+    # Save config
+    model.config.save_pretrained(checkpoint_dir)
 
     # Save tokenizer
     if tokenizer is not None:
@@ -997,16 +1008,26 @@ def save_checkpoint(
     if scheduler is not None:
         torch.save(scheduler.state_dict(), checkpoint_dir / "scheduler.pt")
 
-    # Save training metadata
+    # Save head architecture info for proper loading
+    head_info = {}
+    for head_name, head in model.heads.items():
+        head_info[head_name] = {
+            "class": type(head).__name__,
+            "num_labels": getattr(head, "num_labels", None),
+            "head_size": getattr(head, "head_size", None),
+        }
+
     metadata = {
         "timestamp": datetime.now().isoformat(),
         "replaced_heads": HEADS_TO_REPLACE,
         "head_architecture": "GlobalPointerNERHead",
+        "head_info": head_info,
+        "label_configs": {h: dict(LABEL_CONFIGS[h]) for h in HEADS_TO_REPLACE},
     }
     with open(checkpoint_dir / "globalpointer_metadata.json", "w") as f:
         json.dump(metadata, f, indent=2)
 
-    logger.info(f"Saved checkpoint to {checkpoint_dir}")
+    logger.info(f"Saved: {checkpoint_dir.name}")
 
 
 # =============================================================================
@@ -1083,25 +1104,18 @@ def main():
     if debug_mode:
         max_samples = max_samples or 500
         save_steps = 100
-        logger.info("=" * 80)
-        logger.info("DEBUG MODE ENABLED")
-        logger.info("  Max samples per head: {}".format(max_samples))
-        logger.info("  Num epochs: {}".format(num_epochs))
-        logger.info("  Save steps: {}".format(save_steps))
-        logger.info("=" * 80)
+        logger.info(f"DEBUG MODE: max_samples={max_samples}, epochs={num_epochs}")
 
     # Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Using device: {device}")
     if torch.cuda.is_available():
-        logger.info(f"  GPU: {torch.cuda.get_device_name(0)}")
-        logger.info(f"  CUDA version: {torch.version.cuda}")
-        logger.info(f"  Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+        gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1e9
+        logger.info(f"Device: {torch.cuda.get_device_name(0)} ({gpu_mem:.1f}GB)")
+    else:
+        logger.info(f"Device: CPU")
 
     # Load model and replace heads
-    logger.info("\n" + "=" * 80)
-    logger.info("LOADING MODEL AND REPLACING HEADS")
-    logger.info("=" * 80)
+    log_section("MODEL")
     model = load_model_and_replace_heads(
         checkpoint_path,
         head_size=head_size,
@@ -1119,24 +1133,21 @@ def main():
 
     # Get data paths
     data_paths = get_data_paths(data_config, data_root)
-    logger.info("\nData paths:")
-    for head_name, path in data_paths.items():
-        logger.info(f"  {head_name}: {path}")
+
+    log_section("DATA SOURCES")
+    for head_name, paths in data_paths.items():
+        logger.info(f"  {head_name}: {len(paths)} files")
 
     # Create full dataset
-    logger.info("\n" + "=" * 80)
-    logger.info("LOADING DATASETS")
-    logger.info("=" * 80)
     full_dataset = MultiHeadSpanDataset(
         data_paths=data_paths,
         max_samples_per_head=max_samples,
     )
-    logger.info(f"Total samples: {len(full_dataset)}")
 
     # Train/val split
     val_size = int(len(full_dataset) * val_split)
     train_size = len(full_dataset) - val_size
-    logger.info(f"Train/Val split: {train_size}/{val_size} ({1-val_split:.0%}/{val_split:.0%})")
+    logger.info(f"  Total: {len(full_dataset)} samples (train={train_size}, val={val_size})")
 
     train_dataset, val_dataset = torch.utils.data.random_split(
         full_dataset,
@@ -1152,10 +1163,8 @@ def main():
     )
 
     # Create dataloaders
-    # Use num_workers from config (0 for Windows, 4+ for Linux/Colab)
     import platform
     effective_workers = 0 if platform.system() == "Windows" else num_workers
-    logger.info(f"DataLoader workers: {effective_workers}")
 
     train_loader = DataLoader(
         train_dataset,
@@ -1175,13 +1184,10 @@ def main():
         pin_memory=True,
         persistent_workers=effective_workers > 0,
     )
-    logger.info(f"Train batches: {len(train_loader)}")
-    logger.info(f"Val batches: {len(val_loader)}")
 
     # Create optimizer (only trainable params)
     trainable_params = get_trainable_params(model)
     total_trainable = sum(p.numel() for p in trainable_params)
-    logger.info(f"\nTotal trainable parameters: {total_trainable:,}")
 
     optimizer = torch.optim.AdamW(
         trainable_params,
@@ -1192,15 +1198,20 @@ def main():
 
     # Create scheduler
     num_training_steps = len(train_loader) * num_epochs // gradient_accumulation_steps
+
+    # Use adaptive warmup: max(configured steps, 5% of total steps, 10)
+    # This ensures warmup isn't longer than training in debug mode
+    adaptive_warmup = max(10, int(num_training_steps * 0.05))
+    effective_warmup = min(warmup_steps, adaptive_warmup) if num_training_steps < warmup_steps else warmup_steps
+
     scheduler = get_linear_schedule_with_warmup(
         optimizer,
-        num_warmup_steps=warmup_steps,
+        num_warmup_steps=effective_warmup,
         num_training_steps=num_training_steps,
     )
 
-    logger.info(f"Training steps: {num_training_steps}")
-    logger.info(f"Warmup steps: {warmup_steps}")
-    logger.info(f"Num epochs: {num_epochs}")
+    logger.info(f"  Batches: train={len(train_loader)}, val={len(val_loader)}")
+    logger.info(f"  Steps: {num_training_steps} total, {effective_warmup} warmup")
 
     # Train
     history = train(
@@ -1223,11 +1234,6 @@ def main():
     # Save history
     with open(output_dir / "training_history.json", "w") as f:
         json.dump(history, f, indent=2)
-
-    logger.info(f"Training complete!")
-    logger.info(f"Output saved to {output_dir}")
-    logger.info(f"Final checkpoint: {output_dir}/final")
-    logger.info(f"Best checkpoint: {output_dir}/best")
 
 
 if __name__ == "__main__":
