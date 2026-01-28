@@ -65,18 +65,18 @@
 
 | # | Capability         | Type        | Output         | Head     |
 |---|-------------------|-------------|---------------|----------|
-| 1 | `ner_general`     | Token       | 9 BIO tags    | Encoder  |
-| 2 | `ner_family`      | Token       | 12 BIO tags   | Encoder  |
+| 1 | `ner_general`     | Span        | 4 entities    | Encoder  |
+| 2 | `ner_family`      | Span        | 10 entities   | Encoder  |
 | 3 | `sentiment`       | Sequence    | 5 classes     | Encoder  |
 | 4 | `emotions`        | Multi-label | 44 emotions   | Encoder  |
 | 5 | `safety_generic`  | Multi-label | 8 types       | Encoder  |
 | 6 | `safety_familyos` | Sequence    | 4 bands       | Encoder  |
 | 7 | `nli`             | Pair        | 3 classes     | Encoder  |
 | 8 | `embedding`       | Vector      | 768-dim       | Encoder  |
-| 9 | `temporal`        | Token       | 7 BIO tags    | Encoder  |
+| 9 | `temporal`        | Span        | 6 time types  | Encoder  |
 | 10| `relation`        | Pair        | 15 types      | Encoder  |
 | 11| `intent`          | Sequence    | 8 classes     | Encoder  |
-| 12| `ingress`         | Sequence    | 6 domains     | Encoder  |
+| 12| `ingress`         | Sequence    | 12 domains    | Encoder  |
 
 ---
 
@@ -406,7 +406,7 @@ Hub Token Routing:
 ║   concern]                                                                                  ║
 ║                                                                                             ║
 ║  ┌─────────────────────┐       ┌──────────────────────────────────────────────────────┐     ║
-║  │   🟢 [TASK] HUB     │       │   📊 TOKEN-LEVEL OUTPUTS (Full Sequence)            │     ║
+║  │   🟢 [TASK] HUB     │       │   📊 SPAN-BASED OUTPUTS (Full Sequence)             │     ║
 ║  │   Position 4        │       │   Positions 5-10 (all text tokens)                   │     ║
 ║  │   (768-dim)         │       │                                                      │     ║
 ║  └──────────┬──────────┘       └──────────────────────┬───────────────────────────────┘     ║
@@ -417,17 +417,17 @@ Hub Token Routing:
 ║  ┌────────┐    ┌─────────┐            ┌──────────┐      ┌──────────┐                        ║
 ║  │ Intent │    │ Ingress │            │   NER    │      │   NER    │                        ║
 ║  │  Head  │    │  Head   │            │ General  │      │  Family  │                        ║
-║  │(8 cls) │    │(6 cls)  │            │ (9 BIO)  │      │ (12 BIO) │                        ║
+║  │(8 cls) │    │(12 cls) │            │ (4 ents) │      │ (10 ents)│                        ║
 ║  └────────┘    └─────────┘            └──────────┘      └──────────┘                        ║
 ║     │               │                       │                  │                            ║
 ║     ▼               ▼                       ▼                  ▼                            ║
-║  log_memory     DIARY              [O, B-PER, O, O, B-EMO, O]                               ║
-║                                    [O, B-KINSHIP, O, O, B-EMOTION, O]                       ║
+║  log_memory     DIARY              [("Mom", "PER")]                                           ║
+║                                    [("Mom", "KINSHIP")]                                       ║
 ║                                                                                             ║
 ║  ┌──────────────────────────────────────────────────────────────────────────────────┐       ║
-║  │   🔧 Temporal Head (Token-level, separate pathway)                               │      ║
+║  │   🔧 Temporal Head (Span-based, GlobalPointer)                                   │      ║
 ║  │   Input: Full sequence positions 5-10                                            │       ║
-║  │   Output: [O, O, O, O, B-TIME, O]  (7 BIO tags)                                  │       ║
+║  │   Output: [("today", "TIME")]  (6 time types)                                    │       ║
 ║  └──────────────────────────────────────────────────────────────────────────────────┘       ║
 ╚═════════════════════════════════════════════════════════════════════════════════════════════╝
                                             │
@@ -443,10 +443,10 @@ Hub Token Routing:
 ┃    "nli": "entailment",                                 # [REL] hub → 3-class head      ┃
 ┃    "relation": "parent_of",                             # [REL] hub → 15-class head     ┃
 ┃    "intent": "log_memory",                              # [TASK] hub → 8-class head     ┃
-┃    "ingress": "DIARY",                                  # [TASK] hub → 6-class head     ┃
-┃    "ner_general": [("Mom", "PER"), ("today", "TIME")], # Token-level → BIO tags         ┃
-┃    "ner_family": [("Mom", "KINSHIP")],                 # Token-level → BIO tags         ┃
-┃    "temporal": [("today", "TIME")],                    # Token-level → BIO tags         ┃
+┃    "ingress": "DIARY",                                  # [TASK] hub → 12-class head    ┃
+┃    "ner_general": [("Mom", "PER"), ("today", "TIME")], # Span-based → GlobalPointer         ┃
+┃    "ner_family": [("Mom", "KINSHIP")],                 # Span-based → GlobalPointer         ┃
+┃    "temporal": [("today", "TIME")],                    # Span-based → GlobalPointer         ┃
 ┃  }                                                                                      ┃
 ┃                                                                                         ┃
 ┃  ⚡ Performance: <35ms on NPU (256 tokens) | ~180M parameters | Zero routing overhead  ┃
@@ -467,7 +467,7 @@ inference = UnifiedInference(model)
 result = inference.predict(
     text="Mom took Panda to the park, feeling so happy today!",
     tasks=[
-        "ner_family",        # → Token-level (full sequence)
+        "ner_family",        # → Span-based (full sequence)
         "emotions",          # → [EMO] hub token
         "sentiment",         # → [EMO] hub token
         "safety_familyos",   # → [EMO] hub token
@@ -492,7 +492,7 @@ print(result.embedding.shape) # (768,)
 | `[MEM]` | 2 | embedding | Memory & retrieval representations |
 | `[REL]` | 3 | nli, relation | Relationships & logical reasoning |
 | `[TASK]` | 4 | intent, ingress | User actions & domain classification |
-| Token-level | N/A | ner_*, temporal | Per-token sequence labeling |
+| Span-based | N/A | ner_*, temporal | Per-span entity extraction |
 
 ---
 
@@ -711,18 +711,18 @@ The model is trained to understand **Indian English patterns** and avoid false p
 
 | Capability | Hub | Type | Labels | Description |
 |------------|-----|------|--------|-------------|
-| `ner_general` | - | Token | 9 BIO | Standard entities: PER, ORG, LOC, etc. |
-| `ner_family` | - | Token | 12 BIO | Family entities: KINSHIP, NICKNAME, PET, etc. |
-| `sentiment` | [EMO] | Sequence | 5 | very_negative → very_positive scale |
-| `emotions` | [EMO] | Multi-label | 44 | FamilyOS emotions + family-specific feelings |
+| `ner_general` | - | Span | PER, ORG, LOC, MISC | Standard entities (GlobalPointer) |
+| `ner_family` | - | Span | PERSON, KINSHIP, NICKNAME, PET, HOME_LOC, FAMILY_EVENT, ROUTINE, TRADITION, MILESTONE, HEIRLOOM | Family entities (GlobalPointer) |
+| `sentiment` | [EMO] | Sequence | very_negative, negative, neutral, positive, very_positive | 5-point sentiment scale |
+| `emotions` | [EMO] | Multi-label | neutral, joy, sadness, anger, fear, surprise, love, disgust, admiration, amusement, approval, caring, excitement, gratitude, optimism, pride, relief, contentment, hope, tenderness, annoyance, disappointment, disapproval, embarrassment, grief, nervousness, remorse, frustration, overwhelmed, emptiness, nostalgia, protectiveness, togetherness, longing, warmth, playfulness, celebration, belonging, parental_pride, parental_guilt, patience, worry, bittersweet, homesickness | 44 FamilyOS emotions |
 | `safety_generic` | [EMO] | Multi-label | Standard | Jigsaw toxicity types |
-| `safety_familyos` | [EMO] | Hierarchical | 4 bands | GREEN → AMBER → RED → CRISIS |
-| `nli` | [REL] | Pair | 3 | Entailment, neutral, contradiction |
-| `embedding` | [MEM] | Vector | 768-dim | Dense representations for retrieval |
-| `temporal` | - | Token | 7 BIO | Time expressions: DATE, TIME, DURATION |
-| `relation` | [REL] | Pair | 15 | Family relationships: parent_of, sibling_of |
-| `intent` | [TASK] | Sequence | 8 | User intents: log_memory, query, remind |
-| `ingress` | [TASK] | Sequence | 6 | Domains: DIARY, TASK, HEALTH, MEMORY |
+| `safety_familyos` | [EMO] | Hierarchical | GREEN, AMBER, RED, CRISIS | 4-band safety hierarchy |
+| `nli` | [REL] | Pair | entailment, neutral, contradiction | Natural language inference |
+| `embedding` | [MEM] | Vector | 768-dim | Dense vector representations |
+| `temporal` | - | Span | DATE_ABS, DATE_REL, TIME, DURATION, FREQUENCY, AGE | Time expressions (GlobalPointer) |
+| `relation` | [REL] | Pair | no_relation, parent_of, child_of, spouse_of, sibling_of, grandparent_of, grandchild_of, aunt_uncle_of, niece_nephew_of, cousin_of, pet_of, friend_of, colleague_of, lives_at, owns | 15 relationship types |
+| `intent` | [TASK] | Sequence | log_memory, query_memory, set_reminder, express_feeling, seek_advice, share_news, reflect, other | 8 user intents |
+| `ingress` | [TASK] | Sequence | DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META, MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE | 12 domain categories |
 
 ### FamilyOS Emotion Schema (44 Classes)
 
