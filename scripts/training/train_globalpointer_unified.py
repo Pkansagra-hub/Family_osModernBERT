@@ -1226,7 +1226,7 @@ def evaluate(
     val_loader: DataLoader,
     device: torch.device,
     debug: bool = False,
-    ner_threshold: float = 0.5,  # Higher threshold for NER to reduce FP during eval
+    ner_threshold: float = 0.0,  # Logit threshold for NER (0.0 = prob 0.5, balanced)
     cls_threshold: float = 0.3,  # Lower threshold for classification (random embeds need time)
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.bfloat16,
@@ -1626,12 +1626,14 @@ def train(
                             logger.info(f"  {h} temperature: {temp:.4f}")
 
                     # Fast eval during training (sample 100 batches max)
+                    # Use ner_threshold=0.0 (prob=0.5) for better recall during training
                     eval_metrics = evaluate(
                         model, val_loader, device,
                         debug=debug,
                         use_amp=use_amp,
                         amp_dtype=amp_dtype,
                         max_batches=100,  # Speed: sample 100 batches (~19K samples)
+                        ner_threshold=0.0,  # prob threshold = 0.5 (balanced)
                     )
 
                     overall_f1 = eval_metrics["overall"]["f1"]
@@ -1704,12 +1706,14 @@ def train(
         # Evaluate after each epoch
         if val_loader is not None:
             logger.info(f"--- Eval epoch {epoch + 1} ---")
+            # Use ner_threshold=0.0 (prob=0.5) for balanced precision/recall
             eval_metrics = evaluate(
                 model, val_loader, device,
                 debug=debug,
                 use_amp=use_amp,
                 amp_dtype=amp_dtype,
                 max_batches=None,  # Full eval at epoch end
+                ner_threshold=0.0,  # prob threshold = 0.5 (balanced)
             )
             history["eval_metrics"].append(eval_metrics)
 
