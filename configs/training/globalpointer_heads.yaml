@@ -141,7 +141,7 @@ training:
 
   # Batch size - optimized for A100 40GB
   # Frozen encoder + 3.9M trainable head params = large batch possible
-  batch_size: 192
+  batch_size: 256
   gradient_accumulation_steps: 2  # Effective batch = 128
 
   # Evaluation & saving
