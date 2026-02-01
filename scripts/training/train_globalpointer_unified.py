@@ -1208,6 +1208,9 @@ def evaluate(
     device: torch.device,
     debug: bool = False,
     threshold: float = 0.0,  # Logit threshold: 0.0 = prob > 0.5 (standard)
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    max_batches: int | None = None,  # Limit eval batches for speed (None = all)
 ) -> dict[str, Any]:
     """
     Evaluate model on validation set using decode_batch_efficient.
@@ -1219,28 +1222,38 @@ def evaluate(
         val_loader: Validation dataloader
         device: Device
         debug: Enable verbose debug logging
+        threshold: Logit threshold for span extraction
+        use_amp: Use automatic mixed precision
+        amp_dtype: AMP dtype (bfloat16 or float16)
+        max_batches: Max batches to evaluate (None = all, use for faster eval)
 
     Returns:
         Dict with metrics per head and overall
     """
     model.eval()
+    amp_context = autocast("cuda", dtype=amp_dtype, enabled=use_amp) if device.type == "cuda" else autocast("cpu", enabled=False)
 
     # Collect predictions and gold for each head
     all_preds = {h: [] for h in HEADS_TO_REPLACE}
     all_golds = {h: [] for h in HEADS_TO_REPLACE}
 
     for batch_idx, batch in enumerate(val_loader):
+        # Early exit if max_batches reached
+        if max_batches is not None and batch_idx >= max_batches:
+            break
+
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         head_names = batch["head_names"]
         span_labels = {k: v.to(device) for k, v in batch.get("span_labels", {}).items()}
         classification_labels = {k: v.to(device) for k, v in batch.get("classification_labels", {}).items()}
 
-        # Get encoder hidden states
-        encoder_output = model.encoder(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-        )
+        # Get encoder hidden states with AMP
+        with amp_context:
+            encoder_output = model.encoder(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+            )
         if hasattr(encoder_output, "last_hidden_state"):
             hidden_states = encoder_output.last_hidden_state
         elif isinstance(encoder_output, tuple):
@@ -1262,12 +1275,13 @@ def evaluate(
                     continue
                 id2label = {v: k for k, v in LABEL_CONFIGS[head_name].items()}
 
-                # Forward
-                output = head(
-                    hidden_states=hidden_states,
-                    attention_mask=attention_mask,
-                )
-                logits = output["logits"]
+                # Forward with AMP
+                with amp_context:
+                    output = head(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                    )
+                    logits = output["logits"]
 
                 # Decode predictions using FAST batch decode method
                 preds = head.decode_batch_efficient(
@@ -1303,12 +1317,13 @@ def evaluate(
                     continue
                 id2label = {v: k for k, v in CLASSIFICATION_LABEL_CONFIGS[head_name].items()}
 
-                # Forward
-                output = head(
-                    hidden_states=hidden_states,
-                    attention_mask=attention_mask,
-                )
-                probs = output["probabilities"]  # (B, num_labels)
+                # Forward with AMP
+                with amp_context:
+                    output = head(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                    )
+                    probs = output["probabilities"]  # (B, num_labels)
 
                 # Multi-label threshold (0.5 for sigmoid)
                 batch_size = probs.shape[0]
@@ -1589,7 +1604,14 @@ def train(
                             temp = model.heads[h].temperature.item()
                             logger.info(f"  {h} temperature: {temp:.4f}")
 
-                    eval_metrics = evaluate(model, val_loader, device, debug=debug)
+                    # Fast eval during training (sample 100 batches max)
+                    eval_metrics = evaluate(
+                        model, val_loader, device,
+                        debug=debug,
+                        use_amp=use_amp,
+                        amp_dtype=amp_dtype,
+                        max_batches=100,  # Speed: sample 100 batches (~19K samples)
+                    )
 
                     overall_f1 = eval_metrics["overall"]["f1"]
                     logger.info(f"Overall F1: {overall_f1:.4f}")
@@ -1661,7 +1683,13 @@ def train(
         # Evaluate after each epoch
         if val_loader is not None:
             logger.info(f"--- Eval epoch {epoch + 1} ---")
-            eval_metrics = evaluate(model, val_loader, device, debug=debug)
+            eval_metrics = evaluate(
+                model, val_loader, device,
+                debug=debug,
+                use_amp=use_amp,
+                amp_dtype=amp_dtype,
+                max_batches=None,  # Full eval at epoch end
+            )
             history["eval_metrics"].append(eval_metrics)
 
             overall_f1 = eval_metrics["overall"]["f1"]

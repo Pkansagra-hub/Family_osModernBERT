@@ -148,6 +148,7 @@ training:
   eval_steps: 500             # Eval every 500 steps
   save_steps: 500             # Save every 500 steps
   save_total_limit: 5
+  max_eval_batches: 100       # Limit eval batches for speed (null = full eval)
 
   # Logging
   logging_steps: 100
