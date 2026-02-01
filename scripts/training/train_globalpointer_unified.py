@@ -249,7 +249,7 @@ class MultiHeadClassificationDataset(Dataset):
     """
     Dataset that loads classification data for Intent/Ingress V2 heads.
     Supports multi-label format (list of labels) or single-label (string).
-    
+
     Data format:
         {"text": "...", "intent": "label" or ["label1", "label2"], ...}
         {"text": "...", "ingress": "label" or ["label1", "label2"], ...}
@@ -307,9 +307,9 @@ class MultiHeadClassificationDataset(Dataset):
         random.shuffle(self.samples)
 
     def _extract_sample(
-        self, 
-        raw: dict, 
-        head_name: str, 
+        self,
+        raw: dict,
+        head_name: str,
         field_name: str,
         label_to_id: dict[str, int],
     ) -> dict | None:
@@ -519,7 +519,7 @@ class MultiHeadClassificationCollator:
         for b, feature in enumerate(features):
             head_name = feature["head_name"]
             label_ids = feature.get("labels", [])
-            
+
             for label_id in label_ids:
                 classification_labels[head_name][b, label_id] = 1.0
 
@@ -912,7 +912,7 @@ def train_step(
     input_ids = batch["input_ids"].to(device)
     attention_mask = batch["attention_mask"].to(device)
     head_names = batch["head_names"]
-    
+
     # Handle both label types
     span_labels = {k: v.to(device) for k, v in batch.get("span_labels", {}).items()}
     classification_labels = {k: v.to(device) for k, v in batch.get("classification_labels", {}).items()}
@@ -1550,7 +1550,7 @@ def main():
     # Determine which head types we're training
     span_heads_active = [h for h in HEADS_TO_REPLACE if h in SPAN_HEADS]
     classification_heads_active = [h for h in HEADS_TO_REPLACE if h in CLASSIFICATION_HEADS]
-    
+
     log_section("HEAD CONFIGURATION")
     logger.info(f"  Span heads: {span_heads_active or 'none'}")
     logger.info(f"  Classification heads: {classification_heads_active or 'none'}")
@@ -1564,7 +1564,7 @@ def main():
 
     # Create datasets based on head types
     datasets = []
-    
+
     # Span-based (NER) dataset
     if span_heads_active:
         span_paths = {h: data_paths[h] for h in span_heads_active if h in data_paths}
@@ -1575,7 +1575,7 @@ def main():
             )
             datasets.append(span_dataset)
             logger.info(f"  Span dataset: {len(span_dataset)} samples")
-    
+
     # Classification (Intent/Ingress V2) dataset
     if classification_heads_active:
         classification_paths = {h: data_paths[h] for h in classification_heads_active if h in data_paths}
@@ -1610,7 +1610,7 @@ def main():
     # Create unified collator that handles both head types
     span_label_configs = {h: LABEL_CONFIGS[h] for h in span_heads_active} if span_heads_active else {}
     classification_label_configs = {h: CLASSIFICATION_LABEL_CONFIGS[h] for h in classification_heads_active} if classification_heads_active else {}
-    
+
     collator = UnifiedMultiHeadCollator(
         tokenizer=tokenizer,
         span_label_configs=span_label_configs,

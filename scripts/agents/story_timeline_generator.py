@@ -395,11 +395,11 @@ class StoryTimelineGenerator:
         morning_cues = ("woke up", "breakfast", "morning routine", "7:00 am", "7 am", "nasal rinse", "showered and dressed")
         # Night cues - things only done at night (avoid "sleep" as it appears in "sleep quality")
         night_cues = ("before bed", "lights off", "set my alarm", "going to sleep", "got ready for bed", "turned off the lights", "heading to bed")
-        
+
         # Check morning cues first (higher priority)
         has_morning_cue = any(cue in text_lower for cue in morning_cues)
         has_night_cue = any(cue in text_lower for cue in night_cues)
-        
+
         # Only override if unambiguous
         if has_morning_cue and not has_night_cue and slot not in ("Morning Routine", "Morning Work"):
             self._logger.debug(f"Slot override: '{slot}' -> 'Morning Routine'")
