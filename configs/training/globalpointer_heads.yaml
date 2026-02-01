@@ -1,14 +1,19 @@
 # =============================================================================
 # GlobalPointer Head Training Configuration
 # =============================================================================
-# Train span-based NER heads (GlobalPointer) with frozen encoder.
-# The encoder from checkpoint-18000 is proven excellent - we only train heads.
+# Train span-based NER heads (GlobalPointer) and classification heads (V2)
+# with frozen encoder. The encoder from checkpoint is proven excellent.
 #
 # Usage:
-#   python scripts/training/train_globalpointer_heads.py \
+#   # Train only NER heads (backward compatible)
+#   python scripts/training/train_globalpointer_unified.py \
 #       --config configs/training/globalpointer_heads.yaml
 #
-# Output: outputs/globalpointer-heads-v1/
+#   # Train NER + Intent/Ingress V2 heads
+#   python scripts/training/train_globalpointer_unified.py \
+#       --config configs/training/globalpointer_heads.yaml
+#
+# Output: outputs/globalpointer-unified-v1/
 
 # =============================================================================
 # Encoder Configuration (FROZEN)
@@ -30,13 +35,17 @@ encoder:
 # Head Configuration
 # =============================================================================
 heads:
-  # Which heads to train (ner_general, ner_family, temporal)
+  # Which heads to train
+  # Span heads: ner_general, ner_family, temporal
+  # Classification heads: intent_v2, ingress_v2
   enabled:
     - ner_general
     - ner_family
     - temporal
+    - intent_v2
+    - ingress_v2
 
-  # GlobalPointer architecture settings
+  # GlobalPointer architecture settings (for span heads)
   architecture:
     head_size: 64       # Per-label head dimension
     use_rope: true      # Rotary Position Encoding
@@ -44,8 +53,7 @@ heads:
     loss_type: globalpointer  # "globalpointer" (SOTA) or "bce"
 
   # Per-head label configurations
-  # These are auto-loaded from globalpointer_collator.py
-  # but can be overridden here if needed
+  # NER heads - labels auto-loaded from globalpointer_collator.py
   ner_general:
     # Labels: PER, ORG, LOC, MISC (4 labels)
     enabled: true
@@ -58,6 +66,19 @@ heads:
   temporal:
     # Labels: DATE_ABS, DATE_REL, TIME, DURATION, RECURRING (5 labels)
     enabled: true
+
+  # Classification V2 heads - multi-label enabled
+  intent_v2:
+    # Labels: log_memory, query_memory, set_reminder, express_feeling,
+    #         seek_advice, share_news, reflect, other (8 labels)
+    enabled: true
+    multi_label: true
+
+  ingress_v2:
+    # Labels: DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK,
+    #         META, MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE (12 labels)
+    enabled: true
+    multi_label: true
 
 # =============================================================================
 # Training Configuration
@@ -135,6 +156,18 @@ data:
     # 2. Converted BIO gold/silver data (temporal_span)
     train: familyos/unified/output_healed_merged,familyos/temporal_span
     validation: ""
+
+  # Intent V2 - classification data (multi-label)
+  intent_v2:
+    # Consolidated from gold, silver, and unified sources
+    train: processed/intent_unified/train
+    validation: processed/intent_unified/val
+
+  # Ingress V2 - classification data (multi-label)
+  ingress_v2:
+    # Consolidated from gold, silver, and unified sources
+    train: processed/ingress_unified/train
+    validation: processed/ingress_unified/val
 
 # =============================================================================
 # Output Configuration

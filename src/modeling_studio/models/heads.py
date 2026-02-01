@@ -3678,6 +3678,496 @@ class HierarchicalEmotionHead(nn.Module):
 
 
 # =============================================================================
+# Label-Description Head (SOTA - Future-Proof Classification)
+# =============================================================================
+
+
+class LabelDescriptionHead(nn.Module):
+    """
+    SOTA classification head using learnable label embeddings.
+
+    This architecture is future-proof: adding new labels only requires adding
+    new embeddings without changing the model architecture. Supports both
+    single-label (softmax) and multi-label (sigmoid) classification.
+
+    Architecture:
+        [CLS] (768-dim)
+             |
+        Query Projection (768 -> projection_dim)
+             |
+        L2 Normalize
+             |
+        Cosine Similarity with Label Embeddings
+             |
+        Temperature Scaling
+             |
+        Softmax (single-label) or Sigmoid (multi-label)
+
+    Features:
+        - Learnable label embeddings (can be initialized from text descriptions)
+        - Learnable temperature for calibration
+        - Support for zero-shot by initializing embeddings from descriptions
+        - Multi-label support with independent sigmoid per label
+
+    Args:
+        hidden_size: Size of encoder hidden states (768 for ModernBERT)
+        num_labels: Number of output labels
+        projection_dim: Dimension of query/label embeddings (default: 768)
+        temperature: Initial temperature for scaling (default: 0.07)
+        multi_label: If True, use sigmoid for independent label predictions
+        dropout: Dropout probability
+        label_names: Optional list of label names for interpretability
+    """
+
+    # Label schemas for reference
+    INTENT_LABELS = [
+        "log_memory",
+        "query_memory",
+        "set_reminder",
+        "express_feeling",
+        "seek_advice",
+        "share_news",
+        "reflect",
+        "other",
+    ]
+
+    INGRESS_LABELS = [
+        "DIARY",
+        "TASK",
+        "HEALTH",
+        "FINANCE",
+        "RELATIONSHIP",
+        "WORK",
+        "META",
+        "MEMORY",
+        "PLANNING",
+        "CELEBRATION",
+        "CONCERN",
+        "GRATITUDE",
+    ]
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        num_labels: int = 8,
+        projection_dim: int = 768,
+        temperature: float = 0.07,
+        multi_label: bool = False,
+        dropout: float = 0.1,
+        label_names: list[str] | None = None,
+    ):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_labels = num_labels
+        self.projection_dim = projection_dim
+        self.multi_label = multi_label
+        self.label_names = label_names or [f"label_{i}" for i in range(num_labels)]
+
+        # Query projection: [CLS] -> projection space
+        self.query_proj = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size, projection_dim),
+            nn.LayerNorm(projection_dim),
+        )
+
+        # Learnable label embeddings
+        # Initialize with small random values (will be learned or initialized from descriptions)
+        self.label_embeddings = nn.Parameter(
+            torch.randn(num_labels, projection_dim) * 0.02
+        )
+
+        # Learnable temperature (clamped to prevent instability)
+        self.log_temperature = nn.Parameter(torch.tensor(temperature).log())
+
+        # For compatibility with BaseHead interface
+        self.dropout = nn.Dropout(dropout)
+
+    @property
+    def temperature(self) -> torch.Tensor:
+        """Get temperature (exponentiated for numerical stability)."""
+        return self.log_temperature.exp().clamp(min=0.01, max=100.0)
+
+    def freeze(self) -> None:
+        """Freeze all parameters."""
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def unfreeze(self) -> None:
+        """Unfreeze all parameters."""
+        for param in self.parameters():
+            param.requires_grad = True
+
+    def freeze_label_embeddings(self) -> None:
+        """Freeze only label embeddings (useful for zero-shot)."""
+        self.label_embeddings.requires_grad = False
+
+    def unfreeze_label_embeddings(self) -> None:
+        """Unfreeze label embeddings."""
+        self.label_embeddings.requires_grad = True
+
+    def init_label_embeddings_from_encoder(
+        self,
+        encoder: nn.Module,
+        tokenizer,
+        label_descriptions: list[str] | None = None,
+    ) -> None:
+        """
+        Initialize label embeddings from text descriptions using the encoder.
+
+        This enables zero-shot classification by encoding label descriptions
+        into the same embedding space as the query.
+
+        Args:
+            encoder: The encoder model (ModernBERT)
+            tokenizer: Tokenizer for the encoder
+            label_descriptions: List of text descriptions for each label.
+                If None, uses label_names as descriptions.
+        """
+        descriptions = label_descriptions or self.label_names
+
+        if len(descriptions) != self.num_labels:
+            raise ValueError(
+                f"Expected {self.num_labels} descriptions, got {len(descriptions)}"
+            )
+
+        # Encode descriptions
+        device = self.label_embeddings.device
+        encoder.eval()
+
+        with torch.no_grad():
+            inputs = tokenizer(
+                descriptions,
+                padding=True,
+                truncation=True,
+                max_length=128,
+                return_tensors="pt",
+            ).to(device)
+
+            outputs = encoder(**inputs)
+            # Use [CLS] token embedding
+            cls_embeddings = outputs.last_hidden_state[:, 0]  # (num_labels, hidden_size)
+
+            # Project through query projection and normalize
+            projected = self.query_proj(cls_embeddings)
+            normalized = F.normalize(projected, dim=-1)
+
+            # Update label embeddings
+            self.label_embeddings.data = normalized
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """
+        Forward pass computing similarity between query and label embeddings.
+
+        Args:
+            hidden_states: Encoder output (batch_size, seq_len, hidden_size)
+            attention_mask: Attention mask (batch_size, seq_len) - unused but kept for API
+            labels: Target labels
+                - Single-label: (batch_size,) with class indices
+                - Multi-label: (batch_size, num_labels) with binary indicators
+
+        Returns:
+            Dictionary with:
+                - logits: (batch_size, num_labels) similarity scores
+                - loss: Optional loss if labels provided
+                - probabilities: Softmax/sigmoid probabilities
+                - predicted: Predicted label indices (single-label) or binary (multi-label)
+        """
+        # Get [CLS] token representation
+        cls_hidden = hidden_states[:, 0]  # (B, hidden_size)
+
+        # Project query to embedding space
+        query = self.query_proj(cls_hidden)  # (B, projection_dim)
+        query = F.normalize(query, dim=-1)
+
+        # Normalize label embeddings
+        label_emb = F.normalize(self.label_embeddings, dim=-1)  # (num_labels, projection_dim)
+
+        # Compute cosine similarity scaled by temperature
+        # Higher temperature = softer distribution, lower = sharper
+        logits = torch.matmul(query, label_emb.T) / self.temperature  # (B, num_labels)
+
+        # Compute probabilities
+        if self.multi_label:
+            probabilities = torch.sigmoid(logits)
+            predicted = (probabilities > 0.5).long()
+        else:
+            probabilities = F.softmax(logits, dim=-1)
+            predicted = probabilities.argmax(dim=-1)
+
+        output = {
+            "logits": logits,
+            "probabilities": probabilities,
+            "predicted": predicted,
+        }
+
+        # Compute loss if labels provided
+        if labels is not None:
+            if self.multi_label:
+                # Multi-label: Binary cross-entropy
+                loss = F.binary_cross_entropy_with_logits(
+                    logits, labels.float(), reduction="mean"
+                )
+            else:
+                # Single-label: Cross-entropy
+                loss = F.cross_entropy(logits, labels, reduction="mean")
+            output["loss"] = loss
+
+        return output
+
+    def get_label_similarities(self) -> torch.Tensor:
+        """
+        Compute pairwise similarities between label embeddings.
+
+        Useful for analyzing label confusion and embedding quality.
+
+        Returns:
+            (num_labels, num_labels) similarity matrix
+        """
+        label_emb = F.normalize(self.label_embeddings, dim=-1)
+        return torch.matmul(label_emb, label_emb.T)
+
+
+class IntentHeadV2(LabelDescriptionHead):
+    """
+    SOTA Intent classification head using label-description embeddings.
+
+    Replaces the simple IntentHead with a future-proof architecture that:
+    - Uses learnable label embeddings instead of fixed linear layer
+    - Supports adding new intents without architecture changes
+    - Can be initialized from intent descriptions for zero-shot
+    - Supports multi-label for utterances with multiple intents
+
+    FamilyOS Intent Labels (8):
+        0: log_memory - Record a memory, thought, or experience
+        1: query_memory - Retrieve or search past memories
+        2: set_reminder - Set a reminder, alarm, or scheduled task
+        3: express_feeling - Share emotions or feelings
+        4: seek_advice - Ask for guidance or recommendations
+        5: share_news - Share news, updates, or events
+        6: reflect - Reflect on past experiences or contemplate
+        7: other - General conversation or unclear intent
+
+    Args:
+        hidden_size: Size of encoder hidden states (768)
+        num_labels: Number of intent labels (default: 8)
+        projection_dim: Embedding dimension (default: 768)
+        temperature: Initial temperature (default: 0.07)
+        multi_label: Enable multi-label classification (default: False)
+        dropout: Dropout probability (default: 0.1)
+        confidence_threshold: Threshold for low-confidence flagging (default: 0.5)
+    """
+
+    # Intent descriptions for zero-shot initialization
+    # These descriptions are carefully crafted for maximum semantic separation
+    INTENT_DESCRIPTIONS = [
+        "Recording a new memory or diary entry about what happened today or a personal experience",
+        "Asking a question to retrieve or remember something from the past, searching memories",
+        "Setting a reminder, creating an alarm, or scheduling something for the future",
+        "Expressing emotions like happiness, sadness, worry, excitement, or sharing how I feel",
+        "Asking for advice, help, guidance, or recommendations about a decision or problem",
+        "Telling someone about news, an event, an update, or something that happened to someone",
+        "Thinking deeply about life, contemplating the meaning of experiences, philosophical musings",
+        "Casual greeting, small talk, chitchat, or random conversation with no clear purpose",
+    ]
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        num_labels: int = 8,
+        projection_dim: int = 768,
+        temperature: float = 0.07,
+        multi_label: bool = False,
+        dropout: float = 0.1,
+        confidence_threshold: float = 0.5,
+    ):
+        super().__init__(
+            hidden_size=hidden_size,
+            num_labels=num_labels,
+            projection_dim=projection_dim,
+            temperature=temperature,
+            multi_label=multi_label,
+            dropout=dropout,
+            label_names=self.INTENT_LABELS,
+        )
+        self.confidence_threshold = confidence_threshold
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """Forward pass with intent-specific outputs."""
+        output = super().forward(hidden_states, attention_mask, labels)
+
+        # Add intent-specific outputs
+        if self.multi_label:
+            # Multi-label: primary is highest score, all above threshold
+            scores = output["probabilities"]
+            primary_scores, primary_idx = scores.max(dim=-1)
+            output["intent_primary"] = primary_idx
+            output["intent_scores"] = scores
+            output["low_confidence_mask"] = primary_scores < self.confidence_threshold
+        else:
+            # Single-label: confidence from softmax
+            confidence = output["probabilities"].max(dim=-1)[0]
+            output["confidence"] = confidence
+            output["predicted_intent"] = output["predicted"]
+            output["low_confidence_mask"] = confidence < self.confidence_threshold
+
+        return output
+
+    def set_confidence_threshold(self, threshold: float) -> None:
+        """Update confidence threshold."""
+        self.confidence_threshold = threshold
+
+    def init_from_descriptions(self, encoder: nn.Module, tokenizer) -> None:
+        """Initialize label embeddings from intent descriptions."""
+        self.init_label_embeddings_from_encoder(
+            encoder, tokenizer, self.INTENT_DESCRIPTIONS
+        )
+
+
+class IngressHeadV2(LabelDescriptionHead):
+    """
+    SOTA Ingress (domain) classification head using label-description embeddings.
+
+    Replaces the simple SequenceClassificationHead for ingress with a future-proof
+    architecture that:
+    - Uses learnable label embeddings instead of fixed linear layer
+    - Supports adding new domains without architecture changes
+    - Can be initialized from domain descriptions for zero-shot
+    - Supports multi-label for utterances spanning multiple domains
+
+    FamilyOS Ingress Labels (12 domains):
+        0: DIARY - Personal journal entries, daily reflections
+        1: TASK - To-do items, reminders, action items
+        2: HEALTH - Medical, wellness, fitness, mental health
+        3: FINANCE - Money, bills, budgets, expenses
+        4: RELATIONSHIP - Family, friends, social connections
+        5: WORK - Professional, career, job-related
+        6: META - Questions about the app, system, features
+        7: MEMORY - Recalling past events, nostalgia
+        8: PLANNING - Future plans, goals, scheduling
+        9: CELEBRATION - Achievements, milestones, happy events
+        10: CONCERN - Worries, problems, issues
+        11: GRATITUDE - Thanks, appreciation, positive acknowledgment
+
+    Args:
+        hidden_size: Size of encoder hidden states (768)
+        num_labels: Number of domain labels (default: 12)
+        projection_dim: Embedding dimension (default: 768)
+        temperature: Initial temperature (default: 0.07)
+        multi_label: Enable multi-label classification (default: False)
+        dropout: Dropout probability (default: 0.1)
+        confidence_threshold: Threshold for low-confidence flagging (default: 0.5)
+    """
+
+    # Domain descriptions for zero-shot initialization
+    # These descriptions are carefully crafted for maximum semantic separation
+    INGRESS_DESCRIPTIONS = [
+        "Dear diary, today I woke up and wrote about my day, personal journal and daily reflections",
+        "I need to do this task, pick up groceries, complete this action item, to-do list",
+        "Doctor appointment, blood pressure, medicine, exercise, diet, mental health, medical wellness",
+        "Money, paying bills, budget, expenses, salary, savings, bank account, financial matters",
+        "My family, my friends, relationships with people, social connections, loved ones",
+        "My job, boss, coworkers, office, career, professional work matters",
+        "How do I use this app, change settings, system help, technical question about the application",
+        "I remember when, back in the day, nostalgic memory, recalling something from the past",
+        "Planning for the future, scheduling an event, setting goals, upcoming trip or appointment",
+        "Congratulations, birthday party, graduation, wedding, achievement, celebration milestone",
+        "I am worried about, something is wrong, problem, issue, anxiety, fear, concerning matter",
+        "Thank you so much, I appreciate, grateful for, positive acknowledgment of help received",
+    ]
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        num_labels: int = 12,
+        projection_dim: int = 768,
+        temperature: float = 0.07,
+        multi_label: bool = False,
+        dropout: float = 0.1,
+        confidence_threshold: float = 0.5,
+    ):
+        super().__init__(
+            hidden_size=hidden_size,
+            num_labels=num_labels,
+            projection_dim=projection_dim,
+            temperature=temperature,
+            multi_label=multi_label,
+            dropout=dropout,
+            label_names=self.INGRESS_LABELS,
+        )
+        self.confidence_threshold = confidence_threshold
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """Forward pass with ingress-specific outputs."""
+        output = super().forward(hidden_states, attention_mask, labels)
+
+        # Add ingress-specific outputs
+        if self.multi_label:
+            # Multi-label: primary is highest score, all above threshold
+            scores = output["probabilities"]
+            primary_scores, primary_idx = scores.max(dim=-1)
+            output["ingress_primary"] = primary_idx
+            output["ingress_scores"] = scores
+            output["low_confidence_mask"] = primary_scores < self.confidence_threshold
+        else:
+            # Single-label: confidence from softmax
+            confidence = output["probabilities"].max(dim=-1)[0]
+            output["confidence"] = confidence
+            output["predicted_ingress"] = output["predicted"]
+            output["low_confidence_mask"] = confidence < self.confidence_threshold
+
+        return output
+
+    def set_confidence_threshold(self, threshold: float) -> None:
+        """Update confidence threshold."""
+        self.confidence_threshold = threshold
+
+    def init_from_descriptions(self, encoder: nn.Module, tokenizer) -> None:
+        """Initialize label embeddings from domain descriptions."""
+        self.init_label_embeddings_from_encoder(
+            encoder, tokenizer, self.INGRESS_DESCRIPTIONS
+        )
+
+
+def create_label_description_head(
+    head_type: str,
+    hidden_size: int = 768,
+    **kwargs,
+) -> LabelDescriptionHead:
+    """
+    Factory function to create LabelDescriptionHead variants.
+
+    Args:
+        head_type: One of "intent", "ingress", or "generic"
+        hidden_size: Encoder hidden size
+        **kwargs: Additional arguments for the head
+
+    Returns:
+        Configured LabelDescriptionHead instance
+    """
+    if head_type == "intent":
+        return IntentHeadV2(hidden_size=hidden_size, **kwargs)
+    elif head_type == "ingress":
+        return IngressHeadV2(hidden_size=hidden_size, **kwargs)
+    else:
+        return LabelDescriptionHead(hidden_size=hidden_size, **kwargs)
+
+
+# =============================================================================
 # Exports
 # =============================================================================
 
@@ -3694,6 +4184,11 @@ __all__ = [
     "EnhancedSafetyHead",  # NEW - v2
     "HierarchicalEmotionHead",  # NEW - v2 (Issue 3.6.6)
     "RelationHead",  # NEW
-    "IntentHead",  # NEW
+    "IntentHead",  # Legacy
     "TemporalHead",  # NEW
+    # SOTA Label-Description Heads
+    "LabelDescriptionHead",  # Base class
+    "IntentHeadV2",  # SOTA intent classification
+    "IngressHeadV2",  # SOTA ingress/domain classification
+    "create_label_description_head",  # Factory function
 ]

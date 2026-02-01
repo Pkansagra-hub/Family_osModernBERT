@@ -82,6 +82,9 @@ from modeling_studio.models.modernbert_multitask import (
     create_globalpointer_head,
 )
 
+# Import Intent/Ingress V2 heads for classification training
+from modeling_studio.models.heads import IntentHeadV2, IngressHeadV2
+
 # Configure logging
 logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(message)s",
@@ -121,13 +124,24 @@ def log_table(headers: list[str], rows: list[list], col_widths: list[int] | None
 # Configuration
 # =============================================================================
 
+# NER head label configs (span-based)
 LABEL_CONFIGS = {
     "ner_general": NER_GENERAL_LABELS,
     "ner_family": NER_FAMILY_LABELS,
     "temporal": TEMPORAL_LABELS,
 }
 
-# Heads to replace with GlobalPointer
+# Classification head label configs (sequence-level)
+CLASSIFICATION_LABEL_CONFIGS = {
+    "intent_v2": {label: i for i, label in enumerate(IntentHeadV2.INTENT_LABELS)},
+    "ingress_v2": {label: i for i, label in enumerate(IngressHeadV2.INGRESS_LABELS)},
+}
+
+# Head types for routing
+SPAN_HEADS = ["ner_general", "ner_family", "temporal"]
+CLASSIFICATION_HEADS = ["intent_v2", "ingress_v2"]
+
+# Heads to replace with GlobalPointer (backward compatible default)
 HEADS_TO_REPLACE = ["ner_general", "ner_family", "temporal"]
 
 
@@ -223,6 +237,113 @@ class MultiHeadSpanDataset(Dataset):
             }
 
         return None
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, idx: int) -> dict[str, Any]:
+        return self.samples[idx]
+
+
+class MultiHeadClassificationDataset(Dataset):
+    """
+    Dataset that loads classification data for Intent/Ingress V2 heads.
+    Supports multi-label format (list of labels) or single-label (string).
+    
+    Data format:
+        {"text": "...", "intent": "label" or ["label1", "label2"], ...}
+        {"text": "...", "ingress": "label" or ["label1", "label2"], ...}
+    """
+
+    def __init__(
+        self,
+        data_paths: dict[str, list[Path]],
+        label_configs: dict[str, dict[str, int]],
+        max_samples_per_head: int | None = None,
+    ):
+        """
+        Args:
+            data_paths: Dict mapping head_name -> list of JSONL file paths
+            label_configs: Dict mapping head_name -> label_to_id dict
+            max_samples_per_head: Max samples per head (for debugging)
+        """
+        self.samples = []
+        self.label_configs = label_configs
+
+        # Map head_name to data field name
+        field_map = {
+            "intent_v2": "intent",
+            "ingress_v2": "ingress",
+        }
+
+        for head_name, paths in data_paths.items():
+            field_name = field_map.get(head_name, head_name.replace("_v2", ""))
+            label_to_id = label_configs.get(head_name, {})
+            head_samples = []
+
+            for path in paths:
+                if not path.exists():
+                    logger.warning(f"Data file not found: {path}")
+                    continue
+
+                with open(path, encoding="utf-8") as f:
+                    for line in f:
+                        if max_samples_per_head and len(head_samples) >= max_samples_per_head:
+                            break
+
+                        raw = json.loads(line.strip())
+                        sample = self._extract_sample(raw, head_name, field_name, label_to_id)
+
+                        if sample is not None:
+                            head_samples.append(sample)
+
+                if max_samples_per_head and len(head_samples) >= max_samples_per_head:
+                    break
+
+            logger.info(f"  {head_name}: loaded {len(head_samples)} samples from {len(paths)} files")
+            self.samples.extend(head_samples)
+
+        # Shuffle all samples together
+        random.shuffle(self.samples)
+
+    def _extract_sample(
+        self, 
+        raw: dict, 
+        head_name: str, 
+        field_name: str,
+        label_to_id: dict[str, int],
+    ) -> dict | None:
+        """Extract text and labels, supporting multi-label."""
+        text = raw.get("text", "")
+        if not text:
+            return None
+
+        label_value = raw.get(field_name)
+        if label_value is None:
+            return None
+
+        # Support both single-label (string) and multi-label (list)
+        if isinstance(label_value, str):
+            labels = [label_value]
+        elif isinstance(label_value, list):
+            labels = label_value
+        else:
+            return None
+
+        # Convert to label IDs, skip unknown labels
+        label_ids = []
+        for lbl in labels:
+            if lbl in label_to_id:
+                label_ids.append(label_to_id[lbl])
+
+        if not label_ids:
+            return None
+
+        return {
+            "text": text,
+            "labels": label_ids,  # List of label IDs for multi-label
+            "head_name": head_name,
+        }
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -346,6 +467,186 @@ class MultiHeadCollator:
         return tok_start, tok_end
 
 
+class MultiHeadClassificationCollator:
+    """
+    Collator that handles multiple classification heads (Intent/Ingress V2).
+    Creates multi-label targets for each head.
+    """
+
+    def __init__(
+        self,
+        tokenizer,
+        label_configs: dict[str, dict[str, int]],
+        max_length: int = 256,
+    ):
+        self.tokenizer = tokenizer
+        self.label_configs = label_configs
+        self.max_length = max_length
+
+    def __call__(self, features: list[dict]) -> dict[str, Any]:
+        """
+        Collate batch for classification heads.
+
+        Returns:
+            {
+                "input_ids": (B, L),
+                "attention_mask": (B, L),
+                "head_names": list of head names per sample,
+                "classification_labels": {head_name: (B, num_labels) multi-hot},
+            }
+        """
+        texts = [f["text"] for f in features]
+        head_names = [f["head_name"] for f in features]
+
+        # Tokenize all texts together
+        encoding = self.tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
+
+        batch_size = len(texts)
+
+        # Build multi-hot labels per head
+        classification_labels = {}
+        for head_name, labels in self.label_configs.items():
+            num_labels = len(labels)
+            classification_labels[head_name] = torch.zeros(batch_size, num_labels)
+
+        # Fill in labels
+        for b, feature in enumerate(features):
+            head_name = feature["head_name"]
+            label_ids = feature.get("labels", [])
+            
+            for label_id in label_ids:
+                classification_labels[head_name][b, label_id] = 1.0
+
+        return {
+            "input_ids": encoding["input_ids"],
+            "attention_mask": encoding["attention_mask"],
+            "head_names": head_names,
+            "classification_labels": classification_labels,
+        }
+
+
+class UnifiedMultiHeadCollator:
+    """
+    Unified collator that handles BOTH span-based (NER) and classification heads.
+    Routes samples to appropriate processing based on head type.
+    """
+
+    def __init__(
+        self,
+        tokenizer,
+        span_label_configs: dict[str, dict[str, int]],
+        classification_label_configs: dict[str, dict[str, int]],
+        max_length: int = 256,
+    ):
+        self.tokenizer = tokenizer
+        self.span_label_configs = span_label_configs
+        self.classification_label_configs = classification_label_configs
+        self.max_length = max_length
+
+    def __call__(self, features: list[dict]) -> dict[str, Any]:
+        """
+        Collate batch with both span and classification heads.
+
+        Returns combined batch with both label types.
+        """
+        texts = [f["text"] for f in features]
+        head_names = [f["head_name"] for f in features]
+
+        # Tokenize all texts together
+        encoding = self.tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=self.max_length,
+            return_offsets_mapping=True,
+            return_tensors="pt",
+        )
+
+        batch_size = len(texts)
+        seq_len = encoding["input_ids"].shape[1]
+
+        # Build span labels for NER heads
+        span_labels = {}
+        for head_name, labels in self.span_label_configs.items():
+            num_labels = len(labels)
+            span_labels[head_name] = torch.zeros(batch_size, num_labels, seq_len, seq_len)
+
+        # Build classification labels for Intent/Ingress V2 heads
+        classification_labels = {}
+        for head_name, labels in self.classification_label_configs.items():
+            num_labels = len(labels)
+            classification_labels[head_name] = torch.zeros(batch_size, num_labels)
+
+        # Fill in labels based on head type
+        offset_mappings = encoding["offset_mapping"]
+
+        for b, feature in enumerate(features):
+            head_name = feature["head_name"]
+
+            # Span-based (NER) heads
+            if head_name in self.span_label_configs:
+                labels = self.span_label_configs[head_name]
+                offset_mapping = offset_mappings[b].tolist()
+
+                for entity in feature.get("entities", []):
+                    char_start = entity["start"]
+                    char_end = entity["end"]
+                    label = entity.get("label", entity.get("type"))
+
+                    if label not in labels:
+                        continue
+
+                    label_id = labels[label]
+                    tok_start, tok_end = self._char_to_token_span(
+                        offset_mapping, char_start, char_end
+                    )
+
+                    if tok_start is not None and tok_end is not None:
+                        span_labels[head_name][b, label_id, tok_start, tok_end] = 1.0
+
+            # Classification heads (Intent/Ingress V2)
+            elif head_name in self.classification_label_configs:
+                label_ids = feature.get("labels", [])
+                for label_id in label_ids:
+                    classification_labels[head_name][b, label_id] = 1.0
+
+        # Remove offset_mapping from output
+        del encoding["offset_mapping"]
+
+        return {
+            "input_ids": encoding["input_ids"],
+            "attention_mask": encoding["attention_mask"],
+            "head_names": head_names,
+            "span_labels": span_labels,
+            "classification_labels": classification_labels,
+        }
+
+    def _char_to_token_span(
+        self,
+        offset_mapping: list[tuple[int, int]],
+        char_start: int,
+        char_end: int,
+    ) -> tuple[int | None, int | None]:
+        """Convert character span to token span."""
+        tok_start = tok_end = None
+
+        for i, (cs, ce) in enumerate(offset_mapping):
+            if cs == 0 and ce == 0:
+                continue
+            if cs < char_end and ce > char_start:
+                if tok_start is None:
+                    tok_start = i
+                tok_end = i
+
+        return tok_start, tok_end
+
+
 # =============================================================================
 # Model Functions
 # =============================================================================
@@ -437,26 +738,61 @@ def load_model_and_replace_heads(
     logger.info(f"  Loaded {len(model.heads)} heads, hidden_size={hidden_size}")
 
     # Replace NER heads with GlobalPointer using factory function (Epic 3.3)
-    logger.info(f"  Replacing heads: {', '.join(HEADS_TO_REPLACE)}")
-    for head_name in HEADS_TO_REPLACE:
-        if head_name not in model.heads:
-            logger.warning(f"Head {head_name} not found in model, skipping")
-            continue
+    span_heads_to_replace = [h for h in HEADS_TO_REPLACE if h in SPAN_HEADS]
+    if span_heads_to_replace:
+        logger.info(f"  Replacing span heads: {', '.join(span_heads_to_replace)}")
+        for head_name in span_heads_to_replace:
+            if head_name not in model.heads:
+                logger.warning(f"Head {head_name} not found in model, skipping")
+                continue
 
-        # Use factory function for consistent head creation
-        new_head = create_globalpointer_head(
-            capability=head_name,
-            hidden_size=hidden_size,
-            head_size=head_size,
-            dropout=dropout,
-            use_rope=True,
-            loss_type="globalpointer",
-        )
+            # Use factory function for consistent head creation
+            new_head = create_globalpointer_head(
+                capability=head_name,
+                hidden_size=hidden_size,
+                head_size=head_size,
+                dropout=dropout,
+                use_rope=True,
+                loss_type="globalpointer",
+            )
 
-        # Replace in ModuleDict
-        model.heads[head_name] = new_head
-        num_labels = len(LABEL_CONFIGS[head_name])
-        logger.info(f"Replaced {head_name} with GlobalPointerNERHead ({num_labels} labels)")
+            # Replace in ModuleDict
+            model.heads[head_name] = new_head
+            num_labels = len(LABEL_CONFIGS[head_name])
+            logger.info(f"    {head_name} -> GlobalPointerNERHead ({num_labels} labels)")
+
+    # Replace classification heads with V2 (Label-Description Embedding) architecture
+    classification_heads_to_replace = [h for h in HEADS_TO_REPLACE if h in CLASSIFICATION_HEADS]
+    if classification_heads_to_replace:
+        logger.info(f"  Replacing classification heads: {', '.join(classification_heads_to_replace)}")
+        for head_name in classification_heads_to_replace:
+            # Create V2 head with multi-label support
+            if head_name == "intent_v2":
+                new_head = IntentHeadV2(
+                    hidden_size=hidden_size,
+                    multi_label=True,  # FamilyOS requires multi-label
+                    dropout=dropout,
+                )
+                # Replace the old "intent" head
+                old_name = "intent"
+            elif head_name == "ingress_v2":
+                new_head = IngressHeadV2(
+                    hidden_size=hidden_size,
+                    multi_label=True,  # FamilyOS requires multi-label
+                    dropout=dropout,
+                )
+                # Replace the old "ingress" head
+                old_name = "ingress"
+            else:
+                logger.warning(f"Unknown classification head: {head_name}")
+                continue
+
+            # Replace old head with V2
+            if old_name in model.heads:
+                del model.heads[old_name]
+            model.heads[head_name] = new_head
+            num_labels = len(CLASSIFICATION_LABEL_CONFIGS[head_name])
+            logger.info(f"    {old_name} -> {type(new_head).__name__} ({num_labels} labels, multi-label)")
 
     return model
 
@@ -562,10 +898,11 @@ def train_step(
 ) -> dict[str, torch.Tensor]:
     """
     Single training step with parallel head forward.
+    Supports both span-based (NER) and classification (Intent/Ingress V2) heads.
 
     Args:
         model: The model
-        batch: Batch with input_ids, attention_mask, head_names, span_labels
+        batch: Batch with input_ids, attention_mask, head_names, span_labels, classification_labels
         device: Device
         debug: Enable verbose debug logging
 
@@ -575,7 +912,10 @@ def train_step(
     input_ids = batch["input_ids"].to(device)
     attention_mask = batch["attention_mask"].to(device)
     head_names = batch["head_names"]
-    span_labels = {k: v.to(device) for k, v in batch["span_labels"].items()}
+    
+    # Handle both label types
+    span_labels = {k: v.to(device) for k, v in batch.get("span_labels", {}).items()}
+    classification_labels = {k: v.to(device) for k, v in batch.get("classification_labels", {}).items()}
 
     if debug:
         logger.debug(f"Batch input_ids shape: {input_ids.shape}")
@@ -583,6 +923,9 @@ def train_step(
         for h, labels in span_labels.items():
             positive_count = (labels > 0).sum().item()
             logger.debug(f"  {h} span_labels: shape={labels.shape}, positives={positive_count}")
+        for h, labels in classification_labels.items():
+            positive_count = (labels > 0).sum().item()
+            logger.debug(f"  {h} classification_labels: shape={labels.shape}, positives={positive_count}")
 
     # Get encoder hidden states ONCE
     with torch.no_grad():
@@ -602,20 +945,38 @@ def train_step(
     total_loss = torch.tensor(0.0, device=device)
 
     for head_name in HEADS_TO_REPLACE:
+        if head_name not in model.heads:
+            continue
         head = model.heads[head_name]
-        head_labels = span_labels[head_name]
 
         # Check if any samples in batch belong to this head
         mask = torch.tensor([n == head_name for n in head_names], device=device)
         if not mask.any():
             continue
 
-        # Forward through head
-        output = head(
-            hidden_states=hidden_states,
-            attention_mask=attention_mask,
-            span_labels=head_labels,
-        )
+        # Route to appropriate forward based on head type
+        if head_name in SPAN_HEADS:
+            # Span-based (NER) head
+            head_labels = span_labels.get(head_name)
+            if head_labels is None:
+                continue
+            output = head(
+                hidden_states=hidden_states,
+                attention_mask=attention_mask,
+                span_labels=head_labels,
+            )
+        elif head_name in CLASSIFICATION_HEADS:
+            # Classification head (Intent/Ingress V2)
+            head_labels = classification_labels.get(head_name)
+            if head_labels is None:
+                continue
+            output = head(
+                hidden_states=hidden_states,
+                attention_mask=attention_mask,
+                labels=head_labels,
+            )
+        else:
+            continue
 
         if "loss" in output and output["loss"] is not None:
             # Weight by number of samples for this head
@@ -626,7 +987,8 @@ def train_step(
 
             if debug:
                 logger.debug(f"  {head_name}: raw_loss={output['loss'].item():.4f}, weight={weight:.2f}, weighted_loss={head_loss.item():.4f}")
-                logger.debug(f"  {head_name} logits: min={output['logits'].min().item():.2f}, max={output['logits'].max().item():.2f}, mean={output['logits'].mean().item():.2f}")
+                if "logits" in output:
+                    logger.debug(f"  {head_name} logits: min={output['logits'].min().item():.2f}, max={output['logits'].max().item():.2f}, mean={output['logits'].mean().item():.2f}")
 
     if debug:
         logger.debug(f"Total loss: {total_loss.item():.4f}")
@@ -645,7 +1007,7 @@ def evaluate(
     val_loader: DataLoader,
     device: torch.device,
     debug: bool = False,
-    threshold: float = 0.0,  # Logit threshold: 0.0 = prob > 0.5 (balanced P/R for true F1)
+    threshold: float = 2.0,  # Logit threshold: 2.0 = prob > 0.88, reduces FP for untrained models
 ) -> dict[str, Any]:
     """
     Evaluate model on validation set using decode_batch_efficient.
@@ -671,7 +1033,8 @@ def evaluate(
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         head_names = batch["head_names"]
-        span_labels = {k: v.to(device) for k, v in batch["span_labels"].items()}
+        span_labels = {k: v.to(device) for k, v in batch.get("span_labels", {}).items()}
+        classification_labels = {k: v.to(device) for k, v in batch.get("classification_labels", {}).items()}
 
         # Get encoder hidden states
         encoder_output = model.encoder(
@@ -687,52 +1050,89 @@ def evaluate(
 
         # Evaluate each head
         for head_name in HEADS_TO_REPLACE:
+            if head_name not in model.heads:
+                continue
             head = model.heads[head_name]
-            head_labels = span_labels[head_name]
-            id2label = {v: k for k, v in LABEL_CONFIGS[head_name].items()}
 
-            # Forward
-            output = head(
-                hidden_states=hidden_states,
-                attention_mask=attention_mask,
-            )
-            logits = output["logits"]
-
-            # Decode predictions using FAST batch decode method
-            # Use threshold to reduce false positives (0.5 = logit threshold for ~0.62 prob)
-            preds = head.decode_batch_efficient(
-                logits,
-                attention_mask=attention_mask,
-                threshold=threshold,
-                id2label=id2label,
-            )
-
-            # Extract gold spans from labels
-            batch_size, num_labels, seq_len, _ = head_labels.shape
-            for b in range(batch_size):
-                # Only evaluate samples that belong to this head
-                if head_names[b] != head_name:
+            # Route based on head type
+            if head_name in SPAN_HEADS:
+                # Span-based (NER) evaluation
+                head_labels = span_labels.get(head_name)
+                if head_labels is None:
                     continue
+                id2label = {v: k for k, v in LABEL_CONFIGS[head_name].items()}
 
-                # Predicted entities - decode_batch_efficient returns list of dicts
-                pred_set = set()
-                for entity in preds[b]:
-                    pred_set.add((entity["start"], entity["end"], entity["label"]))
+                # Forward
+                output = head(
+                    hidden_states=hidden_states,
+                    attention_mask=attention_mask,
+                )
+                logits = output["logits"]
 
-                # Gold entities from span_labels
-                gold_set = set()
-                for label_id in range(num_labels):
-                    positions = torch.where(head_labels[b, label_id] > 0)
-                    for i, j in zip(positions[0].tolist(), positions[1].tolist()):
-                        gold_set.add((i, j, id2label[label_id]))
+                # Decode predictions using FAST batch decode method
+                preds = head.decode_batch_efficient(
+                    logits,
+                    attention_mask=attention_mask,
+                    threshold=threshold,
+                    id2label=id2label,
+                )
 
-                all_preds[head_name].append(pred_set)
-                all_golds[head_name].append(gold_set)
+                # Extract gold spans from labels
+                batch_size, num_labels, seq_len, _ = head_labels.shape
+                for b in range(batch_size):
+                    if head_names[b] != head_name:
+                        continue
 
-                if debug and batch_idx == 0 and b < 2:
-                    logger.debug(f"Sample {b} ({head_name}):")
-                    logger.debug(f"  Predicted: {pred_set}")
-                    logger.debug(f"  Gold: {gold_set}")
+                    pred_set = set()
+                    for entity in preds[b]:
+                        pred_set.add((entity["start"], entity["end"], entity["label"]))
+
+                    gold_set = set()
+                    for label_id in range(num_labels):
+                        positions = torch.where(head_labels[b, label_id] > 0)
+                        for i, j in zip(positions[0].tolist(), positions[1].tolist()):
+                            gold_set.add((i, j, id2label[label_id]))
+
+                    all_preds[head_name].append(pred_set)
+                    all_golds[head_name].append(gold_set)
+
+            elif head_name in CLASSIFICATION_HEADS:
+                # Classification (Intent/Ingress V2) evaluation - multi-label
+                head_labels = classification_labels.get(head_name)
+                if head_labels is None:
+                    continue
+                id2label = {v: k for k, v in CLASSIFICATION_LABEL_CONFIGS[head_name].items()}
+
+                # Forward
+                output = head(
+                    hidden_states=hidden_states,
+                    attention_mask=attention_mask,
+                )
+                probs = output["probabilities"]  # (B, num_labels)
+
+                # Multi-label threshold (0.5 for sigmoid)
+                batch_size = probs.shape[0]
+                for b in range(batch_size):
+                    if head_names[b] != head_name:
+                        continue
+
+                    # Predicted labels (above 0.5 threshold)
+                    pred_set = set()
+                    pred_indices = torch.where(probs[b] > 0.5)[0].tolist()
+                    for idx in pred_indices:
+                        pred_set.add(id2label[idx])
+
+                    # Gold labels
+                    gold_set = set()
+                    gold_indices = torch.where(head_labels[b] > 0)[0].tolist()
+                    for idx in gold_indices:
+                        gold_set.add(id2label[idx])
+
+                    all_preds[head_name].append(pred_set)
+                    all_golds[head_name].append(gold_set)
+
+                if debug and batch_idx == 0:
+                    logger.debug(f"Classification eval {head_name}: probs shape={probs.shape}")
 
     model.train()
 
@@ -1015,14 +1415,24 @@ def save_checkpoint(
             "class": type(head).__name__,
             "num_labels": getattr(head, "num_labels", None),
             "head_size": getattr(head, "head_size", None),
+            "multi_label": getattr(head, "multi_label", None),
         }
+
+    # Collect label configs for all trained heads
+    all_label_configs = {}
+    for h in HEADS_TO_REPLACE:
+        if h in LABEL_CONFIGS:
+            all_label_configs[h] = dict(LABEL_CONFIGS[h])
+        elif h in CLASSIFICATION_LABEL_CONFIGS:
+            all_label_configs[h] = dict(CLASSIFICATION_LABEL_CONFIGS[h])
 
     metadata = {
         "timestamp": datetime.now().isoformat(),
         "replaced_heads": HEADS_TO_REPLACE,
-        "head_architecture": "GlobalPointerNERHead",
+        "span_heads": [h for h in HEADS_TO_REPLACE if h in SPAN_HEADS],
+        "classification_heads": [h for h in HEADS_TO_REPLACE if h in CLASSIFICATION_HEADS],
         "head_info": head_info,
-        "label_configs": {h: dict(LABEL_CONFIGS[h]) for h in HEADS_TO_REPLACE},
+        "label_configs": all_label_configs,
     }
     with open(checkpoint_dir / "globalpointer_metadata.json", "w") as f:
         json.dump(metadata, f, indent=2)
@@ -1080,6 +1490,12 @@ def main():
     output_dir = Path(output_config.get("dir", "outputs/globalpointer-unified-v1"))
     data_root = Path(data_config.get("root", "data"))
 
+    # Update global HEADS_TO_REPLACE from config
+    global HEADS_TO_REPLACE
+    enabled_heads = heads_config.get("enabled", HEADS_TO_REPLACE)
+    HEADS_TO_REPLACE = enabled_heads
+    logger.info(f"Heads to train: {HEADS_TO_REPLACE}")
+
     # Training params
     learning_rate = training_config.get("learning_rate", 1e-4)
     weight_decay = training_config.get("weight_decay", 0.01)
@@ -1131,18 +1547,54 @@ def main():
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
 
-    # Get data paths
+    # Determine which head types we're training
+    span_heads_active = [h for h in HEADS_TO_REPLACE if h in SPAN_HEADS]
+    classification_heads_active = [h for h in HEADS_TO_REPLACE if h in CLASSIFICATION_HEADS]
+    
+    log_section("HEAD CONFIGURATION")
+    logger.info(f"  Span heads: {span_heads_active or 'none'}")
+    logger.info(f"  Classification heads: {classification_heads_active or 'none'}")
+
+    # Get data paths for active heads
     data_paths = get_data_paths(data_config, data_root)
 
     log_section("DATA SOURCES")
     for head_name, paths in data_paths.items():
         logger.info(f"  {head_name}: {len(paths)} files")
 
-    # Create full dataset
-    full_dataset = MultiHeadSpanDataset(
-        data_paths=data_paths,
-        max_samples_per_head=max_samples,
-    )
+    # Create datasets based on head types
+    datasets = []
+    
+    # Span-based (NER) dataset
+    if span_heads_active:
+        span_paths = {h: data_paths[h] for h in span_heads_active if h in data_paths}
+        if span_paths:
+            span_dataset = MultiHeadSpanDataset(
+                data_paths=span_paths,
+                max_samples_per_head=max_samples,
+            )
+            datasets.append(span_dataset)
+            logger.info(f"  Span dataset: {len(span_dataset)} samples")
+    
+    # Classification (Intent/Ingress V2) dataset
+    if classification_heads_active:
+        classification_paths = {h: data_paths[h] for h in classification_heads_active if h in data_paths}
+        if classification_paths:
+            classification_dataset = MultiHeadClassificationDataset(
+                data_paths=classification_paths,
+                label_configs=CLASSIFICATION_LABEL_CONFIGS,
+                max_samples_per_head=max_samples,
+            )
+            datasets.append(classification_dataset)
+            logger.info(f"  Classification dataset: {len(classification_dataset)} samples")
+
+    # Combine datasets
+    if len(datasets) == 0:
+        raise ValueError("No data found for any head!")
+    elif len(datasets) == 1:
+        full_dataset = datasets[0]
+    else:
+        full_dataset = ConcatDataset(datasets)
 
     # Train/val split
     val_size = int(len(full_dataset) * val_split)
@@ -1155,10 +1607,14 @@ def main():
         generator=torch.Generator().manual_seed(42),
     )
 
-    # Create collator
-    collator = MultiHeadCollator(
+    # Create unified collator that handles both head types
+    span_label_configs = {h: LABEL_CONFIGS[h] for h in span_heads_active} if span_heads_active else {}
+    classification_label_configs = {h: CLASSIFICATION_LABEL_CONFIGS[h] for h in classification_heads_active} if classification_heads_active else {}
+    
+    collator = UnifiedMultiHeadCollator(
         tokenizer=tokenizer,
-        label_configs=LABEL_CONFIGS,
+        span_label_configs=span_label_configs,
+        classification_label_configs=classification_label_configs,
         max_length=max_length,
     )
 
