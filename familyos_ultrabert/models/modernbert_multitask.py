@@ -700,6 +700,9 @@ class ModernBertMultiTaskModel(PreTrainedModel):
 
         # Reconcile capabilities with actual checkpoint heads
         # V2 heads replace V1: if checkpoint has intent_v2, use that instead of intent
+        # Special case: EmbeddingHead has no parameters, always create it
+        PARAMETER_FREE_HEADS = {"embedding"}  # Heads that don't need checkpoint weights
+
         if capabilities:
             reconciled = []
             for cap in capabilities:
@@ -711,6 +714,10 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 elif cap_name == "ingress" and "ingress_v2" in checkpoint_heads:
                     reconciled.append(Capability.INGRESS_V2)
                     logger.info("  Detected ingress_v2 head, using INGRESS_V2 capability")
+                elif cap_name in PARAMETER_FREE_HEADS:
+                    # Always create parameter-free heads (e.g., EmbeddingHead)
+                    reconciled.append(cap)
+                    logger.info(f"  Creating parameter-free head: {cap_name}")
                 elif cap_name not in checkpoint_heads:
                     # Skip capabilities not in checkpoint
                     logger.warning(f"  Capability '{cap_name}' not found in checkpoint, skipping")

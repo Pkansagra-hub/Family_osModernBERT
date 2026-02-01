@@ -1,3 +1,186 @@
+# FamilyOS UltraBERT v4.0.1 Release
+
+## SOTA Intent & Ingress Heads + Dynamic Label Expansion
+
+This release introduces the **Label-Description Embedding** architecture for Intent and Ingress classification, replacing simple linear classifiers with a future-proof, zero-shot capable design.
+
+### New Architecture: LabelDescriptionHead
+
+The Intent and Ingress heads now use learnable label embeddings with cosine similarity:
+
+```
+[CLS] (768-dim)
+    |
+Query Projection (768 -> 768)
+    |
+Cosine Similarity with Label Embeddings
+    |
+Temperature-scaled Logits
+    |
+Multi-label Sigmoid
+```
+
+**Benefits over simple classifiers:**
+- **Future-proof**: Add new labels by just adding embeddings (no architecture change)
+- **Zero-shot capable**: Initialize new labels from text descriptions
+- **Multi-label**: Natural for FamilyOS where utterances have multiple intents/domains
+- **Semantic understanding**: Labels have learned meaning, not just indices
+
+### Training Infrastructure
+
+Built on proven GlobalPointer training flow:
+- **Source checkpoint**: checkpoint-8000 (with trained GlobalPointer NER)
+- **Frozen components**: Encoder + all other heads
+- **Training data**: 304K intent records, 380K ingress records (balanced)
+- **Config**: `configs/training/intent_ingress_heads.yaml`
+
+See `docs/INTENT_INGRESS_HEAD_TRAINING_PLAN.md` for full training details.
+
+### Dynamic Label Expansion API
+
+Add custom labels while preserving trained performance:
+
+```python
+from familyos_ultrabert import Client
+
+client = Client()
+
+# Expand intent labels (keeps original 8 + adds new)
+all_labels = client.add_intent_labels({
+    "school_pickup": "Reminder about picking children up from school",
+    "pet_care": "Taking care of pets, vet visits, pet feeding",
+    "date_night": "Planning romantic time with partner",
+})
+# Now have 11 intents (8 trained + 3 custom)
+
+# Single label convenience
+client.add_intent_label("family_trip", "Planning family vacation")
+
+# Same for ingress/domains
+client.add_ingress_labels({
+    "PETS": "Pet care activities, vet visits",
+    "SCHOOL": "School activities, homework, education",
+})
+```
+
+### Full Zero-Shot Label Replacement
+
+Replace all labels with custom taxonomy:
+
+```python
+# Custom e-commerce intents (replaces all trained labels)
+client.set_intent_labels({
+    "purchase": "Customer wants to buy a product",
+    "return": "Customer wants to return item",
+    "shipping": "Customer asking about delivery",
+    "support": "Customer needs technical help",
+}, temperature=0.3)
+```
+
+### Technical Details
+
+#### Calibrated Zero-Shot Embeddings
+
+- New labels use description-based embeddings via the encoder
+- Automatic calibration ensures fair competition with trained embeddings
+- Trained embeddings have learned discriminative space (negative similarity for non-matches)
+- Zero-shot embeddings are offset to match trained similarity range
+
+#### API Methods Added
+
+| Method | Description |
+|--------|-------------|
+| `add_intent_labels(dict)` | Expand intent labels (keeps trained) |
+| `add_ingress_labels(dict)` | Expand ingress labels (keeps trained) |
+| `add_intent_label(name, desc)` | Add single intent label |
+| `add_ingress_label(name, desc)` | Add single ingress label |
+| `set_intent_labels(dict, temp)` | Replace all intents (zero-shot) |
+| `set_ingress_labels(dict, temp)` | Replace all ingress (zero-shot) |
+| `get_intent_labels()` | Get current intent label list |
+| `get_ingress_labels()` | Get current ingress label list |
+
+#### LabelDescriptionHead Class
+
+New head architecture in `models/heads.py`:
+
+- `LabelDescriptionHead`: Base class with label embeddings + temperature
+- `IntentHeadV2`: 8 intent labels (multi-label capable)
+- `IngressHeadV2`: 12 domain labels (multi-label capable)
+- `expand_labels()`: Adds labels preserving trained embeddings
+- `set_custom_labels()`: Full label replacement with any count
+- `_num_trained_labels`: Tracks trained vs zero-shot for calibration
+
+### Performance Targets
+
+| Metric | Previous | Target | Notes |
+|--------|----------|--------|-------|
+| Intent Accuracy | 81.8% | 90%+ | Label-description architecture |
+| Ingress Accuracy | 69.7% | 85%+ | Better domain routing |
+| MEMORY Recall | 33.3% | 75%+ | Major improvement area |
+| Label Expansion | N/A | 80%+ | Trained + zero-shot mixed |
+
+### Label Schemas
+
+**Intent Labels (8):**
+- log_memory, query_memory, set_reminder, express_feeling
+- seek_advice, share_news, reflect, other
+
+**Ingress Labels (12):**
+- DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK
+- META, MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE
+
+### Upgrade Notes
+
+Drop-in replacement for v4.0.0. No breaking changes.
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
+# FamilyOS UltraBERT v4.0.0 Release
+
+## Major Changes
+
+- **GlobalPointer NER Architecture**: Replaces token classification with span-based entity extraction
+- **100% NER Quality**: Resolves all 80 cataloged garbage entity issues
+- **No Post-Processing Required**: Clean entity extraction without filters
+- **Lightweight Package**: 191KB distribution (weights hosted on HuggingFace)
+
+## 📊 Performance Benchmarks
+
+| Metric | v4.0.0 | v2 | Improvement |
+|--------|---------|-----|-------------|
+| Inference P95 | 16.84 ms | 102.25 ms | 6.1x faster |
+| Throughput | 61.5 req/sec | 11.3 req/sec | 5.4x higher |
+| NER F1 (general) | 73.0% | - | GlobalPointer |
+| NER F1 (family) | 81.2% | - | GlobalPointer |
+| CRISIS Recall | 100% | - | Guaranteed |
+
+## 🎯 NER Quality Resolution
+
+- **80/80 test cases passed** (100% resolution)
+- Resolved categories: verbs, emotions, pronouns, determiners, partial spans, time fragments
+- Handles complex family contexts, cultural diversity, ambiguous entities
+
+## 🔧 Technical Details
+
+### Model Architecture
+
+- **Backbone**: ModernBERT-base (22 layers, 768-dim, Flash Attention 2)
+- **NER Heads**: GlobalPointer (3 heads with calibrated thresholds)
+- **Capabilities**: 12 multi-task heads
+- **Parameters**: ~149M total
+
+### Dependencies
+
+- **Python**: >=3.9
+- **PyTorch**: >=2.0.0
+- **Transformers**: >=4.30.0
+- **HuggingFace Hub**: >=0.20.0
+
+
 # FamilyOS UltraBERT v3.0.1
 
 ## Decoder Quality Fix
@@ -122,12 +305,14 @@ python -c "from familyos_ultrabert import Client; Client()"
 ### API Additions
 
 **Client class:**
+
 - `create_decoder_session(version, quantization, device)` - Create decoder context
 - `encode(text)` - Get encoder hidden states
 - `suggest_alternative(text)` - One-shot counterfactual
 - `suggest_alternative_structured(text)` - Structured output with insights
 
 **New exports:**
+
 - `DecoderSession` - Context manager for decoder
 - `download_encoder()`, `download_decoder()` - Weight management
 - `get_cache_dir()`, `clear_cache()`, `is_cached()`, `get_weights_info()`

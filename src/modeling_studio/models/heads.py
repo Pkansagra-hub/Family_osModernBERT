@@ -3779,6 +3779,10 @@ class LabelDescriptionHead(nn.Module):
         # Learnable temperature (clamped to prevent instability)
         self.log_temperature = nn.Parameter(torch.tensor(temperature).log())
 
+        # Track number of trained embeddings (for expand_labels calibration)
+        # Zero-shot labels added via expand_labels need calibration in forward()
+        self._num_trained_labels = num_labels
+
         # For compatibility with BaseHead interface
         self.dropout = nn.Dropout(dropout)
 
@@ -3804,6 +3808,161 @@ class LabelDescriptionHead(nn.Module):
     def unfreeze_label_embeddings(self) -> None:
         """Unfreeze label embeddings."""
         self.label_embeddings.requires_grad = True
+
+    def set_custom_labels(
+        self,
+        labels: dict[str, str],
+        encoder: nn.Module,
+        tokenizer,
+        temperature: float | None = None,
+    ) -> None:
+        """
+        Set completely custom labels with zero-shot initialization.
+
+        This allows ANY number of labels (not limited to original num_labels).
+        Each label is initialized from its description using the encoder.
+
+        Args:
+            labels: Dict mapping label_name -> description.
+                    Example: {"purchase": "Customer wants to buy something",
+                              "refund": "Customer wants money back"}
+            encoder: The encoder model (ModernBERT)
+            tokenizer: Tokenizer for the encoder
+            temperature: Optional temperature override. If None, keeps the
+                        trained temperature. For zero-shot, higher values
+                        (0.5-1.0) may work better than the trained ~0.07.
+
+        Example:
+            >>> head.set_custom_labels({
+            ...     "order_status": "Customer asking about order tracking",
+            ...     "technical_support": "Customer needs help with product",
+            ...     "billing": "Customer has payment or invoice questions",
+            ...     "feedback": "Customer providing product feedback",
+            ... }, encoder, tokenizer)
+        """
+        if not labels:
+            raise ValueError("labels dict cannot be empty")
+
+        label_names = list(labels.keys())
+        descriptions = list(labels.values())
+        new_num_labels = len(labels)
+
+        # Encode descriptions
+        device = self.label_embeddings.device
+        encoder.eval()
+
+        with torch.no_grad():
+            inputs = tokenizer(
+                descriptions,
+                padding=True,
+                truncation=True,
+                max_length=128,
+                return_tensors="pt",
+            ).to(device)
+
+            outputs = encoder(**inputs)
+            cls_embeddings = outputs.last_hidden_state[:, 0]  # (new_num_labels, hidden_size)
+
+            # Project through query projection and normalize
+            projected = self.query_proj(cls_embeddings)
+            normalized = F.normalize(projected, dim=-1)
+
+            # Create new label embeddings parameter with correct size
+            new_embeddings = nn.Parameter(normalized)
+
+            # Update the module
+            self.num_labels = new_num_labels
+            self.label_names = label_names
+            self.label_embeddings = new_embeddings
+
+            # Optionally override temperature for zero-shot
+            if temperature is not None:
+                self.log_temperature = nn.Parameter(torch.tensor(temperature).log().to(device))
+
+    def expand_labels(
+        self,
+        new_labels: dict[str, str],
+        encoder: nn.Module,
+        tokenizer,
+    ) -> list[str]:
+        """
+        Expand label set by ADDING new labels while keeping existing trained embeddings.
+
+        This preserves the trained embeddings for original labels and adds
+        zero-shot embeddings for new labels. Perfect for families who want
+        to add custom categories without losing trained performance.
+
+        Note: Zero-shot embeddings are calibrated to work alongside trained
+        embeddings by adjusting their scale. New labels work best when they
+        are semantically distinct from trained labels.
+
+        Args:
+            new_labels: Dict mapping new_label_name -> description.
+                       These are ADDED to existing labels.
+            encoder: The encoder model (ModernBERT)
+            tokenizer: Tokenizer for the encoder
+
+        Returns:
+            List of all label names (original + new)
+
+        Example:
+            >>> # Add family-specific intents
+            >>> head.expand_labels({
+            ...     "school_pickup": "Reminder or task about picking up kids from school",
+            ...     "pet_care": "Taking care of pets, vet appointments, feeding",
+            ...     "date_night": "Planning romantic time with partner",
+            ... }, encoder, tokenizer)
+            >>> # Now have 11 intents: 8 original + 3 new
+        """
+        if not new_labels:
+            raise ValueError("new_labels dict cannot be empty")
+
+        # Check for duplicate labels
+        existing_set = set(self.label_names)
+        for name in new_labels.keys():
+            if name in existing_set:
+                raise ValueError(f"Label '{name}' already exists. Use a different name.")
+
+        new_label_names = list(new_labels.keys())
+        descriptions = list(new_labels.values())
+
+        # Encode descriptions for new labels
+        device = self.label_embeddings.device
+        encoder.eval()
+
+        with torch.no_grad():
+            inputs = tokenizer(
+                descriptions,
+                padding=True,
+                truncation=True,
+                max_length=128,
+                return_tensors="pt",
+            ).to(device)
+
+            outputs = encoder(**inputs)
+            cls_embeddings = outputs.last_hidden_state[:, 0]  # (num_new, hidden_size)
+
+            # Project through query projection and normalize
+            projected = self.query_proj(cls_embeddings)
+            new_embeddings = F.normalize(projected, dim=-1)  # (num_new, projection_dim)
+
+            # Scale to match trained embedding norms for consistency
+            # (calibration of similarity scores happens in forward())
+            trained_norm = self.label_embeddings.data.norm(dim=1).mean()
+            new_embeddings = new_embeddings * trained_norm
+
+            # Concatenate with existing embeddings
+            combined_embeddings = torch.cat([
+                self.label_embeddings.data,  # (num_original, projection_dim)
+                new_embeddings,               # (num_new, projection_dim)
+            ], dim=0)
+
+            # Update the module (keep _num_trained_labels at original value for calibration)
+            self.num_labels = len(self.label_names) + len(new_label_names)
+            self.label_names = self.label_names + new_label_names
+            self.label_embeddings = nn.Parameter(combined_embeddings)
+
+        return self.label_names
 
     def init_label_embeddings_from_encoder(
         self,
@@ -3889,7 +4048,27 @@ class LabelDescriptionHead(nn.Module):
 
         # Compute cosine similarity scaled by temperature
         # Higher temperature = softer distribution, lower = sharper
-        logits = torch.matmul(query, label_emb.T) / self.temperature  # (B, num_labels)
+        similarity = torch.matmul(query, label_emb.T)  # (B, num_labels)
+
+        # CALIBRATION for mixed trained + zero-shot embeddings
+        # Trained embeddings have learned negative similarity with non-matches
+        # Zero-shot embeddings have naturally positive similarity
+        # Apply offset to zero-shot labels to put them in same range
+        if hasattr(self, '_num_trained_labels') and self._num_trained_labels < self.num_labels:
+            num_trained = self._num_trained_labels
+            # Compute mean similarity for trained labels (this is the "baseline")
+            trained_sim = similarity[:, :num_trained].mean(dim=1, keepdim=True)  # (B, 1)
+            # Compute mean similarity for zero-shot labels
+            zeroshot_sim = similarity[:, num_trained:].mean(dim=1, keepdim=True)  # (B, 1)
+            # Offset to center zero-shot around trained mean
+            offset = zeroshot_sim - trained_sim  # positive value to subtract
+            # Apply offset only to zero-shot labels
+            similarity = torch.cat([
+                similarity[:, :num_trained],
+                similarity[:, num_trained:] - offset,
+            ], dim=1)
+
+        logits = similarity / self.temperature  # (B, num_labels)
 
         # Compute probabilities
         if self.multi_label:

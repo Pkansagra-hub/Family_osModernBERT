@@ -411,6 +411,415 @@ class Client:
         result = self.analyze(text, capabilities=["ingress_v2"])
         return result._caps.get("ingress_v2", {})
 
+    def get_intent_labels(self) -> List[str]:
+        """Get list of available intent labels (V2)."""
+        self._ensure_ready()
+        if "intent_v2" in self._model._engine.heads:
+            head = self._model._engine.heads["intent_v2"]
+            # Use label_names (updated by set_custom_labels) or fallback to INTENT_LABELS
+            if hasattr(head, "label_names") and head.label_names:
+                return list(head.label_names)
+            return list(head.INTENT_LABELS) if hasattr(head, "INTENT_LABELS") else []
+        return []
+
+    def get_ingress_labels(self) -> List[str]:
+        """Get list of available ingress/domain labels (V2)."""
+        self._ensure_ready()
+        if "ingress_v2" in self._model._engine.heads:
+            head = self._model._engine.heads["ingress_v2"]
+            # Use label_names (updated by set_custom_labels) or fallback to INGRESS_LABELS
+            if hasattr(head, "label_names") and head.label_names:
+                return list(head.label_names)
+            return list(head.INGRESS_LABELS) if hasattr(head, "INGRESS_LABELS") else []
+        return []
+
+    def init_intent_from_descriptions(self, descriptions: List[str]) -> None:
+        """
+        Initialize intent embeddings from custom text descriptions (zero-shot).
+
+        IMPORTANT: This is for ZERO-SHOT TRANSFER to custom label sets, NOT for
+        improving the standard labels. The trained embeddings are already optimized
+        for the default intent labels and will perform better than description-based.
+
+        Use this ONLY when you need to classify intents that differ from the
+        standard 8 FamilyOS intents (e.g., a different domain or custom taxonomy).
+
+        Args:
+            descriptions: List of 8 intent descriptions (one per label).
+                         MUST provide custom descriptions - this replaces trained
+                         embeddings which will degrade standard intent performance.
+
+        Example:
+            # Custom descriptions for a different domain
+            >>> client.init_intent_from_descriptions([
+            ...     "Customer wants to make a purchase",
+            ...     "Customer wants to return a product",
+            ...     "Customer is asking about shipping",
+            ...     "Customer needs technical support",
+            ...     "Customer is providing feedback",
+            ...     "Customer wants to cancel an order",
+            ...     "Customer is asking about pricing",
+            ...     "General inquiry or unclear intent",
+            ... ])
+
+        Note:
+            For standard FamilyOS intents, do NOT call this method - the model
+            comes pre-trained with optimized embeddings.
+        """
+        self._ensure_ready()
+        if "intent_v2" not in self._model._engine.heads:
+            raise ValueError("intent_v2 head not available in this model")
+
+        head = self._model._engine.heads["intent_v2"]
+        encoder = self._model._engine.encoder
+        tokenizer = self._model._engine.tokenizer
+
+        if len(descriptions) != head.num_labels:
+            raise ValueError(
+                f"Expected {head.num_labels} descriptions, got {len(descriptions)}"
+            )
+        head.init_label_embeddings_from_encoder(encoder, tokenizer, descriptions)
+
+    def init_ingress_from_descriptions(self, descriptions: List[str]) -> None:
+        """
+        Initialize ingress/domain embeddings from custom text descriptions (zero-shot).
+
+        IMPORTANT: This is for ZERO-SHOT TRANSFER to custom domain sets, NOT for
+        improving the standard domains. The trained embeddings are already optimized
+        for the default FamilyOS domains and will perform better than description-based.
+
+        Use this ONLY when you need to classify domains that differ from the
+        standard 12 FamilyOS domains (e.g., a different domain taxonomy).
+
+        Args:
+            descriptions: List of 12 domain descriptions (one per label).
+                         MUST provide custom descriptions - this replaces trained
+                         embeddings which will degrade standard domain performance.
+
+        Example:
+            # Custom descriptions for an e-commerce domain
+            >>> client.init_ingress_from_descriptions([
+            ...     "Product browsing and catalog exploration",
+            ...     "Shopping cart and checkout",
+            ...     "Order tracking and delivery",
+            ...     "Returns and refunds",
+            ...     "Product reviews and ratings",
+            ...     "Account and profile management",
+            ...     "Promotions and discounts",
+            ...     "Payment and billing",
+            ...     "Customer support",
+            ...     "Product recommendations",
+            ...     "Wishlist and favorites",
+            ...     "General inquiries",
+            ... ])
+
+        Note:
+            For standard FamilyOS domains, do NOT call this method - the model
+            comes pre-trained with optimized embeddings.
+        """
+        self._ensure_ready()
+        if "ingress_v2" not in self._model._engine.heads:
+            raise ValueError("ingress_v2 head not available in this model")
+
+        head = self._model._engine.heads["ingress_v2"]
+        encoder = self._model._engine.encoder
+        tokenizer = self._model._engine.tokenizer
+
+        if len(descriptions) != head.num_labels:
+            raise ValueError(
+                f"Expected {head.num_labels} descriptions, got {len(descriptions)}"
+            )
+        head.init_label_embeddings_from_encoder(encoder, tokenizer, descriptions)
+
+    def add_intent_label(self, label: str, description: str) -> List[str]:
+        """
+        Add a single new intent label (convenience wrapper).
+
+        For adding multiple labels at once, use add_intent_labels() instead.
+
+        Args:
+            label: Name of the new intent label.
+            description: Text description of what this intent means.
+
+        Returns:
+            List of all intent labels after expansion.
+
+        Example:
+            >>> client.add_intent_label("school_pickup", "Picking up kids from school")
+        """
+        return self.add_intent_labels({label: description})
+
+    def set_intent_labels(
+        self,
+        labels: Dict[str, str],
+        temperature: Optional[float] = None,
+        threshold: float = 0.3,
+    ) -> None:
+        """
+        Set completely custom intent labels with zero-shot initialization.
+
+        This is TRUE ZERO-SHOT: define ANY labels you want, with ANY count.
+        The model will classify based on semantic similarity to descriptions.
+
+        IMPORTANT: Zero-shot performance depends heavily on:
+        1. Description quality - clear, specific descriptions work best
+        2. Temperature - controls prediction sharpness (default keeps trained value)
+        3. Threshold - probability cutoff for multi-label predictions
+
+        For optimal results, experiment with temperature values (0.1-1.0).
+        Use eval script: `python scripts/eval_globalpointer_checkpoint.py`
+
+        Args:
+            labels: Dict mapping label_name -> description.
+                    Can have ANY number of labels (not limited to 8).
+            temperature: Temperature for similarity scaling. If None, keeps
+                        trained temperature (~0.07). For zero-shot, try 0.3-0.5.
+            threshold: Probability threshold for predictions (default: 0.3).
+
+        Example:
+            >>> # E-commerce customer service intents
+            >>> client.set_intent_labels({
+            ...     "purchase": "Customer wants to buy a product",
+            ...     "return": "Customer wants to return or exchange item",
+            ...     "shipping": "Customer asking about delivery status",
+            ...     "support": "Customer needs technical help",
+            ...     "billing": "Customer has payment or invoice question",
+            ...     "feedback": "Customer providing product feedback",
+            ...     "complaint": "Customer expressing dissatisfaction",
+            ...     "other": "General inquiry or unclear intent",
+            ... }, temperature=0.3)
+            >>>
+            >>> # Now classify with your custom labels
+            >>> result = client.analyze("Where is my package?")
+            >>> print(result.intent_v2_primary)  # "shipping"
+
+        Note:
+            After calling this, the model will ONLY use your custom labels.
+            To restore default labels, reload the client.
+        """
+        self._ensure_ready()
+        if "intent_v2" not in self._model._engine.heads:
+            raise ValueError("intent_v2 head not available in this model")
+
+        if not labels:
+            raise ValueError("labels dict cannot be empty")
+
+        head = self._model._engine.heads["intent_v2"]
+        encoder = self._model._engine.encoder
+        tokenizer = self._model._engine.tokenizer
+
+        # Use the new set_custom_labels method (with optional temperature)
+        head.set_custom_labels(labels, encoder, tokenizer, temperature=temperature)
+
+        # Update the threshold for this head
+        self._model._engine.thresholds["intent_v2"] = threshold
+
+        # Update the schema in the engine for proper output formatting
+        from familyos_ultrabert.labels import LabelSchema
+        self._model._engine.custom_schemas["intent_v2"] = LabelSchema(
+            name="intent_v2_custom",
+            label2id={name: i for i, name in enumerate(labels.keys())},
+            problem_type="multi_label_classification",
+            description="Custom zero-shot intent labels",
+        )
+
+    def set_ingress_labels(
+        self,
+        labels: Dict[str, str],
+        temperature: Optional[float] = None,
+        threshold: float = 0.3,
+    ) -> None:
+        """
+        Set completely custom ingress/domain labels with zero-shot initialization.
+
+        This is TRUE ZERO-SHOT: define ANY domains you want, with ANY count.
+        The model will classify based on semantic similarity to descriptions.
+
+        IMPORTANT: Zero-shot performance depends heavily on:
+        1. Description quality - clear, specific descriptions work best
+        2. Temperature - controls prediction sharpness (default keeps trained value)
+        3. Threshold - probability cutoff for multi-label predictions
+
+        For optimal results, experiment with temperature values (0.1-1.0).
+
+        Args:
+            labels: Dict mapping domain_name -> description.
+                    Can have ANY number of labels (not limited to 12).
+            temperature: Temperature for similarity scaling. If None, keeps
+                        trained temperature (~0.07). For zero-shot, try 0.3-0.5.
+            threshold: Probability threshold for predictions (default: 0.3).
+
+        Example:
+            >>> # Healthcare domain classification
+            >>> client.set_ingress_labels({
+            ...     "symptoms": "Patient describing physical symptoms",
+            ...     "medication": "Questions about drugs or prescriptions",
+            ...     "appointment": "Scheduling or canceling visits",
+            ...     "insurance": "Coverage or billing questions",
+            ...     "emergency": "Urgent medical situation",
+            ...     "general": "General health inquiry",
+            ... })
+            >>>
+            >>> result = client.analyze("My head has been hurting for 3 days")
+            >>> print(result.ingress_v2_domains)  # ["symptoms"]
+
+        Note:
+            After calling this, the model will ONLY use your custom labels.
+            To restore default labels, reload the client.
+        """
+        self._ensure_ready()
+        if "ingress_v2" not in self._model._engine.heads:
+            raise ValueError("ingress_v2 head not available in this model")
+
+        if not labels:
+            raise ValueError("labels dict cannot be empty")
+
+        head = self._model._engine.heads["ingress_v2"]
+        encoder = self._model._engine.encoder
+        tokenizer = self._model._engine.tokenizer
+
+        # Use the new set_custom_labels method (with optional temperature)
+        head.set_custom_labels(labels, encoder, tokenizer, temperature=temperature)
+
+        # Update the threshold for this head
+        self._model._engine.thresholds["ingress_v2"] = threshold
+
+        # Update the schema in the engine for proper output formatting
+        from familyos_ultrabert.labels import LabelSchema
+        self._model._engine.custom_schemas["ingress_v2"] = LabelSchema(
+            name="ingress_v2_custom",
+            label2id={name: i for i, name in enumerate(labels.keys())},
+            problem_type="multi_label_classification",
+            description="Custom zero-shot ingress labels",
+        )
+
+    def add_intent_labels(self, new_labels: Dict[str, str]) -> List[str]:
+        """
+        ADD new intent labels while keeping all existing trained labels.
+
+        This EXPANDS the label set - original trained embeddings are preserved,
+        and new labels get zero-shot embeddings from their descriptions.
+
+        Perfect for families who want custom categories without losing
+        the trained performance on standard intents.
+
+        Args:
+            new_labels: Dict mapping new_label_name -> description.
+                       These are ADDED to the existing 8 intents.
+
+        Returns:
+            List of all intent labels (original + new)
+
+        Example:
+            >>> # Add family-specific intents
+            >>> all_labels = client.add_intent_labels({
+            ...     "school_pickup": "Reminder about picking up kids from school",
+            ...     "pet_care": "Taking care of pets, vet visits, feeding schedule",
+            ...     "date_night": "Planning romantic time with partner",
+            ...     "family_trip": "Planning or discussing family vacation",
+            ... })
+            >>> print(len(all_labels))  # 12 (8 original + 4 new)
+            >>>
+            >>> result = client.analyze("Don't forget to pick up Emma at 3pm")
+            >>> print(result.intent_v2_primary)  # "school_pickup"
+        """
+        self._ensure_ready()
+        if "intent_v2" not in self._model._engine.heads:
+            raise ValueError("intent_v2 head not available in this model")
+
+        if not new_labels:
+            raise ValueError("new_labels dict cannot be empty")
+
+        head = self._model._engine.heads["intent_v2"]
+        encoder = self._model._engine.encoder
+        tokenizer = self._model._engine.tokenizer
+
+        # Expand the label set (preserves trained embeddings)
+        all_labels = head.expand_labels(new_labels, encoder, tokenizer)
+
+        # Update the schema in the engine
+        from familyos_ultrabert.labels import LabelSchema
+        self._model._engine.custom_schemas["intent_v2"] = LabelSchema(
+            name="intent_v2_expanded",
+            label2id={name: i for i, name in enumerate(all_labels)},
+            problem_type="multi_label_classification",
+            description=f"Expanded intent labels ({len(all_labels)} total)",
+        )
+
+        return all_labels
+
+    def add_ingress_labels(self, new_labels: Dict[str, str]) -> List[str]:
+        """
+        ADD new ingress/domain labels while keeping all existing trained labels.
+
+        This EXPANDS the domain set - original trained embeddings are preserved,
+        and new domains get zero-shot embeddings from their descriptions.
+
+        Perfect for families who want custom domains without losing
+        the trained performance on standard domains.
+
+        Args:
+            new_labels: Dict mapping new_domain_name -> description.
+                       These are ADDED to the existing 12 domains.
+
+        Returns:
+            List of all domain labels (original + new)
+
+        Example:
+            >>> # Add family-specific domains
+            >>> all_labels = client.add_ingress_labels({
+            ...     "PETS": "Pet care, vet visits, pet supplies",
+            ...     "SCHOOL": "School events, homework, parent-teacher meetings",
+            ...     "HOBBIES": "Personal hobbies and recreational activities",
+            ... })
+            >>> print(len(all_labels))  # 15 (12 original + 3 new)
+            >>>
+            >>> result = client.analyze("Soccer practice is at 5pm")
+            >>> print(result.ingress_v2_domains)  # ["HOBBIES"] or ["PLANNING"]
+        """
+        self._ensure_ready()
+        if "ingress_v2" not in self._model._engine.heads:
+            raise ValueError("ingress_v2 head not available in this model")
+
+        if not new_labels:
+            raise ValueError("new_labels dict cannot be empty")
+
+        head = self._model._engine.heads["ingress_v2"]
+        encoder = self._model._engine.encoder
+        tokenizer = self._model._engine.tokenizer
+
+        # Expand the label set (preserves trained embeddings)
+        all_labels = head.expand_labels(new_labels, encoder, tokenizer)
+
+        # Update the schema in the engine
+        from familyos_ultrabert.labels import LabelSchema
+        self._model._engine.custom_schemas["ingress_v2"] = LabelSchema(
+            name="ingress_v2_expanded",
+            label2id={name: i for i, name in enumerate(all_labels)},
+            problem_type="multi_label_classification",
+            description=f"Expanded ingress labels ({len(all_labels)} total)",
+        )
+
+        return all_labels
+
+    def add_ingress_label(self, label: str, description: str) -> List[str]:
+        """
+        Add a single new ingress/domain label (convenience wrapper).
+
+        For adding multiple labels at once, use add_ingress_labels() instead.
+
+        Args:
+            label: Name of the new domain label.
+            description: Text description of what this domain means.
+
+        Returns:
+            List of all domain labels after expansion.
+
+        Example:
+            >>> client.add_ingress_label("PETS", "Pet care, vet visits, pet supplies")
+        """
+        return self.add_ingress_labels({label: description})
+
     def get_entities(self, text: str) -> List[Dict]:
         """Quick family entity extraction. Returns list of entity dicts."""
         result = self.analyze(text, capabilities=["ner_family"])

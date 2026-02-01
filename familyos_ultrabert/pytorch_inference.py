@@ -36,14 +36,22 @@ logger = logging.getLogger(__name__)
 
 # These are logit thresholds - optimized via per-head grid search on validation
 # Lower = more entities detected (higher recall), Higher = fewer entities (higher precision)
-# Optimized for best model (familyos_ultrabert/weights/pytorch) with 0.1 granularity
+# Optimized for best model (best_v4_halo checkpoint) with 0.1 granularity
 DEFAULT_THRESHOLDS = {
-    "ner_general": -1.0,  # F1=0.730 (P=0.740, R=0.720)
-    "ner_family": -0.7,  # F1=0.812 (P=0.922, R=0.726)
-    "temporal": -1.9,  # F1=0.639 (P=0.651, R=0.627)
+    # GlobalPointer NER heads (logit thresholds)
+    "ner_general": -0.8,  # F1=0.671 (P=0.786, R=0.586)
+    "ner_family": -2.1,  # F1=0.730 (P=0.744, R=0.717)
+    "temporal": -2.4,  # F1=0.640 (P=0.755, R=0.556)
     # V2 Label-Description Embedding heads (probability thresholds)
-    "intent_v2": 0.5,  # Multi-label intent classification
-    "ingress_v2": 0.5,  # Multi-label domain classification
+    "intent_v2": 0.30,  # F1=0.821 @ temperature=0.10
+    "ingress_v2": 0.30,  # F1=0.774 @ temperature=0.10
+}
+
+# V2 Head optimal temperatures (for reference - stored in model weights)
+# These are the optimal temperatures from validation sweep:
+V2_OPTIMAL_TEMPERATURES = {
+    "intent_v2": 0.10,  # F1=0.821 (P=0.929, R=0.736)
+    "ingress_v2": 0.10,  # F1=0.774 (P=0.783, R=0.766)
 }
 
 
@@ -402,6 +410,7 @@ def postprocess(
     text: str = "",
     offset_mapping: Optional[List[tuple[int, int]]] = None,
     threshold: Optional[float] = None,
+    custom_schema: Optional[LabelSchema] = None,
 ) -> Dict[str, Any]:
     """Post-process head output based on capability type.
 
@@ -412,12 +421,14 @@ def postprocess(
         text: Original input text (for GlobalPointer span extraction)
         offset_mapping: Token offset mapping (for GlobalPointer)
         threshold: Override threshold for GlobalPointer (uses DEFAULT_THRESHOLDS if None)
+        custom_schema: Optional custom schema (for zero-shot labels)
 
     Returns:
         Dict with processed predictions
     """
     cap_enum = Capability(capability)
-    schema = CAPABILITY_TO_LABELS.get(cap_enum)
+    # Use custom schema if provided, otherwise fall back to global
+    schema = custom_schema or CAPABILITY_TO_LABELS.get(cap_enum)
 
     if capability in ["ner_general", "ner_family", "temporal"]:
         # GlobalPointer: 4D output (batch, num_labels, seq, seq)
@@ -503,6 +514,9 @@ class PyTorchInferenceEngine:
         self.heads = self.model.heads
 
         self.cache = EncoderCache(cache_size) if enable_cache else None
+
+        # Custom schemas for zero-shot labels (override CAPABILITY_TO_LABELS)
+        self.custom_schemas: Dict[str, LabelSchema] = {}
 
         # CUDA streams for parallel head execution
         self.use_cuda = device.startswith("cuda") and torch.cuda.is_available()
@@ -635,6 +649,8 @@ class PyTorchInferenceEngine:
             if cap not in head_outputs:
                 continue
             pp_start = time.perf_counter()
+            # Use custom schema if set (for zero-shot labels)
+            custom_schema = self.custom_schemas.get(cap)
             output = postprocess(
                 cap,
                 head_outputs[cap],
@@ -642,6 +658,7 @@ class PyTorchInferenceEngine:
                 text=text,
                 offset_mapping=offset_mapping,
                 threshold=self.thresholds.get(cap),
+                custom_schema=custom_schema,
             )
             pp_ms = (time.perf_counter() - pp_start) * 1000
             results[cap] = InferenceResult(capability=cap, output=output, latency_ms=pp_ms)

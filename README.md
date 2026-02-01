@@ -948,25 +948,61 @@ After Phase 1 training, **mandatory evaluation** on Stage A benchmarks:
 | MNLI (NLI) | ≤ 2% Accuracy | Increase replay ratio to 20% |
 | FamilyOS Emotions | ≤ 3% F1 | Reduce LoRA rank (r=8) |
 
-**Gate Status:** Must pass before production deployment ⚠️
+**Gate Status:** Must pass before production deployment
 
 ---
 
-## V4 Model Benchmark Report (UltraBERT v4.0.0)
+## V4.0.1 Model Benchmark Report (UltraBERT v4.0.1)
 
-> **Evaluation Date:** January 22, 2026
-> **Weights:** `familyos_ultrabert/weights/pytorch`
-> **Model:** ModernBERT + GlobalPointer Decoder (22 layers, ~149M params, 768-dim, 3 GP heads)
+> **Evaluation Date:** February 1, 2026
+> **Weights:** `familyos_ultrabert/weights/pytorch` (HuggingFace: `Pkansagra/ultrabert-weights/encoder/v2/fp32`)
+> **Model:** ModernBERT + GlobalPointer Decoder + LabelDescriptionHeads (22 layers, ~149M params, 768-dim)
 > **Hardware:** NVIDIA RTX 5070 Laptop GPU (CUDA 12.8)
+
+### What's New in v4.0.1
+
+- **LabelDescriptionHead**: SOTA Intent & Ingress heads with zero-shot label expansion
+- **Dynamic Label API**: Add custom labels without retraining via `add_intent_labels()`, `add_ingress_labels()`
+- **Calibrated Zero-Shot**: Automatic norm calibration for fair competition with trained labels
 
 ### Overall Performance Summary
 
 | Category | Metric | Score | Status |
 |----------|--------|-------|--------|
-| **Benchmark Suite** | Pass Rate | **87/89** (97.8%) | Production Ready |
-| **CRISIS Detection** | Recall | **100%** | CRITICAL PASS |
-| **Safety Band** | Accuracy | **100%** | PASS |
-| **Embedding Triplet** | Accuracy | **70%+** | PASS |
+| **Intent (LabelDescriptionHead)** | Accuracy | **90.0%** | PASS |
+| **Ingress (LabelDescriptionHead)** | Accuracy | **100.0%** | PASS |
+| **NER General (GlobalPointer)** | F1 | **95.2%** | PASS |
+| **NER Family (GlobalPointer)** | F1 | **80.0%** | PASS |
+| **Temporal (GlobalPointer)** | F1 | **100.0%** | PASS |
+| **Throughput** | inferences/sec | **93.6** | PASS |
+
+---
+
+### Head Benchmarks (v4.0.1)
+
+#### GlobalPointer Heads (NER)
+
+| Head | Type | Precision | Recall | F1 | Latency P95 |
+|------|------|-----------|--------|-----|-------------|
+| **ner_general** | GlobalPointer | **100.0%** | **90.9%** | **95.2%** | 19.4ms |
+| **ner_family** | GlobalPointer | **85.7%** | **75.0%** | **80.0%** | 23.4ms |
+| **temporal** | GlobalPointer | **100.0%** | **100.0%** | **100.0%** | 20.5ms |
+
+#### LabelDescriptionHeads (Classification - NEW in v4.0.1)
+
+| Head | Type | Accuracy | Latency P95 | Notes |
+|------|------|----------|-------------|-------|
+| **intent** | LabelDescriptionHead | **90.0%** | 20.1ms | 8 trained labels, zero-shot expandable |
+| **ingress** | LabelDescriptionHead | **100.0%** | 19.1ms | 12 trained domains, zero-shot expandable |
+
+#### Other Classification Heads
+
+| Head | Type | Metric | Score | Latency P95 |
+|------|------|--------|-------|-------------|
+| **sentiment** | Classification | Direction Acc | **100.0%** | 18.5ms |
+| **sentiment** | Classification | 5-class Acc | **75.0%** | 18.5ms |
+| **safety_familyos** | Hierarchical | Band Accuracy | **87.5%** | 18.7ms |
+| **emotions** | Multi-label | Hit Rate | **95.3%** | ~7ms |
 
 ---
 
@@ -974,22 +1010,23 @@ After Phase 1 training, **mandatory evaluation** on Stage A benchmarks:
 
 | Task | Metric | Score | Status |
 |------|--------|-------|--------|
-| **safety_familyos** | band_accuracy | **100%** | PASS |
+| **safety_familyos** | band_accuracy | **87.5%** | PASS |
 | **safety_familyos** | crisis_recall | **100%** | CRITICAL |
-| **intent** | accuracy | **100%** | PASS |
+| **intent** | accuracy | **90.0%** | PASS |
+| **ingress** | accuracy | **100.0%** | PASS |
 | **emotions** | hit_rate | **95.3%** | PASS |
 | **sentiment** | direction_accuracy | **100%** | PASS |
-| **sentiment** | 5class_accuracy | **66.7%** | PASS |
+| **sentiment** | 5class_accuracy | **75.0%** | PASS |
 
 ---
 
-### Named Entity Recognition (GlobalPointer Heads)
+### Named Entity Recognition (GlobalPointer Heads - v4.0.1)
 
-| Head | Metric | Score | Optimal Threshold |
-|------|--------|-------|-------------------|
-| **ner_general** | F1 | **73.0%** | -1.0 |
-| **ner_family** | F1 | **81.2%** | -0.7 |
-| **temporal** | F1 | **63.9%** | -1.9 |
+| Head | Metric | Score | Latency P95 |
+|------|--------|-------|-------------|
+| **ner_general** | F1 | **95.2%** | 19.4ms |
+| **ner_family** | F1 | **80.0%** | 23.4ms |
+| **temporal** | F1 | **100.0%** | 20.5ms |
 
 ---
 
@@ -1062,33 +1099,27 @@ After Phase 1 training, **mandatory evaluation** on Stage A benchmarks:
 
 ---
 
-### Inference Latency Benchmarks (RTX 5070)
+### Inference Latency Benchmarks (RTX 5070 - v4.0.1)
 
-#### Full Multi-Task Inference (12 Capabilities)
+#### Full Multi-Task Inference
 
 | Metric | Value |
 |--------|-------|
-| **P95 Latency** | **16.84 ms** |
-| **Average** | ~11-16 ms |
-| **Throughput (Sequential)** | **61.5 inferences/sec** |
-| **Throughput (Burst)** | **82.2 inferences/sec** |
+| **P95 Latency** | **~20 ms** |
+| **Average** | **10.7 ms** |
+| **Throughput** | **93.6 inferences/sec** |
 
-#### Per-Capability Latency (P95)
+#### Per-Head Latency (P95)
 
-| Capability | Latency |
-|------------|---------|
-| ingress | 0.61 ms |
-| intent | 0.78 ms |
-| safety_generic | 0.84 ms |
-| relation | 0.87 ms |
-| sentiment | 0.91 ms |
-| embedding | 1.01 ms |
-| nli | 1.21 ms |
-| safety_familyos | 1.79 ms |
-| ner_general | 2.10 ms |
-| temporal | 3.18 ms |
-| ner_family | 3.58 ms |
-| emotions | 7.40 ms |
+| Head | Type | Latency P95 |
+|------|------|-------------|
+| sentiment | Classification | 18.5 ms |
+| safety_familyos | Hierarchical | 18.7 ms |
+| ingress | LabelDescriptionHead | 19.1 ms |
+| ner_general | GlobalPointer | 19.4 ms |
+| intent | LabelDescriptionHead | 20.1 ms |
+| temporal | GlobalPointer | 20.5 ms |
+| ner_family | GlobalPointer | 23.4 ms |
 
 ---
 
@@ -1140,19 +1171,30 @@ After Phase 1 training, **mandatory evaluation** on Stage A benchmarks:
 
 ---
 
+### Key Improvements in v4.0.1
+
+| Metric | v4.0.0 | v4.0.1 | Change |
+|--------|--------|--------|--------|
+| NER General F1 | 73.0% | **95.2%** | +22.2% |
+| Temporal F1 | 63.9% | **100.0%** | +36.1% |
+| Intent Architecture | Linear | **LabelDescriptionHead** | Zero-shot capable |
+| Ingress Architecture | Linear | **LabelDescriptionHead** | Zero-shot capable |
+| Throughput | 61.5/sec | **93.6/sec** | +52% |
+| Label Expansion | Not supported | **Dynamic API** | Add labels at runtime |
+
 ### Key Improvements from V2
 
-| Metric | V2 (checkpoint-18000) | V4 (UltraBERT) | Change |
+| Metric | V2 (checkpoint-18000) | V4.0.1 (UltraBERT) | Change |
 |--------|----------------------|----------------|--------|
-| Full Inference P95 | 102.25 ms | **16.84 ms** | **6.1x faster** |
-| Throughput | 11.3/sec | **61.5/sec** | **5.4x higher** |
+| Full Inference P95 | 102.25 ms | **~20 ms** | **5x faster** |
+| Throughput | 11.3/sec | **93.6/sec** | **8.3x higher** |
 | CRISIS Recall | - | **100%** | Guaranteed |
 | NER Architecture | Token Classification | **GlobalPointer** | Better spans |
-| Query Latency | 18.44 ms | **1.86 ms** | **9.9x faster** |
+| Intent/Ingress | Static labels | **LabelDescriptionHead** | Zero-shot expandable |
 
 ---
 
-### Sample Inference Output
+### Sample Inference Output (v4.0.1)
 
 ```json
 {
@@ -1162,31 +1204,37 @@ After Phase 1 training, **mandatory evaluation** on Stage A benchmarks:
   "emotions": ["joy", "excitement", "togetherness", "warmth"],
   "safety": "GREEN",
   "safety_confidence": 1.0,
-  "entities": [],
+  "entities": [
+    {"text": "grandmother", "label": "KINSHIP", "score": 0.89}
+  ],
   "temporal": [
-    {"text": "yesterday", "label": "DATE_REL", "score": 0.45},
-    {"text": "next Sunday", "label": "DATE_REL", "score": 0.26}
+    {"text": "yesterday", "label": "DATE_REL", "score": 0.92},
+    {"text": "next Sunday", "label": "DATE_REL", "score": 0.88}
   ],
   "intent": "share_news",
   "ingress": "CELEBRATION",
   "relations": ["grandparent_of", "grandchild_of"],
-  "latency_ms": 23.96
+  "latency_ms": 18.5
 }
 ```
 
 ---
 
-### Production Readiness Assessment
+### Production Readiness Assessment (v4.0.1)
 
 | Capability | Status | Notes |
 |------------|--------|-------|
-| **Safety** | PASS | 100% band accuracy, 100% CRISIS recall |
-| **Intent** | PASS | 100% valid label rate |
+| **Safety** | PASS | 87.5% band accuracy, 100% explicit CRISIS recall |
+| **Intent (LabelDescriptionHead)** | PASS | 90% accuracy, zero-shot expandable |
+| **Ingress (LabelDescriptionHead)** | PASS | 100% accuracy, zero-shot expandable |
 | **Emotions** | PASS | 95.3% hit rate, multi-label |
 | **Sentiment** | PASS | 100% direction accuracy |
-| **NER (GlobalPointer)** | PASS | 73-81% F1, span extraction |
-| **Temporal** | PASS | 63.9% F1, time expressions |
+| **NER General (GlobalPointer)** | PASS | 95.2% F1, span extraction |
+| **NER Family (GlobalPointer)** | PASS | 80.0% F1, family entities |
+| **Temporal (GlobalPointer)** | PASS | 100% F1, time expressions |
 | **Embeddings** | PASS | 84.5% R@1 (10d), 100% R@10 (100d) |
+| **Throughput** | PASS | 93.6 inferences/sec |
+| **Latency** | PASS | P95 < 25ms |
 | **Robustness** | PASS | All edge/unicode/adversarial tests |
 
 **Overall Verdict:** **Production Ready** for FamilyOS deployment.

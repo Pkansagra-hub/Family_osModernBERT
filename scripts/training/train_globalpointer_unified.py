@@ -1226,7 +1226,7 @@ def evaluate(
     val_loader: DataLoader,
     device: torch.device,
     debug: bool = False,
-    ner_threshold: float = 0.0,  # Logit threshold for NER (0.0 = prob 0.5, balanced)
+    ner_threshold: float = -0.5,  # Logit threshold for NER (-0.5 = prob 0.38, good early training balance)
     cls_threshold: float = 0.3,  # Lower threshold for classification (random embeds need time)
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.bfloat16,

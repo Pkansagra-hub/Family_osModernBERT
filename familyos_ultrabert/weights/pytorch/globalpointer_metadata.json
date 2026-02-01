@@ -1,71 +1,112 @@
 {
-  "timestamp": "2026-01-22T02:38:02.691177",
+  "timestamp": "2026-02-01T03:45:00.000000",
+  "checkpoint_source": "best_v4_halo",
   "replaced_heads": [
+    "ner_general",
+    "ner_family",
+    "temporal",
+    "intent_v2",
+    "ingress_v2"
+  ],
+  "span_heads": [
     "ner_general",
     "ner_family",
     "temporal"
   ],
-  "head_architecture": "GlobalPointerNERHead",
+  "classification_heads": [
+    "intent_v2",
+    "ingress_v2"
+  ],
+  "optimal_thresholds": {
+    "ner_general": -0.8,
+    "ner_family": -2.1,
+    "temporal": -2.4,
+    "intent_v2": 0.30,
+    "ingress_v2": 0.30
+  },
+  "optimal_temperatures": {
+    "intent_v2": 0.10,
+    "ingress_v2": 0.10
+  },
+  "validation_metrics": {
+    "ner_general": {"f1": 0.671, "precision": 0.786, "recall": 0.586},
+    "ner_family": {"f1": 0.730, "precision": 0.744, "recall": 0.717},
+    "temporal": {"f1": 0.640, "precision": 0.755, "recall": 0.556},
+    "intent_v2": {"f1": 0.821, "precision": 0.929, "recall": 0.736},
+    "ingress_v2": {"f1": 0.774, "precision": 0.783, "recall": 0.766}
+  },
   "head_info": {
     "ner_general": {
       "class": "GlobalPointerNERHead",
       "num_labels": 4,
-      "head_size": 64
+      "head_size": 64,
+      "multi_label": null
     },
     "sentiment": {
       "class": "SequenceClassificationHead",
       "num_labels": 5,
-      "head_size": null
+      "head_size": null,
+      "multi_label": null
     },
     "emotions": {
       "class": "HierarchicalEmotionHead",
       "num_labels": null,
-      "head_size": null
+      "head_size": null,
+      "multi_label": null
     },
     "safety_generic": {
       "class": "SequenceClassificationHead",
       "num_labels": 8,
-      "head_size": null
+      "head_size": null,
+      "multi_label": null
     },
     "nli": {
       "class": "NLIHead",
       "num_labels": 3,
-      "head_size": null
+      "head_size": null,
+      "multi_label": null
     },
     "embedding": {
       "class": "EmbeddingHead",
       "num_labels": null,
-      "head_size": null
+      "head_size": null,
+      "multi_label": null
     },
     "temporal": {
       "class": "GlobalPointerNERHead",
       "num_labels": 6,
-      "head_size": 64
+      "head_size": 64,
+      "multi_label": null
     },
     "ner_family": {
       "class": "GlobalPointerNERHead",
       "num_labels": 10,
-      "head_size": 64
+      "head_size": 64,
+      "multi_label": null
     },
-    "ingress": {
-      "class": "SequenceClassificationHead",
+    "ingress_v2": {
+      "class": "IngressHeadV2",
       "num_labels": 12,
-      "head_size": null
+      "head_size": null,
+      "multi_label": true
     },
     "safety_familyos": {
       "class": "SafetyHead",
       "num_labels": 4,
-      "head_size": null
+      "head_size": null,
+      "multi_label": null
     },
     "relation": {
       "class": "RelationHead",
       "num_labels": 15,
-      "head_size": null
+      "head_size": null,
+      "multi_label": null
     },
-    "intent": {
-      "class": "IntentHead",
+    "intent_v2": {
+      "class": "IntentHeadV2",
       "num_labels": 8,
-      "head_size": null
+      "head_size": null,
+      "multi_label": true
     }
   },
   "label_configs": {
@@ -94,16 +135,30 @@
       "DURATION": 3,
       "FREQUENCY": 4,
       "AGE": 5
+    },
+    "intent_v2": {
+      "log_memory": 0,
+      "query_memory": 1,
+      "set_reminder": 2,
+      "express_feeling": 3,
+      "seek_advice": 4,
+      "share_news": 5,
+      "reflect": 6,
+      "other": 7
+    },
+    "ingress_v2": {
+      "DIARY": 0,
+      "TASK": 1,
+      "HEALTH": 2,
+      "FINANCE": 3,
+      "RELATIONSHIP": 4,
+      "WORK": 5,
+      "META": 6,
+      "MEMORY": 7,
+      "PLANNING": 8,
+      "CELEBRATION": 9,
+      "CONCERN": 10,
+      "GRATITUDE": 11
     }
-  },
-  "optimal_thresholds": {
-    "ner_general": -1.0,
-    "ner_family": -0.7,
-    "temporal": -1.9
-  },
-  "threshold_metrics": {
-    "ner_general": {"f1": 0.730, "precision": 0.740, "recall": 0.720},
-    "ner_family": {"f1": 0.812, "precision": 0.922, "recall": 0.726},
-    "temporal": {"f1": 0.639, "precision": 0.651, "recall": 0.627}
   }
 }
