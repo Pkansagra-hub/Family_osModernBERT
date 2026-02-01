@@ -43,8 +43,11 @@ Date: January 2026
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import logging
+import math
+import platform
 import random
 import sys
 from datetime import datetime
@@ -54,6 +57,8 @@ from typing import Any
 import torch
 import torch.nn as nn
 import yaml
+from torch.amp import GradScaler, autocast
+from torch.optim.swa_utils import AveragedModel
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
 from tqdm import tqdm
 
@@ -62,7 +67,7 @@ project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from transformers import AutoTokenizer, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
 
 # Use centralized collator exports from trainers.collators (Epic 3.3)
 from modeling_studio.trainers.collators import (
@@ -661,6 +666,7 @@ def load_model_and_replace_heads(
     head_size: int = 64,
     dropout: float = 0.1,
     exclude_decoder: bool = True,
+    use_flash_attention: bool = False,
 ) -> ModernBertMultiTaskModel:
     """
     Load ModernBertMultiTaskModel and replace NER heads with GlobalPointer.
@@ -673,6 +679,7 @@ def load_model_and_replace_heads(
         head_size: GlobalPointer head dimension
         dropout: Dropout probability
         exclude_decoder: If True, skip loading GPT-2 decoder (saves 355M params)
+        use_flash_attention: If True, enable Flash Attention 2 (requires A100+)
 
     Returns:
         Model with replaced heads
@@ -685,6 +692,11 @@ def load_model_and_replace_heads(
 
     # Load config
     config = AutoConfig.from_pretrained(checkpoint_path, trust_remote_code=True)
+
+    # Enable Flash Attention 2 if requested (A100/H100 feature)
+    if use_flash_attention:
+        config.attn_implementation = "flash_attention_2"
+        logger.info("  Flash Attention 2: ENABLED")
 
     # Determine which capabilities to load
     # Exclude COUNTERFACTUAL (GPT-2 decoder) to save 355M params
@@ -899,6 +911,8 @@ def train_step(
     batch: dict,
     device: torch.device,
     debug: bool = False,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.float16,
 ) -> dict[str, torch.Tensor]:
     """
     Single training step with parallel head forward.
@@ -909,6 +923,8 @@ def train_step(
         batch: Batch with input_ids, attention_mask, head_names, span_labels, classification_labels
         device: Device
         debug: Enable verbose debug logging
+        use_amp: Use automatic mixed precision
+        amp_dtype: AMP data type (torch.float16 or torch.bfloat16)
 
     Returns:
         Dict with total_loss and per-head losses
@@ -931,71 +947,83 @@ def train_step(
             positive_count = (labels > 0).sum().item()
             logger.debug(f"  {h} classification_labels: shape={labels.shape}, positives={positive_count}")
 
-    # Get encoder hidden states ONCE
-    with torch.no_grad():
-        encoder_output = model.encoder(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-        )
-        if hasattr(encoder_output, "last_hidden_state"):
-            hidden_states = encoder_output.last_hidden_state
-        elif isinstance(encoder_output, tuple):
-            hidden_states = encoder_output[0]
-        else:
-            hidden_states = encoder_output
-
-    # Compute loss for each head in parallel
-    losses = {}
-    total_loss = torch.tensor(0.0, device=device)
-
-    for head_name in HEADS_TO_REPLACE:
-        if head_name not in model.heads:
-            continue
-        head = model.heads[head_name]
-
-        # Check if any samples in batch belong to this head
-        mask = torch.tensor([n == head_name for n in head_names], device=device)
-        if not mask.any():
-            continue
-
-        # Route to appropriate forward based on head type
-        if head_name in SPAN_HEADS:
-            # Span-based (NER) head
-            head_labels = span_labels.get(head_name)
-            if head_labels is None:
-                continue
-            output = head(
-                hidden_states=hidden_states,
+    # Get encoder hidden states ONCE (with AMP for speed)
+    amp_context = autocast("cuda", dtype=amp_dtype, enabled=use_amp) if device.type == "cuda" else autocast("cpu", enabled=False)
+    with amp_context:
+        with torch.no_grad():
+            encoder_output = model.encoder(
+                input_ids=input_ids,
                 attention_mask=attention_mask,
-                span_labels=head_labels,
             )
-        elif head_name in CLASSIFICATION_HEADS:
-            # Classification head (Intent/Ingress V2)
-            head_labels = classification_labels.get(head_name)
-            if head_labels is None:
+            if hasattr(encoder_output, "last_hidden_state"):
+                hidden_states = encoder_output.last_hidden_state
+            elif isinstance(encoder_output, tuple):
+                hidden_states = encoder_output[0]
+            else:
+                hidden_states = encoder_output
+
+        # Compute loss for each head in parallel (inside AMP context)
+        losses = {}
+        total_loss = torch.tensor(0.0, device=device)
+
+        for head_name in HEADS_TO_REPLACE:
+            if head_name not in model.heads:
                 continue
-            output = head(
-                hidden_states=hidden_states,
-                attention_mask=attention_mask,
-                labels=head_labels,
-            )
-        else:
-            continue
+            head = model.heads[head_name]
 
-        if "loss" in output and output["loss"] is not None:
-            # Weight by number of samples for this head
-            weight = mask.sum().float() / len(head_names)
-            head_loss = output["loss"] * weight
-            losses[head_name] = head_loss
-            total_loss = total_loss + head_loss
+            # Check if any samples in batch belong to this head
+            mask = torch.tensor([n == head_name for n in head_names], device=device)
+            if not mask.any():
+                continue
 
-            if debug:
-                logger.debug(f"  {head_name}: raw_loss={output['loss'].item():.4f}, weight={weight:.2f}, weighted_loss={head_loss.item():.4f}")
-                if "logits" in output:
-                    logger.debug(f"  {head_name} logits: min={output['logits'].min().item():.2f}, max={output['logits'].max().item():.2f}, mean={output['logits'].mean().item():.2f}")
+            # Route to appropriate forward based on head type
+            if head_name in SPAN_HEADS:
+                # Span-based (NER) head
+                head_labels = span_labels.get(head_name)
+                if head_labels is None:
+                    continue
+                output = head(
+                    hidden_states=hidden_states,
+                    attention_mask=attention_mask,
+                    span_labels=head_labels,
+                )
+            elif head_name in CLASSIFICATION_HEADS:
+                # Classification head (Intent/Ingress V2)
+                head_labels = classification_labels.get(head_name)
+                if head_labels is None:
+                    continue
+                output = head(
+                    hidden_states=hidden_states,
+                    attention_mask=attention_mask,
+                    labels=head_labels,
+                )
+            else:
+                continue
+
+            if "loss" in output and output["loss"] is not None:
+                # Weight by number of samples for this head
+                weight = mask.sum().float() / len(head_names)
+                head_loss = output["loss"] * weight
+                losses[head_name] = head_loss
+                total_loss = total_loss + head_loss
+
+                if debug:
+                    logger.debug(f"  {head_name}: raw_loss={output['loss'].item():.4f}, weight={weight:.2f}, weighted_loss={head_loss.item():.4f}")
+                    if "logits" in output:
+                        logger.debug(f"  {head_name} logits: min={output['logits'].min().item():.2f}, max={output['logits'].max().item():.2f}, mean={output['logits'].mean().item():.2f}")
 
     if debug:
         logger.debug(f"Total loss: {total_loss.item():.4f}")
+
+    # Log V2 head temperatures (for monitoring learning)
+    temp_info = {}
+    for head_name in CLASSIFICATION_HEADS:
+        if head_name in model.heads:
+            head = model.heads[head_name]
+            if hasattr(head, "temperature"):
+                temp_info[head_name] = head.temperature.item()
+    if temp_info:
+        losses["temperatures"] = temp_info
 
     return {"total_loss": total_loss, **losses}
 
@@ -1210,9 +1238,22 @@ def train(
     gradient_accumulation_steps: int = 1,
     max_grad_norm: float = 1.0,
     debug: bool = False,
+    use_amp: bool = True,
+    use_bf16: bool = False,
+    use_ema: bool = True,
+    early_stopping_patience: int = 5,
+    use_torch_compile: bool = False,
 ) -> dict[str, Any]:
     """
     Training loop for parallel head training with evaluation after each epoch.
+
+    World-class features:
+    - Mixed precision training (AMP) for 2x speedup
+    - BFloat16 support for A100 (better numerical stability than fp16)
+    - Exponential Moving Average (EMA) for smoother checkpoints
+    - Early stopping to prevent overfitting
+    - torch.compile() for additional speedup (optional)
+    - Temperature logging for V2 heads
 
     Args:
         model: The model
@@ -1227,24 +1268,56 @@ def train(
         gradient_accumulation_steps: Gradient accumulation
         max_grad_norm: Max gradient norm
         debug: Enable verbose debug logging
+        use_amp: Use automatic mixed precision (default: True)
+        use_bf16: Use bfloat16 instead of float16 (default: False, better for A100)
+        use_ema: Use exponential moving average (default: True)
+        early_stopping_patience: Stop after N evals without improvement (default: 5)
+        use_torch_compile: Use torch.compile for speedup (default: False)
 
     Returns:
         Training history
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Determine AMP dtype
+    amp_dtype = torch.bfloat16 if use_bf16 else torch.float16
+
+    # Setup AMP GradScaler (disabled for bf16 - not needed)
+    # BFloat16 has same exponent range as fp32, so no scaling needed
+    use_scaler = use_amp and device.type == "cuda" and not use_bf16
+    scaler = GradScaler("cuda", enabled=use_scaler)
+    logger.info(f"  Mixed Precision: {'bf16' if use_bf16 else 'fp16' if use_amp else 'disabled'}")
+    logger.info(f"  GradScaler: {'enabled' if use_scaler else 'disabled (bf16 mode)'}")
+
+    # Setup EMA model for smoother checkpoints
+    ema_model = None
+    if use_ema:
+        ema_model = AveragedModel(model)
+        logger.info(f"  EMA: enabled (decay via AveragedModel)")
+
+    # Optional torch.compile for speedup
+    if use_torch_compile and hasattr(torch, "compile"):
+        try:
+            model = torch.compile(model, mode="reduce-overhead")
+            logger.info(f"  torch.compile: enabled (reduce-overhead mode)")
+        except Exception as e:
+            logger.warning(f"  torch.compile failed: {e}, continuing without")
+
     model.train()
     global_step = 0
     best_f1 = 0.0
+    no_improve_count = 0  # For early stopping
     history = {
         "train_loss": [],
         "per_head_loss": {h: [] for h in HEADS_TO_REPLACE},
         "eval_metrics": [],
+        "temperatures": [],  # Track V2 head temperatures
     }
 
     log_section("TRAINING")
     logger.info(f"  Epochs: {num_epochs} | Batches: {len(train_loader)} | Grad accum: {gradient_accumulation_steps}")
     logger.info(f"  Save: every {save_steps} steps | Eval: every {eval_steps} steps")
+    logger.info(f"  Early stopping: patience={early_stopping_patience}")
 
     for epoch in range(num_epochs):
         logger.info("")
@@ -1253,6 +1326,7 @@ def train(
         epoch_loss = 0.0
         epoch_head_losses = {h: 0.0 for h in HEADS_TO_REPLACE}
         epoch_steps = 0
+        epoch_temperatures = {h: [] for h in CLASSIFICATION_HEADS}
 
         model.train()
         progress = tqdm(train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}")
@@ -1266,15 +1340,29 @@ def train(
                 logger.debug(f"Batch size: {len(batch['head_names'])}")
                 logger.debug(f"Head distribution: {batch['head_names']}")
 
-            losses = train_step(model, batch, device, debug=step_debug)
+            # Forward pass with AMP
+            losses = train_step(model, batch, device, debug=step_debug, use_amp=use_amp, amp_dtype=amp_dtype)
             loss = losses["total_loss"]
+
+            # Track temperatures
+            if "temperatures" in losses:
+                for h, temp in losses["temperatures"].items():
+                    epoch_temperatures[h].append(temp)
 
             if gradient_accumulation_steps > 1:
                 loss = loss / gradient_accumulation_steps
 
-            loss.backward()
+            # Backward pass (scaler handles bf16 vs fp16 automatically)
+            if use_scaler:
+                scaler.scale(loss).backward()
+            else:
+                loss.backward()
 
             if (step + 1) % gradient_accumulation_steps == 0:
+                # Unscale before gradient clipping (only if using scaler)
+                if use_scaler:
+                    scaler.unscale_(optimizer)
+
                 # Clip gradients
                 grad_norm = torch.nn.utils.clip_grad_norm_(
                     get_trainable_params(model),
@@ -1283,30 +1371,65 @@ def train(
                 if step_debug:
                     logger.debug(f"Gradient norm (before clip): {grad_norm:.4f}")
 
-                optimizer.step()
+                # Optimizer step (with or without scaler)
+                if use_scaler:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
                 global_step += 1
+
+                # Update EMA model
+                if ema_model is not None:
+                    ema_model.update_parameters(model)
 
                 # Save checkpoint every save_steps (INSIDE accumulation block)
                 if global_step > 0 and global_step % save_steps == 0:
                     logger.info(f"\nSaving checkpoint at step {global_step}...")
                     save_checkpoint(model, output_dir / f"checkpoint-{global_step}", tokenizer, optimizer, scheduler)
+                    # Also save EMA checkpoint
+                    if ema_model is not None:
+                        save_checkpoint(ema_model.module, output_dir / f"checkpoint-{global_step}-ema", tokenizer)
 
                 # Mid-epoch evaluation (INSIDE accumulation block)
                 if global_step > 0 and global_step % eval_steps == 0 and val_loader is not None:
                     logger.info(f"")
                     logger.info(f"--- Eval @ step {global_step} ---")
+
+                    # Log current temperatures
+                    for h in CLASSIFICATION_HEADS:
+                        if h in model.heads and hasattr(model.heads[h], "temperature"):
+                            temp = model.heads[h].temperature.item()
+                            logger.info(f"  {h} temperature: {temp:.4f}")
+
                     eval_metrics = evaluate(model, val_loader, device, debug=debug)
 
                     overall_f1 = eval_metrics["overall"]["f1"]
                     logger.info(f"Overall F1: {overall_f1:.4f}")
 
-                    # Save best model
+                    # Save best model (with early stopping check)
                     if overall_f1 > best_f1:
                         best_f1 = overall_f1
+                        no_improve_count = 0
                         logger.info(f"New best F1={best_f1:.4f}! Saving...")
                         save_checkpoint(model, output_dir / "best", tokenizer, optimizer, scheduler)
+                        # Also save EMA best
+                        if ema_model is not None:
+                            save_checkpoint(ema_model.module, output_dir / "best-ema", tokenizer)
+                    else:
+                        no_improve_count += 1
+                        logger.info(f"No improvement ({no_improve_count}/{early_stopping_patience})")
+
+                    # Early stopping check
+                    if no_improve_count >= early_stopping_patience:
+                        logger.info(f"Early stopping triggered after {no_improve_count} evals without improvement")
+                        # Save final before stopping
+                        save_checkpoint(model, output_dir / "early-stop", tokenizer, optimizer, scheduler)
+                        if ema_model is not None:
+                            save_checkpoint(ema_model.module, output_dir / "early-stop-ema", tokenizer)
+                        return history
 
                     # Back to train mode
                     model.train()
@@ -1334,9 +1457,21 @@ def train(
             avg_h_loss = epoch_head_losses[h] / epoch_steps if epoch_steps > 0 else 0
             history["per_head_loss"][h].append(avg_h_loss)
 
+        # Track epoch-average temperatures
+        epoch_avg_temps = {}
+        for h in CLASSIFICATION_HEADS:
+            if epoch_temperatures[h]:
+                epoch_avg_temps[h] = sum(epoch_temperatures[h]) / len(epoch_temperatures[h])
+        history["temperatures"].append(epoch_avg_temps)
+
         # Build loss summary
         head_losses_str = " | ".join(f"{h}={epoch_head_losses[h]/epoch_steps:.3f}" for h in HEADS_TO_REPLACE)
         logger.info(f"Epoch {epoch + 1} loss: {avg_loss:.4f} ({head_losses_str})")
+
+        # Log temperatures at end of epoch
+        if epoch_avg_temps:
+            temp_str = " | ".join(f"{h}={t:.4f}" for h, t in epoch_avg_temps.items())
+            logger.info(f"Epoch {epoch + 1} temperatures: {temp_str}")
 
         # Evaluate after each epoch
         if val_loader is not None:
@@ -1346,17 +1481,31 @@ def train(
 
             overall_f1 = eval_metrics["overall"]["f1"]
 
-            # Save best model
+            # Save best model (with early stopping check)
             if overall_f1 > best_f1:
                 best_f1 = overall_f1
+                no_improve_count = 0
                 logger.info(f"New best F1={best_f1:.4f}! Saving...")
                 save_checkpoint(model, output_dir / "best", tokenizer, optimizer, scheduler)
+                if ema_model is not None:
+                    save_checkpoint(ema_model.module, output_dir / "best-ema", tokenizer)
+            else:
+                no_improve_count += 1
+                logger.info(f"No improvement ({no_improve_count}/{early_stopping_patience})")
+
+            # Early stopping check at epoch level too
+            if no_improve_count >= early_stopping_patience:
+                logger.info(f"Early stopping triggered after {no_improve_count} evals without improvement")
+                break
 
     # Save final checkpoint
     log_section("TRAINING COMPLETE")
     logger.info(f"  Best F1: {best_f1:.4f}")
     logger.info(f"  Output: {output_dir}")
     save_checkpoint(model, output_dir / "final", tokenizer, optimizer, scheduler)
+    if ema_model is not None:
+        save_checkpoint(ema_model.module, output_dir / "final-ema", tokenizer)
+        logger.info(f"  EMA checkpoints saved")
 
     return history
 
@@ -1474,6 +1623,45 @@ def parse_args() -> argparse.Namespace:
         help="Max samples per head for debugging",
     )
 
+    # Performance optimization flags
+    parser.add_argument(
+        "--amp",
+        action="store_true",
+        help="Enable Automatic Mixed Precision (AMP) for faster training",
+    )
+
+    parser.add_argument(
+        "--ema",
+        action="store_true",
+        help="Enable Exponential Moving Average for smoother checkpoints",
+    )
+
+    parser.add_argument(
+        "--compile",
+        action="store_true",
+        help="Enable torch.compile() for PyTorch 2.0+ optimization",
+    )
+
+    parser.add_argument(
+        "--early_stopping",
+        type=int,
+        default=0,
+        help="Early stopping patience (0 to disable)",
+    )
+
+    parser.add_argument(
+        "--cosine_schedule",
+        action="store_true",
+        help="Use cosine LR schedule instead of linear warmup",
+    )
+
+    parser.add_argument(
+        "--temp_lr_multiplier",
+        type=float,
+        default=10.0,
+        help="Learning rate multiplier for temperature parameters (default 10x)",
+    )
+
     return parser.parse_args()
 
 
@@ -1514,6 +1702,11 @@ def main():
     val_split = training_config.get("val_split", 0.1)
     num_workers = data_config.get("num_workers", 4)
 
+    # A100 optimization settings
+    use_bf16 = training_config.get("bf16", False)
+    use_tf32 = training_config.get("tf32", False)
+    use_flash_attention = training_config.get("flash_attention", False)
+
     # Head architecture
     head_size = heads_config.get("architecture", {}).get("head_size", 64)
     dropout = heads_config.get("architecture", {}).get("dropout", 0.1)
@@ -1530,7 +1723,16 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
         gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1e9
-        logger.info(f"Device: {torch.cuda.get_device_name(0)} ({gpu_mem:.1f}GB)")
+        gpu_name = torch.cuda.get_device_name(0)
+        logger.info(f"Device: {gpu_name} ({gpu_mem:.1f}GB)")
+
+        # Enable TF32 for A100 (massive speedup for matmuls)
+        if use_tf32 and "A100" in gpu_name:
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+            logger.info("  TF32: ENABLED (A100 detected)")
+        elif use_tf32:
+            logger.info("  TF32: requested but non-A100 GPU")
     else:
         logger.info(f"Device: CPU")
 
@@ -1540,13 +1742,18 @@ def main():
         checkpoint_path,
         head_size=head_size,
         dropout=dropout,
+        use_flash_attention=use_flash_attention,
     )
 
     # Freeze everything except the 3 new heads
     freeze_model_except_heads(model, HEADS_TO_REPLACE)
 
     # Move to device
+    # Note: Don't convert to bf16 here - let autocast handle dtype conversion
+    # This is the correct approach for mixed precision training
     model = model.to(device)
+    if use_bf16:
+        logger.info("  Mixed precision: bf16 (via autocast)")
 
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
@@ -1645,13 +1852,35 @@ def main():
         persistent_workers=effective_workers > 0,
     )
 
-    # Create optimizer (only trainable params)
+    # Create optimizer with separate param groups
+    # Temperature parameters get higher LR for faster adaptation
     trainable_params = get_trainable_params(model)
     total_trainable = sum(p.numel() for p in trainable_params)
 
+    # Separate temperature params from other params
+    temp_params = []
+    other_params = []
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            if "log_temperature" in name:
+                temp_params.append(param)
+                logger.info(f"  Temperature param: {name} (lr={learning_rate * args.temp_lr_multiplier:.2e})")
+            else:
+                other_params.append(param)
+
+    # Build optimizer param groups
+    param_groups = [
+        {"params": other_params, "lr": learning_rate},
+    ]
+    if temp_params:
+        param_groups.append({
+            "params": temp_params,
+            "lr": learning_rate * args.temp_lr_multiplier,
+            "weight_decay": 0.0,  # No weight decay on temperature
+        })
+
     optimizer = torch.optim.AdamW(
-        trainable_params,
-        lr=learning_rate,
+        param_groups,
         weight_decay=weight_decay,
         betas=(0.9, 0.999),
     )
@@ -1664,14 +1893,35 @@ def main():
     adaptive_warmup = max(10, int(num_training_steps * 0.05))
     effective_warmup = min(warmup_steps, adaptive_warmup) if num_training_steps < warmup_steps else warmup_steps
 
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=effective_warmup,
-        num_training_steps=num_training_steps,
-    )
+    # Choose scheduler type
+    if args.cosine_schedule:
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=effective_warmup,
+            num_training_steps=num_training_steps,
+        )
+        logger.info(f"  Using cosine LR schedule")
+    else:
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=effective_warmup,
+            num_training_steps=num_training_steps,
+        )
+        logger.info(f"  Using linear LR schedule")
 
     logger.info(f"  Batches: train={len(train_loader)}, val={len(val_loader)}")
     logger.info(f"  Steps: {num_training_steps} total, {effective_warmup} warmup")
+
+    # Log optimization settings
+    log_section("OPTIMIZATION")
+    logger.info(f"  BF16: {use_bf16}")
+    logger.info(f"  TF32: {use_tf32}")
+    logger.info(f"  Flash Attention: {use_flash_attention}")
+    logger.info(f"  AMP: {args.amp}")
+    logger.info(f"  EMA: {args.ema}")
+    logger.info(f"  torch.compile: {args.compile}")
+    logger.info(f"  Early stopping: {args.early_stopping if args.early_stopping > 0 else 'disabled'}")
+    logger.info(f"  Temperature LR: {learning_rate * args.temp_lr_multiplier:.2e}")
 
     # Train
     history = train(
@@ -1689,6 +1939,11 @@ def main():
         gradient_accumulation_steps=gradient_accumulation_steps,
         max_grad_norm=max_grad_norm,
         debug=debug_mode,
+        use_amp=args.amp or use_bf16,  # Enable AMP if bf16 is set
+        use_bf16=use_bf16,
+        use_ema=args.ema,
+        early_stopping_patience=args.early_stopping if args.early_stopping > 0 else 100000,
+        use_torch_compile=args.compile,
     )
 
     # Save history

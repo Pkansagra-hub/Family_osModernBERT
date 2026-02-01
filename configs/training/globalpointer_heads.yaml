@@ -93,6 +93,14 @@ training:
   adam_epsilon: 1.0e-8
   max_grad_norm: 1.0
 
+  # Mixed Precision (A100 optimized)
+  bf16: true                  # Use bfloat16 (better for A100 than fp16)
+  fp16: false                 # Disable fp16 when bf16 is enabled
+  tf32: true                  # Enable TF32 for matrix ops (A100 feature, ~2x speedup)
+
+  # Flash Attention (A100 feature)
+  flash_attention: true       # Use Flash Attention 2 for faster attention
+
   # Schedule
   lr_scheduler_type: linear
   warmup_steps: 500           # 5% of expected steps
@@ -109,7 +117,7 @@ training:
 
   # Batch size - optimized for A100 40GB
   # Frozen encoder + 3.9M trainable head params = large batch possible
-  batch_size: 128
+  batch_size: 192
   gradient_accumulation_steps: 2  # Effective batch = 128
 
   # Evaluation & saving

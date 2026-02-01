@@ -172,6 +172,7 @@ class Client:
 
     def __init__(
         self,
+        model_path: Optional[str] = None,
         backend: str = "auto",
         device: str = "auto",
         warmup: bool = True,
@@ -179,6 +180,7 @@ class Client:
         lazy_load: bool = False,
         verbose: bool = False,
     ):
+        self._model_path = model_path
         self._backend_preference = backend
         self._device_preference = device
         self._warmup_enabled = warmup
@@ -210,6 +212,7 @@ class Client:
             load_start = time.perf_counter()
 
             self._model = UltraBERT.load(
+                model_path=self._model_path,
                 backend=self._backend_preference,
                 device=self._device_preference,
             )
@@ -367,6 +370,46 @@ class Client:
         """Quick routing category. Returns ingress label."""
         result = self.analyze(text, capabilities=["ingress"])
         return result.ingress
+
+    def get_intent_v2(self, text: str, threshold: float = 0.5) -> Dict[str, Any]:
+        """
+        Multi-label intent classification (V2).
+
+        Uses Label-Description Embedding architecture for SOTA performance.
+        Supports multiple simultaneous intents.
+
+        Args:
+            text: Input text to classify.
+            threshold: Probability threshold for including intents (default: 0.5).
+
+        Returns:
+            Dict with:
+                - primary: str - highest scoring intent (always returned)
+                - all: List[str] - all intents above threshold
+                - scores: Dict[str, float] - all intent probabilities
+                - confidence: float - confidence of primary intent
+        """
+        result = self.analyze(text, capabilities=["intent_v2"])
+        return result._caps.get("intent_v2", {})
+
+    def get_ingress_v2(self, text: str, threshold: float = 0.5) -> Dict[str, Any]:
+        """
+        Multi-label domain classification (V2).
+
+        Uses Label-Description Embedding architecture for SOTA performance.
+        Supports multiple simultaneous domains.
+
+        Args:
+            text: Input text to classify.
+            threshold: Probability threshold for including domains (default: 0.5).
+
+        Returns:
+            Dict with:
+                - domains: List[str] - all domains above threshold
+                - scores: Dict[str, float] - all domain probabilities
+        """
+        result = self.analyze(text, capabilities=["ingress_v2"])
+        return result._caps.get("ingress_v2", {})
 
     def get_entities(self, text: str) -> List[Dict]:
         """Quick family entity extraction. Returns list of entity dicts."""
@@ -749,11 +792,43 @@ class ClientResult:
         """Intent confidence."""
         return self._caps.get("intent", {}).get("confidence", 0.0)
 
+    # Intent V2 (multi-label, Label-Description Embedding)
+    @property
+    def intent_v2_primary(self) -> str:
+        """Primary intent from V2 head (highest score)."""
+        return self._caps.get("intent_v2", {}).get("primary", "unknown")
+
+    @property
+    def intent_v2_all(self) -> List[str]:
+        """All intents above threshold from V2 head."""
+        return self._caps.get("intent_v2", {}).get("all", [])
+
+    @property
+    def intent_v2_scores(self) -> Dict[str, float]:
+        """All intent scores from V2 head."""
+        return self._caps.get("intent_v2", {}).get("scores", {})
+
+    @property
+    def intent_v2_confidence(self) -> float:
+        """Confidence of primary intent from V2 head."""
+        return self._caps.get("intent_v2", {}).get("confidence", 0.0)
+
     # Ingress
     @property
     def ingress(self) -> str:
         """Message routing category."""
         return self._caps.get("ingress", {}).get("prediction", "unknown")
+
+    # Ingress V2 (multi-label, Label-Description Embedding)
+    @property
+    def ingress_v2_domains(self) -> List[str]:
+        """All domains above threshold from V2 head."""
+        return self._caps.get("ingress_v2", {}).get("domains", [])
+
+    @property
+    def ingress_v2_scores(self) -> Dict[str, float]:
+        """All domain scores from V2 head."""
+        return self._caps.get("ingress_v2", {}).get("scores", {})
 
     # Relation
     @property
@@ -844,7 +919,17 @@ class ClientResult:
             "entities": self.entities,
             "temporal": self.temporal,
             "intent": self.intent,
+            "intent_v2": {
+                "primary": self.intent_v2_primary,
+                "all": self.intent_v2_all,
+                "scores": self.intent_v2_scores,
+                "confidence": self.intent_v2_confidence,
+            },
             "ingress": self.ingress,
+            "ingress_v2": {
+                "domains": self.ingress_v2_domains,
+                "scores": self.ingress_v2_scores,
+            },
             "relations": self.relations,
             "latency_ms": self.latency_ms,
         }

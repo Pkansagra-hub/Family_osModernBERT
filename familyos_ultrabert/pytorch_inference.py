@@ -41,6 +41,9 @@ DEFAULT_THRESHOLDS = {
     "ner_general": -1.0,  # F1=0.730 (P=0.740, R=0.720)
     "ner_family": -0.7,  # F1=0.812 (P=0.922, R=0.726)
     "temporal": -1.9,  # F1=0.639 (P=0.651, R=0.627)
+    # V2 Label-Description Embedding heads (probability thresholds)
+    "intent_v2": 0.5,  # Multi-label intent classification
+    "ingress_v2": 0.5,  # Multi-label domain classification
 }
 
 
@@ -222,6 +225,64 @@ def _postprocess_safety(logits: torch.Tensor, schema: LabelSchema) -> Dict[str, 
     }
 
 
+def _postprocess_label_description_intent(
+    logits: torch.Tensor,
+    schema: LabelSchema,
+    threshold: float = 0.5,
+) -> Dict[str, Any]:
+    """
+    Multi-label intent classification with K1-compliant output.
+
+    Returns:
+        Dict with:
+            - primary: Highest-scoring intent (always returned)
+            - all: List of intents above threshold
+            - scores: Dict of intent -> probability
+            - confidence: Probability of primary intent
+    """
+    probs = torch.sigmoid(logits[0]).cpu().numpy()
+    scores = {schema.id2label[i]: round(float(p), 4) for i, p in enumerate(probs)}
+
+    # Primary = highest score (always returned)
+    primary_idx = int(np.argmax(probs))
+    primary = schema.id2label[primary_idx]
+
+    # All = labels above threshold
+    all_labels = [schema.id2label[i] for i, p in enumerate(probs) if p >= threshold]
+
+    return {
+        "primary": primary,
+        "all": all_labels,
+        "scores": scores,
+        "confidence": round(float(probs[primary_idx]), 4),
+    }
+
+
+def _postprocess_label_description_ingress(
+    logits: torch.Tensor,
+    schema: LabelSchema,
+    threshold: float = 0.5,
+) -> Dict[str, Any]:
+    """
+    Multi-label ingress (domain) classification with K1-compliant output.
+
+    Returns:
+        Dict with:
+            - domains: List of domains above threshold
+            - scores: Dict of domain -> probability
+    """
+    probs = torch.sigmoid(logits[0]).cpu().numpy()
+    scores = {schema.id2label[i]: round(float(p), 4) for i, p in enumerate(probs)}
+
+    # Domains = all labels above threshold
+    domains = [schema.id2label[i] for i, p in enumerate(probs) if p >= threshold]
+
+    return {
+        "domains": domains,
+        "scores": scores,
+    }
+
+
 def _postprocess_globalpointer(
     logits: torch.Tensor,
     text: str,
@@ -376,6 +437,14 @@ def postprocess(
         return _postprocess_safety(logits, schema)
     elif capability in ["emotions", "safety_generic", "relation"]:
         return _postprocess_sequence_multi(logits, schema)
+    elif capability == "intent_v2":
+        # V2 Label-Description Embedding: multi-label intent
+        thresh = threshold if threshold is not None else DEFAULT_THRESHOLDS.get(capability, 0.5)
+        return _postprocess_label_description_intent(logits, schema, threshold=thresh)
+    elif capability == "ingress_v2":
+        # V2 Label-Description Embedding: multi-label ingress
+        thresh = threshold if threshold is not None else DEFAULT_THRESHOLDS.get(capability, 0.5)
+        return _postprocess_label_description_ingress(logits, schema, threshold=thresh)
     else:
         return _postprocess_sequence_single(logits, schema)
 

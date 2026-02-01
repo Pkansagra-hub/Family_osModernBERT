@@ -42,9 +42,10 @@ Sigmoid (multi-label) -> threshold -> primary + all[]
 
 > Add V2 label schemas to training repo for consistency
 
-**Status:** COMPLETED (2026-02-01)
+**Status:** VERIFIED (2026-02-01)
 **Estimated Effort:** 0.25 days
 **Dependencies:** None
+**Verification:** Training script ran successfully with 5 heads (3 NER + 2 V2 classification)
 
 #### Current State (RESOLVED)
 
@@ -167,17 +168,18 @@ INGRESS_V2_LABELS = LabelSchema(
 
 > Define V2 label schemas with multi-label support in `familyos_ultrabert/labels.py`
 
-**Status:** Not Started
+**Status:** VERIFIED (2026-02-01)
 **Estimated Effort:** 0.5 days
 **Dependencies:** Milestone 0 (recommended but not blocking)
+**Verification:** Imports work, backward compatibility confirmed
 
 #### Epic 1.1: Add V2 Label Schemas
 
 **Issue 1.1.1: Add INTENT_V2_LABELS schema**
 
-- [ ] Add new `LabelSchema` with `problem_type="multi_label_classification"`
-- [ ] Labels (8): `log_memory, query_memory, set_reminder, express_feeling, seek_advice, share_news, reflect, other`
-- [ ] Add descriptions for zero-shot init
+- [x] Add new `LabelSchema` with `problem_type="multi_label_classification"`
+- [x] Labels (8): `log_memory, query_memory, set_reminder, express_feeling, seek_advice, share_news, reflect, other`
+- [x] Add descriptions for zero-shot init
 
 **File:** `familyos_ultrabert/labels.py`
 **Location:** After line 346 (after INTENT_LABELS)
@@ -204,8 +206,8 @@ INTENT_V2_LABELS = LabelSchema(
 
 **Issue 1.1.2: Add INGRESS_V2_LABELS schema**
 
-- [ ] Add new `LabelSchema` with `problem_type="multi_label_classification"`
-- [ ] Labels (12): `DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META, MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE`
+- [x] Add new `LabelSchema` with `problem_type="multi_label_classification"`
+- [x] Labels (12): `DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META, MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE`
 
 **File:** `familyos_ultrabert/labels.py`
 **Location:** After INTENT_V2_LABELS
@@ -236,8 +238,8 @@ INGRESS_V2_LABELS = LabelSchema(
 
 **Issue 1.1.3: Add Capability enum entries**
 
-- [ ] Add `INTENT_V2 = "intent_v2"` to `Capability` enum
-- [ ] Add `INGRESS_V2 = "ingress_v2"` to `Capability` enum
+- [x] Add `INTENT_V2 = "intent_v2"` to `Capability` enum
+- [x] Add `INGRESS_V2 = "ingress_v2"` to `Capability` enum
 
 **File:** `familyos_ultrabert/labels.py`
 **Location:** Line 53-70 (Capability enum)
@@ -256,8 +258,8 @@ class Capability(str, Enum):
 
 **Issue 1.2.1: Update CAPABILITY_TO_LABELS mapping**
 
-- [ ] Add `Capability.INTENT_V2: INTENT_V2_LABELS` mapping
-- [ ] Add `Capability.INGRESS_V2: INGRESS_V2_LABELS` mapping
+- [x] Add `Capability.INTENT_V2: INTENT_V2_LABELS` mapping
+- [x] Add `Capability.INGRESS_V2: INGRESS_V2_LABELS` mapping
 
 **File:** `familyos_ultrabert/labels.py`
 **Location:** Line 351-370 (CAPABILITY_TO_LABELS dict)
@@ -266,9 +268,9 @@ class Capability(str, Enum):
 
 **Issue 1.2.2: Backward compatibility validation**
 
-- [ ] Verify old `INTENT` and `INGRESS` capabilities still work
-- [ ] Ensure `Capability("intent")` still returns old labels
-- [ ] Write unit test for both old and new capabilities
+- [x] Verify old `INTENT` and `INGRESS` capabilities still work
+- [x] Ensure `Capability("intent")` still returns old labels
+- [x] Write unit test for both old and new capabilities
 
 ---
 
@@ -276,16 +278,17 @@ class Capability(str, Enum):
 
 > Port LabelDescriptionHead architecture to `familyos_ultrabert/models/heads.py`
 
-**Status:** Not Started
+**Status:** VERIFIED (2026-02-01)
 **Estimated Effort:** 1.5 days
 **Dependencies:** Milestone 1
+**Verification:** Import test passed - all heads and mappings work
 
 #### Epic 2.1: Port Head Classes
 
 **Issue 2.1.1: Port LabelDescriptionHead base class**
 
-- [ ] Copy class from `src/modeling_studio/models/heads.py` lines 3685-3933
-- [ ] Include all methods:
+- [x] Copy class from `src/modeling_studio/models/heads.py` lines 3685-3933
+- [x] Include all methods:
   - `__init__` (query_proj, label_embeddings, log_temperature)
   - `temperature` property
   - `freeze/unfreeze/freeze_label_embeddings`
@@ -322,9 +325,9 @@ class LabelDescriptionHead(nn.Module):
 
 **Issue 2.1.2: Port IntentHeadV2 class**
 
-- [ ] Copy class from `src/modeling_studio/models/heads.py` lines 3935-4033
-- [ ] Include `INTENT_DESCRIPTIONS` for zero-shot init
-- [ ] Include `init_from_descriptions` method
+- [x] Copy class from `src/modeling_studio/models/heads.py` lines 3935-4033
+- [x] Include `INTENT_DESCRIPTIONS` for zero-shot init
+- [x] Include `init_from_descriptions` method
 
 **File:** `familyos_ultrabert/models/heads.py`
 **Location:** After LabelDescriptionHead
@@ -340,9 +343,9 @@ class LabelDescriptionHead(nn.Module):
 
 **Issue 2.1.3: Port IngressHeadV2 class**
 
-- [ ] Copy class from `src/modeling_studio/models/heads.py` lines 4036-4145
-- [ ] Include `INGRESS_DESCRIPTIONS` for zero-shot init
-- [ ] Include `init_from_descriptions` method
+- [x] Copy class from `src/modeling_studio/models/heads.py` lines 4036-4145
+- [x] Include `INGRESS_DESCRIPTIONS` for zero-shot init
+- [x] Include `init_from_descriptions` method
 
 **File:** `familyos_ultrabert/models/heads.py`
 **Location:** After IntentHeadV2
@@ -358,9 +361,10 @@ class LabelDescriptionHead(nn.Module):
 
 **Issue 2.1.4: Update **all** exports**
 
-- [ ] Add `"LabelDescriptionHead"` to `__all__`
-- [ ] Add `"IntentHeadV2"` to `__all__`
-- [ ] Add `"IngressHeadV2"` to `__all__`
+- [x] Add `"LabelDescriptionHead"` to `__all__`
+- [x] Add `"IntentHeadV2"` to `__all__`
+- [x] Add `"IngressHeadV2"` to `__all__`
+- [x] Add `"create_label_description_head"` factory function
 
 **File:** `familyos_ultrabert/models/heads.py`
 **Location:** Line 3685-3700
@@ -371,7 +375,7 @@ class LabelDescriptionHead(nn.Module):
 
 **Issue 2.2.1: Update head imports in modernbert_multitask.py**
 
-- [ ] Add imports for new head classes
+- [x] Add imports for new head classes
 
 **File:** `familyos_ultrabert/models/modernbert_multitask.py`
 **Location:** Line 71-78 (imports section)
@@ -389,8 +393,8 @@ from familyos_ultrabert.models.heads import (
 
 **Issue 2.2.2: Update CAPABILITY_TO_HEAD_TYPE mapping**
 
-- [ ] Add `Capability.INTENT_V2: IntentHeadV2` mapping
-- [ ] Add `Capability.INGRESS_V2: IngressHeadV2` mapping
+- [x] Add `Capability.INTENT_V2: IntentHeadV2` mapping
+- [x] Add `Capability.INGRESS_V2: IngressHeadV2` mapping
 
 **File:** `familyos_ultrabert/models/modernbert_multitask.py`
 **Location:** Line 140-156
@@ -408,8 +412,7 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
 
 **Issue 2.2.3: Update TASK_GROUPS configuration**
 
-- [ ] Decide: Add V2 heads to `"sequence_tasks"` or create new `"label_embedding_tasks"` group
-- [ ] Recommended: Keep in `"sequence_tasks"` for simplicity
+- [x] Added V2 heads to `"sequence_tasks"` group
 
 **File:** `familyos_ultrabert/models/modernbert_multitask.py`
 **Location:** Line 104-117
@@ -427,20 +430,40 @@ TASK_GROUPS = {
 
 ---
 
+**Issue 2.2.4: Update _init_heads() for V2 heads**
+
+- [x] Added special case handling for V2 heads (no problem_type arg)
+- [x] Added multi_label=True for K1 requirement
+
+**File:** `familyos_ultrabert/models/modernbert_multitask.py`
+
+---
+
+**Issue 2.2.5: Update familyos_ultrabert/data/labels.py**
+
+- [x] Added INTENT_V2_LABELS and INGRESS_V2_LABELS schemas
+- [x] Added Capability.INTENT_V2 and Capability.INGRESS_V2 to enum
+- [x] Added V2 to CAPABILITY_TO_LABELS mapping
+
+**Note:** This file is SEPARATE from `familyos_ultrabert/labels.py` - both needed updating.
+
+---
+
 ### Milestone 3: Inference Layer
 
 > Add multi-label postprocessing for V2 heads
 
-**Status:** Not Started
+**Status:** VERIFIED (2026-02-01)
 **Estimated Effort:** 1 day
 **Dependencies:** Milestone 2
+**Verification:** Import test passed, mock data test passed with K1-compliant output
 
 #### Epic 3.1: PyTorch Inference
 
 **Issue 3.1.1: Add _postprocess_label_description function**
 
-- [ ] Create new function for multi-label V2 heads
-- [ ] Return K1-compliant format: `{primary, all, scores}` for intent, `{domains, scores}` for ingress
+- [x] Create new function for multi-label V2 heads
+- [x] Return K1-compliant format: `{primary, all, scores}` for intent, `{domains, scores}` for ingress
 
 **File:** `familyos_ultrabert/pytorch_inference.py`
 **Location:** After line 220 (_postprocess_safety)
@@ -491,7 +514,7 @@ def _postprocess_label_description_ingress(
 
 **Issue 3.1.2: Update postprocess() routing**
 
-- [ ] Add routing for `intent_v2` and `ingress_v2`
+- [x] Add routing for `intent_v2` and `ingress_v2`
 
 **File:** `familyos_ultrabert/pytorch_inference.py`
 **Location:** Line 323-338 (postprocess function)
@@ -512,7 +535,7 @@ def postprocess(capability: str, logits: torch.Tensor, ...):
 
 **Issue 3.1.3: Add DEFAULT_THRESHOLDS for V2 heads**
 
-- [ ] Add default threshold values for V2 heads
+- [x] Add default threshold values for V2 heads
 
 **File:** `familyos_ultrabert/pytorch_inference.py`
 **Location:** Line 35-45 (DEFAULT_THRESHOLDS dict)
@@ -533,7 +556,7 @@ DEFAULT_THRESHOLDS = {
 
 **Issue 3.2.1: Add _postprocess_label_description functions (numpy)**
 
-- [ ] Mirror PyTorch functions using numpy instead of torch
+- [x] Mirror PyTorch functions using numpy instead of torch
 
 **File:** `familyos_ultrabert/onnx_inference.py`
 **Location:** After line 170 (_postprocess_safety)
@@ -553,7 +576,7 @@ def _postprocess_label_description_intent(
 
 **Issue 3.2.2: Update postprocess() routing**
 
-- [ ] Add routing for `intent_v2` and `ingress_v2`
+- [x] Add routing for `intent_v2` and `ingress_v2`
 
 **File:** `familyos_ultrabert/onnx_inference.py`
 **Location:** Line 261-291 (postprocess function)
@@ -562,7 +585,7 @@ def _postprocess_label_description_intent(
 
 **Issue 3.2.3: Add DEFAULT_THRESHOLDS for V2 heads**
 
-- [ ] Add default threshold values
+- [x] Add default threshold values
 
 **File:** `familyos_ultrabert/onnx_inference.py`
 **Location:** Line 40-50 (DEFAULT_THRESHOLDS dict)
@@ -573,15 +596,16 @@ def _postprocess_label_description_intent(
 
 > Expose V2 capabilities through public Client API
 
-**Status:** Not Started
+**Status:** VERIFIED (2026-02-01)
 **Estimated Effort:** 1 day
 **Dependencies:** Milestone 3
+**Verification:** Import test passed, properties and methods work correctly
 
 #### Epic 4.1: Client Methods
 
 **Issue 4.1.1: Add get_intent_v2() method**
 
-- [ ] Add convenience method returning multi-label dict
+- [x] Add convenience method returning multi-label dict
 
 **File:** `familyos_ultrabert/client.py`
 **Location:** After line 347 (after get_intent)
@@ -606,7 +630,7 @@ def get_intent_v2(self, text: str, threshold: float = 0.5) -> Dict[str, Any]:
 
 **Issue 4.1.2: Add get_ingress_v2() method**
 
-- [ ] Add convenience method returning multi-label dict
+- [x] Add convenience method returning multi-label dict
 
 **File:** `familyos_ultrabert/client.py`
 **Location:** After get_intent_v2
@@ -631,7 +655,7 @@ def get_ingress_v2(self, text: str, threshold: float = 0.5) -> Dict[str, Any]:
 
 **Issue 4.2.1: Add intent_v2 properties**
 
-- [ ] Add properties: `intent_v2_primary`, `intent_v2_all`, `intent_v2_scores`
+- [x] Add properties: `intent_v2_primary`, `intent_v2_all`, `intent_v2_scores`, `intent_v2_confidence`
 
 **File:** `familyos_ultrabert/client.py`
 **Location:** After line 766 (after intent properties)
@@ -658,7 +682,7 @@ def intent_v2_scores(self) -> Dict[str, float]:
 
 **Issue 4.2.2: Add ingress_v2 properties**
 
-- [ ] Add properties: `ingress_v2_domains`, `ingress_v2_scores`
+- [x] Add properties: `ingress_v2_domains`, `ingress_v2_scores`
 
 **File:** `familyos_ultrabert/client.py`
 **Location:** After intent_v2 properties
@@ -680,7 +704,7 @@ def ingress_v2_scores(self) -> Dict[str, float]:
 
 **Issue 4.2.3: Update to_dict() method**
 
-- [ ] Add V2 fields to output dict
+- [x] Add V2 fields to output dict
 
 **File:** `familyos_ultrabert/client.py`
 **Location:** Line 836-850 (to_dict method)

@@ -75,6 +75,8 @@ from familyos_ultrabert.models.heads import (  # noqa: E402
     GlobalPointerNERHead,
     HierarchicalEmotionHead,
     IntentHead,
+    IntentHeadV2,  # V2 Label-Description Embedding
+    IngressHeadV2,  # V2 Label-Description Embedding
     NLIHead,
     RelationHead,
     SafetyHead,  # type: ignore  # noqa: F401
@@ -114,6 +116,8 @@ TASK_GROUPS = {
         Capability.SAFETY_FAMILYOS,
         Capability.INGRESS,
         Capability.INTENT,
+        Capability.INTENT_V2,  # V2 Label-Description Embedding
+        Capability.INGRESS_V2,  # V2 Label-Description Embedding
     ],
     "pair_tasks": [
         Capability.NLI,
@@ -149,7 +153,10 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.SAFETY_GENERIC: SequenceClassificationHead,  # Stage A: Multi-label with ASL
     Capability.SAFETY_FAMILYOS: SafetyHead,  # Stage B: Band-based classification (4 bands, 13 subcats)
     Capability.INGRESS: SequenceClassificationHead,
-    Capability.INTENT: IntentHead,  # NEW
+    Capability.INTENT: IntentHead,  # Legacy single-label
+    # V2 Label-Description Embedding heads (SOTA multi-label)
+    Capability.INTENT_V2: IntentHeadV2,
+    Capability.INGRESS_V2: IngressHeadV2,
     # Special heads
     Capability.NLI: NLIHead,
     Capability.RELATION: RelationHead,  # NEW
@@ -463,6 +470,15 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     asl_clip=0.05,  # Probability clipping
                     pos_weight=safety_pos_weight,  # Mild reweighting for balanced data
                 )
+            elif capability in (Capability.INTENT_V2, Capability.INGRESS_V2):
+                # V2 Label-Description Embedding heads (Milestone 2)
+                # Different constructor signature - no problem_type arg
+                head = head_cls(
+                    hidden_size=hidden_size,
+                    num_labels=num_labels,
+                    dropout=self.head_dropout,
+                    multi_label=True,  # K1 requirement: multi-label classification
+                )
             else:
                 head = head_cls(
                     hidden_size=hidden_size,
@@ -644,6 +660,28 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             Path(checkpoint_path) if not isinstance(checkpoint_path, Path) else checkpoint_path
         )  # pyright: ignore[reportAssignmentType]
 
+        # Load state dict first to detect actual head types
+        safetensors_path = checkpoint_path / "model.safetensors"  # type: ignore
+        pytorch_path = checkpoint_path / "pytorch_model.bin"  # type: ignore
+
+        if safetensors_path.exists():
+            state_dict = load_file(str(safetensors_path))
+        elif pytorch_path.exists():
+            state_dict = torch.load(str(pytorch_path), map_location="cpu", weights_only=True)
+        else:
+            raise FileNotFoundError(
+                f"No model weights found at {checkpoint_path}. "
+                f"Expected 'model.safetensors' or 'pytorch_model.bin'"
+            )
+
+        # Detect actual head names from state dict (authoritative source)
+        checkpoint_heads = set()
+        for key in state_dict.keys():
+            if key.startswith("heads."):
+                head_name = key.split(".")[1]
+                checkpoint_heads.add(head_name)
+        logger.info(f"Detected heads in checkpoint: {sorted(checkpoint_heads)}")
+
         # Load capabilities and Epic 5.0 config
         caps_file = checkpoint_path / "capabilities.json"  # type: ignore
         capabilities = None
@@ -659,6 +697,34 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                         capabilities = [Capability(c) for c in caps_data["capabilities"]]
                     if "epic_5_0" in caps_data:
                         epic_5_config = caps_data["epic_5_0"]
+
+        # Reconcile capabilities with actual checkpoint heads
+        # V2 heads replace V1: if checkpoint has intent_v2, use that instead of intent
+        if capabilities:
+            reconciled = []
+            for cap in capabilities:
+                cap_name = cap.value if isinstance(cap, Capability) else cap
+                # Check for V2 replacement
+                if cap_name == "intent" and "intent_v2" in checkpoint_heads:
+                    reconciled.append(Capability.INTENT_V2)
+                    logger.info("  Detected intent_v2 head, using INTENT_V2 capability")
+                elif cap_name == "ingress" and "ingress_v2" in checkpoint_heads:
+                    reconciled.append(Capability.INGRESS_V2)
+                    logger.info("  Detected ingress_v2 head, using INGRESS_V2 capability")
+                elif cap_name not in checkpoint_heads:
+                    # Skip capabilities not in checkpoint
+                    logger.warning(f"  Capability '{cap_name}' not found in checkpoint, skipping")
+                else:
+                    reconciled.append(cap)
+            # Add any heads in checkpoint but not in capabilities.json
+            for head_name in checkpoint_heads:
+                if head_name not in [c.value if isinstance(c, Capability) else c for c in reconciled]:
+                    try:
+                        reconciled.append(Capability(head_name))
+                        logger.info(f"  Added missing capability from checkpoint: {head_name}")
+                    except ValueError:
+                        logger.warning(f"  Unknown head '{head_name}' in checkpoint, skipping")
+            capabilities = reconciled
 
         # Load GlobalPointer metadata if available (for correct num_labels)
         gp_metadata_file = checkpoint_path / "globalpointer_metadata.json"  # type: ignore
@@ -689,21 +755,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             _globalpointer_config=globalpointer_config,  # Pass to __init__ for correct head init
         )
 
-        # Load state dict - try safetensors first, then pytorch format
-        safetensors_path = checkpoint_path / "model.safetensors"
-        pytorch_path = checkpoint_path / "pytorch_model.bin"
-
-        if safetensors_path.exists():
-            state_dict = load_file(str(safetensors_path))  # type: ignore
-        elif pytorch_path.exists():
-            state_dict = torch.load(str(pytorch_path), map_location="cpu", weights_only=True)
-        else:
-            raise FileNotFoundError(
-                f"No model weights found at {checkpoint_path}. "
-                f"Expected 'model.safetensors' or 'pytorch_model.bin'"
-            )
-
-        # Separate state dict by component
+        # State dict already loaded above - separate by component
         encoder_state = {}
         head_state = {}
         adapter_state = {}
