@@ -1207,7 +1207,8 @@ def evaluate(
     val_loader: DataLoader,
     device: torch.device,
     debug: bool = False,
-    threshold: float = 0.0,  # Logit threshold: 0.0 = prob > 0.5 (standard)
+    ner_threshold: float = 0.5,  # Higher threshold for NER to reduce FP during eval
+    cls_threshold: float = 0.3,  # Lower threshold for classification (random embeds need time)
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.bfloat16,
     max_batches: int | None = None,  # Limit eval batches for speed (None = all)
@@ -1222,7 +1223,8 @@ def evaluate(
         val_loader: Validation dataloader
         device: Device
         debug: Enable verbose debug logging
-        threshold: Logit threshold for span extraction
+        ner_threshold: Logit threshold for NER span extraction (0.5 = balanced)
+        cls_threshold: Probability threshold for classification (0.3 = lower for early training)
         use_amp: Use automatic mixed precision
         amp_dtype: AMP dtype (bfloat16 or float16)
         max_batches: Max batches to evaluate (None = all, use for faster eval)
@@ -1287,7 +1289,7 @@ def evaluate(
                 preds = head.decode_batch_efficient(
                     logits,
                     attention_mask=attention_mask,
-                    threshold=threshold,
+                    threshold=ner_threshold,  # Use higher threshold for NER
                     id2label=id2label,
                 )
 
@@ -1325,15 +1327,15 @@ def evaluate(
                     )
                     probs = output["probabilities"]  # (B, num_labels)
 
-                # Multi-label threshold (0.5 for sigmoid)
+                # Multi-label threshold (lower for early training with random embeds)
                 batch_size = probs.shape[0]
                 for b in range(batch_size):
                     if head_names[b] != head_name:
                         continue
 
-                    # Predicted labels (above 0.5 threshold)
+                    # Predicted labels (above cls_threshold)
                     pred_set = set()
-                    pred_indices = torch.where(probs[b] > 0.5)[0].tolist()
+                    pred_indices = torch.where(probs[b] > cls_threshold)[0].tolist()
                     for idx in pred_indices:
                         pred_set.add(id2label[idx])
 
