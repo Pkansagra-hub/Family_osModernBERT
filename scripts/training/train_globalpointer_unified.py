@@ -154,6 +154,140 @@ CLASSIFICATION_HEADS = ["intent_v2", "ingress_v2"]
 HEADS_TO_REPLACE = ["ner_general", "ner_family", "temporal"]
 
 
+# =============================================================================
+# Advanced Loss Functions
+# =============================================================================
+
+
+class FocalLoss(nn.Module):
+    """
+    Focal Loss for multi-label classification.
+
+    Focal loss down-weights easy examples and focuses on hard negatives.
+    FL(p) = -alpha * (1-p)^gamma * log(p)
+
+    Reference: Lin et al. "Focal Loss for Dense Object Detection" (2017)
+    """
+
+    def __init__(
+        self,
+        alpha: float = 0.25,
+        gamma: float = 2.0,
+        label_smoothing: float = 0.0,
+        reduction: str = "mean",
+    ):
+        """
+        Args:
+            alpha: Weighting factor for positive class (default 0.25)
+            gamma: Focusing parameter (default 2.0, higher = more focus on hard examples)
+            label_smoothing: Label smoothing factor (0.0 = no smoothing)
+            reduction: 'mean', 'sum', or 'none'
+        """
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.label_smoothing = label_smoothing
+        self.reduction = reduction
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            logits: Raw logits [batch, num_labels]
+            targets: Binary targets [batch, num_labels]
+
+        Returns:
+            Focal loss
+        """
+        # Apply label smoothing
+        if self.label_smoothing > 0:
+            targets = targets * (1 - self.label_smoothing) + self.label_smoothing / 2
+
+        # Sigmoid probabilities
+        probs = torch.sigmoid(logits)
+
+        # Binary cross-entropy (unreduced)
+        bce = nn.functional.binary_cross_entropy_with_logits(
+            logits, targets, reduction="none"
+        )
+
+        # Focal weight: (1-p)^gamma for positives, p^gamma for negatives
+        pt = torch.where(targets >= 0.5, probs, 1 - probs)
+        focal_weight = (1 - pt) ** self.gamma
+
+        # Alpha weighting
+        alpha_weight = torch.where(targets >= 0.5, self.alpha, 1 - self.alpha)
+
+        # Combined focal loss
+        loss = alpha_weight * focal_weight * bce
+
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        return loss
+
+
+class DynamicLossWeighter(nn.Module):
+    """
+    Dynamic loss weighting using learned uncertainty (homoscedastic uncertainty).
+
+    Each task has a learnable log-variance parameter that auto-balances losses.
+    Loss = sum_i (1/(2*sigma_i^2) * L_i + log(sigma_i))
+
+    Reference: Kendall et al. "Multi-Task Learning Using Uncertainty" (CVPR 2018)
+    """
+
+    def __init__(self, num_tasks: int, task_names: list[str] | None = None):
+        """
+        Args:
+            num_tasks: Number of tasks to weight
+            task_names: Optional names for logging
+        """
+        super().__init__()
+        self.num_tasks = num_tasks
+        self.task_names = task_names or [f"task_{i}" for i in range(num_tasks)]
+
+        # Learnable log-variance for each task (initialized to 0 = sigma=1)
+        self.log_vars = nn.Parameter(torch.zeros(num_tasks))
+
+    def forward(self, losses: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
+        """
+        Compute weighted total loss.
+
+        Args:
+            losses: Dict mapping task_name -> loss tensor
+
+        Returns:
+            (total_weighted_loss, weight_info_dict)
+        """
+        total_loss = torch.tensor(0.0, device=self.log_vars.device)
+        weight_info = {}
+
+        for i, task_name in enumerate(self.task_names):
+            if task_name not in losses:
+                continue
+
+            task_loss = losses[task_name]
+            log_var = self.log_vars[i]
+
+            # Weighted loss: L_i / (2 * sigma^2) + log(sigma)
+            # = L_i * exp(-log_var) / 2 + log_var / 2
+            precision = torch.exp(-log_var)
+            weighted_loss = precision * task_loss + log_var
+
+            total_loss = total_loss + weighted_loss
+            weight_info[task_name] = precision.item()
+
+        return total_loss, weight_info
+
+    def get_weights(self) -> dict[str, float]:
+        """Get current task weights (precisions)."""
+        weights = {}
+        for i, name in enumerate(self.task_names):
+            weights[name] = torch.exp(-self.log_vars[i]).item()
+        return weights
+
+
 def load_config(config_path: str | Path) -> dict[str, Any]:
     """Load configuration from YAML file."""
     config_path = Path(config_path)
@@ -667,6 +801,7 @@ def load_model_and_replace_heads(
     dropout: float = 0.1,
     exclude_decoder: bool = True,
     use_flash_attention: bool = False,
+    initial_temperature: float = 0.05,
 ) -> ModernBertMultiTaskModel:
     """
     Load ModernBertMultiTaskModel and replace NER heads with GlobalPointer.
@@ -788,6 +923,7 @@ def load_model_and_replace_heads(
                     hidden_size=hidden_size,
                     multi_label=True,  # FamilyOS requires multi-label
                     dropout=dropout,
+                    temperature=initial_temperature,
                 )
                 # Replace the old "intent" head
                 old_name = "intent"
@@ -796,6 +932,7 @@ def load_model_and_replace_heads(
                     hidden_size=hidden_size,
                     multi_label=True,  # FamilyOS requires multi-label
                     dropout=dropout,
+                    temperature=initial_temperature,
                 )
                 # Replace the old "ingress" head
                 old_name = "ingress"
@@ -913,6 +1050,8 @@ def train_step(
     debug: bool = False,
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.float16,
+    focal_loss_fn: FocalLoss | None = None,
+    loss_weighter: DynamicLossWeighter | None = None,
 ) -> dict[str, torch.Tensor]:
     """
     Single training step with parallel head forward.
@@ -925,6 +1064,8 @@ def train_step(
         debug: Enable verbose debug logging
         use_amp: Use automatic mixed precision
         amp_dtype: AMP data type (torch.float16 or torch.bfloat16)
+        focal_loss_fn: Optional FocalLoss for classification heads
+        loss_weighter: Optional DynamicLossWeighter for multi-task balancing
 
     Returns:
         Dict with total_loss and per-head losses
@@ -964,7 +1105,7 @@ def train_step(
 
         # Compute loss for each head in parallel (inside AMP context)
         losses = {}
-        total_loss = torch.tensor(0.0, device=device)
+        raw_losses = {}  # For dynamic weighting
 
         for head_name in HEADS_TO_REPLACE:
             if head_name not in model.heads:
@@ -978,7 +1119,7 @@ def train_step(
 
             # Route to appropriate forward based on head type
             if head_name in SPAN_HEADS:
-                # Span-based (NER) head
+                # Span-based (NER) head - use standard GlobalPointer loss
                 head_labels = span_labels.get(head_name)
                 if head_labels is None:
                     continue
@@ -987,30 +1128,57 @@ def train_step(
                     attention_mask=attention_mask,
                     span_labels=head_labels,
                 )
+                if "loss" in output and output["loss"] is not None:
+                    raw_losses[head_name] = output["loss"]
+
             elif head_name in CLASSIFICATION_HEADS:
                 # Classification head (Intent/Ingress V2)
                 head_labels = classification_labels.get(head_name)
                 if head_labels is None:
                     continue
-                output = head(
-                    hidden_states=hidden_states,
-                    attention_mask=attention_mask,
-                    labels=head_labels,
-                )
-            else:
-                continue
 
-            if "loss" in output and output["loss"] is not None:
-                # Weight by number of samples for this head
+                # Use focal loss if provided, otherwise use head's built-in loss
+                if focal_loss_fn is not None:
+                    # Forward without loss computation
+                    output = head(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        labels=None,  # Don't compute loss inside head
+                    )
+                    # Compute focal loss externally
+                    logits = output["logits"]
+                    head_loss = focal_loss_fn(logits, head_labels.float())
+                    raw_losses[head_name] = head_loss
+                else:
+                    output = head(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        labels=head_labels,
+                    )
+                    if "loss" in output and output["loss"] is not None:
+                        raw_losses[head_name] = output["loss"]
+
+            if debug and head_name in raw_losses:
+                logger.debug(f"  {head_name}: raw_loss={raw_losses[head_name].item():.4f}")
+
+        # Apply dynamic loss weighting or simple averaging
+        if loss_weighter is not None and raw_losses:
+            total_loss, weight_info = loss_weighter(raw_losses)
+            losses["task_weights"] = weight_info
+        else:
+            # Simple weighted sum by sample count
+            total_loss = torch.tensor(0.0, device=device)
+            for head_name, head_loss in raw_losses.items():
+                mask = torch.tensor([n == head_name for n in head_names], device=device)
                 weight = mask.sum().float() / len(head_names)
-                head_loss = output["loss"] * weight
-                losses[head_name] = head_loss
-                total_loss = total_loss + head_loss
+                weighted_loss = head_loss * weight
+                losses[head_name] = weighted_loss
+                total_loss = total_loss + weighted_loss
 
-                if debug:
-                    logger.debug(f"  {head_name}: raw_loss={output['loss'].item():.4f}, weight={weight:.2f}, weighted_loss={head_loss.item():.4f}")
-                    if "logits" in output:
-                        logger.debug(f"  {head_name} logits: min={output['logits'].min().item():.2f}, max={output['logits'].max().item():.2f}, mean={output['logits'].mean().item():.2f}")
+        # Store raw losses for logging
+        for head_name, head_loss in raw_losses.items():
+            if head_name not in losses:
+                losses[head_name] = head_loss
 
     if debug:
         logger.debug(f"Total loss: {total_loss.item():.4f}")
@@ -1039,7 +1207,7 @@ def evaluate(
     val_loader: DataLoader,
     device: torch.device,
     debug: bool = False,
-    threshold: float = 2.0,  # Logit threshold: 2.0 = prob > 0.88, reduces FP for untrained models
+    threshold: float = 0.0,  # Logit threshold: 0.0 = prob > 0.5 (standard)
 ) -> dict[str, Any]:
     """
     Evaluate model on validation set using decode_batch_efficient.
@@ -1243,6 +1411,8 @@ def train(
     use_ema: bool = True,
     early_stopping_patience: int = 5,
     use_torch_compile: bool = False,
+    focal_loss_fn: FocalLoss | None = None,
+    loss_weighter: DynamicLossWeighter | None = None,
 ) -> dict[str, Any]:
     """
     Training loop for parallel head training with evaluation after each epoch.
@@ -1254,6 +1424,9 @@ def train(
     - Early stopping to prevent overfitting
     - torch.compile() for additional speedup (optional)
     - Temperature logging for V2 heads
+    - Focal loss for classification heads (class imbalance)
+    - Dynamic loss weighting (multi-task balancing)
+    - Label smoothing (calibration)
 
     Args:
         model: The model
@@ -1341,8 +1514,20 @@ def train(
                 logger.debug(f"Head distribution: {batch['head_names']}")
 
             # Forward pass with AMP
-            losses = train_step(model, batch, device, debug=step_debug, use_amp=use_amp, amp_dtype=amp_dtype)
+            losses = train_step(
+                model, batch, device,
+                debug=step_debug,
+                use_amp=use_amp,
+                amp_dtype=amp_dtype,
+                focal_loss_fn=focal_loss_fn,
+                loss_weighter=loss_weighter,
+            )
             loss = losses["total_loss"]
+
+            # Track task weights if using dynamic weighting
+            if "task_weights" in losses and step % 100 == 0:
+                weights_str = " | ".join(f"{k}={v:.2f}" for k, v in losses["task_weights"].items())
+                logger.info(f"  Task weights @ step {global_step}: {weights_str}")
 
             # Track temperatures
             if "temperatures" in losses:
@@ -1363,11 +1548,11 @@ def train(
                 if use_scaler:
                     scaler.unscale_(optimizer)
 
-                # Clip gradients
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    get_trainable_params(model),
-                    max_grad_norm,
-                )
+                # Clip gradients (include loss_weighter params if present)
+                params_to_clip = list(get_trainable_params(model))
+                if loss_weighter is not None:
+                    params_to_clip.extend(loss_weighter.parameters())
+                grad_norm = torch.nn.utils.clip_grad_norm_(params_to_clip, max_grad_norm)
                 if step_debug:
                     logger.debug(f"Gradient norm (before clip): {grad_norm:.4f}")
 
@@ -1662,6 +1847,40 @@ def parse_args() -> argparse.Namespace:
         help="Learning rate multiplier for temperature parameters (default 10x)",
     )
 
+    # Advanced loss functions
+    parser.add_argument(
+        "--focal_loss",
+        action="store_true",
+        help="Use focal loss for classification heads (handles class imbalance)",
+    )
+
+    parser.add_argument(
+        "--focal_alpha",
+        type=float,
+        default=0.25,
+        help="Focal loss alpha (positive class weight, default 0.25)",
+    )
+
+    parser.add_argument(
+        "--focal_gamma",
+        type=float,
+        default=2.0,
+        help="Focal loss gamma (focusing parameter, default 2.0)",
+    )
+
+    parser.add_argument(
+        "--label_smoothing",
+        type=float,
+        default=0.0,
+        help="Label smoothing factor for classification (0.0-0.2 recommended)",
+    )
+
+    parser.add_argument(
+        "--dynamic_loss_weighting",
+        action="store_true",
+        help="Enable learned dynamic loss weighting for multi-task balancing",
+    )
+
     return parser.parse_args()
 
 
@@ -1707,9 +1926,37 @@ def main():
     use_tf32 = training_config.get("tf32", False)
     use_flash_attention = training_config.get("flash_attention", False)
 
+    # Advanced loss function settings (config with CLI override)
+    focal_loss_config = training_config.get("focal_loss", {})
+    use_focal_loss = args.focal_loss or focal_loss_config.get("enabled", False)
+    focal_alpha = args.focal_alpha if args.focal_alpha != 0.25 else focal_loss_config.get("alpha", 0.25)
+    focal_gamma = args.focal_gamma if args.focal_gamma != 2.0 else focal_loss_config.get("gamma", 2.0)
+
+    label_smoothing = args.label_smoothing if args.label_smoothing > 0 else training_config.get("label_smoothing", 0.0)
+
+    dlw_config = training_config.get("dynamic_loss_weighting", {})
+    use_dynamic_loss_weighting = args.dynamic_loss_weighting or dlw_config.get("enabled", False)
+
+    # EMA and early stopping settings (config with CLI override)
+    ema_config = training_config.get("ema", {})
+    use_ema = args.ema or ema_config.get("enabled", False)
+
+    es_config = training_config.get("early_stopping", {})
+    use_early_stopping = args.early_stopping > 0 or es_config.get("enabled", False)
+    early_stopping_patience = args.early_stopping if args.early_stopping > 0 else es_config.get("patience", 5)
+
+    # Temperature LR multiplier (config with CLI override)
+    temp_lr_multiplier = args.temp_lr_multiplier if args.temp_lr_multiplier != 10.0 else training_config.get("temp_lr_multiplier", 10.0)
+
+    # Scheduler type (config with CLI override)
+    use_cosine_schedule = args.cosine_schedule or training_config.get("lr_scheduler_type", "linear") == "cosine"
+
     # Head architecture
     head_size = heads_config.get("architecture", {}).get("head_size", 64)
     dropout = heads_config.get("architecture", {}).get("dropout", 0.1)
+
+    # V2 head initial temperature (config with CLI override)
+    initial_temperature = training_config.get("initial_temperature", 0.05)
 
     # Debug mode
     max_samples = args.max_samples
@@ -1743,6 +1990,7 @@ def main():
         head_size=head_size,
         dropout=dropout,
         use_flash_attention=use_flash_attention,
+        initial_temperature=initial_temperature,
     )
 
     # Freeze everything except the 3 new heads
@@ -1864,7 +2112,7 @@ def main():
         if param.requires_grad:
             if "log_temperature" in name:
                 temp_params.append(param)
-                logger.info(f"  Temperature param: {name} (lr={learning_rate * args.temp_lr_multiplier:.2e})")
+                logger.info(f"  Temperature param: {name} (lr={learning_rate * temp_lr_multiplier:.2e})")
             else:
                 other_params.append(param)
 
@@ -1875,9 +2123,34 @@ def main():
     if temp_params:
         param_groups.append({
             "params": temp_params,
-            "lr": learning_rate * args.temp_lr_multiplier,
+            "lr": learning_rate * temp_lr_multiplier,
             "weight_decay": 0.0,  # No weight decay on temperature
         })
+
+    # Setup focal loss for classification heads (handles class imbalance)
+    focal_loss_fn = None
+    if use_focal_loss:
+        focal_loss_fn = FocalLoss(
+            alpha=focal_alpha,
+            gamma=focal_gamma,
+            label_smoothing=label_smoothing,
+        )
+        logger.info(f"  Focal Loss: alpha={focal_alpha}, gamma={focal_gamma}, smoothing={label_smoothing}")
+
+    # Setup dynamic loss weighting for multi-task balancing
+    loss_weighter = None
+    if use_dynamic_loss_weighting:
+        loss_weighter = DynamicLossWeighter(
+            num_tasks=len(HEADS_TO_REPLACE),
+            task_names=HEADS_TO_REPLACE,
+        ).to(device)
+        # Add loss weighter params to optimizer
+        param_groups.append({
+            "params": loss_weighter.parameters(),
+            "lr": learning_rate * 0.1,  # Slower LR for task weights
+            "weight_decay": 0.0,
+        })
+        logger.info(f"  Dynamic Loss Weighting: enabled for {len(HEADS_TO_REPLACE)} tasks")
 
     optimizer = torch.optim.AdamW(
         param_groups,
@@ -1894,7 +2167,7 @@ def main():
     effective_warmup = min(warmup_steps, adaptive_warmup) if num_training_steps < warmup_steps else warmup_steps
 
     # Choose scheduler type
-    if args.cosine_schedule:
+    if use_cosine_schedule:
         scheduler = get_cosine_schedule_with_warmup(
             optimizer,
             num_warmup_steps=effective_warmup,
@@ -1917,11 +2190,14 @@ def main():
     logger.info(f"  BF16: {use_bf16}")
     logger.info(f"  TF32: {use_tf32}")
     logger.info(f"  Flash Attention: {use_flash_attention}")
-    logger.info(f"  AMP: {args.amp}")
-    logger.info(f"  EMA: {args.ema}")
+    logger.info(f"  AMP: {args.amp or use_bf16}")
+    logger.info(f"  EMA: {use_ema}")
     logger.info(f"  torch.compile: {args.compile}")
-    logger.info(f"  Early stopping: {args.early_stopping if args.early_stopping > 0 else 'disabled'}")
-    logger.info(f"  Temperature LR: {learning_rate * args.temp_lr_multiplier:.2e}")
+    logger.info(f"  Early stopping: {early_stopping_patience if use_early_stopping else 'disabled'}")
+    logger.info(f"  Temperature LR: {learning_rate * temp_lr_multiplier:.2e}")
+    logger.info(f"  Focal Loss: {use_focal_loss}")
+    logger.info(f"  Label Smoothing: {label_smoothing}")
+    logger.info(f"  Dynamic Loss Weighting: {use_dynamic_loss_weighting}")
 
     # Train
     history = train(
@@ -1941,9 +2217,11 @@ def main():
         debug=debug_mode,
         use_amp=args.amp or use_bf16,  # Enable AMP if bf16 is set
         use_bf16=use_bf16,
-        use_ema=args.ema,
-        early_stopping_patience=args.early_stopping if args.early_stopping > 0 else 100000,
+        use_ema=use_ema,
+        early_stopping_patience=early_stopping_patience if use_early_stopping else 100000,
         use_torch_compile=args.compile,
+        focal_loss_fn=focal_loss_fn,
+        loss_weighter=loss_weighter,
     )
 
     # Save history

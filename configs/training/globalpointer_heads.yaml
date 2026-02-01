@@ -101,8 +101,32 @@ training:
   # Flash Attention (A100 feature)
   flash_attention: true       # Use Flash Attention 2 for faster attention
 
+  # Advanced Loss Functions
+  focal_loss:
+    enabled: true             # Use focal loss for classification heads
+    alpha: 0.25               # Positive class weight (0.25 recommended)
+    gamma: 2.0                # Focusing parameter (2.0 = standard)
+
+  label_smoothing: 0.1        # Label smoothing for classification (0.0-0.2)
+
+  dynamic_loss_weighting:
+    enabled: true             # Auto-balance multi-task losses
+    # Uses learned uncertainty weighting (Kendall et al. 2018)
+
+  # EMA and Early Stopping
+  ema:
+    enabled: true             # Exponential Moving Average for smoother checkpoints
+
+  early_stopping:
+    enabled: true
+    patience: 5               # Stop after N evals without improvement
+
+  # Temperature Learning Rate
+  temp_lr_multiplier: 10.0    # LR multiplier for temperature params (10x default)
+  initial_temperature: 0.05   # Initial temperature for V2 heads (lower = sharper, 0.05-0.1 typical)
+
   # Schedule
-  lr_scheduler_type: linear
+  lr_scheduler_type: linear   # "linear" or "cosine"
   warmup_steps: 500           # 5% of expected steps
   warmup_ratio: 0.0           # Use warmup_steps instead
 
