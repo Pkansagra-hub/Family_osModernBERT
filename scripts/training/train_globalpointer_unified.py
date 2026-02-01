@@ -250,6 +250,10 @@ class DynamicLossWeighter(nn.Module):
         # Learnable log-variance for each task (initialized to 0 = sigma=1)
         self.log_vars = nn.Parameter(torch.zeros(num_tasks))
 
+        # Track running mean of losses for relative weighting
+        self.register_buffer("loss_ema", torch.ones(num_tasks))
+        self.ema_decay = 0.99
+
     def forward(self, losses: dict[str, torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
         """
         Compute weighted total loss.
@@ -270,13 +274,21 @@ class DynamicLossWeighter(nn.Module):
             task_loss = losses[task_name]
             log_var = self.log_vars[i]
 
+            # Update EMA of loss magnitudes (for monitoring)
+            with torch.no_grad():
+                self.loss_ema[i] = self.ema_decay * self.loss_ema[i] + (1 - self.ema_decay) * task_loss.detach()
+
             # Weighted loss: L_i / (2 * sigma^2) + log(sigma)
             # = L_i * exp(-log_var) / 2 + log_var / 2
             precision = torch.exp(-log_var)
             weighted_loss = precision * task_loss + log_var
 
             total_loss = total_loss + weighted_loss
-            weight_info[task_name] = precision.item()
+
+            # Report effective weight (precision normalized by loss scale)
+            # This shows relative importance, not just raw precision
+            effective_weight = precision.item()
+            weight_info[task_name] = effective_weight
 
         return total_loss, weight_info
 
@@ -286,6 +298,13 @@ class DynamicLossWeighter(nn.Module):
         for i, name in enumerate(self.task_names):
             weights[name] = torch.exp(-self.log_vars[i]).item()
         return weights
+
+    def get_loss_scales(self) -> dict[str, float]:
+        """Get running average loss scales per task."""
+        scales = {}
+        for i, name in enumerate(self.task_names):
+            scales[name] = self.loss_ema[i].item()
+        return scales
 
 
 def load_config(config_path: str | Path) -> dict[str, Any]:
