@@ -576,6 +576,27 @@ INGRESS_LABELS = LabelSchema(
     description="Extended domain classification for family context (12 domains)",
 )
 
+# V2: Multi-label version for Label-Description Embedding architecture
+INGRESS_V2_LABELS = LabelSchema(
+    name="ingress_v2",
+    label2id={
+        "DIARY": 0,  # Personal reflections, journaling
+        "TASK": 1,  # To-dos, reminders, action items
+        "HEALTH": 2,  # Medical, wellness, fitness
+        "FINANCE": 3,  # Money, bills, budgets
+        "RELATIONSHIP": 4,  # Family dynamics, social
+        "WORK": 5,  # Job, career, professional
+        "META": 6,  # System commands, queries about FamilyOS
+        "MEMORY": 7,  # Recalling past events
+        "PLANNING": 8,  # Future events, scheduling
+        "CELEBRATION": 9,  # Birthdays, achievements, milestones
+        "CONCERN": 10,  # Worries, anxieties
+        "GRATITUDE": 11,  # Appreciation expressions
+    },
+    problem_type="multi_label_classification",
+    description="Domain classification V2 - multi-label (12 domains)",
+)
+
 
 # -----------------------------------------------------------------------------
 # Safety FamilyOS Labels (Policy Bands)
@@ -705,6 +726,23 @@ INTENT_LABELS = LabelSchema(
     description="User intent classification for FamilyOS interactions (8 intents)",
 )
 
+# V2: Multi-label version for Label-Description Embedding architecture
+INTENT_V2_LABELS = LabelSchema(
+    name="intent_v2",
+    label2id={
+        "log_memory": 0,  # Record a memory, thought, or experience
+        "query_memory": 1,  # Retrieve or search past memories
+        "set_reminder": 2,  # Set a reminder, alarm, or scheduled task
+        "express_feeling": 3,  # Share emotions or feelings
+        "seek_advice": 4,  # Ask for guidance or recommendations
+        "share_news": 5,  # Share news, updates, or events
+        "reflect": 6,  # Reflect on past experiences or contemplate
+        "other": 7,  # General conversation or unclear intent
+    },
+    problem_type="multi_label_classification",
+    description="User intent classification V2 - multi-label (8 intents)",
+)
+
 
 # -----------------------------------------------------------------------------
 # Temporal Labels (Temporal Expression Extraction)
@@ -762,9 +800,11 @@ class Capability(str, Enum):
     # FamilyOS capabilities (Stage B)
     NER_FAMILY = "ner_family"
     INGRESS = "ingress"
+    INGRESS_V2 = "ingress_v2"  # NEW: Multi-label domain classification
     SAFETY_FAMILYOS = "safety_familyos"
     RELATION = "relation"  # NEW: Family relationship extraction
     INTENT = "intent"  # NEW: User intent classification
+    INTENT_V2 = "intent_v2"  # NEW: Multi-label intent classification
 
     # Generation capabilities (Stage C)
     COUNTERFACTUAL = "counterfactual"  # NEW: Counterfactual decoder
@@ -790,9 +830,11 @@ CAPABILITY_TO_LABELS: dict[Capability, LabelSchema | None] = {
     # FamilyOS capabilities
     Capability.NER_FAMILY: NER_FAMILY_LABELS,
     Capability.INGRESS: INGRESS_LABELS,
+    Capability.INGRESS_V2: INGRESS_V2_LABELS,  # NEW: Multi-label
     Capability.SAFETY_FAMILYOS: SAFETY_FAMILYOS_LABELS,
     Capability.RELATION: RELATION_LABELS,  # NEW
     Capability.INTENT: INTENT_LABELS,  # NEW
+    Capability.INTENT_V2: INTENT_V2_LABELS,  # NEW: Multi-label
     # Generation capabilities
     Capability.COUNTERFACTUAL: None,  # Decoder generates text, no label schema
 }
@@ -831,10 +873,12 @@ ALL_LABEL_SCHEMAS: dict[str, LabelSchema] = {
     # FamilyOS labels
     "ner_family": NER_FAMILY_LABELS,
     "ingress": INGRESS_LABELS,
+    "ingress_v2": INGRESS_V2_LABELS,  # NEW: Multi-label
     "safety_familyos": SAFETY_FAMILYOS_LABELS,
     "safety_subcategories": SAFETY_SUBCATEGORIES,  # Issue 3.6.8
     "relation": RELATION_LABELS,  # NEW
     "intent": INTENT_LABELS,  # NEW
+    "intent_v2": INTENT_V2_LABELS,  # NEW: Multi-label
 }
 
 
@@ -859,12 +903,14 @@ __all__ = [
     # FamilyOS labels
     "NER_FAMILY_LABELS",
     "INGRESS_LABELS",
+    "INGRESS_V2_LABELS",  # NEW: Multi-label
     "SAFETY_FAMILYOS_LABELS",
     "SAFETY_SUBCATEGORIES",  # Issue 3.6.8
     "SUBCATEGORY_TO_BAND_ID",  # Issue 3.6.8
     "BAND_TO_SUBCATEGORY_IDS",  # Issue 3.6.8
     "RELATION_LABELS",  # NEW
     "INTENT_LABELS",  # NEW
+    "INTENT_V2_LABELS",  # NEW: Multi-label
     # Mappings
     "CAPABILITY_TO_LABELS",
     "ALL_LABEL_SCHEMAS",

@@ -75,6 +75,8 @@ from modeling_studio.models.heads import (  # noqa: E402
     GlobalPointerNERHead,  # NEW - v2 SOTA span-based NER (Epic 3.3.1)
     HierarchicalEmotionHead,
     IntentHead,
+    IntentHeadV2,  # NEW - Label-Description Embedding (Milestone 0)
+    IngressHeadV2,  # NEW - Label-Description Embedding (Milestone 0)
     NLIHead,
     RelationHead,
     SafetyHead,  # type: ignore  # noqa: F401
@@ -119,7 +121,9 @@ TASK_GROUPS = {
         Capability.SAFETY_GENERIC,
         Capability.SAFETY_FAMILYOS,
         Capability.INGRESS,
+        Capability.INGRESS_V2,  # NEW - Multi-label (Milestone 0)
         Capability.INTENT,
+        Capability.INTENT_V2,  # NEW - Multi-label (Milestone 0)
     ],
     "pair_tasks": [
         Capability.NLI,
@@ -160,7 +164,9 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.SAFETY_GENERIC: SequenceClassificationHead,  # Stage A: Multi-label with ASL
     Capability.SAFETY_FAMILYOS: SafetyHead,  # Stage B: Band-based classification (4 bands, 13 subcats)
     Capability.INGRESS: SequenceClassificationHead,
+    Capability.INGRESS_V2: IngressHeadV2,  # NEW - Label-Description Embedding (Milestone 0)
     Capability.INTENT: IntentHead,  # NEW
+    Capability.INTENT_V2: IntentHeadV2,  # NEW - Label-Description Embedding (Milestone 0)
     # Special heads
     Capability.NLI: NLIHead,
     Capability.RELATION: RelationHead,  # NEW
@@ -475,6 +481,15 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 head = head_cls(
                     config=decoder_config,
                     encoder_hidden_size=hidden_size,
+                )
+            elif capability in (Capability.INTENT_V2, Capability.INGRESS_V2):
+                # Label-Description Embedding heads (Milestone 0)
+                # These have different constructor signature - no problem_type arg
+                head = head_cls(
+                    hidden_size=hidden_size,
+                    num_labels=num_labels,
+                    dropout=self.head_dropout,
+                    multi_label=True,  # K1 requirement: multi-label classification
                 )
             else:
                 head = head_cls(

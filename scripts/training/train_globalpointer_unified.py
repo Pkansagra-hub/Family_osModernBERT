@@ -85,6 +85,9 @@ from modeling_studio.models.modernbert_multitask import (
 # Import Intent/Ingress V2 heads for classification training
 from modeling_studio.models.heads import IntentHeadV2, IngressHeadV2
 
+# Import V2 label schemas from central labels (Issue 0.1.6 - use central labels)
+from modeling_studio.data.labels import INTENT_V2_LABELS, INGRESS_V2_LABELS
+
 # Configure logging
 logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(message)s",
@@ -132,9 +135,10 @@ LABEL_CONFIGS = {
 }
 
 # Classification head label configs (sequence-level)
+# Use central labels from labels.py for consistency (Issue 0.1.6)
 CLASSIFICATION_LABEL_CONFIGS = {
-    "intent_v2": {label: i for i, label in enumerate(IntentHeadV2.INTENT_LABELS)},
-    "ingress_v2": {label: i for i, label in enumerate(IngressHeadV2.INGRESS_LABELS)},
+    "intent_v2": INTENT_V2_LABELS.label2id,
+    "ingress_v2": INGRESS_V2_LABELS.label2id,
 }
 
 # Head types for routing
