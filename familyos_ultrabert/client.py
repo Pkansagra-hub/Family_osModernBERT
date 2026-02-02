@@ -362,25 +362,41 @@ class Client:
         return self.get_safety(text) == "CRISIS"
 
     def get_intent(self, text: str) -> str:
-        """Quick intent classification. Returns intent label."""
+        """Quick intent classification. Returns primary intent label.
+
+        Uses LabelDescriptionHead (SOTA) under the hood.
+        For full multi-label output with scores, use get_intent_with_descriptions().
+        """
         result = self.analyze(text, capabilities=["intent"])
-        return result.intent
+        # LabelDescriptionHead returns dict with 'primary' key
+        intent_data = result._caps.get("intent", {})
+        if isinstance(intent_data, dict):
+            return intent_data.get("primary", "other")
+        return str(intent_data) if intent_data else "other"
 
     def get_ingress(self, text: str) -> str:
-        """Quick routing category. Returns ingress label."""
-        result = self.analyze(text, capabilities=["ingress"])
-        return result.ingress
+        """Quick routing category. Returns primary domain label.
 
-    def get_intent_v2(self, text: str, threshold: float = 0.5) -> Dict[str, Any]:
+        Uses LabelDescriptionHead (SOTA) under the hood.
+        For full multi-label output with scores, use get_ingress_with_descriptions().
         """
-        Multi-label intent classification (V2).
+        result = self.analyze(text, capabilities=["ingress"])
+        # LabelDescriptionHead returns dict with 'primary' key
+        ingress_data = result._caps.get("ingress", {})
+        if isinstance(ingress_data, dict):
+            return ingress_data.get("primary", "META")
+        return str(ingress_data) if ingress_data else "META"
 
-        Uses Label-Description Embedding architecture for SOTA performance.
+    def get_intent_with_descriptions(self, text: str, threshold: float = 0.3) -> Dict[str, Any]:
+        """
+        Multi-label intent classification with full scores.
+
+        Uses LabelDescriptionHead architecture for SOTA performance.
         Supports multiple simultaneous intents.
 
         Args:
             text: Input text to classify.
-            threshold: Probability threshold for including intents (default: 0.5).
+            threshold: Probability threshold for including intents (default: 0.3).
 
         Returns:
             Dict with:
@@ -389,33 +405,34 @@ class Client:
                 - scores: Dict[str, float] - all intent probabilities
                 - confidence: float - confidence of primary intent
         """
-        result = self.analyze(text, capabilities=["intent_v2"])
-        return result._caps.get("intent_v2", {})
+        result = self.analyze(text, capabilities=["intent"])
+        return result._caps.get("intent", {})
 
-    def get_ingress_v2(self, text: str, threshold: float = 0.5) -> Dict[str, Any]:
+    def get_ingress_with_descriptions(self, text: str, threshold: float = 0.3) -> Dict[str, Any]:
         """
-        Multi-label domain classification (V2).
+        Multi-label domain classification with full scores.
 
-        Uses Label-Description Embedding architecture for SOTA performance.
+        Uses LabelDescriptionHead architecture for SOTA performance.
         Supports multiple simultaneous domains.
 
         Args:
             text: Input text to classify.
-            threshold: Probability threshold for including domains (default: 0.5).
+            threshold: Probability threshold for including domains (default: 0.3).
 
         Returns:
             Dict with:
+                - primary: str - highest scoring domain (always returned)
                 - domains: List[str] - all domains above threshold
                 - scores: Dict[str, float] - all domain probabilities
         """
-        result = self.analyze(text, capabilities=["ingress_v2"])
-        return result._caps.get("ingress_v2", {})
+        result = self.analyze(text, capabilities=["ingress"])
+        return result._caps.get("ingress", {})
 
     def get_intent_labels(self) -> List[str]:
-        """Get list of available intent labels (V2)."""
+        """Get list of available intent labels."""
         self._ensure_ready()
-        if "intent_v2" in self._model._engine.heads:
-            head = self._model._engine.heads["intent_v2"]
+        if "intent" in self._model._engine.heads:
+            head = self._model._engine.heads["intent"]
             # Use label_names (updated by set_custom_labels) or fallback to INTENT_LABELS
             if hasattr(head, "label_names") and head.label_names:
                 return list(head.label_names)
@@ -423,10 +440,10 @@ class Client:
         return []
 
     def get_ingress_labels(self) -> List[str]:
-        """Get list of available ingress/domain labels (V2)."""
+        """Get list of available ingress/domain labels."""
         self._ensure_ready()
-        if "ingress_v2" in self._model._engine.heads:
-            head = self._model._engine.heads["ingress_v2"]
+        if "ingress" in self._model._engine.heads:
+            head = self._model._engine.heads["ingress"]
             # Use label_names (updated by set_custom_labels) or fallback to INGRESS_LABELS
             if hasattr(head, "label_names") and head.label_names:
                 return list(head.label_names)
@@ -467,10 +484,10 @@ class Client:
             comes pre-trained with optimized embeddings.
         """
         self._ensure_ready()
-        if "intent_v2" not in self._model._engine.heads:
-            raise ValueError("intent_v2 head not available in this model")
+        if "intent" not in self._model._engine.heads:
+            raise ValueError("intent head not available in this model")
 
-        head = self._model._engine.heads["intent_v2"]
+        head = self._model._engine.heads["intent"]
         encoder = self._model._engine.encoder
         tokenizer = self._model._engine.tokenizer
 
@@ -518,10 +535,10 @@ class Client:
             comes pre-trained with optimized embeddings.
         """
         self._ensure_ready()
-        if "ingress_v2" not in self._model._engine.heads:
-            raise ValueError("ingress_v2 head not available in this model")
+        if "ingress" not in self._model._engine.heads:
+            raise ValueError("ingress head not available in this model")
 
-        head = self._model._engine.heads["ingress_v2"]
+        head = self._model._engine.heads["ingress"]
         encoder = self._model._engine.encoder
         tokenizer = self._model._engine.tokenizer
 
@@ -591,20 +608,20 @@ class Client:
             >>>
             >>> # Now classify with your custom labels
             >>> result = client.analyze("Where is my package?")
-            >>> print(result.intent_v2_primary)  # "shipping"
+            >>> print(result.intent)  # "shipping"
 
         Note:
             After calling this, the model will ONLY use your custom labels.
             To restore default labels, reload the client.
         """
         self._ensure_ready()
-        if "intent_v2" not in self._model._engine.heads:
-            raise ValueError("intent_v2 head not available in this model")
+        if "intent" not in self._model._engine.heads:
+            raise ValueError("intent head not available in this model")
 
         if not labels:
             raise ValueError("labels dict cannot be empty")
 
-        head = self._model._engine.heads["intent_v2"]
+        head = self._model._engine.heads["intent"]
         encoder = self._model._engine.encoder
         tokenizer = self._model._engine.tokenizer
 
@@ -612,12 +629,12 @@ class Client:
         head.set_custom_labels(labels, encoder, tokenizer, temperature=temperature)
 
         # Update the threshold for this head
-        self._model._engine.thresholds["intent_v2"] = threshold
+        self._model._engine.thresholds["intent"] = threshold
 
         # Update the schema in the engine for proper output formatting
         from familyos_ultrabert.labels import LabelSchema
-        self._model._engine.custom_schemas["intent_v2"] = LabelSchema(
-            name="intent_v2_custom",
+        self._model._engine.custom_schemas["intent"] = LabelSchema(
+            name="intent_custom",
             label2id={name: i for i, name in enumerate(labels.keys())},
             problem_type="multi_label_classification",
             description="Custom zero-shot intent labels",
@@ -661,20 +678,20 @@ class Client:
             ... })
             >>>
             >>> result = client.analyze("My head has been hurting for 3 days")
-            >>> print(result.ingress_v2_domains)  # ["symptoms"]
+            >>> print(result.ingress)  # "symptoms"
 
         Note:
             After calling this, the model will ONLY use your custom labels.
             To restore default labels, reload the client.
         """
         self._ensure_ready()
-        if "ingress_v2" not in self._model._engine.heads:
-            raise ValueError("ingress_v2 head not available in this model")
+        if "ingress" not in self._model._engine.heads:
+            raise ValueError("ingress head not available in this model")
 
         if not labels:
             raise ValueError("labels dict cannot be empty")
 
-        head = self._model._engine.heads["ingress_v2"]
+        head = self._model._engine.heads["ingress"]
         encoder = self._model._engine.encoder
         tokenizer = self._model._engine.tokenizer
 
@@ -682,12 +699,12 @@ class Client:
         head.set_custom_labels(labels, encoder, tokenizer, temperature=temperature)
 
         # Update the threshold for this head
-        self._model._engine.thresholds["ingress_v2"] = threshold
+        self._model._engine.thresholds["ingress"] = threshold
 
         # Update the schema in the engine for proper output formatting
         from familyos_ultrabert.labels import LabelSchema
-        self._model._engine.custom_schemas["ingress_v2"] = LabelSchema(
-            name="ingress_v2_custom",
+        self._model._engine.custom_schemas["ingress"] = LabelSchema(
+            name="ingress_custom",
             label2id={name: i for i, name in enumerate(labels.keys())},
             problem_type="multi_label_classification",
             description="Custom zero-shot ingress labels",
@@ -721,16 +738,16 @@ class Client:
             >>> print(len(all_labels))  # 12 (8 original + 4 new)
             >>>
             >>> result = client.analyze("Don't forget to pick up Emma at 3pm")
-            >>> print(result.intent_v2_primary)  # "school_pickup"
+            >>> print(result.intent)  # "school_pickup"
         """
         self._ensure_ready()
-        if "intent_v2" not in self._model._engine.heads:
-            raise ValueError("intent_v2 head not available in this model")
+        if "intent" not in self._model._engine.heads:
+            raise ValueError("intent head not available in this model")
 
         if not new_labels:
             raise ValueError("new_labels dict cannot be empty")
 
-        head = self._model._engine.heads["intent_v2"]
+        head = self._model._engine.heads["intent"]
         encoder = self._model._engine.encoder
         tokenizer = self._model._engine.tokenizer
 
@@ -739,8 +756,8 @@ class Client:
 
         # Update the schema in the engine
         from familyos_ultrabert.labels import LabelSchema
-        self._model._engine.custom_schemas["intent_v2"] = LabelSchema(
-            name="intent_v2_expanded",
+        self._model._engine.custom_schemas["intent"] = LabelSchema(
+            name="intent_expanded",
             label2id={name: i for i, name in enumerate(all_labels)},
             problem_type="multi_label_classification",
             description=f"Expanded intent labels ({len(all_labels)} total)",
@@ -775,16 +792,16 @@ class Client:
             >>> print(len(all_labels))  # 15 (12 original + 3 new)
             >>>
             >>> result = client.analyze("Soccer practice is at 5pm")
-            >>> print(result.ingress_v2_domains)  # ["HOBBIES"] or ["PLANNING"]
+            >>> print(result.ingress)  # "HOBBIES" or "PLANNING"
         """
         self._ensure_ready()
-        if "ingress_v2" not in self._model._engine.heads:
-            raise ValueError("ingress_v2 head not available in this model")
+        if "ingress" not in self._model._engine.heads:
+            raise ValueError("ingress head not available in this model")
 
         if not new_labels:
             raise ValueError("new_labels dict cannot be empty")
 
-        head = self._model._engine.heads["ingress_v2"]
+        head = self._model._engine.heads["ingress"]
         encoder = self._model._engine.encoder
         tokenizer = self._model._engine.tokenizer
 
@@ -793,8 +810,8 @@ class Client:
 
         # Update the schema in the engine
         from familyos_ultrabert.labels import LabelSchema
-        self._model._engine.custom_schemas["ingress_v2"] = LabelSchema(
-            name="ingress_v2_expanded",
+        self._model._engine.custom_schemas["ingress"] = LabelSchema(
+            name="ingress_expanded",
             label2id={name: i for i, name in enumerate(all_labels)},
             problem_type="multi_label_classification",
             description=f"Expanded ingress labels ({len(all_labels)} total)",
@@ -1190,54 +1207,63 @@ class ClientResult:
         """Temporal expressions."""
         return self._caps.get("temporal", {}).get("entities", [])
 
-    # Intent
+    # Intent (LabelDescriptionHead - multi-label capable)
     @property
     def intent(self) -> str:
-        """User intent."""
-        return self._caps.get("intent", {}).get("prediction", "unknown")
+        """Primary user intent."""
+        intent_data = self._caps.get("intent", {})
+        if isinstance(intent_data, dict):
+            return intent_data.get("primary", "unknown")
+        return str(intent_data) if intent_data else "unknown"
 
     @property
     def intent_confidence(self) -> float:
         """Intent confidence."""
-        return self._caps.get("intent", {}).get("confidence", 0.0)
-
-    # Intent V2 (multi-label, Label-Description Embedding)
-    @property
-    def intent_v2_primary(self) -> str:
-        """Primary intent from V2 head (highest score)."""
-        return self._caps.get("intent_v2", {}).get("primary", "unknown")
+        intent_data = self._caps.get("intent", {})
+        if isinstance(intent_data, dict):
+            return intent_data.get("confidence", 0.0)
+        return 0.0
 
     @property
-    def intent_v2_all(self) -> List[str]:
-        """All intents above threshold from V2 head."""
-        return self._caps.get("intent_v2", {}).get("all", [])
+    def intent_all(self) -> List[str]:
+        """All intents above threshold."""
+        intent_data = self._caps.get("intent", {})
+        if isinstance(intent_data, dict):
+            return intent_data.get("all", [])
+        return []
 
     @property
-    def intent_v2_scores(self) -> Dict[str, float]:
-        """All intent scores from V2 head."""
-        return self._caps.get("intent_v2", {}).get("scores", {})
+    def intent_scores(self) -> Dict[str, float]:
+        """All intent scores."""
+        intent_data = self._caps.get("intent", {})
+        if isinstance(intent_data, dict):
+            return intent_data.get("scores", {})
+        return {}
 
-    @property
-    def intent_v2_confidence(self) -> float:
-        """Confidence of primary intent from V2 head."""
-        return self._caps.get("intent_v2", {}).get("confidence", 0.0)
-
-    # Ingress
+    # Ingress (LabelDescriptionHead - multi-label capable)
     @property
     def ingress(self) -> str:
-        """Message routing category."""
-        return self._caps.get("ingress", {}).get("prediction", "unknown")
-
-    # Ingress V2 (multi-label, Label-Description Embedding)
-    @property
-    def ingress_v2_domains(self) -> List[str]:
-        """All domains above threshold from V2 head."""
-        return self._caps.get("ingress_v2", {}).get("domains", [])
+        """Primary message routing category."""
+        ingress_data = self._caps.get("ingress", {})
+        if isinstance(ingress_data, dict):
+            return ingress_data.get("primary", "unknown")
+        return str(ingress_data) if ingress_data else "unknown"
 
     @property
-    def ingress_v2_scores(self) -> Dict[str, float]:
-        """All domain scores from V2 head."""
-        return self._caps.get("ingress_v2", {}).get("scores", {})
+    def ingress_domains(self) -> List[str]:
+        """All domains above threshold."""
+        ingress_data = self._caps.get("ingress", {})
+        if isinstance(ingress_data, dict):
+            return ingress_data.get("domains", [])
+        return []
+
+    @property
+    def ingress_scores(self) -> Dict[str, float]:
+        """All domain scores."""
+        ingress_data = self._caps.get("ingress", {})
+        if isinstance(ingress_data, dict):
+            return ingress_data.get("scores", {})
+        return {}
 
     # Relation
     @property
@@ -1328,17 +1354,12 @@ class ClientResult:
             "entities": self.entities,
             "temporal": self.temporal,
             "intent": self.intent,
-            "intent_v2": {
-                "primary": self.intent_v2_primary,
-                "all": self.intent_v2_all,
-                "scores": self.intent_v2_scores,
-                "confidence": self.intent_v2_confidence,
-            },
+            "intent_all": self.intent_all,
+            "intent_scores": self.intent_scores,
+            "intent_confidence": self.intent_confidence,
             "ingress": self.ingress,
-            "ingress_v2": {
-                "domains": self.ingress_v2_domains,
-                "scores": self.ingress_v2_scores,
-            },
+            "ingress_domains": self.ingress_domains,
+            "ingress_scores": self.ingress_scores,
             "relations": self.relations,
             "latency_ms": self.latency_ms,
         }

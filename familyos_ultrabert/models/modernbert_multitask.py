@@ -114,10 +114,8 @@ TASK_GROUPS = {
         Capability.EMOTIONS,
         Capability.SAFETY_GENERIC,
         Capability.SAFETY_FAMILYOS,
-        Capability.INGRESS,
-        Capability.INTENT,
-        Capability.INTENT_V2,  # V2 Label-Description Embedding
-        Capability.INGRESS_V2,  # V2 Label-Description Embedding
+        Capability.INGRESS,  # LabelDescriptionHead
+        Capability.INTENT,  # LabelDescriptionHead
     ],
     "pair_tasks": [
         Capability.NLI,
@@ -152,11 +150,9 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.EMOTIONS: HierarchicalEmotionHead,  # FIXED: Use enhanced head with 44 emotions
     Capability.SAFETY_GENERIC: SequenceClassificationHead,  # Stage A: Multi-label with ASL
     Capability.SAFETY_FAMILYOS: SafetyHead,  # Stage B: Band-based classification (4 bands, 13 subcats)
-    Capability.INGRESS: SequenceClassificationHead,
-    Capability.INTENT: IntentHead,  # Legacy single-label
-    # V2 Label-Description Embedding heads (SOTA multi-label)
-    Capability.INTENT_V2: IntentHeadV2,
-    Capability.INGRESS_V2: IngressHeadV2,
+    # LabelDescriptionHead (SOTA multi-label with zero-shot capability)
+    Capability.INGRESS: IngressHeadV2,  # Domain classification
+    Capability.INTENT: IntentHeadV2,  # Intent classification
     # Special heads
     Capability.NLI: NLIHead,
     Capability.RELATION: RelationHead,  # NEW
@@ -470,8 +466,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     asl_clip=0.05,  # Probability clipping
                     pos_weight=safety_pos_weight,  # Mild reweighting for balanced data
                 )
-            elif capability in (Capability.INTENT_V2, Capability.INGRESS_V2):
-                # V2 Label-Description Embedding heads (Milestone 2)
+            elif capability in (Capability.INTENT, Capability.INGRESS):
+                # LabelDescriptionHead (SOTA multi-label with zero-shot capability)
                 # Different constructor signature - no problem_type arg
                 head = head_cls(
                     hidden_size=hidden_size,
@@ -699,36 +695,67 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                         epic_5_config = caps_data["epic_5_0"]
 
         # Reconcile capabilities with actual checkpoint heads
-        # V2 heads replace V1: if checkpoint has intent_v2, use that instead of intent
+        # V2 heads are now the default: rename intent_v2 -> intent, ingress_v2 -> ingress
         # Special case: EmbeddingHead has no parameters, always create it
         PARAMETER_FREE_HEADS = {"embedding"}  # Heads that don't need checkpoint weights
+
+        # Legacy name mapping: old checkpoint names -> new capability names
+        LEGACY_HEAD_NAMES = {
+            "intent_v2": "intent",
+            "ingress_v2": "ingress",
+        }
+
+        # If no capabilities.json, build from checkpoint heads
+        if capabilities is None:
+            capabilities = []
+            for head_name in checkpoint_heads:
+                mapped_name = LEGACY_HEAD_NAMES.get(head_name, head_name)
+                try:
+                    capabilities.append(Capability(mapped_name))
+                    logger.info(f"  Inferred capability from checkpoint: {mapped_name}")
+                except ValueError:
+                    logger.warning(f"  Unknown head '{head_name}' in checkpoint, skipping")
+            # Always add embedding (parameter-free)
+            if Capability.EMBEDDING not in capabilities:
+                capabilities.append(Capability.EMBEDDING)
+                logger.info("  Added parameter-free head: embedding")
 
         if capabilities:
             reconciled = []
             for cap in capabilities:
                 cap_name = cap.value if isinstance(cap, Capability) else cap
-                # Check for V2 replacement
+
+                # Handle legacy v2 names in capabilities.json
+                if cap_name in LEGACY_HEAD_NAMES:
+                    cap_name = LEGACY_HEAD_NAMES[cap_name]
+                    cap = Capability(cap_name)
+
+                # Check if this capability exists in checkpoint (with possible v2 name)
+                checkpoint_cap_name = cap_name
                 if cap_name == "intent" and "intent_v2" in checkpoint_heads:
-                    reconciled.append(Capability.INTENT_V2)
-                    logger.info("  Detected intent_v2 head, using INTENT_V2 capability")
+                    checkpoint_cap_name = "intent_v2"
+                    logger.info("  Detected legacy intent_v2 head, mapping to intent")
                 elif cap_name == "ingress" and "ingress_v2" in checkpoint_heads:
-                    reconciled.append(Capability.INGRESS_V2)
-                    logger.info("  Detected ingress_v2 head, using INGRESS_V2 capability")
-                elif cap_name in PARAMETER_FREE_HEADS:
+                    checkpoint_cap_name = "ingress_v2"
+                    logger.info("  Detected legacy ingress_v2 head, mapping to ingress")
+
+                if cap_name in PARAMETER_FREE_HEADS:
                     # Always create parameter-free heads (e.g., EmbeddingHead)
                     reconciled.append(cap)
                     logger.info(f"  Creating parameter-free head: {cap_name}")
-                elif cap_name not in checkpoint_heads:
+                elif checkpoint_cap_name not in checkpoint_heads and cap_name not in checkpoint_heads:
                     # Skip capabilities not in checkpoint
                     logger.warning(f"  Capability '{cap_name}' not found in checkpoint, skipping")
                 else:
                     reconciled.append(cap)
             # Add any heads in checkpoint but not in capabilities.json
             for head_name in checkpoint_heads:
-                if head_name not in [c.value if isinstance(c, Capability) else c for c in reconciled]:
+                # Map legacy names
+                mapped_name = LEGACY_HEAD_NAMES.get(head_name, head_name)
+                if mapped_name not in [c.value if isinstance(c, Capability) else c for c in reconciled]:
                     try:
-                        reconciled.append(Capability(head_name))
-                        logger.info(f"  Added missing capability from checkpoint: {head_name}")
+                        reconciled.append(Capability(mapped_name))
+                        logger.info(f"  Added missing capability from checkpoint: {mapped_name}")
                     except ValueError:
                         logger.warning(f"  Unknown head '{head_name}' in checkpoint, skipping")
             capabilities = reconciled
@@ -773,7 +800,13 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             if key.startswith("encoder."):
                 encoder_state[key[8:]] = value  # Remove 'encoder.' prefix
             elif key.startswith("heads."):
-                head_state[key] = value
+                # Rename legacy v2 heads to new names
+                renamed_key = key
+                if ".intent_v2." in key:
+                    renamed_key = key.replace(".intent_v2.", ".intent.")
+                elif ".ingress_v2." in key:
+                    renamed_key = key.replace(".ingress_v2.", ".ingress.")
+                head_state[renamed_key] = value
             elif key.startswith("task_adapters."):
                 adapter_state[key] = value
             elif key.startswith("pair_encoder."):

@@ -51,7 +51,11 @@ class LabelSchema:
 
 
 class Capability(str, Enum):
-    """All 12 capabilities supported by FamilyOS NLP."""
+    """All 12 capabilities supported by FamilyOS NLP.
+
+    Note: intent and ingress now use LabelDescriptionHead architecture (SOTA).
+    The old v1 single-label heads have been removed.
+    """
 
     # Generic capabilities
     NER_GENERAL = "ner_general"
@@ -64,14 +68,10 @@ class Capability(str, Enum):
 
     # FamilyOS-specific capabilities
     NER_FAMILY = "ner_family"
-    INGRESS = "ingress"
+    INGRESS = "ingress"  # LabelDescriptionHead (multi-label capable)
     SAFETY_FAMILYOS = "safety_familyos"
     RELATION = "relation"
-    INTENT = "intent"
-
-    # V2 heads - Label-Description Embedding architecture (multi-label)
-    INTENT_V2 = "intent_v2"
-    INGRESS_V2 = "ingress_v2"
+    INTENT = "intent"  # LabelDescriptionHead (multi-label capable)
 
     def __str__(self) -> str:
         return self.value
@@ -361,48 +361,8 @@ INTENT_LABELS = LabelSchema(
         "reflect": 6,
         "other": 7,
     },
-    problem_type="single_label_classification",
-    description="8 user intents",
-)
-
-# =============================================================================
-# V2 Label Schemas (Label-Description Embedding Architecture)
-# =============================================================================
-
-INTENT_V2_LABELS = LabelSchema(
-    name="intent_v2",
-    label2id={
-        "log_memory": 0,
-        "query_memory": 1,
-        "set_reminder": 2,
-        "express_feeling": 3,
-        "seek_advice": 4,
-        "share_news": 5,
-        "reflect": 6,
-        "other": 7,
-    },
-    problem_type="multi_label_classification",
-    description="8 user intents (multi-label, V2 architecture)",
-)
-
-INGRESS_V2_LABELS = LabelSchema(
-    name="ingress_v2",
-    label2id={
-        "DIARY": 0,
-        "TASK": 1,
-        "HEALTH": 2,
-        "FINANCE": 3,
-        "RELATIONSHIP": 4,
-        "WORK": 5,
-        "META": 6,
-        "MEMORY": 7,
-        "PLANNING": 8,
-        "CELEBRATION": 9,
-        "CONCERN": 10,
-        "GRATITUDE": 11,
-    },
-    problem_type="multi_label_classification",
-    description="12 domain categories (multi-label, V2 architecture)",
+    problem_type="multi_label_classification",  # LabelDescriptionHead supports multi-label
+    description="8 user intents (LabelDescriptionHead architecture)",
 )
 
 
@@ -416,13 +376,10 @@ CAPABILITY_TO_LABELS: Dict[Capability, Optional[LabelSchema]] = {
     Capability.EMBEDDING: None,
     Capability.TEMPORAL: TEMPORAL_LABELS,
     Capability.NER_FAMILY: NER_FAMILY_LABELS,
-    Capability.INGRESS: INGRESS_LABELS,
+    Capability.INGRESS: INGRESS_LABELS,  # LabelDescriptionHead
     Capability.SAFETY_FAMILYOS: SAFETY_FAMILYOS_LABELS,
     Capability.RELATION: RELATION_LABELS,
-    Capability.INTENT: INTENT_LABELS,
-    # V2 heads (Label-Description Embedding architecture)
-    Capability.INTENT_V2: INTENT_V2_LABELS,
-    Capability.INGRESS_V2: INGRESS_V2_LABELS,
+    Capability.INTENT: INTENT_LABELS,  # LabelDescriptionHead
 }
 
 # GlobalPointer label schemas (span-based NER, no BIO format)

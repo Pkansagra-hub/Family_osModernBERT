@@ -36,6 +36,7 @@ _BENCHMARK_PROFILES: dict[str, List[str]] = {
         "latency",
         "format_structure",
         "realworld_corruption",
+        "emotions_golden",  # FamilyOS production emotions benchmark
     ],
     # Nightly / pre-release (superset). Includes heavier suites.
     "full": [
@@ -51,6 +52,9 @@ _BENCHMARK_PROFILES: dict[str, List[str]] = {
         "semantic_complexity",
         "throughput_torture",
         "advanced_embedding",
+        "emotions_golden",  # FamilyOS production emotions benchmark
+        "emotions_goemotions",  # Cross-domain regression (Reddit)
+        "holistic_coherence",  # 12-head cross-consistency (single forward pass)
     ],
 }
 

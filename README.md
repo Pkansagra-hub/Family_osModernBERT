@@ -1,33 +1,38 @@
 <div align="center">
 
-# 🏠 FamilyOS UltraBERT
+# FamilyOS UltraBERT v4
 
-### Production Multi-Task Encoder + GPT-2 Counterfactual Decoder
+### Production Multi-Task Encoder for Family AI
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.1+](https://img.shields.io/badge/pytorch-2.1+-ee4c2c.svg)](https://pytorch.org/)
 [![Flash Attention 2](https://img.shields.io/badge/Flash_Attention-2-orange.svg)](https://github.com/Dao-AILab/flash-attention)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97-Models-yellow)](https://huggingface.co/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI](https://img.shields.io/pypi/v/familyos-ultrabert)](https://pypi.org/project/familyos-ultrabert/)
 
-**v2 Encoder** *(Production)* — 22 layers, 12 heads, 155M params
-**GPT-2 Decoder** *(Finalized)* — 24 layers, 355M params, pre-trained fluency
-**v3 Ultra** *(Roadmap)* — 28 layers, hub tokens, multi-scale attention
+**22 layers | 12 task heads | 149M params | 20ms inference | 89% FCCS**
 
-[Architecture](#-architecture-overview) • [v2 Encoder](#-v2-multi-task-encoder) • [GPT-2 Decoder](#-stage-c-gpt-2-counterfactual-decoder) • [v3 Roadmap](#-v3-ultra-roadmap) • [Installation](#-installation)
+[Quick Start](#-quick-start) | [Architecture](#-architecture) | [Benchmarks](#-benchmarks) | [Installation](#-installation)
 
 </div>
 
 ---
 
-## 📖 Overview
+## Overview
 
-**FamilyOS UltraBERT** is a production-ready multi-task NLP system for family assistant AI, featuring:
+**FamilyOS UltraBERT v4** is a production-ready multi-task NLP encoder for family assistant AI. It performs 12 NLU tasks in a single forward pass with ~20ms latency.
 
-- **v2 Encoder** — 22-layer ModernBERT with 12 task-specific heads (NER, emotions, safety, embeddings, etc.)
-- **GPT-2 Decoder** — 13th head: Pre-trained GPT-2 Medium with prefix injection for fluent counterfactual generation
-- **v3 Ultra** — Future 28-layer architecture with hub token routing (roadmap)
+```bash
+pip install familyos-ultrabert
+```
+
+```python
+from familyos_ultrabert import Client
+client = Client()
+result = client.analyze("Mom called about grandma's birthday!")
+print(result.emotions)  # ["joy", "excitement"]
+print(result.safety)    # "GREEN"
+```
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
@@ -207,296 +212,11 @@ The production encoder powering FamilyOS classification, NER, embeddings, safety
 
 | Checkpoint         | Step   | Status        | Weighted Score |
 |--------------------|--------|--------------|----------------|
-| `checkpoint-18000` | 18,000 | ✅ Production | **90.58%**     |
+| `checkpoint-18000` | 18,000 | Production | **90.58%**     |
 
 ---
 
-## 🚀 v3 Ultra Roadmap
->
-> **Status:** Under Development (after v4 release)
-...existing code...
-
-## ✨ Key Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 🎯 v2 Encoder (Production)
-
-- **22 Transformer Layers** — ModernBERT-base backbone
-- **12 Task Heads** — Unified multi-task inference
-- **Flash Attention 2** — 2x speedup on A100/H100
-- **768-dim Embeddings** — Dense semantic vectors
-- **4-Band Safety** — GREEN/AMBER/RED/CRISIS
-- **Cultural Awareness** — Indian English patterns
-
-### 🧠 13 Capabilities
-
-- **NER General** — 9 BIO entity tags
-- **NER Family** — 12 family-specific entities
-- **Sentiment** — 5-point scale analysis
-- **Emotions** — 44 emotion classes (family-aware)
-- **Safety Generic** — Standard toxicity detection
-- **Safety FamilyOS** — 4-band hierarchical system
-- **NLI** — 3-way entailment classification
-- **Embeddings** — 768-dim dense vectors
-- **Temporal** — 7 time expression tags
-- **Relations** — 15 family relationship types
-- **Intent** — 8 user intent classes
-- **Ingress** — 6 domain categories
-- **Counterfactual** — GPT-2 text generation
-
-</td>
-<td width="50%">
-
-### 🔮 GPT-2 Decoder (Finalized)
-
-- **24 Transformer Layers** — GPT-2 Medium backbone
-- **355M Parameters** — Pre-trained on 40GB WebText
-- **Prefix Injection** — Encoder-conditioned generation
-- **1024-dim Hidden** — Projected from encoder 768-dim
-- **Edge-Friendly** — ~1GB VRAM for inference
-- **Fast Convergence** — 3-5 epochs sufficient
-
-### 🛡️ Safety System
-
-- **≥98% CRISIS recall** — Zero misses on self-harm
-- **≤2% Cultural FP** — Indian English aware
-- **4-band hierarchy** — GREEN → AMBER → RED → CRISIS
-- **Keyword override** — Explicit crisis detection
-- **12 subcategories** — Fine-grained classification
-
-### 🚀 Production Ready
-
-- **<90ms full inference** — 12 tasks, single pass
-- **93% Recall@10** — Embedding retrieval
-- **98.6% triplet accuracy** — Semantic similarity
-- **A100/H100 optimized** — Flash Attention 2
-- **Phase 0.5 Healing** — Interface alignment warmup
-
-### 🛡️ Enhanced Safety System
-
-- **≥99% CRISIS recall** — Zero misses on self-harm
-- **≤1% Cultural FP** — Indian English aware
-- **4-band hierarchy** — GREEN → AMBER → RED → CRISIS
-- **Keyword override** — Explicit crisis detection
-- **12 subcategories** — Fine-grained classification
-- **15% Stage A replay** — Prevents forgetting
-
-### 🚀 Production Ready
-
-- **<35ms NPU latency** — Edge deployment optimized
-- **<55ms full inference** — 28 layers, multi-task
-- **~180M parameters** — Efficient architecture
-- **ONNX export** — INT8 quantization support
-
-</td>
-</tr>
-</table>
-
----
-
-## 🚀 v3 Ultra Roadmap
-
-> **Status:** Future Development (after Stage C completion)
-
-v3 Ultra is the next-generation encoder with **Hub Token Architecture** — 4 specialized tokens with global bidirectional attention for superior task routing.
-
-### Planned Features
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│  🎯 Hub Token Routing        │  ⚡ Multi-Scale Attention                │
-│  4 specialized hub tokens    │  64 → 128 → 256 → 512 sliding windows   │
-│  [EMO] [MEM] [REL] [TASK]    │  Flash Attention 2 optimized            │
-│  Global bidirectional attn   │  <35ms latency target                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│  🧬 Function Preserving      │  📊 Target Improvements                 │
-│  Direct v2 weight transfer   │  +2-5% per task over v2                 │
-│  L1-22: Copy, L23-28: Clone  │  CRISIS recall ≥99%                     │
-│  No distillation needed      │  Cultural FP ≤1%                        │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### v3 Architecture Preview
-
-| Component | v2 (Current) | v3 (Planned) | Benefit |
-|-----------|--------------|--------------|---------|
-| **Layers** | 22 | 28 (+6 new) | Higher capacity |
-| **Parameters** | 155M | ~180M | +21% |
-| **Hub Tokens** | None | 4 ([EMO], [MEM], [REL], [TASK]) | Task routing |
-| **Attention** | Uniform | Multi-scale (64/128/256/512) | Efficiency |
-| **LoRA** | None | L23-28 only (r=16) | Parameter efficiency |
-
-### Hub Token Routing System (Planned)
-
-```text
-Input: "Mom is feeling sad today"
-
-Tokenization with Hub Injection:
-[CLS] [EMO] [MEM] [REL] [TASK] Mom is feeling sad today [SEP]
-  0     1     2     3     4     5   6    7      8    9    10
-
-Hub Token Routing:
-  [EMO]  → Emotions, Sentiment, Safety heads
-  [MEM]  → Embedding head (768-dim vectors)
-  [REL]  → NLI, Relation heads
-  [TASK] → Intent, Ingress heads
-  Token positions → NER, Temporal heads
-```
-
-<details>
-<summary>Click to expand full v3 architecture diagram</summary>
-
-```text
-║                                            │                                               ║
-║  ┌───────────────────────────────────────────────────────────────────────────────────────┐ ║
-║  │  🔴 FAMILY BAND (Layers 23-28)  ⭐NEW⭐                  Window: 512   🔥 LoRA      │ ║
-║  │  ──────────────────────────────────                                                   │ ║
-║  │  • Family-specific understanding, cultural context                                    │ ║
-║  │  • Safety/crisis detection, relationship mapping                                      │ ║
-║  │  • Cloned from v2 L15-20 + LoRA adaptation (r=16, α=16)                               │ ║
-║  │  • Hub tokens: GLOBAL attention (final task routing)                                  │ ║
-║  │  • Text tokens: SLIDING WINDOW (window=512, maximum context)                          │ ║
-║  │  • LoRA applied to: q_proj, k_proj, v_proj, o_proj (only these 6 layers)              │ ║
-║  └───────────────────────────────────────────────────────────────────────────────────────┘ ║
-║                                                                                            ║
-║  💡 Key Innovation: HYBRID ATTENTION MECHANISM                                            ║
-║     • Hub tokens [EMO][MEM][REL][TASK] = GLOBAL bidirectional attention                    ║
-║     • Text tokens = SLIDING WINDOW local attention (multi-scale: 64→128→256→512)           ║
-║     • Efficiency: O(n·w) instead of O(n²), where w << n                                    ║
-║     • Quality: Hub tokens aggregate global context for task routing                        ║
-╚═════════════════════════════════════════════════════════════════════════════════════════════╝
-                                            │
-                                            ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│  🎯 OUTPUT REPRESENTATIONS (All from final layer L28)                                       │
-│                                                                                             │
-│  Position 0:  [CLS]  → 768-dim (general sequence representation)                            │
-│  Position 1:  [EMO]  → 768-dim (emotion/sentiment/safety hub)                               │
-│  Position 2:  [MEM]  → 768-dim (embedding/memory hub)                                       │
-│  Position 3:  [REL]  → 768-dim (relation/logic hub)                                         │
-│  Position 4:  [TASK] → 768-dim (intent/ingress hub)                                         │
-│  Position 5-10: TEXT → 768-dim each (token-level representations)                           │
-└─────────────────────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼
-╔═════════════════════════════════════════════════════════════════════════════════════════════╗
-║  🎪 ROUTING LAYER (Hub Token Pooler + Task-Specific Heads)                                  ║
-║                                                                                             ║
-║  ┌─────────────────────┐       ┌─────────────────────┐       ┌──────────────────────────┐   ║
-║  │   🟠 [EMO] HUB      │       │   🔵 [MEM] HUB     │       │   🟣 [REL] HUB           │   ║
-║  │   Position 1        │       │   Position 2        │       │   Position 3             │   ║
-║  │   (768-dim)         │       │   (768-dim)         │       │   (768-dim)              │   ║
-║  └──────────┬──────────┘       └──────────┬──────────┘       └──────────┬───────────────┘   ║
-║             │                             │                             │                   ║
-║    ┌────────┴────────┐           ┌────────▼────────┐           ┌────────▼────────┐          ║
-║    │                 │           │                 │           │                 │          ║
-║    ▼                 ▼           ▼                 │           ▼                 ▼          ║
-║  ┌────────┐    ┌─────────┐   ┌─────────┐          │      ┌────────┐      ┌──────────┐       ║
-║  │Emotions│    │Sentiment│   │ Safety  │          │      │  NLI   │      │Relations │       ║
-║  │  Head  │    │  Head   │   │  Head   │          │      │  Head  │      │   Head   │       ║
-║  │ (44cls)│    │ (5 cls) │   │(4 bands)│          │      │(3 cls) │      │ (15 cls) │       ║
-║  └────────┘    └─────────┘   └─────────┘          │      └────────┘      └──────────┘       ║
-║     │               │              │               │          │                │            ║
-║     ▼               ▼              ▼               ▼          ▼                ▼            ║
-║  [joy,        very_positive     GREEN         (768-dim)  entailment      parent_of          ║
-║   love,                                       embedding                                     ║
-║   concern]                                                                                  ║
-║                                                                                             ║
-║  ┌─────────────────────┐       ┌──────────────────────────────────────────────────────┐     ║
-║  │   🟢 [TASK] HUB     │       │   📊 SPAN-BASED OUTPUTS (Full Sequence)             │     ║
-║  │   Position 4        │       │   Positions 5-10 (all text tokens)                   │     ║
-║  │   (768-dim)         │       │                                                      │     ║
-║  └──────────┬──────────┘       └──────────────────────┬───────────────────────────────┘     ║
-║             │                                         │                                     ║
-║    ┌────────┴────────┐                       ┌────────┴────────┐                            ║
-║    │                 │                       │                 │                            ║
-║    ▼                 ▼                       ▼                 ▼                            ║
-║  ┌────────┐    ┌─────────┐            ┌──────────┐      ┌──────────┐                        ║
-║  │ Intent │    │ Ingress │            │   NER    │      │   NER    │                        ║
-║  │  Head  │    │  Head   │            │ General  │      │  Family  │                        ║
-║  │(8 cls) │    │(12 cls) │            │ (4 ents) │      │ (10 ents)│                        ║
-║  └────────┘    └─────────┘            └──────────┘      └──────────┘                        ║
-║     │               │                       │                  │                            ║
-║     ▼               ▼                       ▼                  ▼                            ║
-║  log_memory     DIARY              [("Mom", "PER")]                                           ║
-║                                    [("Mom", "KINSHIP")]                                       ║
-║                                                                                             ║
-║  ┌──────────────────────────────────────────────────────────────────────────────────┐       ║
-║  │   🔧 Temporal Head (Span-based, GlobalPointer)                                   │      ║
-║  │   Input: Full sequence positions 5-10                                            │       ║
-║  │   Output: [("today", "TIME")]  (6 time types)                                    │       ║
-║  └──────────────────────────────────────────────────────────────────────────────────┘       ║
-╚═════════════════════════════════════════════════════════════════════════════════════════════╝
-                                            │
-                                            ▼
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  📦 UNIFIED OUTPUT (Single Forward Pass)                                                ┃
-┃                                                                                         ┃
-┃  {                                                                                      ┃
-┃    "emotions": ["joy", "love", "concern"],              # [EMO] hub → Multi-label head  ┃
-┃    "sentiment": "very_positive",                        # [EMO] hub → 5-class head      ┃
-┃    "safety_band": "GREEN",                              # [EMO] hub → 4-band hierarchy  ┃
-┃    "embedding": <768-dim vector>,                       # [MEM] hub → Dense vector      ┃
-┃    "nli": "entailment",                                 # [REL] hub → 3-class head      ┃
-┃    "relation": "parent_of",                             # [REL] hub → 15-class head     ┃
-┃    "intent": "log_memory",                              # [TASK] hub → 8-class head     ┃
-┃    "ingress": "DIARY",                                  # [TASK] hub → 12-class head    ┃
-┃    "ner_general": [("Mom", "PER"), ("today", "TIME")], # Span-based → GlobalPointer         ┃
-┃    "ner_family": [("Mom", "KINSHIP")],                 # Span-based → GlobalPointer         ┃
-┃    "temporal": [("today", "TIME")],                    # Span-based → GlobalPointer         ┃
-┃  }                                                                                      ┃
-┃                                                                                         ┃
-┃  ⚡ Performance: <35ms on NPU (256 tokens) | ~180M parameters | Zero routing overhead  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
-### 🔄 Single Forward Pass
-
-```python
-from modeling_studio.models import ModernBERTv3Ultra
-from modeling_studio.inference import UnifiedInference
-
-# Load v3 Ultra model
-model = ModernBERTv3Ultra.from_pretrained("checkpoints/modernbert-v3-ultra")
-inference = UnifiedInference(model)
-
-# Single forward pass with hub routing
-result = inference.predict(
-    text="Mom took Panda to the park, feeling so happy today!",
-    tasks=[
-        "ner_family",        # → Span-based (full sequence)
-        "emotions",          # → [EMO] hub token
-        "sentiment",         # → [EMO] hub token
-        "safety_familyos",   # → [EMO] hub token
-        "intent",            # → [TASK] hub token
-        "embedding",         # → [MEM] hub token
-    ]
-)
-
-print(result.entities)        # [("Mom", "KINSHIP"), ("Panda", "NICKNAME")]
-print(result.emotions)        # ["joy", "togetherness", "love"]
-print(result.sentiment)       # "very_positive"
-print(result.safety_band)     # "GREEN"
-print(result.intent)          # "log_memory"
-print(result.embedding.shape) # (768,)
-```
-
-### 🎯 Hub Token Capabilities
-
-| Hub Token | Position | Routed Capabilities | Description |
-|-----------|----------|---------------------|-------------|
-| `[EMO]` | 1 | emotions, sentiment, safety_* | Affective understanding & safety |
-| `[MEM]` | 2 | embedding | Memory & retrieval representations |
-| `[REL]` | 3 | nli, relation | Relationships & logical reasoning |
-| `[TASK]` | 4 | intent, ingress | User actions & domain classification |
-| Span-based | N/A | ner_*, temporal | Per-span entity extraction |
-
----
-
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -536,129 +256,7 @@ python -c "from modeling_studio.models import ModernBertMultiTaskModel; print('�
 
 ---
 
-## 🚀 Quick Start
-
-### 1️⃣ Initialize v3 from v2 (Function Preserving Growth)
-
-```bash
-# Initialize 28-layer v3 from 22-layer v2 checkpoint
-python scripts/initialize_v3_from_v2.py \
-    --v2_checkpoint checkpoints/modernbert-v2-final \
-    --output_path checkpoints/modernbert-v3-initialized
-
-# Verify function preserving (L1-22 should match v2 exactly)
-python scripts/verify_function_preserving.py \
-    --v2_checkpoint checkpoints/modernbert-v2-final \
-    --v3_checkpoint checkpoints/modernbert-v3-initialized
-```
-
-### 2️⃣ Phase 0.5: Healing Warmup (CRITICAL)
-
-```bash
-# Align L22→L23 interface before multi-task training
-python scripts/train_v3.py \
-    --config configs/training/multitask/stage_v3_phase0_5_enhanced.yaml \
-    --checkpoint checkpoints/modernbert-v3-initialized \
-    --phase 0.5
-
-# Output: modernbert-v3-healed
-```
-
-### 3️⃣ Phase 1: Full Multi-Task Training
-
-```bash
-# Train with 15% Stage A replay to prevent forgetting
-python scripts/train_v3.py \
-    --config configs/training/multitask/stage_v3_phase1.yaml \
-    --checkpoint checkpoints/modernbert-v3-healed \
-    --phase 1
-
-# Output: modernbert-v3-phase1
-```
-
-### 4️⃣ Phase 1.5: Forgetting Evaluation (Gate)
-
-```bash
-# Evaluate on Stage A benchmarks (must pass before production)
-python scripts/forgetting_eval.py \
-    --model checkpoints/modernbert-v3-phase1 \
-    --benchmarks CoNLL,SST2,MNLI
-
-# Max allowed drops: ≤2% on NER, Sentiment, NLI
-```
-
-### 5️⃣ Production Inference
-
-```python
-from modeling_studio.models import ModernBERTv3Ultra
-from modeling_studio.inference import UnifiedInference
-
-# Load v3 Ultra
-model = ModernBERTv3Ultra.from_pretrained("checkpoints/modernbert-v3-phase1")
-inference = UnifiedInference(model)
-
-# Multi-task inference with hub routing
-result = inference.predict(
-    "Had a wonderful family dinner, everyone was laughing!"
-)
-
-print(result.sentiment)       # "very_positive"
-print(result.emotions)        # ["joy", "togetherness", "love", "gratitude"]
-print(result.safety_band)     # "GREEN"
-print(result.entities)        # []
-print(result.intent)          # "log_memory"
-print(result.embedding.shape) # (768,)
-```
-
----
-
-## 📊 Training Pipeline
-
-### v3 Ultra Multi-Phase Training Strategy
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                        │
-│  Phase 0: Initialization          Phase 0.5: Healing         Phase 1: Multi-Task       │
-│  ─────────────────────            ────────────────────       ────────────────────      │
-│                                                                                        │
-│  ┌──────────────────┐             ┌──────────────────┐       ┌──────────────────┐      │
-│  │  ModernBERT v2   │             │ v3 Initialized   │       │   v3 Healed      │      │
-│  │  22 layers       │───────────▶│ 28 layers        │──────▶│  + Multi-Task    │     │
-│  │  149M params     │  Function   │ 180M params      │ 2.5K  │  Heads trained   │      │
-│  └──────────────────┘  Preserving └──────────────────┘ steps └──────────────────┘      │
-│                        Growth                                                          │
-│  Weight Transfer:                 Healing Data:              Training Data:            │
-│  • L1-22: Direct copy             • SST-2: 3K samples        • FamilyOS unified:       │
-│  • L23-28: Clone L15-20           • CoNLL: 3K samples          85% (shards)            │
-│  • Hub tokens: Semantic           • MNLI: 2K samples         • Stage A replay:         │
-│    centroid init                  • SQuAD: 2K samples          15% (forgetting gate)   │
-│                                   • STS-B: 2K samples                                  │
-│  Layer Freezing:                                             Safety Oversampling:      │
-│  N/A (initialization)             L1-18: ❄️ Frozen           • CRISIS: 20x             │
-│                                   L19-22: 🔥 Zipper LR       • RED: 5x                 │
-│  Output:                          L23: 🔥 MAX (5e-5)         • 15% Stage A replay      │
-│  modernbert-v3-initialized        L24-28: 🔥 Zipper          • EMA decay 0.999         │
-│                                   Heads: ❄️ Frozen                                     │
-│                                                              Output:                   │
-│                                   Output:                    modernbert-v3-phase1      │
-│                                   modernbert-v3-healed                                 │
-│                                                                                        │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Training Configurations
-
-| Config | Phase | GPU | Batch | Frozen Layers | LoRA | Est. Time |
-|--------|-------|-----|-------|---------------|------|-----------|
-| `stage_v3_phase0_5_enhanced.yaml` | Healing | A100 | 5 | L1-18 | None | ~2-3 hrs |
-| `stage_v3_phase1.yaml` | Full | A100 40GB | 8 | L1-18 | L23-28 | 8-12 hrs |
-| `stage_v3_phase1_a100_80gb.yaml` | Full | A100 80GB | 16 | L1-18 | L23-28 | 4-6 hrs |
-| `stage_v3_phase1_h100.yaml` | Full | H100 | 16 | L1-18 | L23-28 | 3-4 hrs |
-
----
-
-## 🛡️ Safety System
+## Safety System
 
 FamilyOS implements a **4-band safety classification** system designed for family contexts:
 
@@ -705,7 +303,59 @@ The model is trained to understand **Indian English patterns** and avoid false p
 
 ---
 
-## 📋 Task Reference
+## Benchmarks
+
+### v4.0.1 Core Performance
+
+| Capability | Metric | Score | Latency P95 |
+|------------|--------|-------|-------------|
+| NER General | F1 | **95.2%** | 19.4ms |
+| NER Family | F1 | **80.0%** | 23.4ms |
+| Temporal | F1 | **100.0%** | 20.5ms |
+| Intent | Accuracy | **90.0%** | 20.1ms |
+| Ingress | Accuracy | **100.0%** | 19.1ms |
+| Emotions | Hit Rate | **95.3%** | ~7ms |
+| Sentiment | Direction Acc | **100.0%** | 18.5ms |
+| Safety | Band Accuracy | **87.5%** | 18.7ms |
+| Safety | CRISIS Recall | **100%** | - |
+
+### Holistic Coherence Benchmark (FCCS)
+
+Cross-head consistency metrics measuring how well the 12 heads work together:
+
+| Metric | Score | Threshold | Description |
+|--------|-------|-----------|-------------|
+| Head Agreement (HAS) | 81.56% | 70% | Sentiment-emotion valence alignment |
+| Entity Grounding (EGS) | 85.96% | 65% | Relations grounded in detected entities |
+| Safety-Emotion (SEC) | 99.36% | 75% | Distress emotions trigger elevated safety |
+| Temporal Completeness (TCS) | 99.72% | 80% | Reminder intents have temporal info |
+| Family Context (FCS) | 79.80% | 35% | Richness of family understanding |
+| Intent-Ingress (IIC) | 86.00% | 55% | Intent aligns with ingress domain |
+| Ingress-Emotion (IEC) | 92.80% | 60% | Domain has expected emotions |
+| **FCCS Overall** | **89.12%** | 70% | Weighted holistic score |
+
+**Performance:** 20.3ms/sample for all 12 heads in single forward pass.
+
+### Embedding Quality
+
+| Benchmark | Metric | Score |
+|-----------|--------|-------|
+| 10 distractors | Recall@1 | **84.5%** |
+| 100 distractors | Recall@1 | **75.0%** |
+| 100 distractors | Recall@10 | **100%** |
+| Triplet Accuracy | Binary | **70%** |
+
+### Throughput
+
+| Metric | Value |
+|--------|-------|
+| Throughput | 93.6 inferences/sec |
+| P95 Latency | ~20ms |
+| Average Latency | 10.7ms |
+
+---
+
+## Task Reference
 
 ### Capability Details
 
@@ -1390,51 +1040,27 @@ We welcome contributions! Please see our contribution guidelines for details.
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- **ModernBERT** by Answer.AI — The backbone architecture (v2 base)
-- **OpenAI GPT-2** — Pre-trained decoder foundation
-- **Flash Attention 2** by Dao-AILab — Efficient attention implementation
-- **LoRA** by Microsoft — Parameter-efficient fine-tuning
-- **HuggingFace Transformers** — Model infrastructure
-- **GoEmotions** by Google — Emotion classification dataset
-- **Jigsaw/Perspective API** — Toxicity detection data
-- **CoNLL-2003** — NER benchmark dataset
+- **ModernBERT** by Answer.AI - Backbone architecture
+- **Flash Attention 2** by Dao-AILab - Efficient attention
+- **HuggingFace Transformers** - Model infrastructure
+- **GoEmotions** by Google - Emotion classification dataset
 
 ---
 
 <div align="center">
 
-### FamilyOS UltraBERT — Evolution Timeline
+**FamilyOS UltraBERT v4** - Multi-Task Encoder for Family AI
 
-| Version | Status | Components | Params |
-|---------|--------|------------|--------|
-| **v2 Encoder** | ✅ Production | 22 layers, 12 heads | 155M |
-| **GPT-2 Decoder** | ✅ Finalized | 24 layers, pre-trained | 355M |
-| **v3 Ultra** | 📋 Roadmap | 28 layers, hub tokens | ~180M |
+`pip install familyos-ultrabert`
 
----
+[Back to Top](#familyos-ultrabert-v4)
 
-### Key Innovations
-
-| Component | Innovation | Benefit |
-|-----------|------------|---------|
-| **v2 Multi-Task** | 12 heads, unified inference | Single forward pass |
-| **GPT-2 Decoder** | Pre-trained + prefix injection | Fluent counterfactuals |
-| **Safety System** | 4-band hierarchy, cultural awareness | CRISIS recall ≥98% |
-| **Embeddings** | 768-dim, 98.6% triplet accuracy | 93% Recall@10 |
-
----
-
-**Built with care for families**
-
-**FamilyOS UltraBERT — Multi-Task Encoder**
-
-[Back to Top](#-familyos-ultrabert)
 </div>
