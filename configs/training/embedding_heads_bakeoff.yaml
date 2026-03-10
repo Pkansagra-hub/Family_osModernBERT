@@ -26,7 +26,7 @@
 # Encoder Configuration (FROZEN)
 # =============================================================================
 encoder:
-  checkpoint: ooutputs/globalpointer-unified-v1/checkpoint-8000
+  checkpoint: outputs/globalpointer-unified-v1/checkpoint-8000
   freeze: true
   hidden_size: 768
   dtype: float32
