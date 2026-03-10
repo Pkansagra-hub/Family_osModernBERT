@@ -158,8 +158,9 @@ data:
   # Max sequence length (embedding texts are typically short)
   max_length: 128
 
-  # Number of data loader workers (16 for A100 servers with fast NVMe)
-  num_workers: 16
+  # Number of data loader workers
+  # Runtime suggested max is 12 on the current A100 host; avoid oversubscription.
+  num_workers: 12
 
   # Embedding triplet data sources (paths relative to data root)
   # Format: {"anchor": "...", "positive": "...", "negative": "..."}

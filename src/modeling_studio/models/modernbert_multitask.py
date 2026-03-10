@@ -707,6 +707,35 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
         )
 
+        # Restore legacy head architecture if checkpoint records GlobalPointer replacements.
+        globalpointer_metadata_path = checkpoint_path / "globalpointer_metadata.json"
+        if globalpointer_metadata_path.exists():
+            with open(globalpointer_metadata_path) as f:
+                globalpointer_metadata = json.load(f)
+
+            head_info = globalpointer_metadata.get("head_info", {})
+            hidden_size = getattr(config, "hidden_size", 768)
+            restored_heads = []
+            for head_name, info in head_info.items():
+                if head_name not in model.heads:
+                    continue
+                if info.get("class") != "GlobalPointerNERHead":
+                    continue
+
+                model.heads[head_name] = create_globalpointer_head(
+                    capability=head_name,
+                    hidden_size=hidden_size,
+                    head_size=info.get("head_size", 64),
+                )
+                restored_heads.append(head_name)
+
+            if restored_heads:
+                setattr(model, "_checkpoint_globalpointer_metadata", globalpointer_metadata)
+                logger.info(
+                    "Restored checkpoint head classes from metadata: "
+                    + ", ".join(restored_heads)
+                )
+
         # Load state dict - try safetensors first, then pytorch format
         safetensors_path = checkpoint_path / "model.safetensors"
         pytorch_path = checkpoint_path / "pytorch_model.bin"
@@ -964,6 +993,31 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         }
         with open(capabilities_path, "w") as f:
             json.dump(config_data, f, indent=2)
+
+        globalpointer_head_info = {}
+        for head_name, head in self.heads.items():
+            if isinstance(head, GlobalPointerNERHead):
+                globalpointer_head_info[head_name] = {
+                    "class": type(head).__name__,
+                    "num_labels": getattr(head, "num_labels", None),
+                    "head_size": getattr(head, "head_size", None),
+                }
+
+        checkpoint_globalpointer_metadata = getattr(self, "_checkpoint_globalpointer_metadata", None)
+        if checkpoint_globalpointer_metadata is not None:
+            with open(os.path.join(save_directory, "globalpointer_metadata.json"), "w") as f:
+                json.dump(checkpoint_globalpointer_metadata, f, indent=2)
+        elif globalpointer_head_info:
+            with open(os.path.join(save_directory, "globalpointer_metadata.json"), "w") as f:
+                json.dump(
+                    {
+                        "replaced_heads": list(globalpointer_head_info.keys()),
+                        "head_architecture": "GlobalPointerNERHead",
+                        "head_info": globalpointer_head_info,
+                    },
+                    f,
+                    indent=2,
+                )
 
     def get_input_embeddings(self) -> nn.Module:
         """Get input embeddings layer."""

@@ -80,7 +80,7 @@ from modeling_studio.models.modernbert_multitask import (
 )
 
 # Import SOTA EmbeddingHead
-from modeling_studio.models.heads import EmbeddingHead
+from modeling_studio.models.heads import EmbeddingHead, GlobalPointerNERHead, create_globalpointer_head
 
 # Import FamilyContrastiveLoss (InfoNCE)
 from familyos_ultrabert.models.losses import FamilyContrastiveLoss
@@ -335,6 +335,70 @@ def encode_texts(
     return embeddings
 
 
+def load_checkpoint_capabilities(
+    checkpoint_path: Path,
+    exclude_decoder: bool = True,
+) -> list[Capability]:
+    """Load exact checkpoint capabilities instead of rebuilding all current capabilities."""
+    capabilities_file = checkpoint_path / "capabilities.json"
+    if capabilities_file.exists():
+        with open(capabilities_file, encoding="utf-8") as f:
+            data = json.load(f)
+
+        if isinstance(data, list):
+            capabilities = [Capability(value) for value in data]
+        else:
+            capabilities = [Capability(value) for value in data.get("capabilities", [])]
+    else:
+        capabilities = list(Capability)
+
+    if exclude_decoder:
+        capabilities = [cap for cap in capabilities if cap != Capability.COUNTERFACTUAL]
+        logger.info("Excluding GPT-2 decoder (COUNTERFACTUAL) - saves 355M params")
+
+    return capabilities
+
+
+def restore_checkpoint_head_architecture(
+    model: ModernBertMultiTaskModel,
+    checkpoint_path: Path,
+) -> dict[str, Any] | None:
+    """Restore legacy head classes recorded in checkpoint metadata before loading weights."""
+    metadata_path = checkpoint_path / "globalpointer_metadata.json"
+    if not metadata_path.exists():
+        return None
+
+    with open(metadata_path, encoding="utf-8") as f:
+        metadata = json.load(f)
+
+    head_info = metadata.get("head_info", {})
+    hidden_size = getattr(model.config, "hidden_size", 768)
+    restored_heads: list[str] = []
+
+    for head_name, info in head_info.items():
+        if head_name not in model.heads:
+            continue
+
+        if info.get("class") != "GlobalPointerNERHead":
+            continue
+
+        head_size = info.get("head_size", 64)
+        model.heads[head_name] = create_globalpointer_head(
+            capability=head_name,
+            hidden_size=hidden_size,
+            head_size=head_size,
+        )
+        restored_heads.append(head_name)
+
+    if restored_heads:
+        logger.info(
+            f"  Restored checkpoint head classes from metadata: {', '.join(restored_heads)}"
+        )
+        setattr(model, "_checkpoint_globalpointer_metadata", metadata)
+
+    return metadata
+
+
 def load_model_and_replace_embedding_head(
     checkpoint_path: str | Path,
     embedding_config: dict,
@@ -370,13 +434,11 @@ def load_model_and_replace_embedding_head(
         config.attn_implementation = "flash_attention_2"
         logger.info("  Flash Attention 2: ENABLED")
 
-    # Determine which capabilities to load
-    # Exclude COUNTERFACTUAL (GPT-2 decoder) to save 355M params
-    if exclude_decoder:
-        capabilities = [cap for cap in Capability if cap != Capability.COUNTERFACTUAL]
-        logger.info("Excluding GPT-2 decoder (COUNTERFACTUAL) - saves 355M params")
-    else:
-        capabilities = list(Capability)
+    # Determine which capabilities to load from checkpoint metadata.
+    capabilities = load_checkpoint_capabilities(
+        checkpoint_path=checkpoint_path,
+        exclude_decoder=exclude_decoder,
+    )
 
     # Create model instance
     model = ModernBertMultiTaskModel(
@@ -384,6 +446,9 @@ def load_model_and_replace_embedding_head(
         capabilities=capabilities,
         freeze_encoder=False,  # Will freeze later
     )
+
+    # Restore legacy head architectures recorded in the checkpoint before loading weights.
+    restore_checkpoint_head_architecture(model, checkpoint_path)
 
     # Force encoder initialization
     model._init_encoder()
@@ -1132,6 +1197,24 @@ def save_checkpoint(
     # Save config
     model.config.save_pretrained(checkpoint_dir)
 
+    # Save capabilities so the exact task set can be reconstructed on load.
+    capabilities_payload = {
+        "capabilities": [
+            capability.value if isinstance(capability, Capability) else str(capability)
+            for capability in getattr(model, "capabilities", [])
+        ],
+        "decoder_type": None,
+        "epic_5_0": {
+            "shared_pooler": getattr(model, "_shared_pooler_type", None),
+            "use_adapters": getattr(model, "_use_adapters", False),
+            "adapter_bottleneck_size": getattr(model, "_adapter_bottleneck_size", 64),
+            "use_pair_encoder": getattr(model, "_use_pair_encoder", False),
+            "pair_encoder_num_layers": getattr(model, "_pair_encoder_num_layers", 1),
+        },
+    }
+    with open(checkpoint_dir / "capabilities.json", "w", encoding="utf-8") as f:
+        json.dump(capabilities_payload, f, indent=2)
+
     # Save tokenizer
     if tokenizer is not None:
         tokenizer.save_pretrained(checkpoint_dir)
@@ -1163,8 +1246,33 @@ def save_checkpoint(
         "head_info": head_info,
         "trained_head": "embedding",
     }
-    with open(checkpoint_dir / "embedding_metadata.json", "w") as f:
+    with open(checkpoint_dir / "embedding_metadata.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
+
+    # Preserve legacy GlobalPointer metadata so downstream loaders can rebuild
+    # ner_general / ner_family / temporal exactly as they existed in the source checkpoint.
+    checkpoint_globalpointer_metadata = getattr(model, "_checkpoint_globalpointer_metadata", None)
+    if checkpoint_globalpointer_metadata is not None:
+        with open(checkpoint_dir / "globalpointer_metadata.json", "w", encoding="utf-8") as f:
+            json.dump(checkpoint_globalpointer_metadata, f, indent=2)
+    else:
+        globalpointer_head_info = {}
+        for head_name, head in model.heads.items():
+            if isinstance(head, GlobalPointerNERHead):
+                globalpointer_head_info[head_name] = {
+                    "class": type(head).__name__,
+                    "num_labels": getattr(head, "num_labels", None),
+                    "head_size": getattr(head, "head_size", None),
+                }
+
+        if globalpointer_head_info:
+            globalpointer_metadata = {
+                "replaced_heads": list(globalpointer_head_info.keys()),
+                "head_architecture": "GlobalPointerNERHead",
+                "head_info": globalpointer_head_info,
+            }
+            with open(checkpoint_dir / "globalpointer_metadata.json", "w", encoding="utf-8") as f:
+                json.dump(globalpointer_metadata, f, indent=2)
 
     logger.info(f"Saved: {checkpoint_dir.name}")
 
