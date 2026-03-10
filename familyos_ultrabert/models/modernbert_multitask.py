@@ -763,9 +763,11 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Load GlobalPointer metadata if available (for correct num_labels)
         gp_metadata_file = checkpoint_path / "globalpointer_metadata.json"  # type: ignore
         globalpointer_config = {}
+        checkpoint_globalpointer_metadata = None
         if gp_metadata_file.exists():
             with open(gp_metadata_file) as f:
                 gp_data = json.load(f)
+                checkpoint_globalpointer_metadata = gp_data
                 if "head_info" in gp_data:
                     globalpointer_config = gp_data["head_info"]
                     logger.info(
@@ -788,6 +790,9 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
             _globalpointer_config=globalpointer_config,  # Pass to __init__ for correct head init
         )
+
+        if checkpoint_globalpointer_metadata is not None:
+            setattr(model, "_checkpoint_globalpointer_metadata", checkpoint_globalpointer_metadata)
 
         # State dict already loaded above - separate by component
         encoder_state = {}
@@ -982,8 +987,18 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Save capabilities and Epic 5.0 config
         capabilities_path = os.path.join(save_directory, "capabilities.json")
 
+        # Detect decoder type for proper loading
+        decoder_type = None
+        counterfactual_capability = getattr(Capability, "COUNTERFACTUAL", None)
+        if counterfactual_capability is not None and counterfactual_capability in self.capabilities:
+            capability_key = Capability.COUNTERFACTUAL.value
+            head = self.heads[capability_key] if capability_key in self.heads else None
+            if head is not None:
+                decoder_type = type(head).__name__
+
         config_data = {
             "capabilities": [c.value for c in self.capabilities],
+            "decoder_type": decoder_type,
             "epic_5_0": {
                 "shared_pooler": self._shared_pooler_type,
                 "use_adapters": self._use_adapters,
@@ -994,6 +1009,32 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         }
         with open(capabilities_path, "w") as f:
             json.dump(config_data, f, indent=2)
+
+        checkpoint_globalpointer_metadata = getattr(self, "_checkpoint_globalpointer_metadata", None)
+        if checkpoint_globalpointer_metadata is not None:
+            with open(os.path.join(save_directory, "globalpointer_metadata.json"), "w") as f:
+                json.dump(checkpoint_globalpointer_metadata, f, indent=2)
+        else:
+            globalpointer_head_info = {}
+            for head_name, head in self.heads.items():
+                if isinstance(head, GlobalPointerNERHead):
+                    globalpointer_head_info[head_name] = {
+                        "class": type(head).__name__,
+                        "num_labels": getattr(head, "num_labels", None),
+                        "head_size": getattr(head, "head_size", None),
+                    }
+
+            if globalpointer_head_info:
+                with open(os.path.join(save_directory, "globalpointer_metadata.json"), "w") as f:
+                    json.dump(
+                        {
+                            "replaced_heads": list(globalpointer_head_info.keys()),
+                            "head_architecture": "GlobalPointerNERHead",
+                            "head_info": globalpointer_head_info,
+                        },
+                        f,
+                        indent=2,
+                    )
 
     def get_input_embeddings(self) -> nn.Module:
         """Get input embeddings layer."""

@@ -18,7 +18,7 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -26,12 +26,52 @@ try:
     import onnxruntime as ort
 except ImportError:
     ort = None
-
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
 from .labels import CAPABILITY_TO_LABELS, CAPABILITY_TO_GP_LABELS, Capability, LabelSchema
 
+
 logger = logging.getLogger(__name__)
+
+
+def _load_tokenizer(model_path: Union[str, Path]):
+    """Load tokenizer with fallback to tokenizer.json for packaged checkpoints."""
+    model_path = Path(model_path)
+    try:
+        return AutoTokenizer.from_pretrained(str(model_path))
+    except Exception as exc:
+        tokenizer_file = model_path / "tokenizer.json"
+        tokenizer_config_file = model_path / "tokenizer_config.json"
+        if not tokenizer_file.exists():
+            raise
+
+        config: Dict[str, Any] = {}
+        if tokenizer_config_file.exists():
+            with open(tokenizer_config_file, encoding="utf-8") as f:
+                config = json.load(f)
+
+        kwargs = {
+            "tokenizer_file": str(tokenizer_file),
+            "model_max_length": config.get("model_max_length", 512),
+            "clean_up_tokenization_spaces": config.get("clean_up_tokenization_spaces", True),
+            "unk_token": config.get("unk_token"),
+            "pad_token": config.get("pad_token"),
+            "cls_token": config.get("cls_token"),
+            "sep_token": config.get("sep_token"),
+            "mask_token": config.get("mask_token"),
+            "bos_token": config.get("bos_token"),
+            "eos_token": config.get("eos_token"),
+            "padding_side": config.get("padding_side", "right"),
+            "truncation_side": config.get("truncation_side", "right"),
+        }
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
+        logger.warning(
+            "Falling back to PreTrainedTokenizerFast for %s due to tokenizer metadata error: %s",
+            model_path,
+            exc,
+        )
+        return PreTrainedTokenizerFast(**kwargs)
 
 
 # =============================================================================
@@ -493,7 +533,7 @@ class ONNXInferenceEngine:
                     tokenizer_path = candidate
                     break
 
-        tokenizer = AutoTokenizer.from_pretrained(str(tokenizer_path))
+        tokenizer = _load_tokenizer(tokenizer_path)
 
         logger.info(f"Loaded {len(sessions)} ONNX models: {capabilities}")
 
