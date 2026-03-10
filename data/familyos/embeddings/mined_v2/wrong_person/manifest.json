@@ -1,0 +1,18 @@
+{
+  "mode": "wrong_person_negative",
+  "generator_model": "gemini-2.5-flash",
+  "input_source": "unified_output_synthetic",
+  "source_candidate_count": 20000,
+  "system_prompt_registered": true,
+  "target_triplets": 2000,
+  "generated_triplets_this_run": 2000,
+  "accepted_triplets_this_run": 2000,
+  "total_records_on_disk": 2000,
+  "duplicates_skipped": 0,
+  "output_dir": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\wrong_person",
+  "shard_prefix": "wrong_person_negatives",
+  "shard_count": 1,
+  "start_time": "2026-03-10T16:16:57.711719",
+  "end_time": "2026-03-10T16:28:31.062917",
+  "duration_minutes": 11.555853616666667
+}

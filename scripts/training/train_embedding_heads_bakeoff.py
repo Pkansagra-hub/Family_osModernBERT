@@ -125,40 +125,115 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
 
 
 # =============================================================================
-# Dataset (identical to original)
+# Dataset - Unified loader for triplets AND pairs
 # =============================================================================
 
+# Prefixes to skip when scanning JSONL files in a directory
+_SKIP_PREFIXES = ("hash_index", "manifest", "stats", "metadata")
 
-class TripletDataset(Dataset):
-    """Loads triplet data for contrastive embedding training."""
 
-    def __init__(self, data_paths: list[Path], max_samples: int | None = None):
+class EmbeddingDataset(Dataset):
+    """Unified dataset that loads triplets AND query-document pairs.
+
+    Handles three record schemas automatically:
+        A) Standard triplets:  anchor / positive / negative
+        B) Mined triplets:     anchor / positive / negative + hard_negative_type
+        C) Query-doc pairs:    query / document (no negative)
+
+    Every record is normalized to a common dict so downstream code only
+    sees one shape.
+
+    Args:
+        sources: List of dicts, each with keys ``path`` (Path), ``slice``
+            (str tag), and ``format`` (``"triplet"`` or ``"pair"``).
+            When *None*, falls back to flat ``data_paths`` loading (legacy).
+        data_paths: Legacy flat list of directories (used when *sources*
+            is None).  All paths treated as triplet format.
+        max_samples: Global cap on total samples (for debugging).
+    """
+
+    def __init__(
+        self,
+        sources: list[dict[str, Any]] | None = None,
+        data_paths: list[Path] | None = None,
+        max_samples: int | None = None,
+    ):
         self.samples: list[dict[str, Any]] = []
-        for path in data_paths:
+        self.slice_counts: dict[str, int] = {}
+
+        if sources is not None:
+            self._load_sources(sources, max_samples)
+        elif data_paths is not None:
+            # Legacy mode: treat every path as a triplet source
+            legacy_sources = [
+                {"path": p, "slice": p.name, "format": "triplet"}
+                for p in data_paths
+            ]
+            self._load_sources(legacy_sources, max_samples)
+        else:
+            raise ValueError("EmbeddingDataset requires either sources or data_paths")
+
+        if max_samples and len(self.samples) > max_samples:
+            self.samples = self.samples[:max_samples]
+
+        random.shuffle(self.samples)
+
+        # Log summary
+        total = len(self.samples)
+        logger.info(f"  EmbeddingDataset: {total:,} samples from {len(self.slice_counts)} slices")
+        for slice_name, count in sorted(self.slice_counts.items()):
+            pct = 100.0 * count / total if total else 0
+            logger.info(f"    {slice_name:<25} {count:>8,}  ({pct:5.1f}%)")
+
+    # ------------------------------------------------------------------ #
+    # Internal loaders
+    # ------------------------------------------------------------------ #
+
+    def _load_sources(
+        self,
+        sources: list[dict[str, Any]],
+        max_samples: int | None,
+    ) -> None:
+        for src in sources:
+            path = Path(src["path"])
+            slice_name = src.get("slice", path.name)
+            fmt = src.get("format", "triplet")
+            if not path.exists():
+                logger.warning(f"Data source not found: {path}")
+                continue
+
+            count_before = len(self.samples)
+
             if path.is_dir():
                 jsonl_files = sorted(path.glob("*.jsonl"))
                 if not jsonl_files:
                     jsonl_files = sorted(path.glob("**/*.jsonl"))
                 for jsonl_file in jsonl_files:
-                    self._load_jsonl(jsonl_file, max_samples)
+                    self._load_jsonl(jsonl_file, slice_name, fmt, max_samples)
                     if max_samples and len(self.samples) >= max_samples:
                         break
-            elif path.exists() and path.suffix == ".jsonl":
-                self._load_jsonl(path, max_samples)
-            else:
-                logger.warning(f"Data path not found: {path}")
+            elif path.suffix == ".jsonl":
+                self._load_jsonl(path, slice_name, fmt, max_samples)
+
+            loaded = len(self.samples) - count_before
+            self.slice_counts[slice_name] = self.slice_counts.get(slice_name, 0) + loaded
+
             if max_samples and len(self.samples) >= max_samples:
                 break
-        if max_samples and len(self.samples) > max_samples:
-            self.samples = self.samples[:max_samples]
-        random.shuffle(self.samples)
-        logger.info(f"  TripletDataset: {len(self.samples)} samples from {len(data_paths)} sources")
 
-    def _load_jsonl(self, path: Path, max_samples: int | None = None) -> None:
-        if "hash_index" in path.name or not path.name.startswith("triplets"):
+    def _load_jsonl(
+        self,
+        path: Path,
+        slice_name: str,
+        fmt: str,
+        max_samples: int | None,
+    ) -> None:
+        if any(path.name.startswith(p) for p in _SKIP_PREFIXES):
             return
-        count_before = len(self.samples)
+
         is_hard_neg_dir = "hard_negative" in str(path.parent) or "hard_negative" in path.name
+        count_before = len(self.samples)
+
         with open(path, encoding="utf-8") as f:
             for line in f:
                 if max_samples and len(self.samples) >= max_samples:
@@ -170,20 +245,68 @@ class TripletDataset(Dataset):
                     raw = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                anchor = raw.get("anchor", "")
-                positive = raw.get("positive", "")
-                negative = raw.get("negative", "")
-                if not anchor or not positive or not negative:
-                    continue
-                self.samples.append({
-                    "anchor": anchor,
-                    "positive": positive,
-                    "negative": negative,
-                    "is_hard_negative": is_hard_neg_dir or bool(raw.get("hard_negative_type")),
-                })
+
+                record = self._normalize_record(raw, slice_name, fmt, is_hard_neg_dir)
+                if record is not None:
+                    self.samples.append(record)
+
         loaded = len(self.samples) - count_before
         if loaded > 0:
-            logger.info(f"    {path.name}: {loaded} triplets (hard_neg={is_hard_neg_dir})")
+            logger.info(f"    {path.name}: {loaded} ({fmt}, slice={slice_name})")
+
+    @staticmethod
+    def _normalize_record(
+        raw: dict[str, Any],
+        slice_name: str,
+        fmt: str,
+        is_hard_neg_dir: bool,
+    ) -> dict[str, Any] | None:
+        """Convert any raw schema to the unified record format."""
+        if fmt == "pair":
+            # Schema C: query / document
+            anchor = raw.get("query", "")
+            positive = raw.get("document", "")
+            if not anchor or not positive:
+                return None
+            return {
+                "anchor": anchor,
+                "positive": positive,
+                "negative": None,
+                "has_negative": False,
+                "is_hard_negative": False,
+                "slice": slice_name,
+                "difficulty": raw.get("difficulty", "unknown"),
+            }
+        else:
+            # Schema A/B: anchor / positive / negative
+            anchor = raw.get("anchor", "")
+            positive = raw.get("positive", "")
+            negative = raw.get("negative", "")
+            if not anchor or not positive or not negative:
+                return None
+            return {
+                "anchor": anchor,
+                "positive": positive,
+                "negative": negative,
+                "has_negative": True,
+                "is_hard_negative": is_hard_neg_dir or bool(raw.get("hard_negative_type")),
+                "slice": slice_name,
+                "difficulty": raw.get("difficulty", "unknown"),
+            }
+
+    # ------------------------------------------------------------------ #
+    # Per-slice access helpers (used by eval holdout and sampler)
+    # ------------------------------------------------------------------ #
+
+    def get_indices_by_slice(self) -> dict[str, list[int]]:
+        """Return mapping of slice_name -> list of sample indices."""
+        slices: dict[str, list[int]] = {}
+        for idx, sample in enumerate(self.samples):
+            s = sample["slice"]
+            if s not in slices:
+                slices[s] = []
+            slices[s].append(idx)
+        return slices
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -192,7 +315,13 @@ class TripletDataset(Dataset):
         return self.samples[idx]
 
 
-class TripletCollator:
+class EmbeddingCollator:
+    """Tokenize mixed triplet + pair batches.
+
+    Produces a batch dict with separate index tensors for triplet and pair
+    samples so the training step can route them to different loss paths.
+    """
+
     def __init__(self, tokenizer: Any, max_length: int = 128):
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -200,25 +329,159 @@ class TripletCollator:
     def __call__(self, features: list[dict]) -> dict[str, Any]:
         anchors = [f["anchor"] for f in features]
         positives = [f["positive"] for f in features]
-        negatives = [f["negative"] for f in features]
+        has_neg = [f.get("has_negative", True) for f in features]
         hard_neg_flags = [f.get("is_hard_negative", False) for f in features]
-        anchor_enc = self.tokenizer(anchors, padding=True, truncation=True, max_length=self.max_length, return_tensors="pt")
-        positive_enc = self.tokenizer(positives, padding=True, truncation=True, max_length=self.max_length, return_tensors="pt")
-        negative_enc = self.tokenizer(negatives, padding=True, truncation=True, max_length=self.max_length, return_tensors="pt")
-        return {
+        slice_tags = [f.get("slice", "unknown") for f in features]
+
+        # Separate triplet vs pair indices
+        triplet_indices = [i for i, hn in enumerate(has_neg) if hn]
+        pair_indices = [i for i, hn in enumerate(has_neg) if not hn]
+
+        # Tokenize anchor and positive for ALL samples
+        anchor_enc = self.tokenizer(
+            anchors, padding=True, truncation=True,
+            max_length=self.max_length, return_tensors="pt",
+        )
+        positive_enc = self.tokenizer(
+            positives, padding=True, truncation=True,
+            max_length=self.max_length, return_tensors="pt",
+        )
+
+        batch = {
             "anchor_input_ids": anchor_enc["input_ids"],
             "anchor_attention_mask": anchor_enc["attention_mask"],
             "positive_input_ids": positive_enc["input_ids"],
             "positive_attention_mask": positive_enc["attention_mask"],
-            "negative_input_ids": negative_enc["input_ids"],
-            "negative_attention_mask": negative_enc["attention_mask"],
-            "hard_negative_mask": torch.tensor(hard_neg_flags, dtype=torch.bool),
+            "has_negative": torch.tensor(has_neg, dtype=torch.bool),
+            "triplet_indices": torch.tensor(triplet_indices, dtype=torch.long),
+            "pair_indices": torch.tensor(pair_indices, dtype=torch.long),
+            "slice_tags": slice_tags,
         }
 
+        # Tokenize negatives ONLY for triplet samples
+        if triplet_indices:
+            negatives = [features[i]["negative"] for i in triplet_indices]
+            trip_hard_neg = [hard_neg_flags[i] for i in triplet_indices]
+            negative_enc = self.tokenizer(
+                negatives, padding=True, truncation=True,
+                max_length=self.max_length, return_tensors="pt",
+            )
+            batch["negative_input_ids"] = negative_enc["input_ids"]
+            batch["negative_attention_mask"] = negative_enc["attention_mask"]
+            batch["hard_negative_mask"] = torch.tensor(trip_hard_neg, dtype=torch.bool)
+        else:
+            # Pure pair batch - no negatives
+            batch["negative_input_ids"] = torch.zeros(0, 1, dtype=torch.long)
+            batch["negative_attention_mask"] = torch.zeros(0, 1, dtype=torch.long)
+            batch["hard_negative_mask"] = torch.zeros(0, dtype=torch.bool)
+
+        return batch
+
 
 # =============================================================================
-# Model Functions
+# Data loading helpers
 # =============================================================================
+
+
+def get_embedding_data_sources(
+    data_config: dict[str, Any],
+    data_root: Path,
+) -> list[dict[str, Any]]:
+    """Build source list from new ``data.sources`` schema or legacy fallback.
+
+    Returns:
+        List of dicts with keys ``path`` (resolved Path), ``slice``, ``format``.
+    """
+    sources_cfg = data_config.get("sources")
+    if sources_cfg is not None:
+        resolved = []
+        for src in sources_cfg:
+            raw_path = src["path"]
+            path = data_root / raw_path if not Path(raw_path).is_absolute() else Path(raw_path)
+            resolved.append({
+                "path": path,
+                "slice": src.get("slice", path.name),
+                "format": src.get("format", "triplet"),
+            })
+        return resolved
+
+    # Legacy fallback: comma-separated paths in data.embedding.train
+    embedding_config = data_config.get("embedding", {})
+    train_paths_str = embedding_config.get("train", "")
+    if not train_paths_str:
+        raise ValueError("No embedding training data paths in config (need data.sources or data.embedding.train)")
+    path_strings = [p.strip() for p in train_paths_str.split(",") if p.strip()]
+    resolved = []
+    for path_str in path_strings:
+        path = data_root / path_str if not Path(path_str).is_absolute() else Path(path_str)
+        if path.exists():
+            resolved.append({"path": path, "slice": path.name, "format": "triplet"})
+        else:
+            logger.warning(f"Data path not found: {path}")
+    return resolved
+
+
+def get_embedding_data_paths(data_config: dict, data_root: Path) -> list[Path]:
+    """Legacy helper - returns flat path list for backward compat."""
+    sources = get_embedding_data_sources(data_config, data_root)
+    return [s["path"] for s in sources]
+
+
+def build_train_val_datasets(
+    data_config: dict[str, Any],
+    data_root: Path,
+    max_samples: int | None = None,
+    seed: int = 42,
+) -> tuple["EmbeddingDataset", "EmbeddingDataset", list[dict[str, Any]]]:
+    """Build training and validation datasets with per-slice holdout.
+
+    Instead of a single random split across the whole pool, holds out a
+    fixed percentage of each slice so every slice is guaranteed
+    representation in the eval set.
+
+    Args:
+        data_config: The ``data`` section of the YAML config.
+        data_root: Root data directory.
+        max_samples: Global cap on total samples (debug).
+        seed: Random seed for reproducible splits.
+
+    Returns:
+        (train_dataset, val_dataset, query_doc_eval_samples)
+        where query_doc_eval_samples is a flat list of raw dicts for
+        retrieval eval (Recall@k).
+    """
+    eval_split = data_config.get("eval_split_per_slice", 0.15)
+    sources = get_embedding_data_sources(data_config, data_root)
+
+    full_dataset = EmbeddingDataset(sources=sources, max_samples=max_samples)
+    indices_by_slice = full_dataset.get_indices_by_slice()
+
+    rng = random.Random(seed)
+    train_indices: list[int] = []
+    val_indices: list[int] = []
+    query_doc_eval_samples: list[dict[str, Any]] = []
+
+    logger.info(f"  Per-slice eval holdout (split={eval_split:.0%}):")
+    for slice_name in sorted(indices_by_slice.keys()):
+        idxs = indices_by_slice[slice_name][:]
+        rng.shuffle(idxs)
+        n_val = max(1, int(math.ceil(len(idxs) * eval_split)))
+        slice_val = idxs[:n_val]
+        slice_train = idxs[n_val:]
+        val_indices.extend(slice_val)
+        train_indices.extend(slice_train)
+        logger.info(f"    {slice_name:<25} train={len(slice_train):>6,}  val={len(slice_val):>6,}")
+
+        # Collect query_doc eval samples for retrieval eval
+        if slice_name == "query_doc":
+            query_doc_eval_samples = [full_dataset.samples[i] for i in slice_val]
+
+    # Build subset datasets
+    train_dataset = torch.utils.data.Subset(full_dataset, train_indices)
+    val_dataset = torch.utils.data.Subset(full_dataset, val_indices)
+
+    logger.info(f"  Split totals: train={len(train_indices):,}  val={len(val_indices):,}")
+    return train_dataset, val_dataset, query_doc_eval_samples
 
 
 def load_checkpoint_capabilities(
@@ -453,27 +716,6 @@ def encode_triplet_batch(
         "negative_mask": negative_mask,
         "hard_neg_mask": hard_neg_mask,
     }
-
-
-# =============================================================================
-# Data Loading
-# =============================================================================
-
-
-def get_embedding_data_paths(data_config: dict, data_root: Path) -> list[Path]:
-    embedding_config = data_config.get("embedding", {})
-    train_paths_str = embedding_config.get("train", "")
-    if not train_paths_str:
-        raise ValueError("No embedding training data paths in config")
-    path_strings = [p.strip() for p in train_paths_str.split(",") if p.strip()]
-    resolved_paths = []
-    for path_str in path_strings:
-        path = data_root / path_str if not Path(path_str).is_absolute() else Path(path_str)
-        if path.exists():
-            resolved_paths.append(path)
-        else:
-            logger.warning(f"Data path not found: {path}")
-    return resolved_paths
 
 
 # =============================================================================
@@ -1158,22 +1400,19 @@ def run_joint_bakeoff(
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
 
     log_section("DATA")
-    data_paths = get_embedding_data_paths(data_config, data_root)
-    logger.info(f"  Data sources: {len(data_paths)}")
-    for path in data_paths:
-        logger.info(f"    {path}")
-
-    full_dataset = TripletDataset(data_paths=data_paths, max_samples=max_samples)
-    val_size = int(len(full_dataset) * val_split)
-    train_size = len(full_dataset) - val_size
-    logger.info(f"  Total: {len(full_dataset)} triplets (train={train_size}, val={val_size})")
-
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        full_dataset,
-        [train_size, val_size],
-        generator=torch.Generator().manual_seed(seed),
+    train_dataset, val_dataset, query_doc_eval_samples = build_train_val_datasets(
+        data_config=data_config,
+        data_root=data_root,
+        max_samples=max_samples,
+        val_split=val_split,
+        seed=seed,
     )
-    collator = TripletCollator(tokenizer=tokenizer, max_length=max_length)
+    logger.info(f"  Total: {len(train_dataset) + len(val_dataset)} samples "
+                f"(train={len(train_dataset)}, val={len(val_dataset)})")
+    if query_doc_eval_samples:
+        logger.info(f"  Query-doc eval pairs: {len(query_doc_eval_samples)}")
+
+    collator = EmbeddingCollator(tokenizer=tokenizer, max_length=max_length)
     effective_workers = 0 if platform.system() == "Windows" else num_workers
 
     train_loader = DataLoader(

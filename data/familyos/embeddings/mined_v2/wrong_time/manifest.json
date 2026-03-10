@@ -1,0 +1,18 @@
+{
+  "mode": "wrong_time_negative",
+  "generator_model": "gemini-2.5-flash",
+  "input_source": "unified_output_synthetic",
+  "source_candidate_count": 200000,
+  "system_prompt_registered": true,
+  "target_triplets": 10000,
+  "generated_triplets_this_run": 10020,
+  "accepted_triplets_this_run": 10019,
+  "total_records_on_disk": 10019,
+  "duplicates_skipped": 1,
+  "output_dir": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\wrong_time",
+  "shard_prefix": "wrong_time_negatives",
+  "shard_count": 2,
+  "start_time": "2026-03-10T16:16:21.575168",
+  "end_time": "2026-03-10T17:20:43.258295",
+  "duration_minutes": 64.36138561666667
+}

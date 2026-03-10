@@ -79,8 +79,15 @@ from modeling_studio.models.modernbert_multitask import (
     Capability,
 )
 
-# Import SOTA EmbeddingHead
+# Import SOTA EmbeddingHead (legacy) and NER head utilities
 from modeling_studio.models.heads import EmbeddingHead, GlobalPointerNERHead, create_globalpointer_head
+
+# Import bake-off head registry and factory
+from modeling_studio.models.heads_embedding import (
+    EMBEDDING_HEAD_REGISTRY,
+    create_embedding_head,
+    get_head_constructor_params,
+)
 
 # Import FamilyContrastiveLoss (InfoNCE)
 from familyos_ultrabert.models.losses import FamilyContrastiveLoss
@@ -194,8 +201,9 @@ class TripletDataset(Dataset):
 
     def _load_jsonl(self, path: Path, max_samples: int | None = None) -> None:
         """Load triplets from a JSONL file."""
-        # Skip non-triplet files (hash indexes, metadata, etc.)
-        if "hash_index" in path.name or not path.name.startswith("triplets"):
+        # Skip non-triplet files (hash indexes, metadata, manifests, etc.)
+        skip_prefixes = ("hash_index", "manifest", "stats", "metadata")
+        if any(path.name.startswith(p) for p in skip_prefixes):
             return
 
         count_before = len(self.samples)
@@ -490,31 +498,47 @@ def load_model_and_replace_embedding_head(
     hidden_size = model.config.hidden_size
     logger.info(f"  Loaded {len(model.heads)} heads, hidden_size={hidden_size}")
 
-    # Replace embedding head with SOTA attentive version
-    pooling = embedding_config.get("pooling", "attentive")
+    # Replace embedding head with configured head (registry-based or legacy)
+    head_type = embedding_config.get("head_type", None)
     output_dim = embedding_config.get("output_dim", None)
     normalize = embedding_config.get("normalize", True)
-    num_latents = embedding_config.get("num_latents", 8)
-    num_attn_heads = embedding_config.get("num_attn_heads", 8)
-
-    new_embedding_head = EmbeddingHead(
-        hidden_size=hidden_size,
-        output_dim=output_dim,
-        pooling=pooling,
-        normalize=normalize,
-        num_latents=num_latents,
-        num_attn_heads=num_attn_heads,
-    )
 
     old_class = type(model.heads["embedding"]).__name__
     old_params = sum(p.numel() for p in model.heads["embedding"].parameters())
+
+    if head_type and head_type in EMBEDDING_HEAD_REGISTRY:
+        # Use bake-off registry heads (agreement_gated_v2, etc.)
+        registry_kwargs = {
+            k: v for k, v in embedding_config.items()
+            if k not in ("head_type", "output_dim", "normalize", "pooling")
+        }
+        new_embedding_head = create_embedding_head(
+            head_type=head_type,
+            hidden_size=hidden_size,
+            output_dim=output_dim,
+            normalize=normalize,
+            **registry_kwargs,
+        )
+    else:
+        # Legacy NV-Embed style attentive head
+        pooling = embedding_config.get("pooling", "attentive")
+        num_latents = embedding_config.get("num_latents", 8)
+        num_attn_heads = embedding_config.get("num_attn_heads", 8)
+        new_embedding_head = EmbeddingHead(
+            hidden_size=hidden_size,
+            output_dim=output_dim,
+            pooling=pooling,
+            normalize=normalize,
+            num_latents=num_latents,
+            num_attn_heads=num_attn_heads,
+        )
+
     model.heads["embedding"] = new_embedding_head
     new_params = sum(p.numel() for p in new_embedding_head.parameters())
 
     logger.info(f"  Replaced embedding head:")
     logger.info(f"    Old: {old_class} ({old_params:,} params)")
-    logger.info(f"    New: EmbeddingHead(pooling={pooling}, output_dim={output_dim or hidden_size}, "
-                f"latents={num_latents}, attn_heads={num_attn_heads}) ({new_params:,} params)")
+    logger.info(f"    New: {type(new_embedding_head).__name__}[{head_type or 'legacy'}] ({new_params:,} params)")
 
     return model
 

@@ -1,616 +1,1397 @@
-# FamilyOS Retrieval Embedding Architecture Draft
+# SOTA Retrieval Architecture for FamilyOS
 
-> Base model: `answerdotai/ModernBERT-base`
-> Scope: Retrieval-native single-output embedding architecture with a unified design that does not break existing FamilyOS interfaces
+> Scope: Define the target retrieval architecture and the plan to reach a production-grade FamilyOS embedding system.
 > Updated: March 10, 2026
-> Status: Draft for architecture review before implementation
 
 ---
 
-## 1. Problem Statement
+## 0. Executive summary
 
-The current `EmbeddingHead` in `src/modeling_studio/models/heads.py` mixes together two separate concerns:
+The current bake-off results indicate that `agreement_gated` is the strongest retrieval head candidate so far. The next step is not to treat it as "done," but to define a rigorous path from promising bake-off winner to a world-class FamilyOS retriever.
 
-1. sequence pooling
-2. representation transformation
+For FamilyOS, "world class" means the embedding system must do more than generic semantic similarity. It must preserve:
 
-In `pooling="mean"`, the head behaves like a lightweight readout over the encoder manifold.
-In `pooling="attentive"`, the head becomes a heavy learned embedding model with:
+- family-role distinctions
+- temporal distinctions
+- emotional nuance and intensity
+- safety-critical differences
+- retrieval correctness for memory-style queries
+- robustness on messy, real-world user phrasing
 
-- latent queries
-- cross-attention
-- FFN refinement
-- residual blending
-- LayerNorm
-- SwiGLU projection
+This document defines:
 
-This architecture improved pairwise semantic similarity metrics but degraded retrieval ranking quality.
-
-The benchmark evidence shows that the encoder manifold is already strong for retrieval, while the current attentive head is better for STS-style semantic similarity.
-
----
-
-## 2. Evidence From Current Benchmarks
-
-### 2.1 STS side-by-side benchmark
-
-Source artifact: `outputs/mteb_sts_encoder_mean_vs_head.json`
-
-| Method | Avg Spearman | Avg Pearson |
-|--------|--------------|-------------|
-| `encoder_mean` | 0.5279 | 0.5105 |
-| `embedding_head` | 0.5527 | 0.5389 |
-
-Observations:
-
-- `embedding_head` wins on average across STSBenchmark, STS12, STS13, STS14
-- `encoder_mean` still wins on STS15, STS16, and SICK-R
-- `encoder_mean` cosine values are tightly compressed near 0.90-0.94, indicating anisotropic geometry
-- `embedding_head` produces a much broader cosine spread, helping pairwise similarity correlation
-
-### 2.2 Retrieval side-by-side benchmark
-
-Source artifact: `outputs/retrieval_probe_encoder_mean_vs_head.json`
-
-| Method | Recall@1 / 10d | Recall@1 / 100d | Recall@5 / 100d |
-|--------|----------------|-----------------|-----------------|
-| `encoder_mean` | 0.8450 | 0.7500 | 1.0000 |
-| `embedding_head` | 0.5500 | 0.3833 | 0.8000 |
-
-Observations:
-
-- `encoder_mean` is materially better for retrieval ranking
-- `embedding_head` has larger similarity margins but worse nearest-neighbor ranking
-- current attentive refinement is likely improving pairwise calibration while distorting neighborhood structure
-
-### 2.3 Architectural conclusion from the evidence
-
-The current encoder is not the bottleneck for retrieval.
-The current embedding head is not retrieval-native.
-A true retrieval-first design should preserve the encoder manifold and add learned refinement in a controlled residual way.
+1. architecture
+2. data needed vs data already available
+3. training strategy and loss functions
+4. evaluation plan
+5. benchmarking plan, including golden data creation
 
 ---
 
-## 3. Hard Compatibility Constraint
+## 1. Architecture
 
-The embedding redesign must not break the existing FamilyOS system.
+### 1.1 Design goals
 
-This is a strict requirement, not a preference.
+The retrieval architecture must satisfy five constraints:
 
-The new design must preserve all of the following:
+1. **Retrieval-first**: optimize for nearest-neighbor retrieval quality, not just STS.
+2. **Stable geometry**: preserve the good properties of encoder mean pooling as the safe anchor.
+3. **Nuance-aware**: represent family role, time, emotion, intent, and safety distinctions.
+4. **Deployable**: support fast single-vector retrieval for FamilyOS runtime.
+5. **Auditable**: expose enough metadata and diagnostics to explain failures.
 
-- one embedding output tensor only
-- same `capability="embedding"` path
-- same `Client.get_embedding()` contract
-- same shape and normalized dense vector behavior expected by downstream FamilyOS code
-- checkpoint loading semantics that remain backward-compatible
+### 1.2 Base system definition
 
-This removes several otherwise-attractive research directions from the first implementation phase:
+The target system is a two-stage retrieval stack:
 
-- dual embedding outputs
-- token-level retrieval outputs in the production embedding API
-- separate retrieval and similarity APIs
-- late-interaction-only production scoring
+1. **Dense retriever**: ModernBERT encoder + FamilyOS retrieval head
+2. **Optional reranker**: cross-encoder or pairwise reranker for top-$k$ reordering
 
-Therefore, the target is not a multi-output research architecture.
-The target is the strongest possible single-output retrieval-native embedding head that remains a drop-in replacement.
+The dense retriever is the primary scope of this document.
 
----
+### 1.3 Backbone
 
-## 4. Design Goals
+- **Encoder**: `answerdotai/ModernBERT-base`
+- **Checkpoint base**: `outputs/globalpointer-unified-v1/checkpoint-8000` (or best checkpoint equivalent per environment)
+- **Embedding size**: 768 by default
+- **Runtime contract**: one normalized embedding vector per input text
 
-The new architecture should satisfy all of the following:
+### 1.4 Recommended head family
 
-1. Preserve the strong retrieval geometry already present in mean-pooled encoder representations
-2. Support STS-style semantic similarity without collapsing retrieval quality
-3. Remain backward-compatible with the current FamilyOS single-output embedding interface
-4. Support matryoshka dimensions and export-friendly inference paths
-5. Allow multiple candidate heads to be trained under the same script and compared fairly
-6. Avoid forcing one heavy nonlinear projection path for every embedding use case
+The architectural winner candidate is `AgreementGatedHead`, evolving into **AgreementGatedHeadV2**.
 
----
+#### Current good idea to preserve
 
-## 5. Non-Goals
+The key principle that should remain unchanged is:
 
-This draft does not attempt to:
+> The mean-pooled encoder representation is the anchor. Learned refinement is allowed only when auxiliary views agree enough to justify deviation.
 
-- maximize only STS correlation at the cost of retrieval
-- rely solely on a more complex pooling block to achieve SOTA
-- claim world-best performance without retrieval-native training data and hard-negative mining
-- break the FamilyOS embedding API to introduce multiple embedding outputs
-- replace the production embedding stack with a reranker-only design
+This makes the head safer than unconstrained projection heads.
 
----
+### 1.5 AgreementGatedHeadV2 implementation spec
 
-## 6. Proposed SOTA-Oriented Architecture
+This section is intentionally written as a build-ready spec for `heads_embedding.py`.
 
-## 6.1 High-level recommendation
-
-Adopt a retrieval-native single-output head that is anchored on `encoder_mean` and allows only controlled residual deviation from that manifold.
-
-The head should keep the existing external interface of `EmbeddingHead`, but internally follow a retrieval-first design.
-
-The core principle is:
-
-> The encoder mean representation is the anchor. Every learned improvement must be residual, bounded, and ablatable.
-
-This is the best path toward a strong single-vector retrieval model without breaking production behavior.
-
----
-
-## 6.2 Retrieval-safe base embedding
-
-The new head should always compute a masked mean base embedding first.
-
-### Base representation
-
-$$
-e_{mean} = \operatorname{normalize}(\operatorname{MeanPool}(H, M))
-$$
-
-Where:
-
-- $H \in \mathbb{R}^{B \times L \times D}$ are encoder hidden states
-- $M$ is the attention mask
-
-This base representation is not a fallback. It is the canonical retrieval manifold.
-
----
-
-## 6.3 Residual refinement rule
-
-Every learned component must modify the base only through a residual path.
-
-Let a learned auxiliary pooling or refiner produce:
-
-$$
-e_{aux} = f_{latent}(H, M)
-$$
-
-$$
-\Delta = e_{aux} - e_{mean}
-$$
-
-Then the mixed representation is:
-
-$$
-e_{mix} = \operatorname{normalize}(e_{mean} + \alpha \cdot \Delta)
-$$
-
-Where:
-
-- $f_{latent}$ is a lightweight latent attention or learned pooling function
-- $\alpha$ is a learnable scalar or vector initialized near $0$
-
-This formulation is safer than directly replacing mean pooling because the model learns how far to move away from the known-good retrieval manifold.
-
----
-
-## 6.4 Residual projection refinement
-
-If a learned projection is needed, it must also be residual:
-
-$$
-e_{dense} = \operatorname{normalize}(e_{mix} + \beta g(\operatorname{LN}(e_{mix})))
-$$
-
-Where:
-
-- $g$ is a small residual MLP, gated projection, or diagonal re-scaling block
-- $\beta$ is initialized near $0$
-
-This keeps the encoder manifold as the primary geometry and allows learned improvements only when they actually help.
-
----
-
-## 6.5 Novel idea: agreement-gated residual refinement
-
-The novel part of this draft is not "more attention". It is controlled refinement based on whether learned views agree with the encoder anchor.
-
-Define multiple lightweight views:
-
-- $e_{mean}$: masked mean pool
-- $e_{cls}$: CLS pooled view
-- $e_{lat}$: latent attention pooled view
-- $e_{max}$: masked max or top-k mean pooled view
-
-Compute agreement features such as:
-
-- cosine$(e_{mean}, e_{lat})$
-- cosine$(e_{mean}, e_{cls})$
-- token salience entropy from the latent pooler
-- embedding norm statistics before normalization
-
-Use these to predict a bounded gate:
-
-$$
-\alpha = \sigma(\text{GateMLP}([e_{mean}; e_{lat}; e_{cls}; s]))
-$$
-
-Where $s$ is a compact vector of agreement statistics.
-
-Then apply only a bounded residual update:
-
-$$
-e_{out} = \operatorname{normalize}(e_{mean} + \alpha \odot (e_{lat} - e_{mean}))
-$$
-
-This is novel relative to the current head because:
-
-- the model learns when the refined view is trustworthy
-- the update is relative to the mean anchor, not a free replacement
-- the gate can be scalar, vector, or low-rank without changing the output contract
-
-This gives the head room to become more expressive without paying the usual retrieval penalty of unbounded nonlinear transformation.
-
----
-
-## 6.6 Single output contract
-
-The head must still emit exactly one embedding tensor.
-
-Required output contract:
+#### Class contract
 
 ```python
-embedding: Tensor  # shape [batch_size, output_dim]
+class AgreementGatedHeadV2(nn.Module):
+   def __init__(
+      self,
+      hidden_size: int,
+      output_dim: int | None = None,
+      normalize: bool = True,
+      num_latents: int = 4,
+      num_attn_heads: int = 4,
+      gate_hidden: int = 128,
+      gate_rank: int = 4,
+      use_mode_prompts: bool = True,
+      use_confidence_head: bool = True,
+      dropout: float = 0.1,
+      eps: float = 1.0e-8,
+      **kwargs: Any,
+   ):
+      ...
+
+   def forward(
+      self,
+      hidden_states: torch.Tensor,
+      attention_mask: torch.Tensor | None = None,
+      mode: str = "document",
+      return_aux: bool = False,
+   ) -> torch.Tensor | dict[str, torch.Tensor]:
+      ...
 ```
 
-Internally the head may compute multiple views, but externally it must return a single normalized vector exactly as the current FamilyOS system expects.
+#### Input / output contract
 
----
+Inputs:
 
-## 7. Candidate heads to train under the same script
+- `hidden_states`: $[B, L, D]$
+- `attention_mask`: $[B, L]$ or `None`
+- `mode`: one of `"query"` or `"document"`
 
-Rather than betting on one idea immediately, the best research strategy is to implement 5-6 candidate heads behind a common config surface and train them under the same script.
+Outputs:
 
-All candidates must share:
+- default: normalized embedding $[B, O]$
+- optional auxiliary dictionary when `return_aux=True`
 
-- same trainer
-- same data mixture
-- same losses
-- same optimizer schedule
-- same batch size and hard-negative settings
-- same evaluation gates
+Definitions:
 
-This turns the problem into a controlled head bake-off instead of architecture guesswork.
+- $B$: batch size
+- $L$: sequence length
+- $D$: encoder hidden size
+- $O$: output dimension, where $O = output\_dim$ if provided else $D$
 
-### Head A: `MeanBaselineHead`
+#### Constructor parameters
 
-Definition:
+| Parameter | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `hidden_size` | `int` | required | Encoder hidden width $D$ |
+| `output_dim` | `int \| None` | `None` | Final embedding width $O$ |
+| `normalize` | `bool` | `True` | L2-normalize final embedding |
+| `num_latents` | `int` | `4` | Number of learnable latent queries |
+| `num_attn_heads` | `int` | `4` | Heads in latent cross-attention |
+| `gate_hidden` | `int` | `128` | Hidden size in gate and fusion MLPs |
+| `gate_rank` | `int` | `4` | Number of semantic gate blocks before expansion to $O$ |
+| `use_mode_prompts` | `bool` | `True` | Enable lightweight query/document asymmetry |
+| `use_confidence_head` | `bool` | `True` | Produce confidence / ambiguity side outputs |
+| `dropout` | `float` | `0.1` | Dropout for fusion/gating sublayers |
+| `eps` | `float` | `1e-8` | Numerical stability constant |
 
-- masked mean pool
-- optional output projection only if output dim differs
-- normalize
+#### Persistent attributes
 
-Purpose:
+The module should expose at least these attributes for checkpoint metadata and reload:
 
-- baseline retrieval anchor
-- must always be included in experiments
+- `self.hidden_size`
+- `self.output_dim`
+- `self.normalize`
+- `self.pooling = "agreement_gated_v2"`
+- `self.num_latents`
+- `self.num_attn_heads`
+- `self.gate_hidden`
+- `self.gate_rank`
+- `self.use_mode_prompts`
+- `self.use_confidence_head`
 
-### Head B: `ResidualMLPMeanHead`
+#### Submodules
 
-Definition:
+##### 1. Base projections and norms
 
-- base = mean pool
-- residual MLP refiner with zero-init residual scale
-- normalize
+- `self.input_norm = nn.LayerNorm(hidden_size)`
+- `self.base_proj = nn.Linear(hidden_size, output_dim)` if `output_dim != hidden_size`, else `None`
+- `self.fusion_norm = nn.LayerNorm(output_dim)`
 
-Purpose:
+##### 2. Latent-view path
 
-- simplest backward-compatible learned improvement over `encoder_mean`
+- `self.latent_queries = nn.Parameter(torch.randn(1, num_latents, hidden_size) * 0.02)`
+- `self.cross_attn = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=num_attn_heads, dropout=dropout, batch_first=True)`
+- `self.attn_norm = nn.LayerNorm(hidden_size)`
+- output latent view shape: $[B, D]$
 
-### Head C: `LatentResidualHead`
+##### 3. Mode prompts for query/document asymmetry
 
-Definition:
+If `use_mode_prompts=True`:
 
-- base = mean pool
-- auxiliary = latent attention pooling
-- scalar residual gate initialized near zero
-- optional tiny residual MLP
+- `self.query_prompt = nn.Parameter(torch.zeros(1, 1, hidden_size))`
+- `self.document_prompt = nn.Parameter(torch.zeros(1, 1, hidden_size))`
 
-Purpose:
+Prompt application rule:
 
-- test whether latent attention helps when forced to stay close to the retrieval anchor
+$$
+H' = H + P_{mode}
+$$
 
-### Head D: `AgreementGatedHead`
+where `P_mode` is broadcast to $[B, L, D]$.
 
-Definition:
+##### 4. Salience scorers
 
-- base = mean pool
-- auxiliary views = mean, CLS, latent attention
-- gate network uses agreement statistics to decide residual update strength
-- single final embedding only
+These replace hand-coded lexical features with differentiable token salience signals.
 
-Purpose:
+- `self.role_scorer = nn.Sequential(nn.Linear(hidden_size, gate_hidden), nn.GELU(), nn.Linear(gate_hidden, 1))`
+- `self.temporal_scorer = nn.Sequential(nn.Linear(hidden_size, gate_hidden), nn.GELU(), nn.Linear(gate_hidden, 1))`
+- `self.safety_scorer = nn.Sequential(nn.Linear(hidden_size, gate_hidden), nn.GELU(), nn.Linear(gate_hidden, 1))`
 
-- novel retrieval-first design
-- allows conditional refinement instead of always-on refinement
+Each scorer produces token logits of shape $[B, L, 1]$.
 
-### Head E: `MultiPoolLowRankHead`
+##### 5. View projection layers
 
-Definition:
+Project every pooled view into the common output space:
 
-- base = mean pool
-- combine mean, CLS, max, and latent views using low-rank learned mixing coefficients
-- residual update only
+- `self.cls_proj = nn.Linear(hidden_size, output_dim, bias=False)`
+- `self.latent_proj = nn.Linear(hidden_size, output_dim, bias=False)`
+- `self.max_proj = nn.Linear(hidden_size, output_dim, bias=False)`
+- `self.role_proj = nn.Linear(hidden_size, output_dim, bias=False)`
+- `self.temporal_proj = nn.Linear(hidden_size, output_dim, bias=False)`
 
-Purpose:
+The mean view uses `self.base_proj` or identity.
 
-- test whether multiple cheap views provide complementary signal without heavy nonlinear overwrite
+##### 6. Refinement fusion MLP
 
-### Head F: `AnisotropyCorrectedHead`
+Input is the concatenation of five auxiliary views in output space:
 
-Definition:
+$$
+[e_{cls}; e_{lat}; e_{max}; e_{role}; e_{temp}] \in \mathbb{R}^{B \times 5O}
+$$
 
-- base = mean pool
-- learned centering, diagonal scaling, and optional low-rank whitening-style correction
-- residual formulation
+Module:
 
-Purpose:
+- `self.refine_mlp = nn.Sequential(nn.Linear(5 * output_dim, gate_hidden), nn.GELU(), nn.Dropout(dropout), nn.Linear(gate_hidden, output_dim))`
 
-- explicitly target the compressed cosine geometry observed in `encoder_mean`
-- improve retrieval ranking without over-warping the manifold
+Output:
 
----
+- `e_refined_delta`: $[B, O]$
 
-## 8. Why the Current `EmbeddingHead` Falls Short
+##### 7. Agreement feature MLP
 
-The current attentive head is elegant as a semantic pooling module, but not as a retrieval-native embedding architecture.
+Use compact numeric agreement features rather than raw view concatenation for gating.
 
-Specific issues:
+Feature families per batch item:
 
-1. `attentive` is treated as a pooling strategy, but it is actually a separate representation model
-2. attentive mode always adds `LayerNorm + GatedProjection`, while simple modes do not
-3. projection behavior is tied to pooling choice rather than task need
-4. the model has no explicit mechanism to preserve the mean-pooled encoder manifold
-5. the model has no explicit agreement mechanism to decide when refinement should be trusted
+1. pairwise cosine similarities among six views
+2. pairwise norm ratios among six views
+3. salience entropy for role/temporal/safety scorers
+4. salience concentration stats for role/temporal/safety scorers
+5. mode bit: query or document
 
-The result is a head that can improve pairwise STS behavior while damaging retrieval neighborhoods.
+Recommended exact feature count:
 
----
+- 15 pairwise cosines for 6 views
+- 15 pairwise norm ratios for 6 views
+- 3 entropy values
+- 3 concentration values
+- 1 mode flag
 
-## 9. Recommended class structure
+Total gate feature width:
 
-A cleaner implementation should separate the following responsibilities.
+$$
+F = 15 + 15 + 3 + 3 + 1 = 37
+$$
 
-### 7.1 Pooling
+Module:
 
-- `MaskedMeanPooler`
-- `ClsPooler`
-- `LatentAttentionPooler`
+- `self.gate_mlp = nn.Sequential(nn.Linear(37, gate_hidden), nn.GELU(), nn.Dropout(dropout), nn.Linear(gate_hidden, gate_rank))`
 
-### 9.2 Refinement
+##### 8. Gate expansion layer
 
-- `IdentityRefiner`
-- `ResidualMLPRefiner`
-- `ResidualGatedRefiner`
-- `AgreementGateRefiner`
-- `AnisotropyCorrectionRefiner`
+Expand low-rank gate blocks to output width:
 
-### 9.3 Retrieval head family
+- `self.gate_expand = nn.Linear(gate_rank, output_dim)`
 
-- `EmbeddingHead` (backward-compatible external API)
-- internal implementations selected by config:
-  - `MeanBaselineHead`
-  - `ResidualMLPMeanHead`
-  - `LatentResidualHead`
-  - `AgreementGatedHead`
-  - `MultiPoolLowRankHead`
-  - `AnisotropyCorrectedHead`
+Final vector gate:
 
-### 9.4 Compatibility wrapper
+$$
+g = \sigma(W_{expand}(h_{gate})) \in \mathbb{R}^{B \times O}
+$$
 
-- keep `EmbeddingHead` as the public class name and config entry point
-- swap internals via an `embedding_architecture` config field
+##### 9. Confidence head
 
----
+If `use_confidence_head=True`:
 
-## 10. Training strategy required for SOTA ambition
+- `self.confidence_head = nn.Sequential(nn.Linear(37 + output_dim, gate_hidden), nn.GELU(), nn.Linear(gate_hidden, 3))`
 
-A better head alone will not produce world-class retrieval. The training recipe is equally important.
+Outputs three logits or bounded scores for:
 
-### 10.1 Shared training recipe across candidate heads
+- `embedding_confidence`
+- `retrieval_confidence`
+- `ambiguity_score`
 
-All 5-6 candidate heads should be trained with the same script and same experiment harness.
+#### View definitions and tensor shapes
 
-Required shared controls:
+Let $H \in \mathbb{R}^{B \times L \times D}$ after optional prompt injection.
 
-- same seed set
-- same training dataset mixture
-- same hard negatives per batch
-- same loss weights
-- same optimizer and scheduler
-- same evaluation cadence
-- same checkpoint export path format
+1. **Mean view**
+   - `e_mean_raw = masked_mean_pool(H, attention_mask)`
+   - shape: $[B, D]$
+   - project to output space: $e_{mean} \in [B, O]$
 
-This is necessary so differences can be attributed to head design rather than run configuration drift.
+2. **CLS view**
+   - `e_cls_raw = cls_pool(H)`
+   - shape: $[B, D]$
+   - `e_cls = cls_proj(e_cls_raw)`
 
-### 10.2 Single-output dense training
+3. **Latent view**
+   - latent queries: $[B, N_{lat}, D]$
+   - cross attention output: $[B, N_{lat}, D]$
+   - mean pool latents to $[B, D]$
+   - `e_lat = latent_proj(e_lat_raw)`
 
-Use a combination of:
+4. **Max view**
+   - `e_max_raw = masked_max_pool(H, attention_mask)`
+   - shape: $[B, D]$
+   - `e_max = max_proj(e_max_raw)`
 
-- in-batch contrastive loss
-- hard negative ranking loss
-- margin-based retrieval loss
-- optional matryoshka loss
-- optional teacher distillation from a strong retrieval model
+5. **Role view**
+   - token logits from `role_scorer(H)` -> $[B, L, 1]$
+   - masked softmax over sequence length -> role weights $[B, L, 1]$
+   - weighted sum over tokens -> role pooled vector $[B, D]$
+   - `e_role = role_proj(e_role_raw)`
 
-### 10.3 Data requirements
+6. **Temporal view**
+   - token logits from `temporal_scorer(H)` -> $[B, L, 1]$
+   - masked softmax over sequence length -> temporal weights $[B, L, 1]$
+   - weighted sum over tokens -> temporal pooled vector $[B, D]$
+   - `e_temp = temporal_proj(e_temp_raw)`
 
-Need a mixture of:
+#### Agreement feature computation
 
-- public retrieval pairs
-- FamilyOS memory retrieval pairs
-- synthetic query reformulations
-- hard negatives sampled from semantically adjacent family/work/health/planning domains
+The six views used for agreement are:
 
-### 10.4 Key training principle
+- `e_mean`
+- `e_cls`
+- `e_lat`
+- `e_max`
+- `e_role`
+- `e_temp`
 
-Do not optimize only for STS or only for pairwise cosine regression.
-Retrieval ranking must be a first-class objective.
+For each pair $(i, j)$ with $i < j$:
 
----
+1. cosine similarity
 
-## 11. Experimental protocol: 6-head bake-off
+$$
+\cos(e_i, e_j)
+$$
 
-The recommended research workflow is:
+1. norm ratio
 
-1. add `embedding_architecture` to the training config
-2. instantiate one of 5-6 candidate heads from the same script
-3. train all candidates under identical settings
-4. compare them on the same benchmark suite
-5. promote only the best head to the default production architecture
+$$
+\frac{\|e_i\|}{\|e_j\| + \epsilon}
+$$
 
-Suggested config values:
+For role/temporal/safety salience distributions, compute:
 
-```yaml
-heads:
-  embedding:
-    enabled: true
-    type: embedding
-    embedding_architecture: agreement_gated  # one of 6 candidates
-    pooling: mean
-    normalize: true
-```
+1. entropy
+2. max probability
+3. top-k mass, where `k=3`
 
-Suggested experiment matrix:
+Mode flag encoding:
 
-| ID | Head | Purpose |
-|----|------|---------|
-| E0 | `mean_baseline` | must-have control |
-| E1 | `residual_mlp_mean` | simplest learned residual |
-| E2 | `latent_residual` | bounded attentive refinement |
-| E3 | `agreement_gated` | novel candidate |
-| E4 | `multi_pool_low_rank` | multi-view residual fusion |
-| E5 | `anisotropy_corrected` | cosine-geometry repair |
+- query -> `1.0`
+- document -> `0.0`
 
-For each candidate, record:
+Concatenate all features into $[B, 37]$.
 
-- Recall@1 / 10 distractors
-- Recall@1 / 100 distractors
-- Recall@5 / 100 distractors
-- MTEB STS average
-- latency and throughput
-- embedding norm distribution
-- cosine similarity histogram statistics
+#### Forward pass algorithm
 
----
+1. validate `mode in {"query", "document"}`
+1. optionally add mode prompt to token states
+1. compute six pooled views
+1. project views to output space
+1. build refinement vector:
 
-## 12. Evaluation plan
+$$
+e_{aux} = \text{refine\_mlp}([e_{cls}; e_{lat}; e_{max}; e_{role}; e_{temp}])
+$$
 
-The architecture should not be accepted until it improves the right metrics.
+1. define refined target:
 
-### 12.1 Retrieval gates
+$$
+e_{refined} = e_{mean} + e_{aux}
+$$
 
-Must compare against `encoder_mean` and current `embedding_head` on:
+1. compute gate features $f \in [B, 37]$
+1. compute low-rank gate state:
 
-- Recall@1 / 10 distractors
-- Recall@1 / 100 distractors
-- Recall@5 / 100 distractors
-- MTEB STS subset
-- latency and throughput
+$$
+h_{gate} = \text{gate\_mlp}(f) \in [B, R]
+$$
 
-### 12.2 Acceptance criteria for phase 1
+1. expand to vector gate:
 
-For the first implementation phase, a candidate head should achieve at least:
+$$
+g = \sigma(\text{gate\_expand}(h_{gate})) \in [B, O]
+$$
 
-- retrieval recall no worse than current `encoder_mean`
-- STS average no worse than 90% of current `embedding_head`
-- no large collapse in cosine geometry or matryoshka truncation quality
-- no API or output shape breakage for FamilyOS consumers
+1. apply residual refinement:
 
----
+$$
+e_{out} = e_{mean} + g \odot (e_{refined} - e_{mean})
+$$
 
-## 13. Migration strategy
+1. apply `fusion_norm`
+1. L2 normalize if `normalize=True`
+1. if `return_aux=True`, also return diagnostics and confidence outputs
 
-### Phase 0
+#### Initialization rules
 
-Create the new architecture doc and benchmark baselines.
+To preserve the current safe behavior, initialization must bias toward mean-pool equivalence.
 
-### Phase 1
+Required initialization:
 
-Implement the 5-6 candidate single-output heads behind a shared config entry.
+- `query_prompt`, `document_prompt`: zeros
+- `latent_queries`: `Normal(0, 0.02)`
+- `gate_mlp` last-layer bias: negative, e.g. `-2.0`
+- `gate_expand.weight`: small init
+- `gate_expand.bias`: negative so gate starts mostly closed
+- `refine_mlp` final layer: small init
 
-### Phase 2
+Effect:
 
-Train all candidate heads under the same script and collect benchmark results.
+- early training behaves close to `mean_view`
+- model learns to open dimensions only where agreement supports it
 
-### Phase 3
+#### Optional auxiliary outputs
 
-Select the best candidate and harden checkpoint compatibility.
-
-### Phase 4
-
-Retrain the selected head on retrieval-native data with hard negatives.
-
-### Phase 5
-
-Make the selected single-output head the default only after it surpasses `encoder_mean` on retrieval benchmarks and preserves FamilyOS compatibility.
-
----
-
-## 14. Proposed API direction
-
-No public API break is proposed in the first architecture phase.
-
-The external API should remain:
+When `return_aux=True`, return:
 
 ```python
-client.get_embedding(text)
+{
+   "embedding": e_out,
+   "confidence": confidence_scores,            # [B, 3] if enabled
+   "gate": g,                                 # [B, O]
+   "gate_features": f,                        # [B, 37]
+   "views": {
+      "mean": e_mean,
+      "cls": e_cls,
+      "latent": e_lat,
+      "max": e_max,
+      "role": e_role,
+      "temporal": e_temp,
+   },
+   "salience": {
+      "role_weights": role_weights,          # [B, L]
+      "temporal_weights": temp_weights,      # [B, L]
+      "safety_weights": safety_weights,      # [B, L]
+   },
+}
 ```
 
-For lower-level model code, `capability="embedding"` should still yield one embedding vector.
+Note: training code can ignore this and use default embedding-only return; diagnostics are primarily for ablations and offline analysis.
 
-Any new internal head choices must be hidden behind config and checkpoint metadata, not a breaking API change.
+#### Checkpoint / metadata requirements
+
+`get_head_constructor_params()` should be extended to serialize:
+
+- `gate_rank`
+- `use_mode_prompts`
+- `use_confidence_head`
+- `dropout`
+
+Registry entry to add:
+
+```python
+"agreement_gated_v2": AgreementGatedHeadV2
+```
+
+#### Expected parameter regime
+
+Target parameter budget should remain modest relative to the encoder:
+
+- expected range: roughly 2M to 5M parameters depending on `gate_hidden`, `gate_rank`, and projections
+- must remain lightweight enough for joint head bake-offs on A100-class hardware
+
+#### Non-goals for V2
+
+Do not add the following in V2:
+
+- full cross-encoder interaction between query and document
+- symbolic reasoning modules
+- external parsers as hard dependencies in forward pass
+- multi-vector late interaction retrieval
+
+Those can be layered on later, but V2 must remain a drop-in single-vector head for `heads_embedding.py`.
+
+### 1.6 Production retrieval design
+
+#### Phase 1
+
+- single-vector dense retrieval only
+- `agreement_gated` or `agreement_gated_v2`
+- ANN index over memory/document embeddings
+
+#### Phase 2
+
+- dense retrieval top-$k$
+- rerank top-$k$ with a cross-encoder or lightweight pair scorer
+- use confidence score to decide when reranking is required
+
+### 1.7 Promotion criteria for architecture
+
+Promote a head only if it beats baseline on:
+
+- full-eval retrieval margin
+- hard-negative accuracy
+- FamilyOS role/temporal/safety evaluations
+- retrieval usefulness on golden benchmark
 
 ---
 
-## 15. Risks and trade-offs
+## 2. Data needed vs available
 
-### Risk: architecture complexity grows too fast
+### 2.1 Data already available now
 
-Mitigation: use the 6-head bake-off to identify the smallest head that wins.
+#### Core FamilyOS retrieval training data
 
-### Risk: dense branch becomes too similar to current mean pooling
+Available and immediately usable:
 
-Mitigation: add only residual refinements that beat the baseline in controlled evaluation.
+- `data/familyos/embeddings/silver_synthetic`
+- `data/familyos/embeddings/hard_negatives`
 
-### Risk: overfitting to STS again
+Observed current working total from bake-off run:
 
-Mitigation: treat retrieval ranking metrics as primary acceptance gates.
+- silver synthetic: 261,805 triplets
+- hard negatives: 42,945 triplets
+- total: **304,750 triplets**
 
-### Risk: a novel head looks elegant but is unstable to train
+These are sufficient for current retrieval-head training and bake-off selection.
 
-Mitigation: require zero-init or near-identity initialization for all residual gates and compare against the baseline under the same script.
+#### Additional documented sources
+
+From `embedding_training_data_inventory.md`:
+
+- FamilyOS gold triplets: desirable if restored or regenerated
+- mined retrieval data from `data/familyos/unified/output_synthetic`
+- open-source semantic regularization datasets such as STS Benchmark, AllNLI, SICK-R, STS12/13/14
+
+### 2.2 Data we still need
+
+To make the system genuinely world class, the current triplet pool is not enough. We still need curated data for the failure modes that matter most in FamilyOS.
+
+#### Needed but not yet mature enough
+
+1. **Golden FamilyOS retrieval set**
+   - human-validated query → relevant memory/document labels
+   - required for model selection and promotion
+
+2. **Role-confusion hard negatives**
+   - same event, wrong person
+   - same people, wrong relation direction
+
+3. **Temporal-confusion hard negatives**
+   - same event frame, wrong date/time/frequency
+   - past vs ongoing vs recurring vs planned
+
+4. **Safety-confusion hard negatives**
+   - similar wording, different safety implication
+   - prevents dangerous semantic collapse
+
+5. **Emotion nuance sets**
+   - sadness vs anger vs anxiety vs shame
+   - mild vs severe intensity
+
+6. **Query-document pairs**
+   - short, messy user query → richer memory/document match
+   - needed for asymmetric retrieval training
+
+### 2.3 Data gap table
+
+| Category | Available now | Needed next | Why it matters |
+| --- | --- | --- | --- |
+| Generic contrastive retrieval | Yes | More variety later | Current triplets are enough for bake-off |
+| Family role distinctions | Partial | Stronger gold + hard negatives | Prevent wrong-person/wrong-relation retrieval |
+| Temporal distinctions | Partial | Stronger gold + hard negatives | Prevent wrong-time retrieval |
+| Emotion nuance | Partial | Curated near-neighbor negatives | Needed for semantic nuance |
+| Safety distinctions | Weak | Dedicated benchmark + negatives | Must avoid unsafe nearest neighbors |
+| Query-document asymmetry | Weak | Needed | Current training is mostly symmetric triplets |
+| Gold validation data | Weak / absent | Needed urgently | Required for trustworthy promotion |
+
+### 2.4 Recommended data roadmap
+
+#### Immediate
+
+- continue using the existing 304,750 triplets as the core training set
+- add mined wrong-person and wrong-time negatives
+- restore or regenerate `gold` evaluation data if possible
+
+#### Next
+
+- mine retrieval-native query-document pairs from unified FamilyOS synthetic data
+- add safety-sensitive and emotion-sensitive hard negatives
+
+#### Later
+
+- add production-derived anonymized retrieval judgments if policy permits
+- add human adjudicated failure-case benchmark slices
+
+### 2.5 LLM-powered data creation strategy
+
+The key requirement is to avoid a brittle heuristics-only mining pipeline. The right design is **LLM-first with structured constraints**, not pure regex/overlap rules and not unconstrained free-form generation either.
+
+The recommended pattern is:
+
+1. **candidate proposal** from structured FamilyOS data
+2. **LLM generation or transformation** to create retrieval pairs / negatives / gold candidates
+3. **LLM judge verification** to validate semantic intent
+4. **schema validation + dedup + balance controls** as final guardrails
+
+This keeps the semantic heavy lifting in the LLM, while keeping data quality auditable.
+
+### 2.6 Use of `scripts/agents/synthetic_embedding_generator.py`
+
+The existing script `scripts/agents/synthetic_embedding_generator.py` should be treated as the backbone for LLM-powered data creation.
+
+It already provides:
+
+- OpenRouter / Vertex-backed LLM generation
+- parallel generation workers
+- cross-cluster triplet generation
+- same-cluster hard-negative generation
+- validation hooks
+- shard writing and deduplication
+
+Rather than replacing it, we should extend it with new LLM-powered generation modes.
+
+### 2.7 Recommended generator modes to add
+
+The script currently supports:
+
+- `cross_cluster`
+- `hard_negative`
+
+Recommended new modes:
+
+1. `query_doc`
+   - generate retrieval-native query-document pairs
+   - input source: `data/familyos/unified/output_synthetic`
+
+2. `wrong_person_negative`
+   - create same-event, wrong-person near misses
+   - LLM must preserve topic and event frame while changing the main entity or kinship role
+
+3. `wrong_time_negative`
+   - create same-event, wrong-time near misses
+   - LLM must preserve event content while changing date, timing, recurrence, or temporal status
+
+4. `safety_emotion_negative`
+   - create safety-sensitive and emotion-sensitive near misses
+   - LLM must preserve lexical similarity while changing safety implication or emotional interpretation
+
+5. `gold_regeneration`
+   - regenerate candidate gold examples and rationales for human review
+
+6. `failure_case_benchmark`
+   - generate adversarial or regression-style benchmark candidates from known model failure types
+
+### 2.8 LLM-powered mining pipeline
+
+The mining pipeline should not be "heuristic or LLM"; it should be **heuristics for candidate narrowing, LLM for semantic judgment**.
+
+#### Stage 1: candidate harvesting
+
+Use lightweight rules only to construct candidate pools from `data/familyos/unified/output_synthetic`:
+
+- same intent / ingress neighborhood
+- shared entity family
+- shared relation predicate family
+- shared temporal family
+- same safety band where appropriate
+
+This stage should not decide truth. It should only reduce search space.
+
+#### Stage 2: LLM semantic transformation
+
+For each candidate pool, ask the LLM to perform one of these controlled tasks:
+
+- rewrite a query-like utterance into a memory/document form
+- identify the best positive memory/document candidate
+- generate a wrong-person version of the same event
+- generate a wrong-time version of the same event
+- generate a safety-sensitive near miss
+- generate an emotion-shifted near miss
+
+The LLM prompt should require strict JSON output with provenance and rationale fields.
+
+#### Stage 3: LLM judge verification
+
+Use a second LLM pass as a **judge**, not the same prompt as the generator.
+
+Judge tasks:
+
+- verify that anchor and positive refer to the same event or retrieval target
+- verify that negative differs in the intended dimension only
+- classify negative type
+- reject examples that are too easy, too ambiguous, or semantically wrong
+
+This is the main way to avoid low-quality heuristic artifacts.
+
+#### Stage 4: deterministic filters
+
+After LLM generation/judging, apply deterministic checks only for:
+
+- JSON schema validity
+- duplicate removal
+- minimum/maximum length
+- forbidden empty fields
+- split leakage prevention
+- class balance and slice quotas
+
+### 2.9 How to create the requested data types
+
+#### A. Wrong-person negatives
+
+Goal:
+
+- preserve event and topical frame
+- change the principal person / kinship target
+
+LLM task:
+
+- given a source text and entity metadata, produce a near-miss version that remains plausible but changes who the event is about
+
+Examples of valid transformations:
+
+- child -> sibling
+- mother -> father
+- self -> child
+- parent-of relation -> sibling-of relation
+
+Judge criteria:
+
+- same topical frame
+- different main target entity or family role
+- semantic error if retrieved as a positive
+
+#### B. Wrong-time negatives
+
+Goal:
+
+- preserve event and participants
+- change time, frequency, or temporal status
+
+LLM task:
+
+- transform the same event into a past / present / recurring / planned / cancelled alternative while keeping language highly similar
+
+Judge criteria:
+
+- same event family
+- different retrieval-relevant temporal interpretation
+- not merely a paraphrase
+
+#### C. Query-document pairs
+
+Goal:
+
+- produce asymmetric retrieval supervision for short user-style queries against fuller memory-style documents
+
+LLM task:
+
+- from unified synthetic rows, generate:
+  - a query-like user utterance
+  - a matching memory/document text
+  - one or more hard distractors
+
+Preferred source families:
+
+- `query_memory` ↔ `log_memory`
+- `reflect` ↔ memory-like summaries
+- `set_reminder` ↔ reminder/memory document text
+- `seek_advice` ↔ relevant declarative memory text
+
+Judge criteria:
+
+- query would realistically retrieve the paired document
+- document is not merely lexical overlap; it must be semantically useful
+
+#### D. Safety-sensitive hard negatives
+
+Goal:
+
+- prevent dangerous semantic collapse in retrieval space
+
+LLM task:
+
+- generate near-neighbor negatives that are lexically or emotionally similar but differ in safety implication
+
+Examples:
+
+- needing space vs wanting to disappear
+- anger venting vs intent to harm
+- sadness vs self-harm implication
+
+Judge criteria:
+
+- high lexical or topical similarity
+- materially different safety interpretation
+- retrieval should treat them as distinct
+
+#### E. Emotion-sensitive hard negatives
+
+Goal:
+
+- teach the retriever that emotional nuance matters, not just topic overlap
+
+LLM task:
+
+- keep the same family situation but alter the emotional reading:
+  - worried -> angry
+  - ashamed -> sad
+  - grateful -> relieved
+
+Judge criteria:
+
+- same broad situation
+- different emotional meaning relevant to retrieval
+
+#### F. Gold evaluation regeneration
+
+Goal:
+
+- rebuild `data/familyos/embeddings/gold` if the older gold set is missing or incomplete
+
+LLM task:
+
+- produce candidate evaluation triplets or query-document labels from trusted seeds
+- attach rationale for relevance and negative-type choice
+
+Human role:
+
+- final acceptance must remain human-reviewed
+- LLM proposes; human approves or edits
+
+### 2.10 Generator prompt design principles
+
+To avoid shallow or repetitive outputs, prompts should require:
+
+- explicit event identity preservation when generating positives
+- explicit mismatch dimension when generating negatives
+- rationale fields explaining why positive/negative is correct
+- natural FamilyOS-style language rather than template spam
+- balanced persona and domain coverage
+
+Recommended prompt fields per generated record:
+
+- `anchor`
+- `positive` or `document`
+- `negative` if applicable
+- `negative_type`
+- `source_ids`
+- `source_file`
+- `generator_rationale`
+- `judge_verdict`
+- `judge_rationale`
+- `slice_tags`
+
+### 2.11 Recommended output artifacts
+
+Use separate output folders so mining products remain auditable:
+
+| Artifact family | Recommended location |
+| --- | --- |
+| LLM-mined query-document pairs | `data/familyos/embeddings/mined_v2/query_doc/` |
+| Wrong-person negatives | `data/familyos/embeddings/mined_v2/wrong_person/` |
+| Wrong-time negatives | `data/familyos/embeddings/mined_v2/wrong_time/` |
+| Safety/emotion negatives | `data/familyos/embeddings/mined_v2/safety_emotion/` |
+| Gold regeneration candidates | `data/familyos/embeddings/gold_candidates/` |
+| Failure-case benchmark candidates | `data/familyos/benchmarks/failure_cases_candidates/` |
+
+### 2.12 Quality control for LLM-generated data
+
+Every LLM-created record should pass all of the following before training use:
+
+1. generator output passes schema validation
+2. judge model marks it valid
+3. duplicate and near-duplicate checks pass
+4. slice balance quotas are not exceeded
+5. spot-check human audit passes sampled review
+
+For gold or benchmark data, require an additional human validation pass.
+
+### 2.13 Later-stage data sources
+
+#### Production-derived anonymized retrieval judgments
+
+If policy allows, this is the most valuable later-stage signal.
+
+Recommended use:
+
+- mine successful retrievals
+- mine failed retrievals
+- collect implicit or explicit relevance labels
+- anonymize and strip sensitive user content per policy requirements
+
+These judgments should become the highest-priority real-world evaluation set after policy clearance.
+
+#### Human adjudicated failure-case benchmark slices
+
+Maintain a curated benchmark of:
+
+- known false positives
+- known false negatives
+- safety collisions
+- role confusions
+- temporal confusions
+
+These should be stored as a versioned regression suite and expanded continuously.
 
 ---
 
-## 16. Bottom-line recommendation
+## 3. Training and loss functions
 
-If the goal is an elegant unified architecture with true SOTA headroom:
+### 3.1 Current working training recipe
 
-- do not keep evolving the current attentive pooling path as the sole embedding strategy
-- redesign around a retrieval-safe single-output head anchored on `encoder_mean`
-- add learned refinement only as residual improvement
-- test 5-6 candidate heads under the same script instead of betting on one idea upfront
+Current bake-off recipe is strong enough as a baseline:
 
-In short:
+- frozen encoder
+- train retrieval head only
+- `FamilyContrastiveLoss`
+- hard negatives enabled
+- learnable temperature
+- curriculum on hard-negative weight
+- matryoshka dimensions `[768, 512, 256, 128]`
 
-1. preserve the encoder manifold
-2. make refinement residual
-3. separate pooling from transformation
-4. compare multiple candidate heads under identical training
-5. keep the FamilyOS single-output contract intact
+This is a solid head-selection setup.
+
+### 3.2 Recommended final training strategy
+
+Use a staged training plan.
+
+#### Stage A: head bake-off and selection
+
+Goal:
+
+- choose the best architectural family under identical conditions
+
+Recipe:
+
+- frozen encoder
+- joint multi-head bake-off
+- core triplet data only
+- select by retrieval eval, not train margin
+
+#### Stage B: world-class retriever specialization
+
+Goal:
+
+- improve FamilyOS nuance without destabilizing geometry
+
+Recipe:
+
+- start from the winning bake-off head
+- add query/document asymmetry
+- add richer FamilyOS hard negatives
+- add auxiliary objectives
+
+#### Stage C: optional partial unfreezing
+
+Goal:
+
+- recover additional performance if head-only tuning saturates
+
+Recipe:
+
+- unfreeze only top encoder blocks or adapters
+- keep lower layers frozen
+- use much smaller encoder LR than head LR
+
+### 3.3 Recommended loss design
+
+Do not rely only on plain InfoNCE long-term.
+
+Recommended loss family:
+
+$$
+L = \lambda_1 L_{retrieval} + \lambda_2 L_{semantic} + \lambda_3 L_{role} + \lambda_4 L_{temporal} + \lambda_5 L_{safety} + \lambda_6 L_{confidence}
+$$
+
+#### Loss terms
+
+1. **Retrieval loss**
+   - `FamilyContrastiveLoss`
+   - main objective
+   - uses hard negatives and in-batch negatives
+
+2. **Semantic regularization loss**
+   - pairwise similarity or ranking loss on STS/NLI-style data
+   - prevents overly narrow domain overfitting
+
+3. **Role consistency loss**
+   - penalize collapse between wrong-person or wrong-relation pairs
+   - can be implemented as contrastive sub-objective on curated role negatives
+
+4. **Temporal separation loss**
+   - same topic, wrong time should not collapse
+   - use curated temporal negatives
+
+5. **Safety separation loss**
+   - keep unsafe/benign near-miss phrases separable where necessary
+   - especially important for high-risk phrasings
+
+6. **Confidence calibration loss**
+   - optional auxiliary loss for confidence head
+   - teaches uncertainty estimation from ambiguity/hardness labels
+
+### 3.4 Recommended sampling strategy
+
+Each batch should mix:
+
+- standard FamilyOS triplets
+- hard negatives
+- role confusion slices
+- temporal confusion slices
+- safety confusion slices
+- optional generic semantic pairs
+
+Avoid letting one slice dominate the whole batch distribution.
+
+### 3.5 Curriculum
+
+Recommended curriculum:
+
+1. easy semantic positives + standard negatives
+2. hard negatives
+3. role and temporal confusions
+4. safety confusions
+5. asymmetric query-document training
+
+This gives cleaner optimization than starting with every hard case at once.
+
+### 3.6 Hyperparameter guidance
+
+#### Head-only phase
+
+- head LR: around current bake-off scale (`2e-4` range)
+- temperature LR: low (`1e-3` scale or below)
+- encoder LR: `0`
+- matryoshka retained
+
+#### Partial unfreeze phase
+
+- encoder LR: at least 10x to 50x lower than head LR
+- strong early stopping
+- gold benchmark required before promotion
+
+### 3.7 Model-selection rule
+
+Select checkpoints by this priority order:
+
+1. best FamilyOS retrieval margin on full eval
+2. best hard-negative accuracy
+3. best golden retrieval metrics
+4. no unacceptable regression on safety/role/temporal slices
+
+Do **not** select by train margin.
 
 ---
 
-## 17. Immediate next step
+## 4. Evals
 
-Create an implementation plan for the single-output candidate-head experiment covering:
+### 4.1 Evaluation philosophy
 
-- class refactor in `src/modeling_studio/models/heads.py`
-- head registry/config support for 5-6 embedding architectures
-- output contract changes in `modernbert_multitask.py`
-- retrieval-native training losses
-- benchmark gates
-- backward compatibility with current checkpoints
+The system should be evaluated as a retrieval model, not just as a sentence similarity model.
+
+That means we need both:
+
+- generic embedding evals
+- FamilyOS-specific retrieval evals
+
+### 4.2 Required evaluation tracks
+
+#### Track A: generic semantic quality
+
+Purpose:
+
+- ensure the embedding space is not semantically broken
+
+Examples:
+
+- STS Benchmark
+- SICK-R
+- STS12/13/14
+
+Metrics:
+
+- Spearman / Pearson
+- pair ranking quality
+
+#### Track B: FamilyOS retrieval
+
+Purpose:
+
+- measure actual memory/document retrieval usefulness
+
+Metrics:
+
+- Recall@1
+- Recall@5
+- Recall@10
+- MRR
+- nDCG@10
+
+#### Track C: role sensitivity
+
+Purpose:
+
+- detect wrong-person or wrong-relation retrieval collisions
+
+Metrics:
+
+- role confusion@1
+- role confusion@10
+- wrong-person nearest-neighbor rate
+
+#### Track D: temporal sensitivity
+
+Purpose:
+
+- detect same-event-but-wrong-time collapse
+
+Metrics:
+
+- temporal confusion@1
+- temporal confusion@10
+- wrong-time retrieval rate
+
+#### Track E: safety distinction
+
+Purpose:
+
+- ensure benign and dangerous near-neighbors are not collapsed inappropriately
+
+Metrics:
+
+- safety collision rate
+- unsafe nearest-neighbor rate
+- red/amber confusion rate
+
+#### Track F: confidence and calibration
+
+Purpose:
+
+- measure whether uncertainty signal is useful
+
+Metrics:
+
+- ECE or bucketed calibration error
+- confidence-vs-accuracy curve
+- retrieval abstention/rerank trigger quality
+
+### 4.3 Evaluation slices that must exist
+
+Every full evaluation should report separate slices for:
+
+- kinship / family role
+- self vs other
+- emotion type
+- emotion intensity
+- temporal framing
+- safety level
+- short query vs long document
+
+### 4.4 Promotion gates
+
+Promote a model only if it satisfies all of the following:
+
+- beats `mean_baseline` on retrieval margin
+- beats `mean_baseline` on hard-negative accuracy
+- no regression on safety collision rate
+- no regression on role confusion metrics
+- no regression on temporal confusion metrics
+- improves golden retrieval benchmark
+
+---
+
+## 5. Benchmarking and golden data
+
+### 5.1 Benchmarking philosophy
+
+We need a benchmark that actually matches FamilyOS retrieval behavior.
+
+The benchmark should measure whether the model retrieves the right memory or document when the query is:
+
+- short
+- vague
+- emotionally loaded
+- family-specific
+- temporally specific
+- safety-relevant
+
+### 5.2 Benchmark suite definition
+
+The benchmark suite should have five parts.
+
+#### Suite 1: retrieval gold benchmark
+
+Format:
+
+- query
+- candidate pool
+- one or more relevant documents
+- graded relevance when possible
+
+Use for:
+
+- Recall@k
+- MRR
+- nDCG
+
+#### Suite 2: hard-negative challenge set
+
+Format:
+
+- query
+- positive
+- one or more near-miss negatives
+- negative type labels
+
+Negative types:
+
+- wrong person
+- wrong relation
+- wrong time
+- same topic different event
+- safety mismatch
+- emotion mismatch
+
+#### Suite 3: semantic nuance set
+
+Format:
+
+- short pairs or triplets focusing on subtle differences
+
+Examples:
+
+- same event, different emotional framing
+- same entity, different relation direction
+- same wording, different safety implication
+
+#### Suite 4: production-style retrieval set
+
+Format:
+
+- messy user query
+- realistic memory/document candidates
+- human relevance judgments
+
+#### Suite 5: adversarial regression set
+
+Format:
+
+- known failure cases from prior models
+- manually curated edge cases
+
+Purpose:
+
+- prevent regressions after architecture or data changes
+
+### 5.3 Golden data creation process
+
+#### Step 1: define schema
+
+Each golden retrieval example should contain at least:
+
+| Field | Description |
+| --- | --- |
+| `query_id` | Unique query id |
+| `query` | Query text |
+| `candidate_id` | Candidate memory/document id |
+| `candidate_text` | Candidate text |
+| `label` | Relevant / not relevant / graded relevance |
+| `slice_tags` | Tags such as `role`, `temporal`, `safety`, `emotion`, `query_doc` |
+| `difficulty` | Easy / medium / hard |
+| `negative_type` | Optional, for hard negatives |
+| `notes` | Annotation rationale |
+
+#### Step 2: define annotation slices
+
+Create balanced golden sets for:
+
+- role confusion
+- temporal confusion
+- emotion nuance
+- safety nuance
+- general memory retrieval
+- short-query to long-memory retrieval
+
+#### Step 3: seed with mined candidates
+
+Start from:
+
+- existing silver synthetic triplets
+- existing hard negatives
+- mined query-document pairs
+- unified synthetic outputs
+
+Then manually validate and correct.
+
+#### Step 4: human review
+
+Every golden example should be reviewed for:
+
+- correctness of positive label
+- correctness of hard negative label
+- realism for FamilyOS use case
+- absence of duplicate or contradictory entries
+
+#### Step 5: split benchmark properly
+
+Create separate:
+
+- train-support mining pool
+- dev / model-selection benchmark
+- final holdout benchmark
+
+Never leak the holdout golden set into training.
+
+### 5.4 Initial golden data volume targets
+
+Recommended minimum targets:
+
+- 300 retrieval queries for dev
+- 300 retrieval queries for holdout
+- 100 examples each for role, temporal, safety, and emotion hard slices
+- 100 adversarial regression examples
+
+This is enough to start making trustworthy promotion decisions.
+
+### 5.5 Benchmark outputs to persist
+
+For every evaluated model version, save:
+
+- overall leaderboard metrics
+- per-slice metrics
+- confusion/error buckets
+- top failure examples
+- nearest-neighbor audit samples
+- model version + data version + config version
+
+### 5.6 Golden benchmark acceptance criteria
+
+A new model should beat the current production candidate on:
+
+- overall retrieval Recall@k / MRR / nDCG
+- role slice
+- temporal slice
+- safety slice
+
+and must not introduce unacceptable new failure patterns.
+
+---
+
+## 6. Recommended phased plan
+
+### Phase 1: finish bake-off and lock winner
+
+- complete current joint bake-off
+- choose winner by full eval and hard-negative performance
+- current likely winner: `agreement_gated`
+
+### Phase 2: build AgreementGatedHeadV2
+
+- vector gate
+- token salience features
+- role-aware and temporal-aware views
+- query/document asymmetry
+- confidence head
+
+### Phase 3: upgrade data
+
+- mine wrong-person and wrong-time negatives
+- create golden retrieval set
+- create safety and emotion nuance benchmark slices
+
+### Phase 4: upgrade training objectives
+
+- add multi-objective loss mix
+- add semantic regularization
+- add role/temporal/safety auxiliary losses
+
+### Phase 5: production benchmark and promotion
+
+- benchmark on holdout golden set
+- compare against baseline and prior winning head
+- promote only if all gates pass
+
+---
+
+## 7. Concrete next actions
+
+1. Finalize current bake-off leaderboard and declare winner.
+2. Write `AgreementGatedHeadV2` technical spec from Section 1.5.
+3. Create a golden benchmark schema and annotation template.
+4. Build role / temporal / safety hard-negative slices.
+5. Add benchmark reporting to the training/eval pipeline.
+
+---
+
+## 8. Bottom line
+
+The right way to define the FamilyOS retrieval plan is:
+
+- **Architecture**: mean-anchor gated retriever, evolving to `AgreementGatedHeadV2`
+- **Data**: use current 304,750 triplets now, but add gold retrieval data and targeted FamilyOS hard negatives
+- **Training**: start with `FamilyContrastiveLoss`, then move to a multi-objective retrieval loss stack
+- **Evals**: measure retrieval, role, temporal, safety, and calibration — not just cosine margin
+- **Benchmarking**: create a FamilyOS golden retrieval benchmark with curated hard slices and strict holdout discipline
+
+That is the shortest credible path from a good bake-off result to a production-grade, world-class FamilyOS retrieval system.
