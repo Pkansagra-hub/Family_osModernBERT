@@ -23,7 +23,7 @@
 # =============================================================================
 encoder:
   # Checkpoint with all 12 heads (proven encoder + all capabilities)
-  checkpoint: checkpoints/checkpoint-8000
+  checkpoint: /content/Modeling_studio/outputs/globalpointer-unified-v1/checkpoint-8000
 
   # CRITICAL: Freeze encoder - we only train the embedding head
   freeze: true
