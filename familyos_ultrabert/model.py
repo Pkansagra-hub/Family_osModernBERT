@@ -196,16 +196,12 @@ class UltraBERT:
         # Download weights if no path provided
         encoder_path = model_path
         if encoder_path is None:
-            # PRIORITY: Bundled weights first (they have latest V2 heads)
-            # Then fall back to cached/downloaded weights
-            if use_pytorch and DEFAULT_PYTORCH_PATH.exists():
-                encoder_path = str(DEFAULT_PYTORCH_PATH)
-                logger.info(f"Using bundled PyTorch weights: {encoder_path}")
-            elif use_onnx and DEFAULT_ONNX_PATH.exists():
+            # PyTorch should prefer HF-backed weights first so source checkouts do not
+            # silently shadow newer embedding-head checkpoints with stale local bundles.
+            if use_onnx and DEFAULT_ONNX_PATH.exists():
                 encoder_path = str(DEFAULT_ONNX_PATH)
                 logger.info(f"Using bundled ONNX weights: {encoder_path}")
             else:
-                # Try to download from HuggingFace
                 try:
                     from .weights_manager import download_encoder, is_cached
 
@@ -216,11 +212,20 @@ class UltraBERT:
                         # Download from HuggingFace
                         encoder_path = str(download_encoder(encoder_version, quantization))
                         logger.info(f"Downloaded encoder weights: {encoder_path}")
-                except ImportError:
-                    raise FileNotFoundError(
-                        "No weights found. Either provide model_path or install "
-                        "huggingface-hub to download weights automatically."
-                    )
+                except Exception as exc:
+                    if use_pytorch and DEFAULT_PYTORCH_PATH.exists():
+                        encoder_path = str(DEFAULT_PYTORCH_PATH)
+                        logger.warning(
+                            "Falling back to bundled PyTorch weights at %s because HF-backed "
+                            "weights were unavailable: %s",
+                            encoder_path,
+                            exc,
+                        )
+                    else:
+                        raise FileNotFoundError(
+                            "No weights found. Either provide model_path or install "
+                            "huggingface-hub to download weights automatically."
+                        ) from exc
 
         # Load with selected backend
         if use_pytorch:

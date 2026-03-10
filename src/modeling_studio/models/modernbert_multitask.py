@@ -184,6 +184,50 @@ def get_problem_type(capability: Capability) -> str:
     return labels.problem_type
 
 
+def _extract_embedding_config(
+    embedding_metadata: dict | None = None,
+    state_dict: dict[str, torch.Tensor] | None = None,
+) -> dict[str, object]:
+    """Extract embedding head configuration from metadata or checkpoint weights."""
+    config: dict[str, object] = {
+        "pooling": "mean",
+        "normalize": True,
+        "output_dim": None,
+    }
+
+    if embedding_metadata is not None:
+        head_info = embedding_metadata.get("head_info", {}).get("embedding", {})
+        if isinstance(head_info, dict):
+            config["pooling"] = head_info.get("pooling", config["pooling"])
+            config["normalize"] = head_info.get("normalize", config["normalize"])
+            config["output_dim"] = head_info.get("output_dim", config["output_dim"])
+            return config
+
+    if state_dict is None:
+        return config
+
+    if "heads.embedding.projection.weight" in state_dict:
+        config["output_dim"] = int(state_dict["heads.embedding.projection.weight"].shape[0])
+    elif "heads.embedding.projection.down_proj.weight" in state_dict:
+        config["output_dim"] = int(
+            state_dict["heads.embedding.projection.down_proj.weight"].shape[0]
+        )
+
+    attentive_prefixes = (
+        "heads.embedding.latent_queries",
+        "heads.embedding.cross_attn.",
+        "heads.embedding.cross_attn_norm.",
+        "heads.embedding.latent_ffn.",
+        "heads.embedding.ffn_norm.",
+        "heads.embedding.alpha",
+        "heads.embedding.projection.down_proj.",
+    )
+    if any(key.startswith(attentive_prefixes) for key in state_dict):
+        config["pooling"] = "attentive"
+
+    return config
+
+
 # =============================================================================
 # Multi-Task Model Output
 # =============================================================================
@@ -285,6 +329,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         adapter_bottleneck_size: int = 64,
         use_pair_encoder: bool = False,
         pair_encoder_num_layers: int = 1,
+        _embedding_config: dict | None = None,
     ):
         super().__init__(config)
 
@@ -292,6 +337,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         self.capabilities = self._normalize_capabilities(capabilities)
         self.freeze_encoder = freeze_encoder
         self.head_dropout = head_dropout
+        self._embedding_config = _embedding_config or {}
 
         # Epic 5.0 configuration
         self._shared_pooler_type = shared_pooler
@@ -385,9 +431,14 @@ class ModernBertMultiTaskModel(PreTrainedModel):
 
             # Create head with appropriate parameters
             if capability == Capability.EMBEDDING:
+                output_dim = self._embedding_config.get("output_dim")
+                if output_dim is not None:
+                    output_dim = int(output_dim)
                 head = head_cls(
                     hidden_size=hidden_size,
-                    normalize=True,
+                    output_dim=output_dim,
+                    pooling=str(self._embedding_config.get("pooling", "mean")),
+                    normalize=bool(self._embedding_config.get("normalize", True)),
                 )
             elif capability == Capability.SAFETY_FAMILYOS:
                 # SafetyHead: 4 bands with 13 subcategories (indices 0-12)
@@ -694,6 +745,13 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         # Load config - use local_files_only to avoid HuggingFace Hub validation issues
         config = AutoConfig.from_pretrained(str(checkpoint_path), local_files_only=True)
 
+        # Load embedding metadata if available so the embedding head is rebuilt correctly.
+        embedding_metadata_path = checkpoint_path / "embedding_metadata.json"
+        checkpoint_embedding_metadata = None
+        if embedding_metadata_path.exists():
+            with open(embedding_metadata_path) as f:
+                checkpoint_embedding_metadata = json.load(f)
+
         # Create model instance with Epic 5.0 parameters
         model = cls(
             config=config,
@@ -705,6 +763,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             adapter_bottleneck_size=epic_5_config.get("adapter_bottleneck_size", 64),
             use_pair_encoder=epic_5_config.get("use_pair_encoder", False),
             pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
+            _embedding_config=_extract_embedding_config(embedding_metadata=checkpoint_embedding_metadata),
         )
 
         # Restore legacy head architecture if checkpoint records GlobalPointer replacements.
@@ -736,6 +795,9 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     + ", ".join(restored_heads)
                 )
 
+        if checkpoint_embedding_metadata is not None:
+            setattr(model, "_checkpoint_embedding_metadata", checkpoint_embedding_metadata)
+
         # Load state dict - try safetensors first, then pytorch format
         safetensors_path = checkpoint_path / "model.safetensors"
         pytorch_path = checkpoint_path / "pytorch_model.bin"
@@ -749,6 +811,20 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 f"No model weights found at {checkpoint_path}. "
                 f"Expected 'model.safetensors' or 'pytorch_model.bin'"
             )
+
+        if checkpoint_embedding_metadata is None and Capability.EMBEDDING in (capabilities or []):
+            inferred_embedding_config = _extract_embedding_config(state_dict=state_dict)
+            if inferred_embedding_config.get("pooling") != model.heads[Capability.EMBEDDING.value].pooling:
+                model.heads[Capability.EMBEDDING.value] = EmbeddingHead(
+                    hidden_size=getattr(config, "hidden_size", 768),
+                    output_dim=(
+                        int(inferred_embedding_config["output_dim"])
+                        if inferred_embedding_config.get("output_dim") is not None
+                        else None
+                    ),
+                    pooling=str(inferred_embedding_config.get("pooling", "mean")),
+                    normalize=bool(inferred_embedding_config.get("normalize", True)),
+                )
 
         # Separate state dict by component
         encoder_state = {}
@@ -1018,6 +1094,32 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     f,
                     indent=2,
                 )
+
+        checkpoint_embedding_metadata = getattr(self, "_checkpoint_embedding_metadata", None)
+        if checkpoint_embedding_metadata is not None:
+            with open(os.path.join(save_directory, "embedding_metadata.json"), "w") as f:
+                json.dump(checkpoint_embedding_metadata, f, indent=2)
+        else:
+            embedding_head = (
+                self.heads[Capability.EMBEDDING.value]
+                if Capability.EMBEDDING.value in self.heads
+                else None
+            )
+            if isinstance(embedding_head, EmbeddingHead):
+                embedding_metadata = {
+                    "head_info": {
+                        Capability.EMBEDDING.value: {
+                            "class": type(embedding_head).__name__,
+                            "pooling": embedding_head.pooling,
+                            "output_dim": embedding_head.output_dim,
+                            "hidden_size": embedding_head.hidden_size,
+                            "normalize": embedding_head.normalize,
+                        }
+                    },
+                    "trained_head": Capability.EMBEDDING.value,
+                }
+                with open(os.path.join(save_directory, "embedding_metadata.json"), "w") as f:
+                    json.dump(embedding_metadata, f, indent=2)
 
     def get_input_embeddings(self) -> nn.Module:
         """Get input embeddings layer."""

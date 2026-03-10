@@ -1,3 +1,29 @@
+# FamilyOS UltraBERT v4.0.3 Release
+
+## Embedding Head Runtime Fix
+
+This release fixes a regression where the runtime could silently reconstruct the `embedding` head with default mean pooling even when checkpoint metadata specified the newer attentive embedding architecture.
+
+### Fixed
+
+- **Embedding metadata loading**: `embedding_metadata.json` is now loaded during checkpoint reconstruction for both the release package and the training-side model.
+- **Attentive embedding activation**: checkpoints that specify `pooling: attentive` now rebuild the `EmbeddingHead` correctly instead of falling back to mean pooling.
+- **Embedding metadata persistence**: `save_pretrained()` now writes `embedding_metadata.json` so future reloads preserve the embedding head configuration.
+- **HF-first PyTorch runtime loading**: the release package now prefers Hugging Face-backed encoder weights before falling back to stale bundled local PyTorch weights, preventing source checkouts from masking newer embedding checkpoints.
+
+### Validation
+
+- Added regression tests for metadata-driven embedding head reconstruction and persistence.
+- Verified that `checkpoints/embedding_checkpoint` now loads as `EmbeddingHead attentive 768 True`.
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v4.0.1 Release
 
 ## SOTA Intent & Ingress Heads + Dynamic Label Expansion
