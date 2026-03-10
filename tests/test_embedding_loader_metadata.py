@@ -6,6 +6,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 from transformers import BertConfig
 
@@ -33,6 +34,20 @@ def _load_release_model_class():
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module.ModernBertMultiTaskModel
+
+
+def _load_release_weights_manager():
+    """Load the patched release weights manager directly from the workspace file."""
+    module_path = Path(__file__).resolve().parents[1] / "familyos_ultrabert" / "weights_manager.py"
+    module_name = "tests_release_weights_manager"
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    assert spec is not None
+    assert spec.loader is not None
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_release_model_uses_attentive_embedding_metadata() -> None:
@@ -99,3 +114,46 @@ def test_release_model_save_pretrained_writes_embedding_metadata(tmp_path) -> No
     metadata = json.loads((tmp_path / "embedding_metadata.json").read_text())
     assert metadata["head_info"]["embedding"]["pooling"] == "attentive"
     assert metadata["head_info"]["embedding"]["output_dim"] == 32
+
+
+def test_download_encoder_refreshes_stale_v2_fp32_cache(tmp_path, monkeypatch) -> None:
+    """v2/fp32 caches missing embedding metadata should be refreshed automatically."""
+    weights_manager = _load_release_weights_manager()
+    monkeypatch.setenv("FAMILYOS_CACHE_DIR", str(tmp_path))
+
+    cache_path = tmp_path / "encoder" / "v2" / "fp32"
+    cache_path.mkdir(parents=True)
+    for name in ["capabilities.json", "config.json", "model.safetensors", "tokenizer.json"]:
+        (cache_path / name).write_text("stub", encoding="utf-8")
+
+    assert weights_manager.is_cached("encoder", "v2", "fp32") is False
+
+    monkeypatch.setattr(weights_manager, "_check_huggingface_hub", lambda: True)
+
+    download_mock = Mock()
+
+    def fake_snapshot_download(**kwargs):
+        download_mock(**kwargs)
+        (cache_path / "embedding_metadata.json").write_text(
+            json.dumps(
+                {
+                    "head_info": {
+                        "embedding": {
+                            "pooling": "attentive",
+                            "output_dim": 768,
+                            "normalize": True,
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr("huggingface_hub.snapshot_download", fake_snapshot_download)
+
+    resolved = weights_manager.download_encoder(version="v2", quantization="fp32", cache_dir=tmp_path)
+
+    assert resolved == cache_path
+    assert download_mock.call_count == 1
+    assert download_mock.call_args.kwargs["force_download"] is True
+    assert (cache_path / "embedding_metadata.json").exists()

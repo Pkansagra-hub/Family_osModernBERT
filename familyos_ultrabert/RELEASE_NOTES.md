@@ -1,3 +1,28 @@
+# FamilyOS UltraBERT v4.0.4 Release
+
+## Stale Cache Auto-Refresh Fix
+
+This release fixes a follow-up issue where users with an older cached `encoder/v2/fp32` snapshot could still load the legacy mean-pooled embedding head even after upgrading to `4.0.3`.
+
+### Fixed
+
+- **Stale cache detection**: cached `v2/fp32` encoder snapshots are now treated as stale if they are missing `embedding_metadata.json`.
+- **Automatic refresh**: stale caches now trigger a forced Hugging Face refresh automatically instead of being silently reused.
+- **Safer cache validation**: encoder caches are now validated against a required file set before being accepted as usable.
+
+### Validation
+
+- Added a regression test covering automatic refresh of stale `v2/fp32` caches.
+- Verified that a forced refresh pulls `embedding_metadata.json` from Hugging Face and reconstructs the embedding head as attentive.
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v4.0.3 Release
 
 ## Embedding Head Runtime Fix

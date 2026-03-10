@@ -44,6 +44,42 @@ DEFAULT_CACHE_DIR = Path.home() / ".cache" / "familyos_ultrabert"
 QuantizationType = Literal["fp32", "fp16", "int8"]
 
 
+def _required_encoder_files(version: str, quantization: QuantizationType) -> set[str]:
+    """Return the minimum required file set for a cached encoder snapshot."""
+    required = {
+        "capabilities.json",
+        "config.json",
+        "model.safetensors",
+        "tokenizer.json",
+    }
+
+    # v2 fp32 now requires embedding metadata so the attentive embedding head can be
+    # reconstructed correctly. Older stale caches from before the fix must refresh.
+    if version == "v2" and quantization == "fp32":
+        required.add("embedding_metadata.json")
+
+    return required
+
+
+def _is_complete_encoder_cache(cache_path: Path, version: str, quantization: QuantizationType) -> bool:
+    """Return True when the cache directory contains the required encoder files."""
+    if not cache_path.exists() or not cache_path.is_dir():
+        return False
+
+    present_files = {path.name for path in cache_path.glob("*") if path.is_file()}
+    required_files = _required_encoder_files(version, quantization)
+    missing_files = sorted(required_files - present_files)
+    if missing_files:
+        logger.warning(
+            "Encoder cache at %s is stale or incomplete; missing %s",
+            cache_path,
+            ", ".join(missing_files),
+        )
+        return False
+
+    return True
+
+
 def get_cache_dir() -> Path:
     """Get cache directory, creating if needed.
 
@@ -108,19 +144,18 @@ def download_encoder(
             "Install with: pip install huggingface-hub>=0.20.0"
         )
 
-    from huggingface_hub import snapshot_download, HfFileSystem
+    from huggingface_hub import snapshot_download
 
     cache = cache_dir or get_cache_dir()
     cache_path = cache / f"encoder/{version}/{quantization}"
 
     if cache_path.exists() and not force:
-        # Verify the cache has files
-        files = list(cache_path.glob("*"))
-        if files:
+        if _is_complete_encoder_cache(cache_path, version, quantization):
             logger.info(f"Using cached encoder: {cache_path}")
             return cache_path
-        else:
-            logger.warning(f"Cache directory empty, re-downloading: {cache_path}")
+
+        logger.warning(f"Refreshing stale encoder cache: {cache_path}")
+        force = True
 
     logger.info(f"Downloading encoder v{version} ({quantization})...")
 
@@ -133,8 +168,14 @@ def download_encoder(
             allow_patterns=[pattern],
             local_dir=cache,
             local_dir_use_symlinks=False,
+            force_download=force,
             resume_download=True,
         )
+
+        if not _is_complete_encoder_cache(cache_path, version, quantization):
+            raise RuntimeError(
+                f"Downloaded encoder cache at {cache_path} is missing required files"
+            )
 
         logger.info(f"Downloaded encoder to {cache_path}")
         return cache_path
@@ -218,12 +259,7 @@ def is_cached(
     cache = get_cache_dir()
     cache_path = cache / component / version / quantization
 
-    if not cache_path.exists():
-        return False
-
-    # Check if there are actual files
-    files = list(cache_path.glob("*"))
-    return len(files) > 0
+    return _is_complete_encoder_cache(cache_path, version, quantization)
 
 
 def get_weights_info() -> dict:
