@@ -1,27 +1,37 @@
 #!/usr/bin/env python
-"""
-Release preparation script for FamilyOS UltraBERT.
+"""Release preparation script for FamilyOS UltraBERT.
 
 This script helps prepare releases by:
 1. Validating package structure
 2. Building packages
 3. Testing installation
-4. Checking for common issues
+4. Generating checksums and a release bundle
+5. Writing a lightweight release summary for GitHub assets
 
 Usage:
     python scripts/prepare_release.py [--version VERSION] [--test-install]
 
 Example:
-    python scripts/prepare_release.py --version 4.0.0 --test-install
+    python scripts/prepare_release.py --version 4.0.2 --test-install --generate-checksums --build-bundle
 """
 
 import argparse
+import hashlib
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
-import shutil
-import os
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PACKAGE_DIR = PROJECT_ROOT / "familyos_ultrabert"
+DIST_DIR = PACKAGE_DIR / "dist"
+PYPROJECT_PATH = PACKAGE_DIR / "pyproject.toml"
+INIT_PATH = PACKAGE_DIR / "__init__.py"
+RELEASE_NOTES_PATH = PACKAGE_DIR / "RELEASE_NOTES.md"
 
 
 def run_command(cmd, cwd=None, check=True):
@@ -38,9 +48,9 @@ def run_command(cmd, cwd=None, check=True):
 
 def validate_package_structure():
     """Validate that the package structure is correct for release."""
-    print("🔍 Validating package structure...")
+    print("Validating package structure...")
 
-    package_dir = Path("familyos_ultrabert")
+    package_dir = PACKAGE_DIR
 
     # Check required files
     required_files = [
@@ -55,45 +65,66 @@ def validate_package_structure():
 
     for file in required_files:
         if not (package_dir / file).exists():
-            print(f"❌ Missing required file: {file}")
+            print(f"Missing required file: {file}")
             return False
 
     # Check that weights are excluded
     if (package_dir / "weights").exists():
-        print("⚠️  Weights directory exists - this will be excluded from package")
+        print("Weights directory exists - it should be excluded from the distribution")
         # Check that weights are not accidentally included
         if (package_dir / "weights" / "pytorch" / "model.safetensors").exists():
-            print("✅ Weights found (will be excluded from distribution)")
+            print("Weights found under package directory (expected for local development)")
 
-    print("✅ Package structure validation passed")
+    print("Package structure validation passed")
     return True
 
 
 def update_version(version):
-    """Update version in pyproject.toml."""
-    print(f"📝 Updating version to {version}...")
+    """Update version in pyproject.toml and __init__.py."""
+    print(f"Updating version to {version}...")
 
-    pyproject_path = Path("familyos_ultrabert/pyproject.toml")
-    content = pyproject_path.read_text()
+    pyproject_content = PYPROJECT_PATH.read_text(encoding="utf-8")
+    init_content = INIT_PATH.read_text(encoding="utf-8")
 
-    # Update version line
     import re
 
-    new_content = re.sub(r'version = "\d+\.\d+\.\d+"', f'version = "{version}"', content)
+    new_pyproject = re.sub(
+        r'version = "\d+\.\d+\.\d+"',
+        f'version = "{version}"',
+        pyproject_content,
+    )
+    new_init = re.sub(
+        r'__version__ = "\d+\.\d+\.\d+"',
+        f'__version__ = "{version}"',
+        init_content,
+    )
 
-    pyproject_path.write_text(new_content)
-    print(f"✅ Updated version to {version}")
+    PYPROJECT_PATH.write_text(new_pyproject, encoding="utf-8")
+    INIT_PATH.write_text(new_init, encoding="utf-8")
+    print(f"Updated version to {version}")
+
+
+def get_dist_artifacts() -> list[Path]:
+    """Return built wheel and source distribution artifacts."""
+    artifacts = sorted(DIST_DIR.glob("*.whl")) + sorted(DIST_DIR.glob("*.tar.gz"))
+    return artifacts
+
+
+def sha256_file(path: Path) -> str:
+    """Return the SHA256 checksum of a file."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def build_package():
     """Build the package."""
-    print("🔨 Building package...")
+    print("Building package...")
 
-    # Clean previous builds (cross-platform)
-    import shutil
-
-    dist_dir = Path("familyos_ultrabert/dist")
-    build_dir = Path("familyos_ultrabert/build")
+    dist_dir = DIST_DIR
+    build_dir = PACKAGE_DIR / "build"
 
     if dist_dir.exists():
         shutil.rmtree(dist_dir)
@@ -101,20 +132,19 @@ def build_package():
         shutil.rmtree(build_dir)
 
     # Build package
-    run_command([sys.executable, "-m", "build"], cwd="familyos_ultrabert")
+    run_command([sys.executable, "-m", "build"], cwd=str(PACKAGE_DIR))
 
     # Check what was built
-    dist_dir = Path("familyos_ultrabert/dist")
     if not dist_dir.exists():
-        print("❌ Build failed - no dist directory created")
+        print("Build failed - no dist directory created")
         return False
 
     files = list(dist_dir.glob("*"))
     if not files:
-        print("❌ Build failed - no files in dist directory")
+        print("Build failed - no files in dist directory")
         return False
 
-    print("✅ Package built successfully:")
+    print("Package built successfully:")
     for file in files:
         size_mb = file.stat().st_size / (1024 * 1024)
         print(f"   - {file.name} ({size_mb:.1f} MB)")
@@ -124,20 +154,19 @@ def build_package():
 
 def test_package_contents():
     """Test that the package contains the right files and excludes weights."""
-    print("📦 Testing package contents...")
+    print("Testing package contents...")
 
-    dist_dir = Path("familyos_ultrabert/dist")
-    wheel_files = list(dist_dir.glob("*.whl"))
+    wheel_files = list(DIST_DIR.glob("*.whl"))
 
     if not wheel_files:
-        print("❌ No wheel file found")
+        print("No wheel file found")
         return False
 
     wheel_file = wheel_files[0]
 
     # Extract wheel contents to temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
-        run_command(["python", "-m", "zipfile", "-e", str(wheel_file), temp_dir])
+        run_command([sys.executable, "-m", "zipfile", "-e", str(wheel_file), temp_dir])
 
         # Check contents
         contents = []
@@ -149,7 +178,7 @@ def test_package_contents():
         # Check for weights (should not be present)
         weight_files = [f for f in contents if "weights/" in f or "model.safetensors" in f]
         if weight_files:
-            print(f"❌ Weights found in package (should be excluded): {weight_files}")
+            print(f"Weights found in package (should be excluded): {weight_files}")
             return False
 
         # Check for required files
@@ -165,26 +194,25 @@ def test_package_contents():
                 missing.append(required)
 
         if missing:
-            print(f"❌ Missing required files in package: {missing}")
+            print(f"Missing required files in package: {missing}")
             return False
 
-        print("✅ Package contents validated:")
+        print("Package contents validated:")
         print(f"   - Total files: {len(contents)}")
-        print(f"   - No weights included: ✅")
-        print(f"   - Required modules present: ✅")
+        print("   - No weights included: yes")
+        print("   - Required modules present: yes")
 
     return True
 
 
 def test_installation():
     """Test installing the package in a temporary environment."""
-    print("🧪 Testing package installation...")
+    print("Testing package installation...")
 
-    dist_dir = Path("familyos_ultrabert/dist")
-    wheel_files = list(dist_dir.glob("*.whl"))
+    wheel_files = list(DIST_DIR.glob("*.whl"))
 
     if not wheel_files:
-        print("❌ No wheel file found for testing")
+        print("No wheel file found for testing")
         return False
 
     wheel_file = wheel_files[0]
@@ -216,18 +244,96 @@ def test_installation():
         )
 
         if result.returncode != 0:
-            print("❌ Package import failed")
+            print("Package import failed")
             print(f"Error: {result.stderr}")
             return False
 
-        print("✅ Package installation and import successful")
+        print("Package installation and import successful")
 
     return True
 
 
+def generate_checksums() -> Path:
+    """Generate a SHA256 checksum manifest for dist artifacts."""
+    print("Generating checksums...")
+
+    artifacts = get_dist_artifacts()
+    if not artifacts:
+        raise FileNotFoundError("No wheel or source distribution found in dist/")
+
+    checksum_path = DIST_DIR / "SHA256SUMS.txt"
+    lines = [f"{sha256_file(path)}  {path.name}" for path in artifacts]
+    checksum_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"Wrote checksum manifest: {checksum_path}")
+    return checksum_path
+
+
+def write_release_summary(version: str) -> Path:
+    """Write a compact release summary for GitHub assets."""
+    print("Writing release summary...")
+
+    artifacts = get_dist_artifacts()
+    checksum_path = DIST_DIR / "SHA256SUMS.txt"
+    artifact_lines = "\n".join(f"- `{path.name}`" for path in artifacts)
+    checksum_section = ""
+    if checksum_path.exists():
+        checksum_section = f"\n## Checksums\n\n- `SHA256SUMS.txt`\n"
+
+    notes_reference = ""
+    if RELEASE_NOTES_PATH.exists():
+        notes_reference = "\nFor detailed feature notes, see `familyos_ultrabert/RELEASE_NOTES.md`.\n"
+
+    summary = f"""# FamilyOS UltraBERT v{version}
+
+Lightweight release package for FamilyOS UltraBERT. Model weights are downloaded at runtime from `Pkansagra/ultrabert-weights` using `encoder/v2/fp32/`.
+
+## Included release assets
+
+{artifact_lines}
+{checksum_section}
+## Installation
+
+```bash
+pip install familyos_ultrabert-{version}-py3-none-any.whl
+```
+
+## Runtime weight source
+
+- Hugging Face repo: `Pkansagra/ultrabert-weights`
+- Encoder path: `encoder/v2/fp32/`
+- Runtime package: `familyos_ultrabert`
+{notes_reference}"""
+
+    summary_path = DIST_DIR / f"RELEASE_{version}.md"
+    summary_path.write_text(summary, encoding="utf-8")
+    print(f"Wrote release summary: {summary_path}")
+    return summary_path
+
+
+def build_release_bundle(version: str) -> Path:
+    """Create a convenience zip bundle for GitHub Releases."""
+    print("Building release bundle...")
+
+    artifacts = get_dist_artifacts()
+    if not artifacts:
+        raise FileNotFoundError("No wheel or source distribution found in dist/")
+
+    optional_files = [
+        DIST_DIR / "SHA256SUMS.txt",
+        DIST_DIR / f"RELEASE_{version}.md",
+    ]
+    bundle_path = DIST_DIR / f"familyos_ultrabert-{version}-release.zip"
+    with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
+        for path in artifacts + [item for item in optional_files if item.exists()]:
+            bundle.write(path, arcname=path.name)
+
+    print(f"Created release bundle: {bundle_path}")
+    return bundle_path
+
+
 def create_release_notes(version):
     """Generate release notes template."""
-    print("📝 Generating release notes template...")
+    print("Generating release notes template...")
 
     notes = f"""# FamilyOS UltraBERT v{version} Release Notes
 
@@ -281,12 +387,12 @@ pip install familyos-ultrabert=={version}
 
 ---
 
-**Built with care for families** ❤️
+Built with care for families.
 """
 
     notes_path = Path(f"RELEASE_NOTES_v{version}.md")
     notes_path.write_text(notes, encoding="utf-8")
-    print(f"✅ Release notes template created: {notes_path}")
+    print(f"Release notes template created: {notes_path}")
 
 
 def main():
@@ -295,10 +401,25 @@ def main():
     parser.add_argument("--test-install", action="store_true", help="Test package installation")
     parser.add_argument("--skip-build", action="store_true", help="Skip package building")
     parser.add_argument("--create-notes", action="store_true", help="Create release notes template")
+    parser.add_argument(
+        "--generate-checksums",
+        action="store_true",
+        help="Generate SHA256SUMS.txt for built artifacts",
+    )
+    parser.add_argument(
+        "--write-release-summary",
+        action="store_true",
+        help="Write dist/RELEASE_<version>.md for GitHub release assets",
+    )
+    parser.add_argument(
+        "--build-bundle",
+        action="store_true",
+        help="Create a convenience zip bundle containing release artifacts",
+    )
 
     args = parser.parse_args()
 
-    print(f"🚀 Preparing FamilyOS UltraBERT v{args.version} release")
+    print(f"Preparing FamilyOS UltraBERT v{args.version} release")
     print("=" * 60)
 
     # Validate structure
@@ -322,18 +443,27 @@ def main():
         if not test_installation():
             sys.exit(1)
 
+    if args.generate_checksums:
+        generate_checksums()
+
+    if args.write_release_summary:
+        write_release_summary(args.version)
+
+    if args.build_bundle:
+        build_release_bundle(args.version)
+
     # Create release notes
     if args.create_notes:
         create_release_notes(args.version)
 
     print("\n" + "=" * 60)
-    print("✅ Release preparation complete!")
+    print("Release preparation complete")
     print("\nNext steps:")
     print("1. Review and update RELEASE_NOTES.md")
     print("2. Commit changes and push to main branch")
-    print("3. Create GitHub release with tag v{args.version}")
+    print(f"3. Create GitHub release with tag v{args.version}")
     print("4. GitHub Actions will automatically publish to PyPI")
-    print("\nPackage location: familyos_ultrabert/dist/")
+    print(f"\nPackage location: {DIST_DIR}")
 
 
 if __name__ == "__main__":

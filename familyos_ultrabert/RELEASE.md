@@ -1,106 +1,91 @@
-# FamilyOS UltraBERT v2 - Release Guide
+# FamilyOS UltraBERT Release Guide
 
-## Package Contents
+## Release model
 
-- **familyos_ultrabert-2.0.0-py3-none-any.whl** (~1.6GB)
-  - Python code (inference engines, labels)
-  - PyTorch weights (620MB pruned model)
-  - ONNX models (12 quantized, ~150MB each)
+FamilyOS UltraBERT releases are lightweight package releases.
 
-## Installation Options
+- The wheel and source distribution contain Python code only.
+- Runtime weights are downloaded from Hugging Face.
+- Current encoder source of truth: `Pkansagra/ultrabert-weights` at `encoder/v2/fp32/`.
 
-### Option 1: Install from Wheel File (Recommended)
+## Release artifacts
 
-Download the wheel from GitHub Releases and install:
+A standard release should produce these files under `familyos_ultrabert/dist/`:
+
+- `familyos_ultrabert-<version>-py3-none-any.whl`
+- `familyos_ultrabert-<version>.tar.gz`
+- `SHA256SUMS.txt`
+- `RELEASE_<version>.md`
+- `familyos_ultrabert-<version>-release.zip`
+
+The zip bundle is a convenience asset for GitHub Releases. It should contain the wheel, source distribution, checksums, and release summary.
+
+## Build and validation
+
+From the repository root, run:
 
 ```bash
-# Download wheel from GitHub Releases
-pip install familyos_ultrabert-2.0.0-py3-none-any.whl
-
-# With PyTorch GPU support
-pip install familyos_ultrabert-2.0.0-py3-none-any.whl torch
-
-# With ONNX CPU support
-pip install familyos_ultrabert-2.0.0-py3-none-any.whl onnxruntime
+python scripts/prepare_release.py --version 4.0.2 --test-install --generate-checksums --write-release-summary --build-bundle
 ```
 
-### Option 2: Install from Source (Requires Full Repo)
+This will:
+
+1. Validate package structure
+2. Build the wheel and source distribution
+3. Verify weights are excluded from the package
+4. Smoke-test installation in a clean virtual environment
+5. Generate checksums
+6. Write a GitHub-friendly release summary
+7. Create a convenience zip bundle
+
+## GitHub release flow
+
+1. Ensure the runtime weights are already published to Hugging Face.
+2. Commit and push the release-ready repository state.
+3. Create and push the tag:
+
+```bash
+git tag -a v4.0.2 -m "FamilyOS UltraBERT v4.0.2"
+git push origin v4.0.2
+```
+
+1. Publish the GitHub release for that tag.
+
+The GitHub Actions workflow in `.github/workflows/release.yml` will:
+
+- rebuild the package
+- run the release prep script
+- publish the package to PyPI
+- attach the wheel, source distribution, checksum file, release summary, and zip bundle to the GitHub release
+
+## Manual installation examples
+
+Install from a release wheel:
+
+```bash
+pip install familyos_ultrabert-4.0.2-py3-none-any.whl
+```
+
+Install with PyTorch support:
+
+```bash
+pip install familyos_ultrabert-4.0.2-py3-none-any.whl torch
+```
+
+Install from source:
 
 ```bash
 git clone https://github.com/Pkansagra-hub/Family_osModernBERT.git
 cd Family_osModernBERT
-pip install ./familyos_ultrabert[all]
+pip install ./familyos_ultrabert[pytorch]
 ```
 
-Note: Source installation requires `modeling_studio` for PyTorch backend.
+## Notes
 
-## Creating a GitHub Release
-
-1. **Tag the release:**
-   ```bash
-   git tag -a v2.0.0 -m "FamilyOS UltraBERT v2.0.0"
-   git push origin v2.0.0
-   ```
-
-2. **Create release on GitHub:**
-   - Go to: https://github.com/Pkansagra-hub/Family_osModernBERT/releases/new
-   - Select tag: v2.0.0
-   - Title: "FamilyOS UltraBERT v2.0.0"
-   - Upload: `familyos_ultrabert/dist/familyos_ultrabert-2.0.0-py3-none-any.whl`
-
-3. **Release Notes Template:**
-   ```markdown
-   ## FamilyOS UltraBERT v2.0.0
-
-   High-performance multi-task NLP for family communication analysis.
-
-   ### Features
-   - 12 NLP capabilities in one model
-   - PyTorch (GPU) and ONNX (CPU) backends
-   - 155M parameters, 15% pruned
-   - < 20ms latency for 12 capabilities on GPU
-
-   ### Capabilities
-   - Sentiment (5-class)
-   - Emotions (44 labels)
-   - Safety (GREEN/AMBER/RED/CRISIS)
-   - NER (family + general)
-   - Intent, Ingress, Temporal, Relation, NLI
-   - 768-dim embeddings
-
-   ### Installation
-   ```bash
-   pip install familyos_ultrabert-2.0.0-py3-none-any.whl torch
-   ```
-
-   ### Quick Start
-   ```python
-   from familyos_ultrabert import UltraBERT
-   model = UltraBERT.load()
-   result = model.analyze("Mom picked up Panda from school!")
-   print(result["sentiment"])  # very_positive
-   ```
-   ```
-
-## Private Distribution
-
-For private/internal distribution without publishing to PyPI:
-
-1. **Host on private server:**
-   ```bash
-   pip install https://your-server.com/wheels/familyos_ultrabert-2.0.0-py3-none-any.whl
-   ```
-
-2. **Copy wheel file directly:**
-   ```bash
-   pip install /path/to/familyos_ultrabert-2.0.0-py3-none-any.whl
-   ```
-
-3. **Use requirements.txt with URL:**
-   ```
-   familyos_ultrabert @ https://your-server.com/wheels/familyos_ultrabert-2.0.0-py3-none-any.whl
-   ```
+- Keep `familyos_ultrabert/RELEASE_NOTES.md` as the cumulative feature log.
+- Treat `familyos_ultrabert/dist/RELEASE_<version>.md` as the per-release asset summary.
+- Do not bundle local model weights into the wheel or source distribution.
 
 ## License
 
-Proprietary - All Rights Reserved. See LICENSE for details.
+Proprietary - All Rights Reserved. See `LICENSE` for details.
