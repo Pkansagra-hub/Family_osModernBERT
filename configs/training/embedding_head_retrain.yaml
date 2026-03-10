@@ -86,12 +86,12 @@ training:
   adam_epsilon: 1.0e-8
   max_grad_norm: 1.0
 
-  # Mixed Precision (A100 optimized)
+  # Mixed Precision (A100/H100 80GB optimized)
   bf16: true
   fp16: false
-  tf32: true
+  tf32: true                     # ~2x matmul speedup on A100/H100
 
-  # Flash Attention (A100 feature)
+  # Flash Attention 2 (A100/H100 feature - ~2x attention speedup)
   flash_attention: true
 
   # EMA and Early Stopping
@@ -117,23 +117,24 @@ training:
 
   # Schedule
   lr_scheduler_type: cosine   # Cosine decay works well for contrastive learning
-  warmup_steps: 500
+  warmup_steps: 200           # Shorter warmup - fewer total steps with huge batch
   warmup_ratio: 0.0
 
   # Training duration
-  # ~538K triplets (521K silver + 16K hard negatives)
-  # 3 epochs at batch_size=128 = ~12,600 steps
-  num_epochs: 3
+  # ~287K triplets (262K silver + 25K hard negatives)
+  # 5 epochs at batch_size=2048 = ~700 steps total
+  num_epochs: 5
   max_steps: -1
 
   # Validation split
   val_split: 0.1
 
-  # Batch size - contrastive learning benefits from large batches
-  # More in-batch negatives = better gradient signal
-  # Frozen encoder + 6.5M head params = can fit large batch
-  batch_size: 128
-  gradient_accumulation_steps: 4  # Effective batch = 512
+  # Batch size - 80GB GPU unlocks massive real batches
+  # Contrastive learning scales directly with batch size:
+  # 2048 in-batch negatives >> 128 for gradient quality
+  # Frozen encoder + 6.5M head params = easily fits in 80GB
+  batch_size: 2048
+  gradient_accumulation_steps: 1  # No accumulation needed - real large batch
 
   # Evaluation & saving
   eval_steps: 500
@@ -157,8 +158,8 @@ data:
   # Max sequence length (embedding texts are typically short)
   max_length: 128
 
-  # Number of data loader workers
-  num_workers: 8
+  # Number of data loader workers (16 for A100 servers with fast NVMe)
+  num_workers: 16
 
   # Embedding triplet data sources (paths relative to data root)
   # Format: {"anchor": "...", "positive": "...", "negative": "..."}
