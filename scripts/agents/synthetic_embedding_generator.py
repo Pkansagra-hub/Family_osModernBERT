@@ -33,6 +33,7 @@ import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+from enum import Enum
 from pathlib import Path
 from queue import Queue
 
@@ -115,11 +116,24 @@ DELAY_BETWEEN_REQUESTS = float(
 # Paths - use environment variable with fallback to script location
 BASE_DIR = Path(os.environ.get("FAMILYOS_BASE_DIR", Path(__file__).resolve().parents[2]))
 OUTPUT_DIR = BASE_DIR / "data" / "familyos" / "embeddings" / "silver_synthetic"
+HARD_NEG_OUTPUT_DIR = BASE_DIR / "data" / "familyos" / "embeddings" / "hard_negatives"
 PROGRESS_FILE = OUTPUT_DIR / "progress.json"
 HASH_INDEX_FILE = OUTPUT_DIR / "hash_index.jsonl"
 
 # Processing settings
 SAMPLES_PER_REQUEST = 15  # Generate 15 triplets per API call
+
+
+# =============================================================================
+# Generation Mode
+# =============================================================================
+
+
+class GenerationMode(Enum):
+    """Controls whether triplets use cross-cluster or same-cluster negatives."""
+
+    CROSS_CLUSTER = "cross_cluster"  # Original: negatives from different cluster
+    HARD_NEGATIVE = "hard_negative"  # New: same-cluster hard negatives
 
 
 # =============================================================================
@@ -264,6 +278,168 @@ Start output immediately:"""
 
 
 # =============================================================================
+# Hard Negative System Prompt - Same-Cluster Negatives
+# =============================================================================
+
+HARD_NEGATIVE_SYSTEM_PROMPT = """You are an expert synthetic data generator for FamilyOS embedding training. Your task is to generate high-quality TRIPLETS with HARD NEGATIVES for contrastive learning.
+
+The goal: teach the embedding model to distinguish SUBTLE differences in real family life. Generate content from the perspective of REAL PEOPLE living messy, overlapping lives -- not isolated topic categories.
+
+## TASK: Generate Hard Negative Embedding Triplets
+
+Each triplet contains:
+- **anchor**: A realistic family-related message -- messy, natural, often touching multiple life areas at once
+- **positive**: A semantically SIMILAR message (paraphrase of anchor, same event/person/situation)
+- **negative**: A HARD NEGATIVE that is superficially similar but differs in WHO, WHEN, HOW-IT-FEELS, WHETHER-IT-HAPPENED, HOW-MANY, or WHY
+- **hard_negative_type**: One of: entity_swap, temporal_shift, sentiment_flip, same_topic_different_event, negation, quantifier_change, causality_flip
+- **anchor_cluster**: A descriptive tag for the life situation (e.g., "school_morning_chaos", "aging_parent_health", "teen_rebellion")
+- **negative_cluster**: MUST be the SAME as anchor_cluster
+
+## OUTPUT FORMAT
+
+Generate triplets in this exact JSON format (one per line, JSONL):
+
+```json
+{"anchor": "<message>", "positive": "<paraphrase of anchor>", "negative": "<hard negative>", "anchor_cluster": "<tag>", "negative_cluster": "<SAME tag>", "hard_negative_type": "<type>"}
+```
+
+## HARD NEGATIVE TYPES (distribute roughly evenly across all 7)
+
+### 1. entity_swap (~14%)
+Same sentence structure, swap the family member or person.
+- Anchor: "Grandma called while I was making dinner, asked about Ethan's fever"
+- Negative: "Grandpa called while I was making dinner, asked about Lily's fever"
+The model must learn that WHO matters, not just the action.
+
+### 2. temporal_shift (~14%)
+Same event, different time frame.
+- Anchor: "Took the kids to Central Park today, they loved the playground"
+- Negative: "We used to take the kids to Central Park every Sunday before we moved"
+The model must learn that WHEN matters.
+
+### 3. sentiment_flip (~14%)
+Same topic, opposite emotional valence.
+- Anchor: "Finally felt at peace after talking to Mom about the wedding plans"
+- Negative: "The conversation with Mom about the wedding plans left me in tears"
+The model must learn that emotional tone carries meaning.
+
+### 4. same_topic_different_event (~14%)
+Same life situation, completely unrelated specific event.
+- Anchor: "Ethan's parent-teacher conference went really well, his math improved"
+- Negative: "Had to rush to school because Lily forgot her lunch box again"
+Both are about school-age parenting but describe different events entirely.
+
+### 5. negation (~14%)
+Polarity reversal -- something that happened vs. didn't happen, or always vs. never.
+- Anchor: "I always pick up the kids on time from daycare"
+- Negative: "I never manage to pick up the kids on time from daycare"
+The model must learn that negation flips meaning entirely.
+
+### 6. quantifier_change (~14%)
+Scope shift -- all vs. some, both vs. one, everyone vs. nobody.
+- Anchor: "Both kids loved the Colorado trip, couldn't stop talking about the skiing"
+- Negative: "Only Ethan enjoyed the Colorado trip, Lily was miserable the whole time"
+The model must learn that quantifiers change who is affected.
+
+### 7. causality_flip (~14%)
+Reason reversal -- the cause or motivation is inverted.
+- Anchor: "Skipped Uncle Tom's barbecue because Mom was feeling sick"
+- Negative: "Went to Uncle Tom's barbecue even though Mom was feeling sick"
+The model must learn that causality and reasons carry meaning.
+
+## LIFE-STAGE PERSONAS (rotate through these for diversity)
+
+Generate content from the perspective of real people in these life stages:
+
+1. **Young couple, no kids** - Both working, planning future, navigating parents' expectations, figuring out finances, deciding about kids
+2. **New parents** - Infant, sleep-deprived, breastfeeding battles, career pressure, unsolicited advice from grandparents
+3. **School-age kids** - Homework battles, birthday parties, PTA drama, screen time fights, after-school activities
+4. **Teenagers** - Dating, rebellion, SAT/AP exams, college prep, peer pressure, curfew arguments, social media drama
+5. **Empty nesters** - Rediscovering partnership, health checkups, quiet house, retirement planning, downsizing
+6. **Elderly care** - Medical decisions, memory loss, inheritance disputes, caregiver burnout, assisted living decisions
+7. **Single parent** - Juggling everything alone, custody logistics, co-parenting tensions, dating again, financial stress
+8. **Multi-generational household** - Grandparents helping, boundary issues, different parenting styles clashing, shared expenses
+9. **Military / long-distance family** - Deployments, video calls, missing milestones, reintegration stress, moving every few years
+10. **Blended family** - Step-siblings, loyalty conflicts, new dynamics, "you're not my real parent", custody schedules, holiday juggling
+
+## CULTURAL DISTRIBUTION (~60% Western, ~25% South Asian, ~15% other)
+
+Primary (generate MOST content here):
+- **Western nuclear**: Mom, Dad, Grandma, Grandpa, Uncle, Aunt, soccer practice, Thanksgiving, Christmas, summer camp, prom, college visits
+- **Western diverse**: Single moms, divorced dads, same-sex parents, foster families, military families
+
+Secondary (generate SOME content here):
+- **South Asian**: Amma, Appa, Dadi, Nani, Diwali, joint family dynamics, arranged marriage discussions
+- **Latino**: Abuela, Abuelo, Tia, Tio, quinceanera, Sunday family dinners, bilingual households
+
+Tertiary (generate a FEW for variety):
+- **East Asian diaspora**: strict academics, filial piety, Lunar New Year, Tiger Mom stereotypes vs reality
+- **African American**: Big Mama, church family, cookouts, generational wisdom, extended kin networks
+- **Mixed heritage**: Navigating two cultures, code-switching, identity questions, holiday conflicts
+
+## EXAMPLES
+
+### entity_swap
+```json
+{"anchor": "Grandma called during dinner to ask if Ethan's fever came down", "positive": "Grandmother rang while we were eating to check on my son's temperature", "negative": "Grandpa called during dinner to ask if Lily's cough got better", "anchor_cluster": "grandparent_health_check", "negative_cluster": "grandparent_health_check", "hard_negative_type": "entity_swap"}
+```
+
+### temporal_shift
+```json
+{"anchor": "Rushed Mom to the ER at 3 AM, her chest pain was scaring us", "positive": "Had to take my mother to the hospital in the middle of the night for chest pain", "negative": "Mom's chest pain episode at the ER last Thanksgiving was the worst night of my life", "anchor_cluster": "parent_medical_emergency", "negative_cluster": "parent_medical_emergency", "hard_negative_type": "temporal_shift"}
+```
+
+### sentiment_flip
+```json
+{"anchor": "Thanksgiving dinner actually went well for once, no family drama", "positive": "Surprised that our big holiday meal was peaceful and everyone got along", "negative": "Another Thanksgiving ruined by Aunt Karen's passive-aggressive comments about my cooking", "anchor_cluster": "holiday_family_meals", "negative_cluster": "holiday_family_meals", "hard_negative_type": "sentiment_flip"}
+```
+
+### same_topic_different_event
+```json
+{"anchor": "Spent two hours helping Lily with her science project on volcanoes", "positive": "Was up late working on my daughter's school volcano project with her", "negative": "Got a call from Ethan's teacher saying he hasn't submitted homework in two weeks", "anchor_cluster": "school_age_parenting", "negative_cluster": "school_age_parenting", "hard_negative_type": "same_topic_different_event"}
+```
+
+### negation
+```json
+{"anchor": "Dad always remembers to call on my birthday, even from overseas", "positive": "My father never forgets my birthday, calls me from abroad every year", "negative": "Dad forgot to call on my birthday this year, first time ever", "anchor_cluster": "long_distance_parent", "negative_cluster": "long_distance_parent", "hard_negative_type": "negation"}
+```
+
+### quantifier_change
+```json
+{"anchor": "All three kids passed their exams with flying colors this semester", "positive": "Every one of my children did brilliantly in their school exams", "negative": "Only the eldest passed well, the younger two barely scraped through", "anchor_cluster": "kids_academics", "negative_cluster": "kids_academics", "hard_negative_type": "quantifier_change"}
+```
+
+### causality_flip
+```json
+{"anchor": "Cancelled the beach trip because Grandma's hip surgery got scheduled", "positive": "Had to drop our vacation plans since grandmother needs an operation", "negative": "Went ahead with the beach trip despite Grandma's hip surgery being scheduled", "anchor_cluster": "family_vs_plans", "negative_cluster": "family_vs_plans", "hard_negative_type": "causality_flip"}
+```
+
+---
+
+## IMPORTANT RULES
+
+1. **SAME CLUSTER** - anchor_cluster and negative_cluster MUST be the SAME tag
+2. **NATURAL TAGS** - Use descriptive life-situation tags, not rigid category names. Tags like "school_morning_chaos", "aging_parent_decisions", "teen_dating_drama" are all valid
+3. **DIFFERENT EVENT/PERSON/SENTIMENT/POLARITY** - The negative must differ in WHO, WHEN, HOW-IT-FEELS, WHETHER, HOW-MANY, or WHY
+4. **DISTRIBUTE TYPES** - Generate roughly equal amounts across all 7 hard negative types
+5. **ROTATE PERSONAS** - Cycle through different life stages and cultural backgrounds
+6. **MESSY REALISM** - Real family messages overlap topics. "Mom called while I was cooking, asked about Ethan's fever, and reminded me about the insurance renewal" touches 4 life areas. Generate content like THIS
+7. **WESTERN PRIMARY** - ~60% of content should use Western family terms (Mom, Dad, Grandma, Grandpa, Uncle, Aunt). Mix in other cultures for the rest
+8. **KINSHIP TERMS** - Use culturally appropriate terms: Mom, Dad, Grandma, Grandpa, Uncle, Aunt, step-dad, half-sister, ex-husband, and for diversity: abuela, nana, papa, amma, dadi
+9. **VARIED LENGTH** - Mix short (8-15 words) and longer (25-40 words) messages
+10. **hard_negative_type REQUIRED** - Every triplet must specify which of the 7 types it is
+
+---
+
+## OUTPUT
+
+Generate the requested number of triplets in JSONL format.
+One complete JSON object per line. No markdown, no explanations.
+Each line must have: anchor, positive, negative, anchor_cluster, negative_cluster, hard_negative_type
+Start output immediately:"""
+
+
+# =============================================================================
 # Cluster Distribution Analyzer for Embedding Triplets
 # =============================================================================
 
@@ -318,8 +494,8 @@ def load_current_cluster_distribution() -> dict:
     from collections import Counter
 
     output_dirs = [
-        Path("D:/Modeling_studio/data/familyos/embeddings/silver"),
-        Path("D:/Modeling_studio/data/familyos/embeddings/gold"),
+        Path("D:/Modeling_studio/data/familyos/embeddings/silver_synthetic"),
+        Path("D:/Modeling_studio/data/familyos/embeddings/hard_negatives"),
     ]
 
     stats = {
@@ -474,13 +650,39 @@ def refresh_prompts_cache(num_workers: int = 20, force_reload_stats: bool = Fals
         logger.info(f"Refreshed {num_workers} worker prompts based on current cluster gaps")
 
 
+# Life-stage personas for hard negative mode worker rotation
+_HARD_NEGATIVE_PERSONAS = [
+    "A 34-year-old mother in suburban Chicago, two school-age kids (Ethan 8, Lily 5), husband works long hours. Generate moments from HER week -- school runs, homework fights, PTA politics, missing husband at dinner, juggling work-from-home calls while kids scream.",
+    "A 45-year-old divorced single father in Austin raising a teenage daughter (Sophie 15). Navigating her rebellion, SAT prep pressure, dating questions, custody weekends with his ex, and his own loneliness. His mother (Grandma Jean) helps sometimes.",
+    "A 29-year-old couple in Denver, no kids yet. Both working demanding jobs, debating when to start a family, navigating student loan debt, dealing with in-law pressure about grandchildren, weekend brunches vs saving for a house.",
+    "A 68-year-old retired nurse (Grandma Ruth) in Florida. Three grandchildren she adores, son and daughter-in-law both working, she babysits twice a week. Knee replacement recovery, evening walks, FaceTiming grandkids, worried about her will and estate.",
+    "A 38-year-old working mother in Portland, her mother-in-law moved in after hip surgery. Morning chaos getting kids to school, office guilt, MIL's constant opinions on parenting, teenager's phone addiction, planning summer vacation nobody agrees on.",
+    "A 42-year-old military wife in Virginia, husband deployed overseas. Running the household solo, kids (10, 7) acting out because they miss Dad, video calls at odd hours, managing finances alone, dreading another school transfer.",
+    "A 52-year-old man in Boston caring for his mother with dementia. Mom forgets names, wanders at night, refuses medications. His sister doesn't help equally. His own kids (college-age) feel neglected. Exploring assisted living options.",
+    "A 36-year-old Latina mother in San Antonio, three kids, tight budget. Abuela lives nearby and helps with childcare. Navigating bilingual household, eldest son struggling in school, husband works two jobs, quincea\u00f1era planning for niece.",
+    "A 40-year-old man in a blended family in Atlanta. His two kids (12, 9) from first marriage, wife's daughter (7) from hers. Step-parenting friction, loyalty conflicts, two different custody schedules, ex-wife drama, making Christmas fair for everyone.",
+    "A 55-year-old empty-nester couple in Minneapolis. Kids left for college, house feels too quiet. Rediscovering their marriage, Dad's cholesterol scares, Mom considering going back to work, debating whether to downsize or keep the family home.",
+]
+
+
 def get_worker_user_prompt(worker_id: int, num_triplets: int = 20) -> str:
     """Get the dynamically generated user prompt for a specific worker.
 
-    The num_triplets parameter is the ONLY place that specifies how many triplets to generate.
-    Dynamic prompts focus on WHAT clusters to generate, this function specifies HOW MANY.
+    For hard negative mode, uses persona-based rotation instead of cluster gap analysis.
+    For cross-cluster mode, uses the original dynamic cluster-gap prompts.
     """
     global _DYNAMIC_PROMPTS_CACHE
+
+    if _GENERATION_MODE == GenerationMode.HARD_NEGATIVE:
+        persona = _HARD_NEGATIVE_PERSONAS[worker_id % len(_HARD_NEGATIVE_PERSONAS)]
+        return (
+            f"Generate exactly {num_triplets} hard negative triplets from this person's life:\n\n"
+            f"PERSONA: {persona}\n\n"
+            f"Generate diverse triplets covering all 7 hard negative types "
+            f"(entity_swap, temporal_shift, sentiment_flip, same_topic_different_event, "
+            f"negation, quantifier_change, causality_flip). "
+            f"Use natural life-situation tags as anchor_cluster, not rigid category names."
+        )
 
     with _PROMPTS_LOCK:
         if _DYNAMIC_PROMPTS_CACHE is None:
@@ -631,23 +833,22 @@ class VertexAIClient:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
 
-        self.api_key = api_key or os.environ.get("GOOGLE_CLOUD_API_KEY")
+        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_CLOUD_API_KEY")
 
         if self.api_key:
+            # Use Gemini AI Studio (direct API key, no IAM needed)
             self.client = genai.Client(  # type: ignore
-                vertexai=True,
-                project=project_id,
-                location=location,
                 api_key=self.api_key,
             )
+            logger.info("[Gemini API] Initialized with API key (AI Studio)")
         else:
+            # Fall back to Vertex AI (requires IAM permissions)
             self.client = genai.Client(  # type: ignore
                 vertexai=True,
                 project=project_id,
                 location=location,
             )
-
-        logger.info("[Vertex AI] Initialized for synthetic generation")
+            logger.info("[Vertex AI] Initialized with ADC credentials")
 
         # Create cache for system prompt
         self.cached_content_name = None
@@ -821,9 +1022,12 @@ class SyntheticDataManager:
                         for line in f:
                             try:
                                 triplet = json.loads(line.strip())
-                                # Hash based on anchor text (primary identifier)
-                                anchor = triplet.get("anchor", "").lower().strip()
-                                triplet_hash = hashlib.md5(anchor.encode()).hexdigest()
+                                dedup_key = "\t".join([
+                                    triplet.get("anchor", "").lower().strip(),
+                                    triplet.get("positive", "").lower().strip(),
+                                    triplet.get("negative", "").lower().strip(),
+                                ])
+                                triplet_hash = hashlib.md5(dedup_key.encode()).hexdigest()
                                 self.seen_hashes.add(triplet_hash)
                             except (json.JSONDecodeError, KeyError):
                                 pass
@@ -864,13 +1068,17 @@ class SyntheticDataManager:
         return max_id
 
     def add_triplets(self, triplets: list[dict]) -> int:
-        """Add triplets to output, deduplicating by anchor text."""
+        """Add triplets to output, deduplicating by anchor+positive+negative."""
         added = 0
 
         with self.lock:
             for triplet in triplets:
-                anchor = triplet.get("anchor", "").lower().strip()
-                triplet_hash = hashlib.md5(anchor.encode()).hexdigest()
+                dedup_key = "\t".join([
+                    triplet.get("anchor", "").lower().strip(),
+                    triplet.get("positive", "").lower().strip(),
+                    triplet.get("negative", "").lower().strip(),
+                ])
+                triplet_hash = hashlib.md5(dedup_key.encode()).hexdigest()
 
                 if triplet_hash in self.seen_hashes:
                     continue
@@ -927,10 +1135,33 @@ class SyntheticDataManager:
 # =============================================================================
 
 
-def validate_triplet(triplet: dict) -> tuple[bool, str]:
-    """Validate an embedding triplet has required fields and valid clusters."""
+VALID_HARD_NEGATIVE_TYPES = {
+    "entity_swap",
+    "temporal_shift",
+    "sentiment_flip",
+    "same_topic_different_event",
+    "negation",
+    "quantifier_change",
+    "causality_flip",
+}
+
+
+def validate_triplet(
+    triplet: dict,
+    mode: GenerationMode = GenerationMode.CROSS_CLUSTER,
+) -> tuple[bool, str]:
+    """Validate an embedding triplet has required fields and valid clusters.
+
+    Args:
+        triplet: The triplet dict to validate.
+        mode: Generation mode - controls cluster relationship validation.
+              CROSS_CLUSTER requires different clusters (original behavior).
+              HARD_NEGATIVE requires same clusters + hard_negative_type field.
+    """
     # Check required fields
     required_fields = ["anchor", "positive", "negative", "anchor_cluster", "negative_cluster"]
+    if mode == GenerationMode.HARD_NEGATIVE:
+        required_fields.append("hard_negative_type")
     for field in required_fields:
         if field not in triplet or not triplet[field]:
             return False, f"Missing or empty field: {field}"
@@ -949,16 +1180,39 @@ def validate_triplet(triplet: dict) -> tuple[bool, str]:
     anchor_cluster = triplet["anchor_cluster"]
     negative_cluster = triplet["negative_cluster"]
 
-    if anchor_cluster not in VALID_CLUSTERS:
-        return False, f"Invalid anchor_cluster: {anchor_cluster}"
-    if negative_cluster not in VALID_CLUSTERS:
-        return False, f"Invalid negative_cluster: {negative_cluster}"
-
-    # Ensure anchor and negative are from DIFFERENT clusters
-    if anchor_cluster == negative_cluster:
-        return False, f"anchor_cluster and negative_cluster must be different: {anchor_cluster}"
+    if mode == GenerationMode.CROSS_CLUSTER:
+        # Cross-cluster mode: strict cluster set validation
+        if anchor_cluster not in VALID_CLUSTERS:
+            return False, f"Invalid anchor_cluster: {anchor_cluster}"
+        if negative_cluster not in VALID_CLUSTERS:
+            return False, f"Invalid negative_cluster: {negative_cluster}"
+        if anchor_cluster == negative_cluster:
+            return False, f"anchor_cluster and negative_cluster must be different: {anchor_cluster}"
+    else:
+        # Hard negative mode: accept any non-empty string as cluster tag
+        if not anchor_cluster or len(anchor_cluster) < 2:
+            return False, "anchor_cluster must be a non-empty tag (2+ chars)"
+        if not negative_cluster or len(negative_cluster) < 2:
+            return False, "negative_cluster must be a non-empty tag (2+ chars)"
+        # Hard negative: anchor and negative must be from the SAME cluster
+        if anchor_cluster != negative_cluster:
+            return False, (
+                f"Hard negative mode requires same cluster, got "
+                f"anchor={anchor_cluster} vs negative={negative_cluster}"
+            )
+        # Validate hard_negative_type
+        hn_type = triplet.get("hard_negative_type", "")
+        if hn_type not in VALID_HARD_NEGATIVE_TYPES:
+            return False, (
+                f"Invalid hard_negative_type: {hn_type}. "
+                f"Must be one of: {', '.join(sorted(VALID_HARD_NEGATIVE_TYPES))}"
+            )
 
     return True, ""
+
+
+# Module-level generation mode, set at startup from CLI args
+_GENERATION_MODE: GenerationMode = GenerationMode.CROSS_CLUSTER
 
 
 def parse_triplet_response(response_text: str) -> list[dict]:
@@ -981,7 +1235,7 @@ def parse_triplet_response(response_text: str) -> list[dict]:
                 else:
                     continue
 
-            is_valid, error = validate_triplet(triplet)
+            is_valid, error = validate_triplet(triplet, mode=_GENERATION_MODE)
             if is_valid:
                 valid_triplets.append(triplet)
             else:
@@ -1012,9 +1266,16 @@ class EmbeddingTripletGenerator:
         gcp_location: str = "us-central1",
         vertex_model: str = "gemini-2.5-flash",
         num_parallel: int = 1,
+        mode: GenerationMode = GenerationMode.CROSS_CLUSTER,
     ):
         self.triplets_per_request = triplets_per_request
         self.delay_between_requests = delay_between_requests
+        self.mode = mode
+        self.system_prompt = (
+            HARD_NEGATIVE_SYSTEM_PROMPT
+            if mode == GenerationMode.HARD_NEGATIVE
+            else SYSTEM_PROMPT
+        )
 
         if use_vertex_ai or USE_VERTEX_AI:
             project_id = gcp_project_id or GCP_PROJECT_ID
@@ -1027,7 +1288,7 @@ class EmbeddingTripletGenerator:
                 location=gcp_location or GCP_LOCATION,
                 model_name=vertex_model or VERTEX_MODEL,
                 key_id=0,
-                system_prompt=SYSTEM_PROMPT,
+                system_prompt=self.system_prompt,
                 cache_ttl="86400s",
             )
 
@@ -1058,7 +1319,13 @@ class EmbeddingTripletGenerator:
             ]
             logger.info(f"Using OpenRouter with {len(self.clients)} API keys")
 
-        self.output_manager = SyntheticDataManager()
+        # Use separate output directory for hard negatives
+        output_dir = (
+            HARD_NEG_OUTPUT_DIR
+            if mode == GenerationMode.HARD_NEGATIVE
+            else OUTPUT_DIR
+        )
+        self.output_manager = SyntheticDataManager(output_dir=output_dir)
         self.batch_counter = 0
         self.batch_lock = threading.Lock()
 
@@ -1075,7 +1342,7 @@ class EmbeddingTripletGenerator:
         try:
             response = client.generate(
                 model=MODEL if hasattr(client, "api_key") else client.model_name,
-                system_prompt=SYSTEM_PROMPT,
+                system_prompt=self.system_prompt,
                 user_prompt=user_prompt,
                 temperature=0.85,
             )
@@ -1173,15 +1440,18 @@ class EmbeddingTripletGenerator:
         logger.info("=" * 60)
         logger.info("EMBEDDING TRIPLET GENERATION")
         logger.info("=" * 60)
+        logger.info(f"Mode: {self.mode.value}")
         logger.info(f"Target: {target_triplets:,} triplets")
         logger.info(f"Workers: {len(self.clients)}")
         logger.info(f"Per worker: {triplets_per_worker:,} triplets")
+        logger.info(f"Output: {self.output_manager.output_dir}")
         logger.info("=" * 60)
 
         stats = {
             "start_time": start_time.isoformat(),
             "target_triplets": target_triplets,
             "generated_triplets": 0,
+            "mode": self.mode.value,
         }
 
         stop_event = threading.Event()
@@ -1236,46 +1506,63 @@ class EmbeddingTripletGenerator:
 
 
 def show_stats():
-    """Show generation statistics."""
-    if not OUTPUT_DIR.exists():
-        print("No embedding triplets generated yet.")
-        return
+    """Show generation statistics for both output directories."""
+    for label, directory in [
+        ("CROSS-CLUSTER (silver_synthetic)", OUTPUT_DIR),
+        ("HARD NEGATIVES (hard_negatives)", HARD_NEG_OUTPUT_DIR),
+    ]:
+        if not directory.exists():
+            print(f"\n{label}: No data generated yet.")
+            continue
 
-    shards = list(OUTPUT_DIR.glob("*.jsonl"))
+        shards = list(directory.glob("*.jsonl"))
+        shards = [s for s in shards if s.name != "hash_index.jsonl"]
 
-    if not shards:
-        print("No embedding triplets found.")
-        return
+        if not shards:
+            print(f"\n{label}: No triplet files found.")
+            continue
 
-    # Load all triplets for stats
-    all_triplets = []
-    for shard in sorted(shards):
-        with open(shard, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    all_triplets.append(json.loads(line.strip()))
-                except (json.JSONDecodeError, KeyError):
-                    pass
+        all_triplets = []
+        for shard in sorted(shards):
+            with open(shard, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        all_triplets.append(json.loads(line.strip()))
+                    except (json.JSONDecodeError, KeyError):
+                        pass
 
-    total = len(all_triplets)
-    anchor_clusters = Counter(t.get("anchor_cluster", "") for t in all_triplets)
-    negative_clusters = Counter(t.get("negative_cluster", "") for t in all_triplets)
+        total = len(all_triplets)
+        if total == 0:
+            print(f"\n{label}: 0 triplets.")
+            continue
+
+        anchor_clusters = Counter(t.get("anchor_cluster", "") for t in all_triplets)
+        negative_clusters = Counter(t.get("negative_cluster", "") for t in all_triplets)
+
+        print("\n" + "=" * 60)
+        print(f"{label}")
+        print("=" * 60)
+        print(f"\nTotal triplets: {total:,}")
+        print(f"Number of shards: {len(shards)}")
+
+        print("\nAnchor Cluster Distribution:")
+        for cluster, count in anchor_clusters.most_common():
+            print(f"  {cluster:25s} {count:6,} ({100*count/total:5.1f}%)")
+
+        print("\nNegative Cluster Distribution:")
+        for cluster, count in negative_clusters.most_common()[:10]:
+            print(f"  {cluster:25s} {count:6,} ({100*count/total:5.1f}%)")
+
+        # Show hard negative type distribution if present
+        hn_types = Counter(
+            t.get("hard_negative_type", "") for t in all_triplets if t.get("hard_negative_type")
+        )
+        if hn_types:
+            print("\nHard Negative Type Distribution:")
+            for hn_type, count in hn_types.most_common():
+                print(f"  {hn_type:30s} {count:6,} ({100*count/total:5.1f}%)")
 
     print("\n" + "=" * 60)
-    print("EMBEDDING TRIPLET STATISTICS")
-    print("=" * 60)
-    print(f"\nTotal triplets: {total:,}")
-    print(f"Number of shards: {len(shards)}")
-
-    print("\nAnchor Cluster Distribution:")
-    for cluster, count in anchor_clusters.most_common():
-        print(f"  {cluster:25s} {count:6,} ({100*count/total:5.1f}%)")
-
-    print("\nNegative Cluster Distribution:")
-    for cluster, count in negative_clusters.most_common()[:10]:
-        print(f"  {cluster:25s} {count:6,} ({100*count/total:5.1f}%)")
-
-    print("=" * 60)
 
 
 def main():
@@ -1289,6 +1576,17 @@ def main():
     )
     gen_parser.add_argument(
         "--triplets-per-request", type=int, default=20, help="Triplets per API call"
+    )
+    gen_parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["cross_cluster", "hard_negative"],
+        default="cross_cluster",
+        help=(
+            "Generation mode: cross_cluster (default, negatives from different cluster) "
+            "or hard_negative (same-cluster negatives with entity_swap, temporal_shift, "
+            "sentiment_flip, same_topic_different_event, negation, quantifier_change, causality_flip)"
+        ),
     )
 
     # Speed control options
@@ -1349,6 +1647,19 @@ def main():
 
         logger.info(f"Speed settings: {args.speed} preset, delay={delay}s, rpm={rpm}")
 
+        # Set module-level generation mode so parse_triplet_response uses it
+        global _GENERATION_MODE
+        mode = GenerationMode(args.mode)
+        _GENERATION_MODE = mode
+
+        logger.info(f"Generation mode: {mode.value}")
+        if mode == GenerationMode.HARD_NEGATIVE:
+            logger.info(
+                "Hard negative mode: generating same-cluster negatives "
+                "(entity_swap, temporal_shift, sentiment_flip, same_topic_different_event, "
+                "negation, quantifier_change, causality_flip)"
+            )
+
         generator = EmbeddingTripletGenerator(
             triplets_per_request=args.triplets_per_request,
             delay_between_requests=delay,
@@ -1357,6 +1668,7 @@ def main():
             gcp_location=args.gcp_location,
             vertex_model=args.vertex_model,
             num_parallel=args.num_parallel,
+            mode=mode,
         )
 
         stats = generator.run(target_triplets=args.count)

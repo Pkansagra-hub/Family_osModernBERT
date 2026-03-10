@@ -1,0 +1,96 @@
+ULTRABERT EMBEDDING EVALUATION REPORT
+
+MODEL: familyos_ultrabert(pytorch)
+DIMENSION: 768
+CORPUS SIZE: 500 tools (0 multi-domain flagged)
+SELECTED TEMPLATE: hardwired_hybrid_sentence (Hardwired: natural sentence + compact key anchors)
+
+TEMPLATE ABLATION
+- hardwired_hybrid_sentence: p@5(no-hint)=0.453, mrr(no-hint)=0.523, silhouette=0.276, ivf@10=0.981
+
+INPUT STYLE ABLATION (which sentence format works best)
+- structured_kv: p@5=0.350, mrr=0.467, tpr@10=0.527, dmr@10=0.841, omr@10=0.665
+- hybrid_sentence: p@5=0.453, mrr=0.510, tpr@10=0.643, dmr@10=0.919, omr@10=0.696
+- natural_sentence: p@5=0.354, mrr=0.391, tpr@10=0.477, dmr@10=0.849, omr@10=0.516
+Best input style for UltraBERT embeddings: hybrid_sentence (Natural sentence + compact key anchors)
+
+CLUSTER QUALITY
+Silhouette: prefixed=0.276, raw=0.178, delta=+0.098
+Davies-Bouldin: prefixed=2.041, raw=2.652, delta=-0.611
+Calinski-Harabasz: prefixed=35.16, raw=26.07, delta=+9.09
+
+RETRIEVAL PRECISION
+P@1: prefixed_hint=0.41, prefixed_no_hint=0.46, raw_no_hint=0.31
+P@3: prefixed_hint=0.42, prefixed_no_hint=0.46, raw_no_hint=0.31
+P@5: prefixed_hint=0.42, prefixed_no_hint=0.45, raw_no_hint=0.31
+P@10: prefixed_hint=0.30, prefixed_no_hint=0.30, raw_no_hint=0.21
+MRR: prefixed_hint=0.471, prefixed_no_hint=0.523, raw_no_hint=0.358
+NDCG@10: prefixed_hint=0.740, prefixed_no_hint=0.730, raw_no_hint=0.508
+Exact@10: prefixed_hint=0.063, prefixed_no_hint=0.064, raw_no_hint=0.044
+Exact MRR: prefixed_hint=0.173, prefixed_no_hint=0.193, raw_no_hint=0.137
+Gold in Top-10: prefixed_hint=0.626, prefixed_no_hint=0.640, raw_no_hint=0.440
+Usable in Top-10: prefixed_hint=0.694, prefixed_no_hint=0.696, raw_no_hint=0.514
+Domain in Top-10: prefixed_hint=0.938, prefixed_no_hint=0.919, raw_no_hint=0.669
+Operation in Top-10: prefixed_hint=0.694, prefixed_no_hint=0.696, raw_no_hint=0.514
+
+RERANKED RETRIEVAL (domain + operation + token overlap)
+P@5: reranked=0.943, baseline=0.453
+MRR: reranked=0.954, baseline=0.523
+Tool Present Rate (exact in top-10): reranked=0.957, baseline=0.640
+Domain in Top-10: reranked=0.983, baseline=0.919
+Operation in Top-10: reranked=0.963, baseline=0.696
+
+DOMAIN-FILTERED RETRIEVAL (use caller domain as hard filter)
+P@5: domain_filter=0.537, baseline=0.453
+MRR: domain_filter=0.601, baseline=0.523
+Tool Present Rate (exact in top-10): domain_filter=0.756, baseline=0.640
+Domain in Top-10: domain_filter=1.000, baseline=0.919
+Operation in Top-10: domain_filter=0.787, baseline=0.696
+
+HYBRID RETRIEVAL (domain sub-index + vector/BM25 fusion + ontology)
+P@5: hybrid=0.902, baseline=0.453
+MRR: hybrid=0.919, baseline=0.523
+Tool Present Rate (exact in top-10): hybrid=0.975, baseline=0.640
+Domain in Top-10: hybrid=1.000, baseline=0.919
+Operation in Top-10: hybrid=0.977, baseline=0.696
+
+FUSION CONFIG (active run)
+hybrid_vector_weight=0.800
+hybrid_bm25_weight=0.200
+rerank_domain_bonus=0.200
+rerank_operation_token_bonus=0.200
+rerank_token_overlap_weight=0.200
+rerank_candidate_k=100
+
+LLM SELECTION DASHBOARD (prefixed_no_hint)
+Tool Present Rate (TPR, exact in top-10): baseline=0.640, reranked=0.957, delta=+0.318
+Domain Match Rate (DMR, domain in top-10): baseline=0.919, reranked=0.983, delta=+0.064
+Operation Match Rate (OMR, operation in top-10): baseline=0.696, reranked=0.963, delta=+0.267
+Tool Present Rate with domain filter: 0.756
+Domain Match Rate with domain filter: 1.000
+Operation Match Rate with domain filter: 0.787
+Tool Present Rate with hybrid: 0.975
+Domain Match Rate with hybrid: 1.000
+Operation Match Rate with hybrid: 0.977
+Schema Quality Score (SQS): 0.958
+
+STEP 2 ONTOLOGY MAPPING QA
+Sub-cluster mapping coverage: 100/100 (1.000)
+Query token ontology coverage: 574/606 (0.947)
+Top operation verbs: create:10, list:10, get:9, update:7, delete:6, add:5, search:5, send:5
+Unmapped sub-clusters (preview): none
+
+ADVERSARIAL DISCRIMINATION
+Mean similarity raw=0.000
+Mean similarity prefixed=0.000
+Discrimination gain=+0.000
+
+MULTI-DOMAIN PLACEMENT
+Mean domain representation ratio=0.00 / 0.00
+Mean centroid separation margin=+0.000
+
+IVF SIMULATION
+IVF recall@10 (nlist=12, nprobe=10)=0.981
+
+VERDICT
+POOR

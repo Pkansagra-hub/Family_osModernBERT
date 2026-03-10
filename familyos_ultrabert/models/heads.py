@@ -580,23 +580,44 @@ class TokenClassificationHead(BaseHead):
 # =============================================================================
 
 
+class _GatedProjection(nn.Module):
+    """SwiGLU-style gated projection for embedding compression."""
+
+    def __init__(self, in_dim: int, out_dim: int, intermediate_dim: int):
+        super().__init__()
+        self.gate_proj = nn.Linear(in_dim, intermediate_dim, bias=False)
+        self.up_proj = nn.Linear(in_dim, intermediate_dim, bias=False)
+        self.down_proj = nn.Linear(intermediate_dim, out_dim, bias=False)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.dropout(self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x)))
+
+
 class EmbeddingHead(nn.Module):
     """
-    Head for generating sentence embeddings.
+    SOTA head for generating sentence embeddings.
 
     Produces dense vector representations suitable for:
         - Semantic similarity
         - Retrieval/search
         - Clustering
 
-    Architecture:
-        hidden_states -> pooling -> [projection] -> [normalize]
+    Architecture (attentive mode - NV-Embed inspired):
+        hidden_states -> latent cross-attention -> FFN refinement
+        -> mean-of-latents -> residual blend with mean pool
+        -> LayerNorm -> SwiGLU gated projection -> L2 normalize
+
+    Architecture (mean/cls/max mode):
+        hidden_states -> pooling -> [linear projection] -> [normalize]
 
     Args:
         hidden_size: Size of encoder hidden states
         output_dim: Output embedding dimension (None = same as hidden_size)
-        pooling: Pooling strategy ('cls', 'mean', 'max')
+        pooling: Pooling strategy ('cls', 'mean', 'max', 'attentive')
         normalize: Whether to L2-normalize output embeddings
+        num_latents: Number of learnable query tokens for latent attention
+        num_attn_heads: Number of attention heads in cross-attention
     """
 
     def __init__(
@@ -605,6 +626,8 @@ class EmbeddingHead(nn.Module):
         output_dim: int | None = None,
         pooling: str = "mean",
         normalize: bool = True,
+        num_latents: int = 8,
+        num_attn_heads: int = 8,
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -612,10 +635,60 @@ class EmbeddingHead(nn.Module):
         self.pooling = pooling
         self.normalize = normalize
 
-        # Optional projection layer
-        if output_dim is not None and output_dim != hidden_size:
+        if pooling == "attentive":
+            # -- Latent Attention Pooling (NV-Embed style) --
+            # Learnable query tokens that cross-attend to the input sequence.
+            # Each latent captures a different semantic aspect.
+            self.latent_queries = nn.Parameter(
+                torch.randn(1, num_latents, hidden_size) * 0.02
+            )
+
+            # Multi-head cross-attention: queries attend to sequence tokens
+            self.cross_attn = nn.MultiheadAttention(
+                embed_dim=hidden_size,
+                num_heads=num_attn_heads,
+                dropout=0.1,
+                batch_first=True,
+            )
+            self.cross_attn_norm = nn.LayerNorm(hidden_size)
+
+            # Feed-forward refinement block (standard transformer FFN)
+            self.latent_ffn = nn.Sequential(
+                nn.Linear(hidden_size, hidden_size * 2),
+                nn.GELU(),
+                nn.Dropout(0.1),
+                nn.Linear(hidden_size * 2, hidden_size),
+                nn.Dropout(0.1),
+            )
+            self.ffn_norm = nn.LayerNorm(hidden_size)
+
+            # Residual blend with mean pool (alpha=0 at init -> sigmoid=0.5)
+            self.alpha = nn.Parameter(torch.zeros(1))
+        else:
+            self.latent_queries = None
+            self.cross_attn = None
+            self.cross_attn_norm = None
+            self.latent_ffn = None
+            self.ffn_norm = None
+            self.alpha = None
+
+        # Projection / Refinement
+        if pooling == "attentive":
+            # Attentive mode always uses SwiGLU refinement
+            # Even at 768->768 this transforms the blended representation
+            # into a sharper embedding space without information loss
+            actual_out = output_dim if (output_dim is not None and output_dim != hidden_size) else hidden_size
+            self.layer_norm = nn.LayerNorm(hidden_size)
+            self.projection = _GatedProjection(
+                in_dim=hidden_size,
+                out_dim=actual_out,
+                intermediate_dim=hidden_size,
+            )
+        elif output_dim is not None and output_dim != hidden_size:
+            self.layer_norm = nn.LayerNorm(hidden_size)
             self.projection = nn.Linear(hidden_size, output_dim)
         else:
+            self.layer_norm = None
             self.projection = None
 
     def pool(
@@ -642,6 +715,41 @@ class EmbeddingHead(nn.Module):
                 hidden_states = hidden_states.masked_fill(mask == 0, -1e9)
             return hidden_states.max(dim=1)[0]
 
+        elif self.pooling == "attentive":
+            # Latent cross-attention pooling (NV-Embed style)
+            batch_size = hidden_states.size(0)
+            queries = self.latent_queries.expand(batch_size, -1, -1)
+
+            # Cross-attention: latent queries attend to sequence tokens
+            key_padding_mask = None
+            if attention_mask is not None:
+                key_padding_mask = attention_mask == 0  # True = ignore
+
+            attn_out, _ = self.cross_attn(
+                query=queries,
+                key=hidden_states,
+                value=hidden_states,
+                key_padding_mask=key_padding_mask,
+            )
+            attn_out = self.cross_attn_norm(attn_out + queries)  # residual + norm
+
+            # FFN refinement
+            ffn_out = self.latent_ffn(attn_out)
+            attn_out = self.ffn_norm(ffn_out + attn_out)  # residual + norm
+
+            # Mean of latent vectors -> single vector
+            attn_pooled = attn_out.mean(dim=1)
+
+            # Residual blend with standard mean pool
+            if attention_mask is not None:
+                mask = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
+                mean_pooled = (hidden_states * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
+            else:
+                mean_pooled = hidden_states.mean(dim=1)
+
+            a = torch.sigmoid(self.alpha)
+            return a * attn_pooled + (1 - a) * mean_pooled
+
         else:
             raise ValueError(f"Unknown pooling strategy: {self.pooling}")
 
@@ -663,8 +771,9 @@ class EmbeddingHead(nn.Module):
         # Pool to single vector
         embeddings = self.pool(hidden_states, attention_mask)
 
-        # Optional projection
+        # Optional projection (with LayerNorm for stability)
         if self.projection is not None:
+            embeddings = self.layer_norm(embeddings)
             embeddings = self.projection(embeddings)
 
         # Optional L2 normalization

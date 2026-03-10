@@ -1,0 +1,21 @@
+MODEL COMPARISON REPORT
+
+SELECTED TEMPLATE
+- UltraBERT: domain_prefix
+- Standard: domain_double_prefix
+
+LLM TOOL SELECTION (baseline prefixed_no_hint)
+- TPR@10: UltraBERT=0.190, Standard=0.269, delta=-0.079
+- DMR@10: UltraBERT=0.732, Standard=1.000, delta=-0.268
+- OMR@10: UltraBERT=0.631, Standard=0.901, delta=-0.270
+
+HYBRID RETRIEVAL
+- TPR@10: UltraBERT=0.300, Standard=0.300, delta=+0.000
+- DMR@10: UltraBERT=1.000, Standard=1.000, delta=+0.000
+- OMR@10: UltraBERT=1.000, Standard=1.000, delta=+0.000
+
+QUALITY
+- P@5 baseline: UltraBERT=0.631, Standard=0.901
+- MRR baseline: UltraBERT=0.639, Standard=0.906
+- P@5 hybrid: UltraBERT=1.000, Standard=1.000
+- MRR hybrid: UltraBERT=1.000, Standard=1.000

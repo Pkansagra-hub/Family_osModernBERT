@@ -1039,7 +1039,10 @@ class FamilyContrastiveLoss(nn.Module):
                 negatives = F.normalize(negatives, p=2, dim=-1)
 
         # Get temperature (use fixed or learned)
-        temperature = self.temperature
+        if self.log_temperature.requires_grad:
+            temperature = self.log_temperature.exp().clamp(min=0.01, max=1.0)
+        else:
+            temperature = self.temperature
 
         # Compute positive similarities
         # [batch_size]

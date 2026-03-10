@@ -1,0 +1,190 @@
+# =============================================================================
+# Embedding Head Retraining Configuration
+# =============================================================================
+# Replace mean-pool EmbeddingHead with SOTA attentive EmbeddingHead
+# (NV-Embed style latent cross-attention + SwiGLU projection)
+# and retrain with InfoNCE loss on hard negative triplets.
+#
+# All other 11 heads + encoder remain FROZEN from checkpoint-8000.
+#
+# Usage:
+#   python scripts/training/train_embedding_head.py \
+#       --config configs/training/embedding_head_retrain.yaml
+#
+#   # Debug mode
+#   python scripts/training/train_embedding_head.py \
+#       --config configs/training/embedding_head_retrain.yaml \
+#       --debug --max_samples 500
+#
+# Output: outputs/embedding-head-v1/
+
+# =============================================================================
+# Encoder Configuration (FROZEN)
+# =============================================================================
+encoder:
+  # Checkpoint with all 12 heads (proven encoder + all capabilities)
+  checkpoint: checkpoints/checkpoint-8000
+
+  # CRITICAL: Freeze encoder - we only train the embedding head
+  freeze: true
+
+  # Hidden size (must match checkpoint)
+  hidden_size: 768
+
+  # Data type for inference (float32 for training stability)
+  dtype: float32
+
+# =============================================================================
+# Embedding Head Configuration
+# =============================================================================
+embedding_head:
+  # Pooling strategy: "attentive" = SOTA latent cross-attention
+  pooling: attentive
+
+  # Output dimension: null = keep full 768 (recommended, no information loss)
+  output_dim: null
+
+  # L2 normalize output embeddings (required for cosine similarity)
+  normalize: true
+
+  # Latent cross-attention parameters
+  num_latents: 8          # Number of learnable query tokens
+  num_attn_heads: 8       # Number of attention heads in cross-attention
+
+# =============================================================================
+# Loss Configuration
+# =============================================================================
+loss:
+  # FamilyContrastiveLoss (InfoNCE with hard negative support)
+  type: infonce
+
+  # Temperature for InfoNCE (lower = sharper similarity distribution)
+  # 0.07 is standard (van den Oord et al. 2018)
+  temperature: 0.07
+
+  # Hard negative weighting (>1.0 = extra penalty for hard negatives)
+  hard_negative_weight: 1.5
+
+  # Learnable temperature (gradient-updated, CLIP-style)
+  # When true, temperature is optimized via gradient descent with separate LR
+  learnable_temperature: true
+  temperature_lr: 1.0e-3    # Separate LR for temperature (no weight decay)
+
+  # Use in-batch negatives in addition to explicit negatives
+  use_in_batch_negatives: true
+
+# =============================================================================
+# Training Configuration
+# =============================================================================
+training:
+  # Optimization (embedding head only - everything else frozen)
+  learning_rate: 2.0e-4       # Head-only training allows higher LR
+  encoder_lr: 0.0             # Encoder is frozen
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-8
+  max_grad_norm: 1.0
+
+  # Mixed Precision (A100 optimized)
+  bf16: true
+  fp16: false
+  tf32: true
+
+  # Flash Attention (A100 feature)
+  flash_attention: true
+
+  # EMA and Early Stopping
+  ema:
+    enabled: true
+
+  early_stopping:
+    enabled: true
+    patience: 5
+
+  # Curriculum Learning: ramp hard negative weight from 0 to full
+  # Epoch 0 = easy only (weight=0), gradually increases to full weight
+  curriculum:
+    enabled: true
+    warmup_epochs: 2         # Reach full hard_negative_weight by epoch 2
+
+  # Matryoshka Representation Learning (Kusupati et al., 2022)
+  # Train at multiple truncated dimensions simultaneously.
+  # Enables flexible deployment at 768/512/256/128 with one model.
+  matryoshka:
+    enabled: true
+    dims: [768, 512, 256, 128]
+
+  # Schedule
+  lr_scheduler_type: cosine   # Cosine decay works well for contrastive learning
+  warmup_steps: 500
+  warmup_ratio: 0.0
+
+  # Training duration
+  # ~538K triplets (521K silver + 16K hard negatives)
+  # 3 epochs at batch_size=128 = ~12,600 steps
+  num_epochs: 3
+  max_steps: -1
+
+  # Validation split
+  val_split: 0.1
+
+  # Batch size - contrastive learning benefits from large batches
+  # More in-batch negatives = better gradient signal
+  # Frozen encoder + 6.5M head params = can fit large batch
+  batch_size: 128
+  gradient_accumulation_steps: 4  # Effective batch = 512
+
+  # Evaluation & saving
+  eval_steps: 500
+  save_steps: 500
+  save_total_limit: 5
+  max_eval_batches: 100
+
+  # Logging
+  logging_steps: 50
+
+  # Reproducibility
+  seed: 42
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  # Root data directory
+  root: data
+
+  # Max sequence length (embedding texts are typically short)
+  max_length: 128
+
+  # Number of data loader workers
+  num_workers: 8
+
+  # Embedding triplet data sources (paths relative to data root)
+  # Format: {"anchor": "...", "positive": "...", "negative": "..."}
+  embedding:
+    # Silver synthetic triplets (cross-cluster negatives, ~521K)
+    # Hard negative triplets (same-cluster negatives: entity_swap, temporal_shift, etc., ~16K)
+    train: familyos/embeddings/silver_synthetic,familyos/embeddings/hard_negatives
+    validation: ""
+
+# =============================================================================
+# Output Configuration
+# =============================================================================
+output:
+  # Output directory for checkpoints and logs
+  # Saves FULL model with all 12 heads (embedding head replaced + retrained)
+  dir: outputs/embedding-head-v1
+
+  save_encoder: true
+  save_heads: true
+  save_optimizer: true
+  save_history: true
+
+# =============================================================================
+# Debug Configuration
+# =============================================================================
+debug:
+  enabled: false
+  max_samples: 1000
+  fast_dev_run: false

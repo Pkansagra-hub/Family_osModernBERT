@@ -1,0 +1,83 @@
+ULTRABERT EMBEDDING EVALUATION REPORT
+
+MODEL: sentence_transformers(sentence-transformers/all-MiniLM-L6-v2)
+DIMENSION: 384
+CORPUS SIZE: 500 tools (500 multi-domain flagged)
+SELECTED TEMPLATE: domain_double_prefix (domain repeated + description + capabilities + tags)
+
+TEMPLATE ABLATION
+- production_baseline: p@5(no-hint)=0.867, mrr(no-hint)=0.872, silhouette=0.480, ivf@10=0.997
+- ifl_v1a: p@5(no-hint)=0.867, mrr(no-hint)=0.875, silhouette=0.469, ivf@10=1.000
+- ifl_v1b: p@5(no-hint)=0.853, mrr(no-hint)=0.874, silhouette=0.500, ivf@10=1.000
+- ifl_v1c: p@5(no-hint)=0.867, mrr(no-hint)=0.873, silhouette=0.512, ivf@10=1.000
+- domain_prefix: p@5(no-hint)=0.900, mrr(no-hint)=0.906, silhouette=0.535, ivf@10=0.990
+- domain_double_prefix: p@5(no-hint)=0.901, mrr(no-hint)=0.906, silhouette=0.561, ivf@10=0.974
+- rich_context: p@5(no-hint)=0.901, mrr(no-hint)=0.905, silhouette=0.544, ivf@10=1.000
+- ifl_contract_v1: p@5(no-hint)=0.901, mrr(no-hint)=0.906, silhouette=0.437, ivf@10=1.000
+
+CLUSTER QUALITY
+Silhouette: prefixed=0.561, raw=0.461, delta=+0.100
+Davies-Bouldin: prefixed=1.227, raw=1.478, delta=-0.251
+Calinski-Harabasz: prefixed=131.18, raw=87.38, delta=+43.80
+
+RETRIEVAL PRECISION
+P@1: prefixed_hint=0.83, prefixed_no_hint=0.90, raw_no_hint=0.80
+P@3: prefixed_hint=0.83, prefixed_no_hint=0.90, raw_no_hint=0.80
+P@5: prefixed_hint=0.83, prefixed_no_hint=0.90, raw_no_hint=0.80
+P@10: prefixed_hint=0.83, prefixed_no_hint=0.90, raw_no_hint=0.80
+MRR: prefixed_hint=0.835, prefixed_no_hint=0.906, raw_no_hint=0.800
+NDCG@10: prefixed_hint=0.969, prefixed_no_hint=0.967, raw_no_hint=0.970
+Exact@10: prefixed_hint=0.025, prefixed_no_hint=0.027, raw_no_hint=0.024
+Exact MRR: prefixed_hint=0.073, prefixed_no_hint=0.113, raw_no_hint=0.070
+Gold in Top-10: prefixed_hint=0.250, prefixed_no_hint=0.269, raw_no_hint=0.240
+Usable in Top-10: prefixed_hint=0.835, prefixed_no_hint=0.901, raw_no_hint=0.800
+Domain in Top-10: prefixed_hint=1.000, prefixed_no_hint=1.000, raw_no_hint=1.000
+Operation in Top-10: prefixed_hint=0.835, prefixed_no_hint=0.901, raw_no_hint=0.800
+
+RERANKED RETRIEVAL (domain + operation + token overlap)
+P@5: reranked=0.967, baseline=0.901
+MRR: reranked=0.967, baseline=0.906
+Tool Present Rate (exact in top-10): reranked=0.289, baseline=0.269
+Domain in Top-10: reranked=1.000, baseline=1.000
+Operation in Top-10: reranked=0.967, baseline=0.901
+
+DOMAIN-FILTERED RETRIEVAL (use caller domain as hard filter)
+P@5: domain_filter=0.901, baseline=0.901
+MRR: domain_filter=0.901, baseline=0.906
+Tool Present Rate (exact in top-10): domain_filter=0.270, baseline=0.269
+Domain in Top-10: domain_filter=1.000, baseline=1.000
+Operation in Top-10: domain_filter=0.901, baseline=0.901
+
+HYBRID RETRIEVAL (domain sub-index + vector/BM25 fusion + ontology)
+P@5: hybrid=1.000, baseline=0.901
+MRR: hybrid=1.000, baseline=0.906
+Tool Present Rate (exact in top-10): hybrid=0.300, baseline=0.269
+Domain in Top-10: hybrid=1.000, baseline=1.000
+Operation in Top-10: hybrid=1.000, baseline=0.901
+
+LLM SELECTION DASHBOARD (prefixed_no_hint)
+Tool Present Rate (TPR, exact in top-10): baseline=0.269, reranked=0.289, delta=+0.020
+Domain Match Rate (DMR, domain in top-10): baseline=1.000, reranked=1.000, delta=+0.000
+Operation Match Rate (OMR, operation in top-10): baseline=0.901, reranked=0.967, delta=+0.066
+Tool Present Rate with domain filter: 0.270
+Domain Match Rate with domain filter: 1.000
+Operation Match Rate with domain filter: 0.901
+Tool Present Rate with hybrid: 0.300
+Domain Match Rate with hybrid: 1.000
+Operation Match Rate with hybrid: 1.000
+Schema Quality Score (SQS): 0.974
+
+ADVERSARIAL DISCRIMINATION
+Mean similarity raw=0.000
+Mean similarity prefixed=0.000
+Discrimination gain=+0.000
+
+MULTI-DOMAIN PLACEMENT
+Mean domain representation ratio=0.00 / 0.00
+Mean centroid separation margin=+0.000
+
+IVF SIMULATION
+IVF recall@10 (nlist=12, nprobe=10)=0.974
+
+VERDICT
+MARGINAL

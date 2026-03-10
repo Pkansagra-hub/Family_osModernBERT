@@ -1,0 +1,4161 @@
+{
+  "model": {
+    "name": "familyos_ultrabert(pytorch)",
+    "dimension": 768,
+    "fallback_used": false
+  },
+  "selected_template": "hardwired_hybrid_sentence",
+  "template_descriptions": {
+    "hardwired_hybrid_sentence": "Hardwired: natural sentence + compact key anchors"
+  },
+  "template_ablation": {
+    "hardwired_hybrid_sentence": {
+      "cluster_domain": {
+        "silhouette": 0.2760874032974243,
+        "davies_bouldin": 2.0408894712885877,
+        "calinski_harabasz": 35.16344451904297,
+        "mean_intra_distance": 0.06978111702568678,
+        "mean_inter_distance": 0.11746041697184245
+      },
+      "cluster_sub_cluster": {
+        "silhouette": 0.9526163339614868,
+        "davies_bouldin": 0.3298308933046647,
+        "calinski_harabasz": 272.13140869140625
+      },
+      "retrieval": {
+        "prefixed_hint": {
+          "p@1": 0.4127906976744186,
+          "p@3": 0.41795865633074936,
+          "p@5": 0.4170542635658914,
+          "p@10": 0.29883720930232555,
+          "exact@1": 0.05813953488372093,
+          "exact@3": 0.04198966408268733,
+          "exact@5": 0.0872093023255814,
+          "exact@10": 0.0625968992248062,
+          "mrr": 0.47122554448135845,
+          "exact_mrr": 0.17295588778146917,
+          "ndcg@10": 0.740223751780167,
+          "gold_in_top10_rate": 0.625968992248062,
+          "usable_in_top10_rate": 0.6937984496124031,
+          "domain_in_top10_rate": 0.937984496124031,
+          "operation_in_top10_rate": 0.6937984496124031
+        },
+        "prefixed_no_hint": {
+          "p@1": 0.4631782945736434,
+          "p@3": 0.45994832041343664,
+          "p@5": 0.4527131782945737,
+          "p@10": 0.3007751937984496,
+          "exact@1": 0.060077519379844964,
+          "exact@3": 0.04521963824289405,
+          "exact@5": 0.09534883720930233,
+          "exact@10": 0.06395348837209303,
+          "mrr": 0.523381422281358,
+          "exact_mrr": 0.19284678202683364,
+          "ndcg@10": 0.7296069632372354,
+          "gold_in_top10_rate": 0.6395348837209303,
+          "usable_in_top10_rate": 0.6957364341085271,
+          "domain_in_top10_rate": 0.9186046511627907,
+          "operation_in_top10_rate": 0.6957364341085271
+        },
+        "prefixed_no_hint_rerank": {
+          "p@1": 0.9515503875968992,
+          "p@3": 0.9502583979328166,
+          "p@5": 0.9434108527131784,
+          "p@10": 0.4755813953488372,
+          "exact@1": 0.12015503875968993,
+          "exact@3": 0.09173126614987077,
+          "exact@5": 0.18992248062015507,
+          "exact@10": 0.09573643410852714,
+          "mrr": 0.9542638320981345,
+          "exact_mrr": 0.3251171766487937,
+          "ndcg@10": 0.8360828288662846,
+          "gold_in_top10_rate": 0.9573643410852714,
+          "usable_in_top10_rate": 0.9631782945736435,
+          "domain_in_top10_rate": 0.9825581395348837,
+          "operation_in_top10_rate": 0.9631782945736435
+        },
+        "prefixed_domain_filter": {
+          "p@1": 0.5542635658914729,
+          "p@3": 0.5439276485788113,
+          "p@5": 0.5368217054263565,
+          "p@10": 0.35697674418604647,
+          "exact@1": 0.06589147286821706,
+          "exact@3": 0.05426356589147287,
+          "exact@5": 0.11550387596899224,
+          "exact@10": 0.0755813953488372,
+          "mrr": 0.6008613264427217,
+          "exact_mrr": 0.20875092284976005,
+          "ndcg@10": 0.8361702500647266,
+          "gold_in_top10_rate": 0.7558139534883721,
+          "usable_in_top10_rate": 0.7868217054263565,
+          "domain_in_top10_rate": 1.0,
+          "operation_in_top10_rate": 0.7868217054263565
+        },
+        "prefixed_hybrid": {
+          "p@1": 0.9031007751937985,
+          "p@3": 0.9005167958656332,
+          "p@5": 0.9023255813953489,
+          "p@10": 0.4875968992248062,
+          "exact@1": 0.22286821705426357,
+          "exact@3": 0.10142118863049093,
+          "exact@5": 0.18294573643410852,
+          "exact@10": 0.09748062015503876,
+          "mrr": 0.9188199827734712,
+          "exact_mrr": 0.38808600959763756,
+          "ndcg@10": 0.8613331460462025,
+          "gold_in_top10_rate": 0.9748062015503876,
+          "usable_in_top10_rate": 0.9767441860465116,
+          "domain_in_top10_rate": 1.0,
+          "operation_in_top10_rate": 0.9767441860465116
+        },
+        "raw_no_hint": {
+          "p@1": 0.312015503875969,
+          "p@3": 0.3126614987080103,
+          "p@5": 0.31124031007751934,
+          "p@10": 0.21085271317829457,
+          "exact@1": 0.060077519379844964,
+          "exact@3": 0.0355297157622739,
+          "exact@5": 0.060077519379844964,
+          "exact@10": 0.0439922480620155,
+          "mrr": 0.35824796973052786,
+          "exact_mrr": 0.1372323735695829,
+          "ndcg@10": 0.5079428352533277,
+          "gold_in_top10_rate": 0.43992248062015504,
+          "usable_in_top10_rate": 0.5135658914728682,
+          "domain_in_top10_rate": 0.6686046511627907,
+          "operation_in_top10_rate": 0.5135658914728682
+        }
+      },
+      "adversarial_discrimination": {
+        "mean_similarity_raw": 0.0,
+        "mean_similarity_prefixed": 0.0,
+        "discrimination_gain": 0.0
+      },
+      "multi_domain_placement": {
+        "mean_domain_rep_ratio": [
+          0.0,
+          0.0
+        ],
+        "mean_centroid_separation_margin": 0.0,
+        "per_item": []
+      },
+      "ivf": {
+        "recall@10": 0.9808139534883722,
+        "nlist": 12.0,
+        "nprobe": 10.0,
+        "train_points": 500.0,
+        "min_points_per_centroid": 39.0
+      },
+      "ivf_recall": 0.9808139534883722
+    }
+  },
+  "dataset": {
+    "mode": "golden",
+    "single_domain_tools": 500,
+    "multi_domain_tools": 0,
+    "total_tools": 500,
+    "domains": [
+      "calendar",
+      "contacts",
+      "email",
+      "files",
+      "finance",
+      "health",
+      "messaging",
+      "notes",
+      "support",
+      "tasks"
+    ],
+    "adversarial_pair_count": 0,
+    "batch_index": 0,
+    "batch_size": 25,
+    "query_style": "llm_clean",
+    "sources_loaded": [
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_001_calendar.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_002_messaging.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_003_email.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_004_notes.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_005_tasks.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_006_files.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_007_contacts.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_008_finance.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_009_health.json",
+      "d:\\Modeling_studio\\POC\\manual_golden_batches\\golden_batch_010_support.json",
+      "step1_normalized_items:100"
+    ]
+  },
+  "fusion_config": {
+    "hybrid_vector_weight": 0.8,
+    "hybrid_bm25_weight": 0.2,
+    "rerank_domain_bonus": 0.2,
+    "rerank_operation_token_bonus": 0.2,
+    "rerank_token_overlap_weight": 0.2,
+    "rerank_candidate_k": 100
+  },
+  "cluster_quality": {
+    "prefixed": {
+      "domain": {
+        "silhouette": 0.2760874032974243,
+        "davies_bouldin": 2.0408894712885877,
+        "calinski_harabasz": 35.16344451904297,
+        "mean_intra_distance": 0.06978111702568678,
+        "mean_inter_distance": 0.11746041697184245
+      },
+      "sub_cluster": {
+        "silhouette": 0.9526163339614868,
+        "davies_bouldin": 0.3298308933046647,
+        "calinski_harabasz": 272.13140869140625
+      }
+    },
+    "raw": {
+      "domain": {
+        "silhouette": 0.1777193695306778,
+        "davies_bouldin": 2.6517944619553577,
+        "calinski_harabasz": 26.07258415222168,
+        "mean_intra_distance": 0.10661676993661998,
+        "mean_inter_distance": 0.16007995515876347
+      },
+      "sub_cluster": {
+        "silhouette": 0.938746988773346,
+        "davies_bouldin": 0.36435317998140626,
+        "calinski_harabasz": 256.3843688964844
+      }
+    },
+    "delta_prefixed_minus_raw": {
+      "domain": {
+        "silhouette": 0.09836803376674652,
+        "davies_bouldin": -0.6109049906667701,
+        "calinski_harabasz": 9.090860366821289,
+        "mean_intra_distance": -0.0368356529109332,
+        "mean_inter_distance": -0.04261953818692102
+      },
+      "sub_cluster": {
+        "silhouette": 0.01386934518814087,
+        "davies_bouldin": -0.034522286676741565,
+        "calinski_harabasz": 15.747039794921875
+      }
+    }
+  },
+  "retrieval": {
+    "prefixed_hint": {
+      "p@1": 0.4127906976744186,
+      "p@3": 0.41795865633074936,
+      "p@5": 0.4170542635658914,
+      "p@10": 0.29883720930232555,
+      "exact@1": 0.05813953488372093,
+      "exact@3": 0.04198966408268733,
+      "exact@5": 0.0872093023255814,
+      "exact@10": 0.0625968992248062,
+      "mrr": 0.47122554448135845,
+      "exact_mrr": 0.17295588778146917,
+      "ndcg@10": 0.740223751780167,
+      "gold_in_top10_rate": 0.625968992248062,
+      "usable_in_top10_rate": 0.6937984496124031,
+      "domain_in_top10_rate": 0.937984496124031,
+      "operation_in_top10_rate": 0.6937984496124031
+    },
+    "prefixed_no_hint": {
+      "p@1": 0.4631782945736434,
+      "p@3": 0.45994832041343664,
+      "p@5": 0.4527131782945737,
+      "p@10": 0.3007751937984496,
+      "exact@1": 0.060077519379844964,
+      "exact@3": 0.04521963824289405,
+      "exact@5": 0.09534883720930233,
+      "exact@10": 0.06395348837209303,
+      "mrr": 0.523381422281358,
+      "exact_mrr": 0.19284678202683364,
+      "ndcg@10": 0.7296069632372354,
+      "gold_in_top10_rate": 0.6395348837209303,
+      "usable_in_top10_rate": 0.6957364341085271,
+      "domain_in_top10_rate": 0.9186046511627907,
+      "operation_in_top10_rate": 0.6957364341085271
+    },
+    "prefixed_no_hint_rerank": {
+      "p@1": 0.9515503875968992,
+      "p@3": 0.9502583979328166,
+      "p@5": 0.9434108527131784,
+      "p@10": 0.4755813953488372,
+      "exact@1": 0.12015503875968993,
+      "exact@3": 0.09173126614987077,
+      "exact@5": 0.18992248062015507,
+      "exact@10": 0.09573643410852714,
+      "mrr": 0.9542638320981345,
+      "exact_mrr": 0.3251171766487937,
+      "ndcg@10": 0.8360828288662846,
+      "gold_in_top10_rate": 0.9573643410852714,
+      "usable_in_top10_rate": 0.9631782945736435,
+      "domain_in_top10_rate": 0.9825581395348837,
+      "operation_in_top10_rate": 0.9631782945736435
+    },
+    "prefixed_domain_filter": {
+      "p@1": 0.5542635658914729,
+      "p@3": 0.5439276485788113,
+      "p@5": 0.5368217054263565,
+      "p@10": 0.35697674418604647,
+      "exact@1": 0.06589147286821706,
+      "exact@3": 0.05426356589147287,
+      "exact@5": 0.11550387596899224,
+      "exact@10": 0.0755813953488372,
+      "mrr": 0.6008613264427217,
+      "exact_mrr": 0.20875092284976005,
+      "ndcg@10": 0.8361702500647266,
+      "gold_in_top10_rate": 0.7558139534883721,
+      "usable_in_top10_rate": 0.7868217054263565,
+      "domain_in_top10_rate": 1.0,
+      "operation_in_top10_rate": 0.7868217054263565
+    },
+    "prefixed_hybrid": {
+      "p@1": 0.9031007751937985,
+      "p@3": 0.9005167958656332,
+      "p@5": 0.9023255813953489,
+      "p@10": 0.4875968992248062,
+      "exact@1": 0.22286821705426357,
+      "exact@3": 0.10142118863049093,
+      "exact@5": 0.18294573643410852,
+      "exact@10": 0.09748062015503876,
+      "mrr": 0.9188199827734712,
+      "exact_mrr": 0.38808600959763756,
+      "ndcg@10": 0.8613331460462025,
+      "gold_in_top10_rate": 0.9748062015503876,
+      "usable_in_top10_rate": 0.9767441860465116,
+      "domain_in_top10_rate": 1.0,
+      "operation_in_top10_rate": 0.9767441860465116
+    },
+    "raw_no_hint": {
+      "p@1": 0.312015503875969,
+      "p@3": 0.3126614987080103,
+      "p@5": 0.31124031007751934,
+      "p@10": 0.21085271317829457,
+      "exact@1": 0.060077519379844964,
+      "exact@3": 0.0355297157622739,
+      "exact@5": 0.060077519379844964,
+      "exact@10": 0.0439922480620155,
+      "mrr": 0.35824796973052786,
+      "exact_mrr": 0.1372323735695829,
+      "ndcg@10": 0.5079428352533277,
+      "gold_in_top10_rate": 0.43992248062015504,
+      "usable_in_top10_rate": 0.5135658914728682,
+      "domain_in_top10_rate": 0.6686046511627907,
+      "operation_in_top10_rate": 0.5135658914728682
+    }
+  },
+  "operation_mapping_qa": {
+    "total_subclusters": 100,
+    "mapped_subclusters": 100,
+    "subcluster_coverage": 1.0,
+    "query_token_total": 606,
+    "query_token_mapped": 574,
+    "query_token_coverage": 0.9471947194719472,
+    "canonical_distribution": {
+      "approve": 2,
+      "archive": 1,
+      "complete": 2,
+      "create": 21,
+      "delete": 9,
+      "export": 2,
+      "finance": 2,
+      "retrieve": 21,
+      "schedule": 3,
+      "search": 6,
+      "send": 12,
+      "update": 18,
+      "upload": 1
+    },
+    "top_verbs": {
+      "create": 10,
+      "list": 10,
+      "get": 9,
+      "update": 7,
+      "delete": 6,
+      "add": 5,
+      "search": 5,
+      "send": 5,
+      "assign": 2,
+      "cancel": 2,
+      "export": 2,
+      "reopen": 2,
+      "reply": 2,
+      "schedule": 2,
+      "share": 2,
+      "accept": 1,
+      "append": 1,
+      "approve": 1,
+      "archive": 1,
+      "check": 1
+    },
+    "unmapped_subclusters": [],
+    "mapping_rows": [
+      {
+        "sub_cluster": "accept_invite",
+        "verb": "accept",
+        "canonical": "approve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "add_comment",
+        "verb": "add",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "add_internal_note",
+        "verb": "add",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "add_reminder",
+        "verb": "add",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "add_subtask",
+        "verb": "add",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "add_tag",
+        "verb": "add",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "append_note",
+        "verb": "append",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "approve_expense",
+        "verb": "approve",
+        "canonical": "approve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "archive_email",
+        "verb": "archive",
+        "canonical": "archive",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "assign_task",
+        "verb": "assign",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "assign_ticket",
+        "verb": "assign",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "cancel_appointment",
+        "verb": "cancel",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "cancel_scheduled_message",
+        "verb": "cancel",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "check_eligibility",
+        "verb": "check",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "close_ticket",
+        "verb": "close",
+        "canonical": "complete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "complete_task",
+        "verb": "complete",
+        "canonical": "complete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "copy_file",
+        "verb": "copy",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_appointment",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_contact",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_event",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_expense",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_filter",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_invoice",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_note",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_task",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_template",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "create_ticket",
+        "verb": "create",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "decline_invite",
+        "verb": "decline",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "delete_contact",
+        "verb": "delete",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "delete_event",
+        "verb": "delete",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "delete_file",
+        "verb": "delete",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "delete_note",
+        "verb": "delete",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "delete_task",
+        "verb": "delete",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "delete_template",
+        "verb": "delete",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "download_file",
+        "verb": "download",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "draft_email",
+        "verb": "draft",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "export_contacts",
+        "verb": "export",
+        "canonical": "export",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "export_note",
+        "verb": "export",
+        "canonical": "export",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "find_free_slots",
+        "verb": "find",
+        "canonical": "search",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "forward_email",
+        "verb": "forward",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "generate_report",
+        "verb": "generate",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_balance",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_contact",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_delivery_status",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_email",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_event",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_file_metadata",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_lab_result",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_sla_status",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "get_visit_summary",
+        "verb": "get",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "invite_attendees",
+        "verb": "invite",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_contacts",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_events",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_files",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_medications",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_messages",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_notes",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_tasks",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_threads",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_tickets",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "list_transactions",
+        "verb": "list",
+        "canonical": "retrieve",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "log_vitals",
+        "verb": "log",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "merge_contacts",
+        "verb": "merge",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "move_file",
+        "verb": "move",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "pin_note",
+        "verb": "pin",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "reconcile_account",
+        "verb": "reconcile",
+        "canonical": "finance",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "record_payment",
+        "verb": "record",
+        "canonical": "create",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "refill_prescription",
+        "verb": "refill",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "refund_payment",
+        "verb": "refund",
+        "canonical": "finance",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "remove_tag",
+        "verb": "remove",
+        "canonical": "delete",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "rename_file",
+        "verb": "rename",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "reopen_task",
+        "verb": "reopen",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "reopen_ticket",
+        "verb": "reopen",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "reply_email",
+        "verb": "reply",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "reply_to_customer",
+        "verb": "reply",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "schedule_email",
+        "verb": "schedule",
+        "canonical": "schedule",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "schedule_message",
+        "verb": "schedule",
+        "canonical": "schedule",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "search_contacts",
+        "verb": "search",
+        "canonical": "search",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "search_email",
+        "verb": "search",
+        "canonical": "search",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "search_files",
+        "verb": "search",
+        "canonical": "search",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "search_notes",
+        "verb": "search",
+        "canonical": "search",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "search_tickets",
+        "verb": "search",
+        "canonical": "search",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "send_email",
+        "verb": "send",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "send_invoice",
+        "verb": "send",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "send_push",
+        "verb": "send",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "send_sms",
+        "verb": "send",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "send_whatsapp",
+        "verb": "send",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "set_due_date",
+        "verb": "set",
+        "canonical": "schedule",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "share_file",
+        "verb": "share",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "share_note",
+        "verb": "share",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "submit_claim",
+        "verb": "submit",
+        "canonical": "send",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "tag_note",
+        "verb": "tag",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "update_appointment",
+        "verb": "update",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "update_contact",
+        "verb": "update",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "update_event",
+        "verb": "update",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "update_note",
+        "verb": "update",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "update_task",
+        "verb": "update",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "update_template",
+        "verb": "update",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "update_ticket",
+        "verb": "update",
+        "canonical": "update",
+        "ontology_alias_hit": "yes"
+      },
+      {
+        "sub_cluster": "upload_file",
+        "verb": "upload",
+        "canonical": "upload",
+        "ontology_alias_hit": "yes"
+      }
+    ]
+  },
+  "input_style_ablation": {
+    "structured_kv": {
+      "p@5": 0.3496124031007752,
+      "mrr": 0.4671534699150978,
+      "tpr@10": 0.5271317829457365,
+      "dmr@10": 0.8410852713178295,
+      "omr@10": 0.6647286821705426
+    },
+    "hybrid_sentence": {
+      "p@5": 0.4527131782945737,
+      "mrr": 0.5097506767564907,
+      "tpr@10": 0.6434108527131783,
+      "dmr@10": 0.9186046511627907,
+      "omr@10": 0.6957364341085271
+    },
+    "natural_sentence": {
+      "p@5": 0.3542635658914729,
+      "mrr": 0.39057385874246336,
+      "tpr@10": 0.47674418604651164,
+      "dmr@10": 0.8488372093023255,
+      "omr@10": 0.5155038759689923
+    }
+  },
+  "llm_selection_dashboard": {
+    "baseline": {
+      "tool_present_rate_top10": 0.6395348837209303,
+      "domain_match_rate_top10": 0.9186046511627907,
+      "operation_match_rate_top10": 0.6957364341085271
+    },
+    "reranked": {
+      "tool_present_rate_top10": 0.9573643410852714,
+      "domain_match_rate_top10": 0.9825581395348837,
+      "operation_match_rate_top10": 0.9631782945736435
+    },
+    "domain_filter": {
+      "tool_present_rate_top10": 0.7558139534883721,
+      "domain_match_rate_top10": 1.0,
+      "operation_match_rate_top10": 0.7868217054263565
+    },
+    "hybrid": {
+      "tool_present_rate_top10": 0.9748062015503876,
+      "domain_match_rate_top10": 1.0,
+      "operation_match_rate_top10": 0.9767441860465116
+    },
+    "delta": {
+      "tool_present_rate_top10": 0.3178294573643411,
+      "domain_match_rate_top10": 0.06395348837209303,
+      "operation_match_rate_top10": 0.2674418604651163
+    },
+    "schema_quality_score": 0.958
+  },
+  "adversarial_discrimination": {
+    "mean_similarity_raw": 0.0,
+    "mean_similarity_prefixed": 0.0,
+    "discrimination_gain": 0.0
+  },
+  "multi_domain_placement": {
+    "mean_domain_rep_ratio": [
+      0.0,
+      0.0
+    ],
+    "mean_centroid_separation_margin": 0.0,
+    "per_item": []
+  },
+  "ivf_simulation": {
+    "nlist": 12,
+    "nprobe": 10,
+    "train_points": 500,
+    "min_points_per_centroid": 39,
+    "recall@10": 0.9808139534883722
+  },
+  "queries": [
+    {
+      "query_text": "intent: create event",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.google.create_event"
+    },
+    {
+      "query_text": "intent: create",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.google.create_event"
+    },
+    {
+      "query_text": "intent: create event; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.google.create_event"
+    },
+    {
+      "query_text": "intent: planning family events and reminders",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.google.create_event"
+    },
+    {
+      "query_text": "intent: create; required_inputs: calendar_id title start_time end_time",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.google.create_event"
+    },
+    {
+      "query_text": "intent: google calendar capability to create event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.google.create_event"
+    },
+    {
+      "query_text": "intent: update event",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.google.update_event"
+    },
+    {
+      "query_text": "intent: update",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.google.update_event"
+    },
+    {
+      "query_text": "intent: update event; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.google.update_event"
+    },
+    {
+      "query_text": "intent: update; required_inputs: calendar_id event_id",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.google.update_event"
+    },
+    {
+      "query_text": "intent: google calendar capability to update event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.google.update_event"
+    },
+    {
+      "query_text": "intent: delete event",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.google.delete_event"
+    },
+    {
+      "query_text": "intent: delete",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.google.delete_event"
+    },
+    {
+      "query_text": "intent: delete event; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.google.delete_event"
+    },
+    {
+      "query_text": "intent: delete; required_inputs: calendar_id event_id",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.google.delete_event"
+    },
+    {
+      "query_text": "intent: google calendar capability to delete event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.google.delete_event"
+    },
+    {
+      "query_text": "intent: list events",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.google.list_events"
+    },
+    {
+      "query_text": "intent: retrieve",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.google.list_events"
+    },
+    {
+      "query_text": "intent: list events; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.google.list_events"
+    },
+    {
+      "query_text": "intent: retrieve; required_inputs: calendar_id time_start time_end",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.google.list_events"
+    },
+    {
+      "query_text": "intent: google calendar capability to list events for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.google.list_events"
+    },
+    {
+      "query_text": "intent: get event",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.google.get_event"
+    },
+    {
+      "query_text": "intent: get event; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.google.get_event"
+    },
+    {
+      "query_text": "intent: retrieve; required_inputs: calendar_id event_id",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.google.get_event"
+    },
+    {
+      "query_text": "intent: google calendar capability to get event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.google.get_event"
+    },
+    {
+      "query_text": "intent: find free slots",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.google.find_free_slots"
+    },
+    {
+      "query_text": "intent: search",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.google.find_free_slots"
+    },
+    {
+      "query_text": "intent: find free slots; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.google.find_free_slots"
+    },
+    {
+      "query_text": "intent: search; required_inputs: participant_ids window_start window_end",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.google.find_free_slots"
+    },
+    {
+      "query_text": "intent: google calendar capability to find free slots for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.google.find_free_slots"
+    },
+    {
+      "query_text": "intent: invite attendees",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.google.invite_attendees"
+    },
+    {
+      "query_text": "intent: send",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.google.invite_attendees"
+    },
+    {
+      "query_text": "intent: invite attendees; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.google.invite_attendees"
+    },
+    {
+      "query_text": "intent: send; required_inputs: calendar_id event_id attendees",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.google.invite_attendees"
+    },
+    {
+      "query_text": "intent: google calendar capability to invite attendees for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.google.invite_attendees"
+    },
+    {
+      "query_text": "intent: accept invite",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.google.accept_invite"
+    },
+    {
+      "query_text": "intent: approve",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.google.accept_invite"
+    },
+    {
+      "query_text": "intent: accept invite; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.google.accept_invite"
+    },
+    {
+      "query_text": "intent: approve; required_inputs: calendar_id event_id",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.google.accept_invite"
+    },
+    {
+      "query_text": "intent: google calendar capability to accept invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.google.accept_invite"
+    },
+    {
+      "query_text": "intent: decline invite",
+      "domain": "calendar",
+      "sub_cluster": "decline_invite",
+      "target_id": "gold.calendar.google.decline_invite"
+    },
+    {
+      "query_text": "intent: decline invite; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "decline_invite",
+      "target_id": "gold.calendar.google.decline_invite"
+    },
+    {
+      "query_text": "intent: google calendar capability to decline invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "decline_invite",
+      "target_id": "gold.calendar.google.decline_invite"
+    },
+    {
+      "query_text": "intent: add reminder",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.google.add_reminder"
+    },
+    {
+      "query_text": "intent: add reminder; domain_hint: calendar",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.google.add_reminder"
+    },
+    {
+      "query_text": "intent: create; required_inputs: calendar_id event_id minutes_before",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.google.add_reminder"
+    },
+    {
+      "query_text": "intent: google calendar capability to add reminder for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.google.add_reminder"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to create event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.outlook.create_event"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to update event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.outlook.update_event"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to delete event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.outlook.delete_event"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to list events for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.outlook.list_events"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to get event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.outlook.get_event"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to find free slots for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.outlook.find_free_slots"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to invite attendees for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.outlook.invite_attendees"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to accept invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.outlook.accept_invite"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to decline invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "decline_invite",
+      "target_id": "gold.calendar.outlook.decline_invite"
+    },
+    {
+      "query_text": "intent: outlook calendar capability to add reminder for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.outlook.add_reminder"
+    },
+    {
+      "query_text": "intent: apple calendar capability to create event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.apple.create_event"
+    },
+    {
+      "query_text": "intent: apple calendar capability to update event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.apple.update_event"
+    },
+    {
+      "query_text": "intent: apple calendar capability to delete event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.apple.delete_event"
+    },
+    {
+      "query_text": "intent: apple calendar capability to list events for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.apple.list_events"
+    },
+    {
+      "query_text": "intent: apple calendar capability to get event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.apple.get_event"
+    },
+    {
+      "query_text": "intent: apple calendar capability to find free slots for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.apple.find_free_slots"
+    },
+    {
+      "query_text": "intent: apple calendar capability to invite attendees for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.apple.invite_attendees"
+    },
+    {
+      "query_text": "intent: apple calendar capability to accept invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.apple.accept_invite"
+    },
+    {
+      "query_text": "intent: apple calendar capability to decline invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "decline_invite",
+      "target_id": "gold.calendar.apple.decline_invite"
+    },
+    {
+      "query_text": "intent: apple calendar capability to add reminder for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.apple.add_reminder"
+    },
+    {
+      "query_text": "intent: notion calendar capability to create event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.notion.create_event"
+    },
+    {
+      "query_text": "intent: notion calendar capability to update event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.notion.update_event"
+    },
+    {
+      "query_text": "intent: notion calendar capability to delete event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.notion.delete_event"
+    },
+    {
+      "query_text": "intent: notion calendar capability to list events for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.notion.list_events"
+    },
+    {
+      "query_text": "intent: notion calendar capability to get event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.notion.get_event"
+    },
+    {
+      "query_text": "intent: notion calendar capability to find free slots for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.notion.find_free_slots"
+    },
+    {
+      "query_text": "intent: notion calendar capability to invite attendees for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.notion.invite_attendees"
+    },
+    {
+      "query_text": "intent: notion calendar capability to accept invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.notion.accept_invite"
+    },
+    {
+      "query_text": "intent: notion calendar capability to decline invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "decline_invite",
+      "target_id": "gold.calendar.notion.decline_invite"
+    },
+    {
+      "query_text": "intent: notion calendar capability to add reminder for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.notion.add_reminder"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to create event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "create_event",
+      "target_id": "gold.calendar.caldav.create_event"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to update event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "update_event",
+      "target_id": "gold.calendar.caldav.update_event"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to delete event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "delete_event",
+      "target_id": "gold.calendar.caldav.delete_event"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to list events for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "list_events",
+      "target_id": "gold.calendar.caldav.list_events"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to get event for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "get_event",
+      "target_id": "gold.calendar.caldav.get_event"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to find free slots for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "find_free_slots",
+      "target_id": "gold.calendar.caldav.find_free_slots"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to invite attendees for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "invite_attendees",
+      "target_id": "gold.calendar.caldav.invite_attendees"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to accept invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "accept_invite",
+      "target_id": "gold.calendar.caldav.accept_invite"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to decline invite for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "decline_invite",
+      "target_id": "gold.calendar.caldav.decline_invite"
+    },
+    {
+      "query_text": "intent: caldav calendar capability to add reminder for deterministic tool routing and typed inputs",
+      "domain": "calendar",
+      "sub_cluster": "add_reminder",
+      "target_id": "gold.calendar.caldav.add_reminder"
+    },
+    {
+      "query_text": "intent: send sms",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.twilio.send_sms"
+    },
+    {
+      "query_text": "intent: send sms; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.twilio.send_sms"
+    },
+    {
+      "query_text": "intent: handling everyday family tasks",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.twilio.send_sms"
+    },
+    {
+      "query_text": "intent: send; required_inputs: to message_body",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.twilio.send_sms"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to send sms for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.twilio.send_sms"
+    },
+    {
+      "query_text": "intent: send whatsapp",
+      "domain": "messaging",
+      "sub_cluster": "send_whatsapp",
+      "target_id": "gold.messaging.twilio.send_whatsapp"
+    },
+    {
+      "query_text": "intent: send whatsapp; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "send_whatsapp",
+      "target_id": "gold.messaging.twilio.send_whatsapp"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to send whatsapp for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_whatsapp",
+      "target_id": "gold.messaging.twilio.send_whatsapp"
+    },
+    {
+      "query_text": "intent: send push",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.twilio.send_push"
+    },
+    {
+      "query_text": "intent: send push; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.twilio.send_push"
+    },
+    {
+      "query_text": "intent: send; required_inputs: device_tokens title body",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.twilio.send_push"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to send push for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.twilio.send_push"
+    },
+    {
+      "query_text": "intent: schedule message",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.twilio.schedule_message"
+    },
+    {
+      "query_text": "intent: schedule",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.twilio.schedule_message"
+    },
+    {
+      "query_text": "intent: schedule message; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.twilio.schedule_message"
+    },
+    {
+      "query_text": "intent: schedule; required_inputs: channel to message_body send_at",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.twilio.schedule_message"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to schedule message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.twilio.schedule_message"
+    },
+    {
+      "query_text": "intent: cancel scheduled message",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.twilio.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: cancel scheduled message; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.twilio.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: delete; required_inputs: message_id",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.twilio.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to cancel scheduled message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.twilio.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: get delivery status",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.twilio.get_delivery_status"
+    },
+    {
+      "query_text": "intent: get delivery status; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.twilio.get_delivery_status"
+    },
+    {
+      "query_text": "intent: retrieve; required_inputs: message_id",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.twilio.get_delivery_status"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to get delivery status for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.twilio.get_delivery_status"
+    },
+    {
+      "query_text": "intent: list messages",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.twilio.list_messages"
+    },
+    {
+      "query_text": "intent: list",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.twilio.list_messages"
+    },
+    {
+      "query_text": "intent: list messages; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.twilio.list_messages"
+    },
+    {
+      "query_text": "intent: list; required_inputs: time_start time_end",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.twilio.list_messages"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to list messages for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.twilio.list_messages"
+    },
+    {
+      "query_text": "intent: create template",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.twilio.create_template"
+    },
+    {
+      "query_text": "intent: create template; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.twilio.create_template"
+    },
+    {
+      "query_text": "intent: create; required_inputs: template_name template_body",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.twilio.create_template"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to create template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.twilio.create_template"
+    },
+    {
+      "query_text": "intent: update template",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.twilio.update_template"
+    },
+    {
+      "query_text": "intent: update template; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.twilio.update_template"
+    },
+    {
+      "query_text": "intent: update; required_inputs: template_id template_body",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.twilio.update_template"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to update template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.twilio.update_template"
+    },
+    {
+      "query_text": "intent: delete template",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.twilio.delete_template"
+    },
+    {
+      "query_text": "intent: delete template; domain_hint: messaging",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.twilio.delete_template"
+    },
+    {
+      "query_text": "intent: delete; required_inputs: template_id",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.twilio.delete_template"
+    },
+    {
+      "query_text": "intent: twilio messaging capability to delete template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.twilio.delete_template"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to send sms for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.vonage.send_sms"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to send whatsapp for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_whatsapp",
+      "target_id": "gold.messaging.vonage.send_whatsapp"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to send push for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.vonage.send_push"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to schedule message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.vonage.schedule_message"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to cancel scheduled message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.vonage.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to get delivery status for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.vonage.get_delivery_status"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to list messages for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.vonage.list_messages"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to create template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.vonage.create_template"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to update template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.vonage.update_template"
+    },
+    {
+      "query_text": "intent: vonage messaging capability to delete template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.vonage.delete_template"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to send sms for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.sendgrid.send_sms"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to send whatsapp for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_whatsapp",
+      "target_id": "gold.messaging.sendgrid.send_whatsapp"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to send push for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.sendgrid.send_push"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to schedule message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.sendgrid.schedule_message"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to cancel scheduled message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.sendgrid.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to get delivery status for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.sendgrid.get_delivery_status"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to list messages for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.sendgrid.list_messages"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to create template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.sendgrid.create_template"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to update template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.sendgrid.update_template"
+    },
+    {
+      "query_text": "intent: sendgrid messaging capability to delete template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.sendgrid.delete_template"
+    },
+    {
+      "query_text": "intent: slack messaging capability to send sms for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.slack.send_sms"
+    },
+    {
+      "query_text": "intent: slack messaging capability to send whatsapp for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_whatsapp",
+      "target_id": "gold.messaging.slack.send_whatsapp"
+    },
+    {
+      "query_text": "intent: slack messaging capability to send push for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.slack.send_push"
+    },
+    {
+      "query_text": "intent: slack messaging capability to schedule message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.slack.schedule_message"
+    },
+    {
+      "query_text": "intent: slack messaging capability to cancel scheduled message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.slack.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: slack messaging capability to get delivery status for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.slack.get_delivery_status"
+    },
+    {
+      "query_text": "intent: slack messaging capability to list messages for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.slack.list_messages"
+    },
+    {
+      "query_text": "intent: slack messaging capability to create template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.slack.create_template"
+    },
+    {
+      "query_text": "intent: slack messaging capability to update template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.slack.update_template"
+    },
+    {
+      "query_text": "intent: slack messaging capability to delete template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.slack.delete_template"
+    },
+    {
+      "query_text": "intent: teams messaging capability to send sms for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_sms",
+      "target_id": "gold.messaging.teams.send_sms"
+    },
+    {
+      "query_text": "intent: teams messaging capability to send whatsapp for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_whatsapp",
+      "target_id": "gold.messaging.teams.send_whatsapp"
+    },
+    {
+      "query_text": "intent: teams messaging capability to send push for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "send_push",
+      "target_id": "gold.messaging.teams.send_push"
+    },
+    {
+      "query_text": "intent: teams messaging capability to schedule message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "schedule_message",
+      "target_id": "gold.messaging.teams.schedule_message"
+    },
+    {
+      "query_text": "intent: teams messaging capability to cancel scheduled message for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "cancel_scheduled_message",
+      "target_id": "gold.messaging.teams.cancel_scheduled_message"
+    },
+    {
+      "query_text": "intent: teams messaging capability to get delivery status for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "get_delivery_status",
+      "target_id": "gold.messaging.teams.get_delivery_status"
+    },
+    {
+      "query_text": "intent: teams messaging capability to list messages for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "list_messages",
+      "target_id": "gold.messaging.teams.list_messages"
+    },
+    {
+      "query_text": "intent: teams messaging capability to create template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "create_template",
+      "target_id": "gold.messaging.teams.create_template"
+    },
+    {
+      "query_text": "intent: teams messaging capability to update template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "update_template",
+      "target_id": "gold.messaging.teams.update_template"
+    },
+    {
+      "query_text": "intent: teams messaging capability to delete template for deterministic tool routing and typed inputs",
+      "domain": "messaging",
+      "sub_cluster": "delete_template",
+      "target_id": "gold.messaging.teams.delete_template"
+    },
+    {
+      "query_text": "intent: send email",
+      "domain": "email",
+      "sub_cluster": "send_email",
+      "target_id": "gold.email.gmail.send_email"
+    },
+    {
+      "query_text": "intent: send email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "send_email",
+      "target_id": "gold.email.gmail.send_email"
+    },
+    {
+      "query_text": "intent: send; required_inputs: to subject body",
+      "domain": "email",
+      "sub_cluster": "send_email",
+      "target_id": "gold.email.gmail.send_email"
+    },
+    {
+      "query_text": "intent: Send an email message to one or more recipients with subject and body",
+      "domain": "email",
+      "sub_cluster": "send_email",
+      "target_id": "gold.email.gmail.send_email"
+    },
+    {
+      "query_text": "intent: schedule email",
+      "domain": "email",
+      "sub_cluster": "schedule_email",
+      "target_id": "gold.email.gmail.schedule_email"
+    },
+    {
+      "query_text": "intent: schedule email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "schedule_email",
+      "target_id": "gold.email.gmail.schedule_email"
+    },
+    {
+      "query_text": "intent: schedule; required_inputs: to subject body send_at",
+      "domain": "email",
+      "sub_cluster": "schedule_email",
+      "target_id": "gold.email.gmail.schedule_email"
+    },
+    {
+      "query_text": "intent: Schedule an email for future delivery at a specified timestamp",
+      "domain": "email",
+      "sub_cluster": "schedule_email",
+      "target_id": "gold.email.gmail.schedule_email"
+    },
+    {
+      "query_text": "intent: reply email",
+      "domain": "email",
+      "sub_cluster": "reply_email",
+      "target_id": "gold.email.gmail.reply_email"
+    },
+    {
+      "query_text": "intent: reply",
+      "domain": "email",
+      "sub_cluster": "reply_email",
+      "target_id": "gold.email.gmail.reply_email"
+    },
+    {
+      "query_text": "intent: reply email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "reply_email",
+      "target_id": "gold.email.gmail.reply_email"
+    },
+    {
+      "query_text": "intent: reply; required_inputs: message_id body",
+      "domain": "email",
+      "sub_cluster": "reply_email",
+      "target_id": "gold.email.gmail.reply_email"
+    },
+    {
+      "query_text": "intent: Reply to an existing email thread while preserving conversation context",
+      "domain": "email",
+      "sub_cluster": "reply_email",
+      "target_id": "gold.email.gmail.reply_email"
+    },
+    {
+      "query_text": "intent: forward email",
+      "domain": "email",
+      "sub_cluster": "forward_email",
+      "target_id": "gold.email.gmail.forward_email"
+    },
+    {
+      "query_text": "intent: forward",
+      "domain": "email",
+      "sub_cluster": "forward_email",
+      "target_id": "gold.email.gmail.forward_email"
+    },
+    {
+      "query_text": "intent: forward email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "forward_email",
+      "target_id": "gold.email.gmail.forward_email"
+    },
+    {
+      "query_text": "intent: forward; required_inputs: message_id to",
+      "domain": "email",
+      "sub_cluster": "forward_email",
+      "target_id": "gold.email.gmail.forward_email"
+    },
+    {
+      "query_text": "intent: Forward an email message to new recipients with optional commentary",
+      "domain": "email",
+      "sub_cluster": "forward_email",
+      "target_id": "gold.email.gmail.forward_email"
+    },
+    {
+      "query_text": "intent: draft email",
+      "domain": "email",
+      "sub_cluster": "draft_email",
+      "target_id": "gold.email.gmail.draft_email"
+    },
+    {
+      "query_text": "intent: draft email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "draft_email",
+      "target_id": "gold.email.gmail.draft_email"
+    },
+    {
+      "query_text": "intent: create; required_inputs: to subject body",
+      "domain": "email",
+      "sub_cluster": "draft_email",
+      "target_id": "gold.email.gmail.draft_email"
+    },
+    {
+      "query_text": "intent: Create or save a draft email without sending it",
+      "domain": "email",
+      "sub_cluster": "draft_email",
+      "target_id": "gold.email.gmail.draft_email"
+    },
+    {
+      "query_text": "intent: search email",
+      "domain": "email",
+      "sub_cluster": "search_email",
+      "target_id": "gold.email.gmail.search_email"
+    },
+    {
+      "query_text": "intent: search email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "search_email",
+      "target_id": "gold.email.gmail.search_email"
+    },
+    {
+      "query_text": "intent: search; required_inputs: query",
+      "domain": "email",
+      "sub_cluster": "search_email",
+      "target_id": "gold.email.gmail.search_email"
+    },
+    {
+      "query_text": "intent: Search mailbox content by sender, subject, keywords, and date filters",
+      "domain": "email",
+      "sub_cluster": "search_email",
+      "target_id": "gold.email.gmail.search_email"
+    },
+    {
+      "query_text": "intent: get email",
+      "domain": "email",
+      "sub_cluster": "get_email",
+      "target_id": "gold.email.gmail.get_email"
+    },
+    {
+      "query_text": "intent: read",
+      "domain": "email",
+      "sub_cluster": "get_email",
+      "target_id": "gold.email.gmail.get_email"
+    },
+    {
+      "query_text": "intent: get email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "get_email",
+      "target_id": "gold.email.gmail.get_email"
+    },
+    {
+      "query_text": "intent: read; required_inputs: message_id",
+      "domain": "email",
+      "sub_cluster": "get_email",
+      "target_id": "gold.email.gmail.get_email"
+    },
+    {
+      "query_text": "intent: Retrieve a single email message and metadata by message identifier",
+      "domain": "email",
+      "sub_cluster": "get_email",
+      "target_id": "gold.email.gmail.get_email"
+    },
+    {
+      "query_text": "intent: list threads",
+      "domain": "email",
+      "sub_cluster": "list_threads",
+      "target_id": "gold.email.gmail.list_threads"
+    },
+    {
+      "query_text": "intent: list threads; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "list_threads",
+      "target_id": "gold.email.gmail.list_threads"
+    },
+    {
+      "query_text": "intent: list; required_inputs: folder",
+      "domain": "email",
+      "sub_cluster": "list_threads",
+      "target_id": "gold.email.gmail.list_threads"
+    },
+    {
+      "query_text": "intent: List conversation threads in the mailbox with pagination support",
+      "domain": "email",
+      "sub_cluster": "list_threads",
+      "target_id": "gold.email.gmail.list_threads"
+    },
+    {
+      "query_text": "intent: archive email",
+      "domain": "email",
+      "sub_cluster": "archive_email",
+      "target_id": "gold.email.gmail.archive_email"
+    },
+    {
+      "query_text": "intent: archive",
+      "domain": "email",
+      "sub_cluster": "archive_email",
+      "target_id": "gold.email.gmail.archive_email"
+    },
+    {
+      "query_text": "intent: archive email; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "archive_email",
+      "target_id": "gold.email.gmail.archive_email"
+    },
+    {
+      "query_text": "intent: archive; required_inputs: message_id",
+      "domain": "email",
+      "sub_cluster": "archive_email",
+      "target_id": "gold.email.gmail.archive_email"
+    },
+    {
+      "query_text": "intent: Archive an email message or thread from the inbox",
+      "domain": "email",
+      "sub_cluster": "archive_email",
+      "target_id": "gold.email.gmail.archive_email"
+    },
+    {
+      "query_text": "intent: create filter",
+      "domain": "email",
+      "sub_cluster": "create_filter",
+      "target_id": "gold.email.gmail.create_filter"
+    },
+    {
+      "query_text": "intent: create filter; domain_hint: email",
+      "domain": "email",
+      "sub_cluster": "create_filter",
+      "target_id": "gold.email.gmail.create_filter"
+    },
+    {
+      "query_text": "intent: create; required_inputs: criteria actions",
+      "domain": "email",
+      "sub_cluster": "create_filter",
+      "target_id": "gold.email.gmail.create_filter"
+    },
+    {
+      "query_text": "intent: Create mailbox rules to route, label, or auto-archive incoming messages",
+      "domain": "email",
+      "sub_cluster": "create_filter",
+      "target_id": "gold.email.gmail.create_filter"
+    },
+    {
+      "query_text": "intent: create note",
+      "domain": "notes",
+      "sub_cluster": "create_note",
+      "target_id": "gold.notes.notion.create_note"
+    },
+    {
+      "query_text": "intent: create note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "create_note",
+      "target_id": "gold.notes.notion.create_note"
+    },
+    {
+      "query_text": "intent: finding and organizing family notes",
+      "domain": "notes",
+      "sub_cluster": "create_note",
+      "target_id": "gold.notes.notion.create_note"
+    },
+    {
+      "query_text": "intent: create; required_inputs: title content",
+      "domain": "notes",
+      "sub_cluster": "create_note",
+      "target_id": "gold.notes.notion.create_note"
+    },
+    {
+      "query_text": "intent: Create a new note with title, content, and optional notebook placement",
+      "domain": "notes",
+      "sub_cluster": "create_note",
+      "target_id": "gold.notes.notion.create_note"
+    },
+    {
+      "query_text": "intent: update note",
+      "domain": "notes",
+      "sub_cluster": "update_note",
+      "target_id": "gold.notes.notion.update_note"
+    },
+    {
+      "query_text": "intent: update note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "update_note",
+      "target_id": "gold.notes.notion.update_note"
+    },
+    {
+      "query_text": "intent: update; required_inputs: note_id",
+      "domain": "notes",
+      "sub_cluster": "update_note",
+      "target_id": "gold.notes.notion.update_note"
+    },
+    {
+      "query_text": "intent: Update note content, title, or metadata fields",
+      "domain": "notes",
+      "sub_cluster": "update_note",
+      "target_id": "gold.notes.notion.update_note"
+    },
+    {
+      "query_text": "intent: delete note",
+      "domain": "notes",
+      "sub_cluster": "delete_note",
+      "target_id": "gold.notes.notion.delete_note"
+    },
+    {
+      "query_text": "intent: delete note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "delete_note",
+      "target_id": "gold.notes.notion.delete_note"
+    },
+    {
+      "query_text": "intent: delete; required_inputs: note_id",
+      "domain": "notes",
+      "sub_cluster": "delete_note",
+      "target_id": "gold.notes.notion.delete_note"
+    },
+    {
+      "query_text": "intent: Delete a note permanently or move it to trash",
+      "domain": "notes",
+      "sub_cluster": "delete_note",
+      "target_id": "gold.notes.notion.delete_note"
+    },
+    {
+      "query_text": "intent: list notes",
+      "domain": "notes",
+      "sub_cluster": "list_notes",
+      "target_id": "gold.notes.notion.list_notes"
+    },
+    {
+      "query_text": "intent: list notes; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "list_notes",
+      "target_id": "gold.notes.notion.list_notes"
+    },
+    {
+      "query_text": "intent: list; required_inputs: container_id",
+      "domain": "notes",
+      "sub_cluster": "list_notes",
+      "target_id": "gold.notes.notion.list_notes"
+    },
+    {
+      "query_text": "intent: List notes by notebook, workspace, or recency",
+      "domain": "notes",
+      "sub_cluster": "list_notes",
+      "target_id": "gold.notes.notion.list_notes"
+    },
+    {
+      "query_text": "intent: search notes",
+      "domain": "notes",
+      "sub_cluster": "search_notes",
+      "target_id": "gold.notes.notion.search_notes"
+    },
+    {
+      "query_text": "intent: search notes; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "search_notes",
+      "target_id": "gold.notes.notion.search_notes"
+    },
+    {
+      "query_text": "intent: Search notes using full-text query and metadata filters",
+      "domain": "notes",
+      "sub_cluster": "search_notes",
+      "target_id": "gold.notes.notion.search_notes"
+    },
+    {
+      "query_text": "intent: tag note",
+      "domain": "notes",
+      "sub_cluster": "tag_note",
+      "target_id": "gold.notes.notion.tag_note"
+    },
+    {
+      "query_text": "intent: tag",
+      "domain": "notes",
+      "sub_cluster": "tag_note",
+      "target_id": "gold.notes.notion.tag_note"
+    },
+    {
+      "query_text": "intent: tag note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "tag_note",
+      "target_id": "gold.notes.notion.tag_note"
+    },
+    {
+      "query_text": "intent: tag; required_inputs: note_id tags",
+      "domain": "notes",
+      "sub_cluster": "tag_note",
+      "target_id": "gold.notes.notion.tag_note"
+    },
+    {
+      "query_text": "intent: Attach one or more tags to a note for organization",
+      "domain": "notes",
+      "sub_cluster": "tag_note",
+      "target_id": "gold.notes.notion.tag_note"
+    },
+    {
+      "query_text": "intent: share note",
+      "domain": "notes",
+      "sub_cluster": "share_note",
+      "target_id": "gold.notes.notion.share_note"
+    },
+    {
+      "query_text": "intent: share",
+      "domain": "notes",
+      "sub_cluster": "share_note",
+      "target_id": "gold.notes.notion.share_note"
+    },
+    {
+      "query_text": "intent: share note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "share_note",
+      "target_id": "gold.notes.notion.share_note"
+    },
+    {
+      "query_text": "intent: share; required_inputs: note_id principals access_level",
+      "domain": "notes",
+      "sub_cluster": "share_note",
+      "target_id": "gold.notes.notion.share_note"
+    },
+    {
+      "query_text": "intent: Share a note with users or groups and set access permissions",
+      "domain": "notes",
+      "sub_cluster": "share_note",
+      "target_id": "gold.notes.notion.share_note"
+    },
+    {
+      "query_text": "intent: append note",
+      "domain": "notes",
+      "sub_cluster": "append_note",
+      "target_id": "gold.notes.notion.append_note"
+    },
+    {
+      "query_text": "intent: append",
+      "domain": "notes",
+      "sub_cluster": "append_note",
+      "target_id": "gold.notes.notion.append_note"
+    },
+    {
+      "query_text": "intent: append note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "append_note",
+      "target_id": "gold.notes.notion.append_note"
+    },
+    {
+      "query_text": "intent: append; required_inputs: note_id content",
+      "domain": "notes",
+      "sub_cluster": "append_note",
+      "target_id": "gold.notes.notion.append_note"
+    },
+    {
+      "query_text": "intent: Append additional content to an existing note body",
+      "domain": "notes",
+      "sub_cluster": "append_note",
+      "target_id": "gold.notes.notion.append_note"
+    },
+    {
+      "query_text": "intent: pin note",
+      "domain": "notes",
+      "sub_cluster": "pin_note",
+      "target_id": "gold.notes.notion.pin_note"
+    },
+    {
+      "query_text": "intent: pin",
+      "domain": "notes",
+      "sub_cluster": "pin_note",
+      "target_id": "gold.notes.notion.pin_note"
+    },
+    {
+      "query_text": "intent: pin note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "pin_note",
+      "target_id": "gold.notes.notion.pin_note"
+    },
+    {
+      "query_text": "intent: pin; required_inputs: note_id",
+      "domain": "notes",
+      "sub_cluster": "pin_note",
+      "target_id": "gold.notes.notion.pin_note"
+    },
+    {
+      "query_text": "intent: Pin a note for quick access at the top of a workspace",
+      "domain": "notes",
+      "sub_cluster": "pin_note",
+      "target_id": "gold.notes.notion.pin_note"
+    },
+    {
+      "query_text": "intent: export note",
+      "domain": "notes",
+      "sub_cluster": "export_note",
+      "target_id": "gold.notes.notion.export_note"
+    },
+    {
+      "query_text": "intent: export",
+      "domain": "notes",
+      "sub_cluster": "export_note",
+      "target_id": "gold.notes.notion.export_note"
+    },
+    {
+      "query_text": "intent: export note; domain_hint: notes",
+      "domain": "notes",
+      "sub_cluster": "export_note",
+      "target_id": "gold.notes.notion.export_note"
+    },
+    {
+      "query_text": "intent: export; required_inputs: note_id format",
+      "domain": "notes",
+      "sub_cluster": "export_note",
+      "target_id": "gold.notes.notion.export_note"
+    },
+    {
+      "query_text": "intent: Export a note to a selected output format such as markdown or PDF",
+      "domain": "notes",
+      "sub_cluster": "export_note",
+      "target_id": "gold.notes.notion.export_note"
+    },
+    {
+      "query_text": "intent: create task",
+      "domain": "tasks",
+      "sub_cluster": "create_task",
+      "target_id": "gold.tasks.asana.create_task"
+    },
+    {
+      "query_text": "intent: create task; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "create_task",
+      "target_id": "gold.tasks.asana.create_task"
+    },
+    {
+      "query_text": "intent: create; required_inputs: title",
+      "domain": "tasks",
+      "sub_cluster": "create_task",
+      "target_id": "gold.tasks.asana.create_task"
+    },
+    {
+      "query_text": "intent: Create a new task with title, description, and optional project assignment",
+      "domain": "tasks",
+      "sub_cluster": "create_task",
+      "target_id": "gold.tasks.asana.create_task"
+    },
+    {
+      "query_text": "intent: update task",
+      "domain": "tasks",
+      "sub_cluster": "update_task",
+      "target_id": "gold.tasks.asana.update_task"
+    },
+    {
+      "query_text": "intent: update task; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "update_task",
+      "target_id": "gold.tasks.asana.update_task"
+    },
+    {
+      "query_text": "intent: update; required_inputs: task_id",
+      "domain": "tasks",
+      "sub_cluster": "update_task",
+      "target_id": "gold.tasks.asana.update_task"
+    },
+    {
+      "query_text": "intent: Update task fields including priority, status, and description",
+      "domain": "tasks",
+      "sub_cluster": "update_task",
+      "target_id": "gold.tasks.asana.update_task"
+    },
+    {
+      "query_text": "intent: complete task",
+      "domain": "tasks",
+      "sub_cluster": "complete_task",
+      "target_id": "gold.tasks.asana.complete_task"
+    },
+    {
+      "query_text": "intent: complete",
+      "domain": "tasks",
+      "sub_cluster": "complete_task",
+      "target_id": "gold.tasks.asana.complete_task"
+    },
+    {
+      "query_text": "intent: complete task; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "complete_task",
+      "target_id": "gold.tasks.asana.complete_task"
+    },
+    {
+      "query_text": "intent: complete; required_inputs: task_id",
+      "domain": "tasks",
+      "sub_cluster": "complete_task",
+      "target_id": "gold.tasks.asana.complete_task"
+    },
+    {
+      "query_text": "intent: Mark a task as completed with completion timestamp",
+      "domain": "tasks",
+      "sub_cluster": "complete_task",
+      "target_id": "gold.tasks.asana.complete_task"
+    },
+    {
+      "query_text": "intent: reopen task",
+      "domain": "tasks",
+      "sub_cluster": "reopen_task",
+      "target_id": "gold.tasks.asana.reopen_task"
+    },
+    {
+      "query_text": "intent: reopen",
+      "domain": "tasks",
+      "sub_cluster": "reopen_task",
+      "target_id": "gold.tasks.asana.reopen_task"
+    },
+    {
+      "query_text": "intent: reopen task; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "reopen_task",
+      "target_id": "gold.tasks.asana.reopen_task"
+    },
+    {
+      "query_text": "intent: reopen; required_inputs: task_id",
+      "domain": "tasks",
+      "sub_cluster": "reopen_task",
+      "target_id": "gold.tasks.asana.reopen_task"
+    },
+    {
+      "query_text": "intent: Reopen a previously completed task",
+      "domain": "tasks",
+      "sub_cluster": "reopen_task",
+      "target_id": "gold.tasks.asana.reopen_task"
+    },
+    {
+      "query_text": "intent: delete task",
+      "domain": "tasks",
+      "sub_cluster": "delete_task",
+      "target_id": "gold.tasks.asana.delete_task"
+    },
+    {
+      "query_text": "intent: delete task; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "delete_task",
+      "target_id": "gold.tasks.asana.delete_task"
+    },
+    {
+      "query_text": "intent: delete; required_inputs: task_id",
+      "domain": "tasks",
+      "sub_cluster": "delete_task",
+      "target_id": "gold.tasks.asana.delete_task"
+    },
+    {
+      "query_text": "intent: Delete a task from the workspace or project",
+      "domain": "tasks",
+      "sub_cluster": "delete_task",
+      "target_id": "gold.tasks.asana.delete_task"
+    },
+    {
+      "query_text": "intent: list tasks",
+      "domain": "tasks",
+      "sub_cluster": "list_tasks",
+      "target_id": "gold.tasks.asana.list_tasks"
+    },
+    {
+      "query_text": "intent: list tasks; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "list_tasks",
+      "target_id": "gold.tasks.asana.list_tasks"
+    },
+    {
+      "query_text": "intent: list; required_inputs: scope",
+      "domain": "tasks",
+      "sub_cluster": "list_tasks",
+      "target_id": "gold.tasks.asana.list_tasks"
+    },
+    {
+      "query_text": "intent: List tasks by project, assignee, or status filters",
+      "domain": "tasks",
+      "sub_cluster": "list_tasks",
+      "target_id": "gold.tasks.asana.list_tasks"
+    },
+    {
+      "query_text": "intent: assign task",
+      "domain": "tasks",
+      "sub_cluster": "assign_task",
+      "target_id": "gold.tasks.asana.assign_task"
+    },
+    {
+      "query_text": "intent: assign",
+      "domain": "tasks",
+      "sub_cluster": "assign_task",
+      "target_id": "gold.tasks.asana.assign_task"
+    },
+    {
+      "query_text": "intent: assign task; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "assign_task",
+      "target_id": "gold.tasks.asana.assign_task"
+    },
+    {
+      "query_text": "intent: assign; required_inputs: task_id assignee_id",
+      "domain": "tasks",
+      "sub_cluster": "assign_task",
+      "target_id": "gold.tasks.asana.assign_task"
+    },
+    {
+      "query_text": "intent: Assign a task to a specific user or team member",
+      "domain": "tasks",
+      "sub_cluster": "assign_task",
+      "target_id": "gold.tasks.asana.assign_task"
+    },
+    {
+      "query_text": "intent: set due date",
+      "domain": "tasks",
+      "sub_cluster": "set_due_date",
+      "target_id": "gold.tasks.asana.set_due_date"
+    },
+    {
+      "query_text": "intent: set due date; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "set_due_date",
+      "target_id": "gold.tasks.asana.set_due_date"
+    },
+    {
+      "query_text": "intent: schedule; required_inputs: task_id due_date",
+      "domain": "tasks",
+      "sub_cluster": "set_due_date",
+      "target_id": "gold.tasks.asana.set_due_date"
+    },
+    {
+      "query_text": "intent: Set or update task due date and reminder options",
+      "domain": "tasks",
+      "sub_cluster": "set_due_date",
+      "target_id": "gold.tasks.asana.set_due_date"
+    },
+    {
+      "query_text": "intent: add comment",
+      "domain": "tasks",
+      "sub_cluster": "add_comment",
+      "target_id": "gold.tasks.asana.add_comment"
+    },
+    {
+      "query_text": "intent: comment",
+      "domain": "tasks",
+      "sub_cluster": "add_comment",
+      "target_id": "gold.tasks.asana.add_comment"
+    },
+    {
+      "query_text": "intent: add comment; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "add_comment",
+      "target_id": "gold.tasks.asana.add_comment"
+    },
+    {
+      "query_text": "intent: comment; required_inputs: task_id comment",
+      "domain": "tasks",
+      "sub_cluster": "add_comment",
+      "target_id": "gold.tasks.asana.add_comment"
+    },
+    {
+      "query_text": "intent: Add a comment or progress update to a task thread",
+      "domain": "tasks",
+      "sub_cluster": "add_comment",
+      "target_id": "gold.tasks.asana.add_comment"
+    },
+    {
+      "query_text": "intent: add subtask",
+      "domain": "tasks",
+      "sub_cluster": "add_subtask",
+      "target_id": "gold.tasks.asana.add_subtask"
+    },
+    {
+      "query_text": "intent: add subtask; domain_hint: tasks",
+      "domain": "tasks",
+      "sub_cluster": "add_subtask",
+      "target_id": "gold.tasks.asana.add_subtask"
+    },
+    {
+      "query_text": "intent: create; required_inputs: parent_task_id title",
+      "domain": "tasks",
+      "sub_cluster": "add_subtask",
+      "target_id": "gold.tasks.asana.add_subtask"
+    },
+    {
+      "query_text": "intent: Create a subtask under a parent task for breakdown planning",
+      "domain": "tasks",
+      "sub_cluster": "add_subtask",
+      "target_id": "gold.tasks.asana.add_subtask"
+    },
+    {
+      "query_text": "intent: upload file",
+      "domain": "files",
+      "sub_cluster": "upload_file",
+      "target_id": "gold.files.google_drive.upload_file"
+    },
+    {
+      "query_text": "intent: upload",
+      "domain": "files",
+      "sub_cluster": "upload_file",
+      "target_id": "gold.files.google_drive.upload_file"
+    },
+    {
+      "query_text": "intent: upload file; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "upload_file",
+      "target_id": "gold.files.google_drive.upload_file"
+    },
+    {
+      "query_text": "intent: upload; required_inputs: folder_id file_name content",
+      "domain": "files",
+      "sub_cluster": "upload_file",
+      "target_id": "gold.files.google_drive.upload_file"
+    },
+    {
+      "query_text": "intent: Upload a new file to cloud storage with folder placement",
+      "domain": "files",
+      "sub_cluster": "upload_file",
+      "target_id": "gold.files.google_drive.upload_file"
+    },
+    {
+      "query_text": "intent: download file",
+      "domain": "files",
+      "sub_cluster": "download_file",
+      "target_id": "gold.files.google_drive.download_file"
+    },
+    {
+      "query_text": "intent: download",
+      "domain": "files",
+      "sub_cluster": "download_file",
+      "target_id": "gold.files.google_drive.download_file"
+    },
+    {
+      "query_text": "intent: download file; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "download_file",
+      "target_id": "gold.files.google_drive.download_file"
+    },
+    {
+      "query_text": "intent: download; required_inputs: file_id",
+      "domain": "files",
+      "sub_cluster": "download_file",
+      "target_id": "gold.files.google_drive.download_file"
+    },
+    {
+      "query_text": "intent: Download a file by identifier with integrity metadata",
+      "domain": "files",
+      "sub_cluster": "download_file",
+      "target_id": "gold.files.google_drive.download_file"
+    },
+    {
+      "query_text": "intent: delete file",
+      "domain": "files",
+      "sub_cluster": "delete_file",
+      "target_id": "gold.files.google_drive.delete_file"
+    },
+    {
+      "query_text": "intent: delete file; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "delete_file",
+      "target_id": "gold.files.google_drive.delete_file"
+    },
+    {
+      "query_text": "intent: delete; required_inputs: file_id",
+      "domain": "files",
+      "sub_cluster": "delete_file",
+      "target_id": "gold.files.google_drive.delete_file"
+    },
+    {
+      "query_text": "intent: Delete a file or move it to recycle bin",
+      "domain": "files",
+      "sub_cluster": "delete_file",
+      "target_id": "gold.files.google_drive.delete_file"
+    },
+    {
+      "query_text": "intent: move file",
+      "domain": "files",
+      "sub_cluster": "move_file",
+      "target_id": "gold.files.google_drive.move_file"
+    },
+    {
+      "query_text": "intent: move",
+      "domain": "files",
+      "sub_cluster": "move_file",
+      "target_id": "gold.files.google_drive.move_file"
+    },
+    {
+      "query_text": "intent: move file; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "move_file",
+      "target_id": "gold.files.google_drive.move_file"
+    },
+    {
+      "query_text": "intent: move; required_inputs: file_id destination_folder_id",
+      "domain": "files",
+      "sub_cluster": "move_file",
+      "target_id": "gold.files.google_drive.move_file"
+    },
+    {
+      "query_text": "intent: Move a file to another folder or workspace location",
+      "domain": "files",
+      "sub_cluster": "move_file",
+      "target_id": "gold.files.google_drive.move_file"
+    },
+    {
+      "query_text": "intent: copy file",
+      "domain": "files",
+      "sub_cluster": "copy_file",
+      "target_id": "gold.files.google_drive.copy_file"
+    },
+    {
+      "query_text": "intent: copy",
+      "domain": "files",
+      "sub_cluster": "copy_file",
+      "target_id": "gold.files.google_drive.copy_file"
+    },
+    {
+      "query_text": "intent: copy file; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "copy_file",
+      "target_id": "gold.files.google_drive.copy_file"
+    },
+    {
+      "query_text": "intent: copy; required_inputs: file_id",
+      "domain": "files",
+      "sub_cluster": "copy_file",
+      "target_id": "gold.files.google_drive.copy_file"
+    },
+    {
+      "query_text": "intent: Create a copy of an existing file with optional new name",
+      "domain": "files",
+      "sub_cluster": "copy_file",
+      "target_id": "gold.files.google_drive.copy_file"
+    },
+    {
+      "query_text": "intent: rename file",
+      "domain": "files",
+      "sub_cluster": "rename_file",
+      "target_id": "gold.files.google_drive.rename_file"
+    },
+    {
+      "query_text": "intent: rename",
+      "domain": "files",
+      "sub_cluster": "rename_file",
+      "target_id": "gold.files.google_drive.rename_file"
+    },
+    {
+      "query_text": "intent: rename file; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "rename_file",
+      "target_id": "gold.files.google_drive.rename_file"
+    },
+    {
+      "query_text": "intent: rename; required_inputs: file_id new_name",
+      "domain": "files",
+      "sub_cluster": "rename_file",
+      "target_id": "gold.files.google_drive.rename_file"
+    },
+    {
+      "query_text": "intent: Rename a file while preserving version history",
+      "domain": "files",
+      "sub_cluster": "rename_file",
+      "target_id": "gold.files.google_drive.rename_file"
+    },
+    {
+      "query_text": "intent: list files",
+      "domain": "files",
+      "sub_cluster": "list_files",
+      "target_id": "gold.files.google_drive.list_files"
+    },
+    {
+      "query_text": "intent: list files; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "list_files",
+      "target_id": "gold.files.google_drive.list_files"
+    },
+    {
+      "query_text": "intent: list; required_inputs: folder_id",
+      "domain": "files",
+      "sub_cluster": "list_files",
+      "target_id": "gold.files.google_drive.list_files"
+    },
+    {
+      "query_text": "intent: List files in a folder with pagination and sorting",
+      "domain": "files",
+      "sub_cluster": "list_files",
+      "target_id": "gold.files.google_drive.list_files"
+    },
+    {
+      "query_text": "intent: search files",
+      "domain": "files",
+      "sub_cluster": "search_files",
+      "target_id": "gold.files.google_drive.search_files"
+    },
+    {
+      "query_text": "intent: search files; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "search_files",
+      "target_id": "gold.files.google_drive.search_files"
+    },
+    {
+      "query_text": "intent: Search files by name, content keywords, or file type",
+      "domain": "files",
+      "sub_cluster": "search_files",
+      "target_id": "gold.files.google_drive.search_files"
+    },
+    {
+      "query_text": "intent: share file",
+      "domain": "files",
+      "sub_cluster": "share_file",
+      "target_id": "gold.files.google_drive.share_file"
+    },
+    {
+      "query_text": "intent: share file; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "share_file",
+      "target_id": "gold.files.google_drive.share_file"
+    },
+    {
+      "query_text": "intent: share; required_inputs: file_id principals access_level",
+      "domain": "files",
+      "sub_cluster": "share_file",
+      "target_id": "gold.files.google_drive.share_file"
+    },
+    {
+      "query_text": "intent: Share a file with users or groups and set permissions",
+      "domain": "files",
+      "sub_cluster": "share_file",
+      "target_id": "gold.files.google_drive.share_file"
+    },
+    {
+      "query_text": "intent: get file metadata",
+      "domain": "files",
+      "sub_cluster": "get_file_metadata",
+      "target_id": "gold.files.google_drive.get_file_metadata"
+    },
+    {
+      "query_text": "intent: get file metadata; domain_hint: files",
+      "domain": "files",
+      "sub_cluster": "get_file_metadata",
+      "target_id": "gold.files.google_drive.get_file_metadata"
+    },
+    {
+      "query_text": "intent: read; required_inputs: file_id",
+      "domain": "files",
+      "sub_cluster": "get_file_metadata",
+      "target_id": "gold.files.google_drive.get_file_metadata"
+    },
+    {
+      "query_text": "intent: Get file metadata including owner, size, mime type, and timestamps",
+      "domain": "files",
+      "sub_cluster": "get_file_metadata",
+      "target_id": "gold.files.google_drive.get_file_metadata"
+    },
+    {
+      "query_text": "intent: create contact",
+      "domain": "contacts",
+      "sub_cluster": "create_contact",
+      "target_id": "gold.contacts.hubspot.create_contact"
+    },
+    {
+      "query_text": "intent: create contact; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "create_contact",
+      "target_id": "gold.contacts.hubspot.create_contact"
+    },
+    {
+      "query_text": "intent: create; required_inputs: first_name last_name",
+      "domain": "contacts",
+      "sub_cluster": "create_contact",
+      "target_id": "gold.contacts.hubspot.create_contact"
+    },
+    {
+      "query_text": "intent: Create a contact record with name, email, phone, and custom fields",
+      "domain": "contacts",
+      "sub_cluster": "create_contact",
+      "target_id": "gold.contacts.hubspot.create_contact"
+    },
+    {
+      "query_text": "intent: update contact",
+      "domain": "contacts",
+      "sub_cluster": "update_contact",
+      "target_id": "gold.contacts.hubspot.update_contact"
+    },
+    {
+      "query_text": "intent: update contact; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "update_contact",
+      "target_id": "gold.contacts.hubspot.update_contact"
+    },
+    {
+      "query_text": "intent: update; required_inputs: contact_id",
+      "domain": "contacts",
+      "sub_cluster": "update_contact",
+      "target_id": "gold.contacts.hubspot.update_contact"
+    },
+    {
+      "query_text": "intent: Update contact attributes and lifecycle metadata",
+      "domain": "contacts",
+      "sub_cluster": "update_contact",
+      "target_id": "gold.contacts.hubspot.update_contact"
+    },
+    {
+      "query_text": "intent: delete contact",
+      "domain": "contacts",
+      "sub_cluster": "delete_contact",
+      "target_id": "gold.contacts.hubspot.delete_contact"
+    },
+    {
+      "query_text": "intent: delete contact; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "delete_contact",
+      "target_id": "gold.contacts.hubspot.delete_contact"
+    },
+    {
+      "query_text": "intent: delete; required_inputs: contact_id",
+      "domain": "contacts",
+      "sub_cluster": "delete_contact",
+      "target_id": "gold.contacts.hubspot.delete_contact"
+    },
+    {
+      "query_text": "intent: Delete a contact from the system or archive list",
+      "domain": "contacts",
+      "sub_cluster": "delete_contact",
+      "target_id": "gold.contacts.hubspot.delete_contact"
+    },
+    {
+      "query_text": "intent: get contact",
+      "domain": "contacts",
+      "sub_cluster": "get_contact",
+      "target_id": "gold.contacts.hubspot.get_contact"
+    },
+    {
+      "query_text": "intent: get contact; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "get_contact",
+      "target_id": "gold.contacts.hubspot.get_contact"
+    },
+    {
+      "query_text": "intent: read; required_inputs: contact_id",
+      "domain": "contacts",
+      "sub_cluster": "get_contact",
+      "target_id": "gold.contacts.hubspot.get_contact"
+    },
+    {
+      "query_text": "intent: Get full contact profile details by identifier",
+      "domain": "contacts",
+      "sub_cluster": "get_contact",
+      "target_id": "gold.contacts.hubspot.get_contact"
+    },
+    {
+      "query_text": "intent: list contacts",
+      "domain": "contacts",
+      "sub_cluster": "list_contacts",
+      "target_id": "gold.contacts.hubspot.list_contacts"
+    },
+    {
+      "query_text": "intent: list contacts; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "list_contacts",
+      "target_id": "gold.contacts.hubspot.list_contacts"
+    },
+    {
+      "query_text": "intent: list; required_inputs: page_size",
+      "domain": "contacts",
+      "sub_cluster": "list_contacts",
+      "target_id": "gold.contacts.hubspot.list_contacts"
+    },
+    {
+      "query_text": "intent: List contacts with pagination and sorting options",
+      "domain": "contacts",
+      "sub_cluster": "list_contacts",
+      "target_id": "gold.contacts.hubspot.list_contacts"
+    },
+    {
+      "query_text": "intent: search contacts",
+      "domain": "contacts",
+      "sub_cluster": "search_contacts",
+      "target_id": "gold.contacts.hubspot.search_contacts"
+    },
+    {
+      "query_text": "intent: search contacts; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "search_contacts",
+      "target_id": "gold.contacts.hubspot.search_contacts"
+    },
+    {
+      "query_text": "intent: Search contacts using name, email, company, or tag filters",
+      "domain": "contacts",
+      "sub_cluster": "search_contacts",
+      "target_id": "gold.contacts.hubspot.search_contacts"
+    },
+    {
+      "query_text": "intent: add tag",
+      "domain": "contacts",
+      "sub_cluster": "add_tag",
+      "target_id": "gold.contacts.hubspot.add_tag"
+    },
+    {
+      "query_text": "intent: add tag; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "add_tag",
+      "target_id": "gold.contacts.hubspot.add_tag"
+    },
+    {
+      "query_text": "intent: tag; required_inputs: contact_id tags",
+      "domain": "contacts",
+      "sub_cluster": "add_tag",
+      "target_id": "gold.contacts.hubspot.add_tag"
+    },
+    {
+      "query_text": "intent: Add one or more tags or labels to a contact profile",
+      "domain": "contacts",
+      "sub_cluster": "add_tag",
+      "target_id": "gold.contacts.hubspot.add_tag"
+    },
+    {
+      "query_text": "intent: remove tag",
+      "domain": "contacts",
+      "sub_cluster": "remove_tag",
+      "target_id": "gold.contacts.hubspot.remove_tag"
+    },
+    {
+      "query_text": "intent: untag",
+      "domain": "contacts",
+      "sub_cluster": "remove_tag",
+      "target_id": "gold.contacts.hubspot.remove_tag"
+    },
+    {
+      "query_text": "intent: remove tag; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "remove_tag",
+      "target_id": "gold.contacts.hubspot.remove_tag"
+    },
+    {
+      "query_text": "intent: untag; required_inputs: contact_id tags",
+      "domain": "contacts",
+      "sub_cluster": "remove_tag",
+      "target_id": "gold.contacts.hubspot.remove_tag"
+    },
+    {
+      "query_text": "intent: Remove specific tags from a contact profile",
+      "domain": "contacts",
+      "sub_cluster": "remove_tag",
+      "target_id": "gold.contacts.hubspot.remove_tag"
+    },
+    {
+      "query_text": "intent: merge contacts",
+      "domain": "contacts",
+      "sub_cluster": "merge_contacts",
+      "target_id": "gold.contacts.hubspot.merge_contacts"
+    },
+    {
+      "query_text": "intent: merge",
+      "domain": "contacts",
+      "sub_cluster": "merge_contacts",
+      "target_id": "gold.contacts.hubspot.merge_contacts"
+    },
+    {
+      "query_text": "intent: merge contacts; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "merge_contacts",
+      "target_id": "gold.contacts.hubspot.merge_contacts"
+    },
+    {
+      "query_text": "intent: merge; required_inputs: primary_contact_id duplicate_contact_ids",
+      "domain": "contacts",
+      "sub_cluster": "merge_contacts",
+      "target_id": "gold.contacts.hubspot.merge_contacts"
+    },
+    {
+      "query_text": "intent: Merge duplicate contact records into a primary profile",
+      "domain": "contacts",
+      "sub_cluster": "merge_contacts",
+      "target_id": "gold.contacts.hubspot.merge_contacts"
+    },
+    {
+      "query_text": "intent: export contacts",
+      "domain": "contacts",
+      "sub_cluster": "export_contacts",
+      "target_id": "gold.contacts.hubspot.export_contacts"
+    },
+    {
+      "query_text": "intent: export contacts; domain_hint: contacts",
+      "domain": "contacts",
+      "sub_cluster": "export_contacts",
+      "target_id": "gold.contacts.hubspot.export_contacts"
+    },
+    {
+      "query_text": "intent: export; required_inputs: format",
+      "domain": "contacts",
+      "sub_cluster": "export_contacts",
+      "target_id": "gold.contacts.hubspot.export_contacts"
+    },
+    {
+      "query_text": "intent: Export contacts matching filters into CSV or other formats",
+      "domain": "contacts",
+      "sub_cluster": "export_contacts",
+      "target_id": "gold.contacts.hubspot.export_contacts"
+    },
+    {
+      "query_text": "intent: create invoice",
+      "domain": "finance",
+      "sub_cluster": "create_invoice",
+      "target_id": "gold.finance.stripe.create_invoice"
+    },
+    {
+      "query_text": "intent: create invoice; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "create_invoice",
+      "target_id": "gold.finance.stripe.create_invoice"
+    },
+    {
+      "query_text": "intent: create; required_inputs: customer_id line_items",
+      "domain": "finance",
+      "sub_cluster": "create_invoice",
+      "target_id": "gold.finance.stripe.create_invoice"
+    },
+    {
+      "query_text": "intent: Create a customer invoice with line items, taxes, and due date",
+      "domain": "finance",
+      "sub_cluster": "create_invoice",
+      "target_id": "gold.finance.stripe.create_invoice"
+    },
+    {
+      "query_text": "intent: send invoice",
+      "domain": "finance",
+      "sub_cluster": "send_invoice",
+      "target_id": "gold.finance.stripe.send_invoice"
+    },
+    {
+      "query_text": "intent: send invoice; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "send_invoice",
+      "target_id": "gold.finance.stripe.send_invoice"
+    },
+    {
+      "query_text": "intent: send; required_inputs: invoice_id",
+      "domain": "finance",
+      "sub_cluster": "send_invoice",
+      "target_id": "gold.finance.stripe.send_invoice"
+    },
+    {
+      "query_text": "intent: Send an invoice to a customer via configured delivery channels",
+      "domain": "finance",
+      "sub_cluster": "send_invoice",
+      "target_id": "gold.finance.stripe.send_invoice"
+    },
+    {
+      "query_text": "intent: record payment",
+      "domain": "finance",
+      "sub_cluster": "record_payment",
+      "target_id": "gold.finance.stripe.record_payment"
+    },
+    {
+      "query_text": "intent: record",
+      "domain": "finance",
+      "sub_cluster": "record_payment",
+      "target_id": "gold.finance.stripe.record_payment"
+    },
+    {
+      "query_text": "intent: record payment; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "record_payment",
+      "target_id": "gold.finance.stripe.record_payment"
+    },
+    {
+      "query_text": "intent: record; required_inputs: customer_id amount currency",
+      "domain": "finance",
+      "sub_cluster": "record_payment",
+      "target_id": "gold.finance.stripe.record_payment"
+    },
+    {
+      "query_text": "intent: Record a customer payment against an invoice or account",
+      "domain": "finance",
+      "sub_cluster": "record_payment",
+      "target_id": "gold.finance.stripe.record_payment"
+    },
+    {
+      "query_text": "intent: refund payment",
+      "domain": "finance",
+      "sub_cluster": "refund_payment",
+      "target_id": "gold.finance.stripe.refund_payment"
+    },
+    {
+      "query_text": "intent: refund",
+      "domain": "finance",
+      "sub_cluster": "refund_payment",
+      "target_id": "gold.finance.stripe.refund_payment"
+    },
+    {
+      "query_text": "intent: refund payment; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "refund_payment",
+      "target_id": "gold.finance.stripe.refund_payment"
+    },
+    {
+      "query_text": "intent: refund; required_inputs: payment_id amount",
+      "domain": "finance",
+      "sub_cluster": "refund_payment",
+      "target_id": "gold.finance.stripe.refund_payment"
+    },
+    {
+      "query_text": "intent: Issue a partial or full refund for a previous payment transaction",
+      "domain": "finance",
+      "sub_cluster": "refund_payment",
+      "target_id": "gold.finance.stripe.refund_payment"
+    },
+    {
+      "query_text": "intent: list transactions",
+      "domain": "finance",
+      "sub_cluster": "list_transactions",
+      "target_id": "gold.finance.stripe.list_transactions"
+    },
+    {
+      "query_text": "intent: list transactions; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "list_transactions",
+      "target_id": "gold.finance.stripe.list_transactions"
+    },
+    {
+      "query_text": "intent: list; required_inputs: start_date end_date",
+      "domain": "finance",
+      "sub_cluster": "list_transactions",
+      "target_id": "gold.finance.stripe.list_transactions"
+    },
+    {
+      "query_text": "intent: List financial transactions within a date range and status filters",
+      "domain": "finance",
+      "sub_cluster": "list_transactions",
+      "target_id": "gold.finance.stripe.list_transactions"
+    },
+    {
+      "query_text": "intent: get balance",
+      "domain": "finance",
+      "sub_cluster": "get_balance",
+      "target_id": "gold.finance.stripe.get_balance"
+    },
+    {
+      "query_text": "intent: get balance; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "get_balance",
+      "target_id": "gold.finance.stripe.get_balance"
+    },
+    {
+      "query_text": "intent: read; required_inputs: account_id",
+      "domain": "finance",
+      "sub_cluster": "get_balance",
+      "target_id": "gold.finance.stripe.get_balance"
+    },
+    {
+      "query_text": "intent: Retrieve account balance summary by currency and pending availability",
+      "domain": "finance",
+      "sub_cluster": "get_balance",
+      "target_id": "gold.finance.stripe.get_balance"
+    },
+    {
+      "query_text": "intent: create expense",
+      "domain": "finance",
+      "sub_cluster": "create_expense",
+      "target_id": "gold.finance.stripe.create_expense"
+    },
+    {
+      "query_text": "intent: create expense; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "create_expense",
+      "target_id": "gold.finance.stripe.create_expense"
+    },
+    {
+      "query_text": "intent: create; required_inputs: amount currency category",
+      "domain": "finance",
+      "sub_cluster": "create_expense",
+      "target_id": "gold.finance.stripe.create_expense"
+    },
+    {
+      "query_text": "intent: Create an expense record with merchant, category, and amount",
+      "domain": "finance",
+      "sub_cluster": "create_expense",
+      "target_id": "gold.finance.stripe.create_expense"
+    },
+    {
+      "query_text": "intent: approve expense",
+      "domain": "finance",
+      "sub_cluster": "approve_expense",
+      "target_id": "gold.finance.stripe.approve_expense"
+    },
+    {
+      "query_text": "intent: approve expense; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "approve_expense",
+      "target_id": "gold.finance.stripe.approve_expense"
+    },
+    {
+      "query_text": "intent: approve; required_inputs: expense_id approver_id",
+      "domain": "finance",
+      "sub_cluster": "approve_expense",
+      "target_id": "gold.finance.stripe.approve_expense"
+    },
+    {
+      "query_text": "intent: Approve a submitted expense for reimbursement workflow",
+      "domain": "finance",
+      "sub_cluster": "approve_expense",
+      "target_id": "gold.finance.stripe.approve_expense"
+    },
+    {
+      "query_text": "intent: generate report",
+      "domain": "finance",
+      "sub_cluster": "generate_report",
+      "target_id": "gold.finance.stripe.generate_report"
+    },
+    {
+      "query_text": "intent: report",
+      "domain": "finance",
+      "sub_cluster": "generate_report",
+      "target_id": "gold.finance.stripe.generate_report"
+    },
+    {
+      "query_text": "intent: generate report; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "generate_report",
+      "target_id": "gold.finance.stripe.generate_report"
+    },
+    {
+      "query_text": "intent: report; required_inputs: report_type period",
+      "domain": "finance",
+      "sub_cluster": "generate_report",
+      "target_id": "gold.finance.stripe.generate_report"
+    },
+    {
+      "query_text": "intent: Generate a financial report such as P&L, cash flow, or aging",
+      "domain": "finance",
+      "sub_cluster": "generate_report",
+      "target_id": "gold.finance.stripe.generate_report"
+    },
+    {
+      "query_text": "intent: reconcile account",
+      "domain": "finance",
+      "sub_cluster": "reconcile_account",
+      "target_id": "gold.finance.stripe.reconcile_account"
+    },
+    {
+      "query_text": "intent: reconcile",
+      "domain": "finance",
+      "sub_cluster": "reconcile_account",
+      "target_id": "gold.finance.stripe.reconcile_account"
+    },
+    {
+      "query_text": "intent: reconcile account; domain_hint: finance",
+      "domain": "finance",
+      "sub_cluster": "reconcile_account",
+      "target_id": "gold.finance.stripe.reconcile_account"
+    },
+    {
+      "query_text": "intent: reconcile; required_inputs: account_id statement_id",
+      "domain": "finance",
+      "sub_cluster": "reconcile_account",
+      "target_id": "gold.finance.stripe.reconcile_account"
+    },
+    {
+      "query_text": "intent: Reconcile ledger records against bank or gateway statements",
+      "domain": "finance",
+      "sub_cluster": "reconcile_account",
+      "target_id": "gold.finance.stripe.reconcile_account"
+    },
+    {
+      "query_text": "intent: create appointment",
+      "domain": "health",
+      "sub_cluster": "create_appointment",
+      "target_id": "gold.health.epic.create_appointment"
+    },
+    {
+      "query_text": "intent: create appointment; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "create_appointment",
+      "target_id": "gold.health.epic.create_appointment"
+    },
+    {
+      "query_text": "intent: create; required_inputs: patient_id provider_id start_time",
+      "domain": "health",
+      "sub_cluster": "create_appointment",
+      "target_id": "gold.health.epic.create_appointment"
+    },
+    {
+      "query_text": "intent: Create a patient appointment with provider, location, and time details",
+      "domain": "health",
+      "sub_cluster": "create_appointment",
+      "target_id": "gold.health.epic.create_appointment"
+    },
+    {
+      "query_text": "intent: update appointment",
+      "domain": "health",
+      "sub_cluster": "update_appointment",
+      "target_id": "gold.health.epic.update_appointment"
+    },
+    {
+      "query_text": "intent: update appointment; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "update_appointment",
+      "target_id": "gold.health.epic.update_appointment"
+    },
+    {
+      "query_text": "intent: update; required_inputs: appointment_id",
+      "domain": "health",
+      "sub_cluster": "update_appointment",
+      "target_id": "gold.health.epic.update_appointment"
+    },
+    {
+      "query_text": "intent: Update appointment time, provider, location, or visit type",
+      "domain": "health",
+      "sub_cluster": "update_appointment",
+      "target_id": "gold.health.epic.update_appointment"
+    },
+    {
+      "query_text": "intent: cancel appointment",
+      "domain": "health",
+      "sub_cluster": "cancel_appointment",
+      "target_id": "gold.health.epic.cancel_appointment"
+    },
+    {
+      "query_text": "intent: cancel",
+      "domain": "health",
+      "sub_cluster": "cancel_appointment",
+      "target_id": "gold.health.epic.cancel_appointment"
+    },
+    {
+      "query_text": "intent: cancel appointment; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "cancel_appointment",
+      "target_id": "gold.health.epic.cancel_appointment"
+    },
+    {
+      "query_text": "intent: cancel; required_inputs: appointment_id reason",
+      "domain": "health",
+      "sub_cluster": "cancel_appointment",
+      "target_id": "gold.health.epic.cancel_appointment"
+    },
+    {
+      "query_text": "intent: Cancel an appointment and record cancellation reason",
+      "domain": "health",
+      "sub_cluster": "cancel_appointment",
+      "target_id": "gold.health.epic.cancel_appointment"
+    },
+    {
+      "query_text": "intent: get lab result",
+      "domain": "health",
+      "sub_cluster": "get_lab_result",
+      "target_id": "gold.health.epic.get_lab_result"
+    },
+    {
+      "query_text": "intent: get lab result; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "get_lab_result",
+      "target_id": "gold.health.epic.get_lab_result"
+    },
+    {
+      "query_text": "intent: read; required_inputs: result_id",
+      "domain": "health",
+      "sub_cluster": "get_lab_result",
+      "target_id": "gold.health.epic.get_lab_result"
+    },
+    {
+      "query_text": "intent: Retrieve a specific laboratory result with reference ranges and flags",
+      "domain": "health",
+      "sub_cluster": "get_lab_result",
+      "target_id": "gold.health.epic.get_lab_result"
+    },
+    {
+      "query_text": "intent: list medications",
+      "domain": "health",
+      "sub_cluster": "list_medications",
+      "target_id": "gold.health.epic.list_medications"
+    },
+    {
+      "query_text": "intent: list medications; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "list_medications",
+      "target_id": "gold.health.epic.list_medications"
+    },
+    {
+      "query_text": "intent: list; required_inputs: patient_id",
+      "domain": "health",
+      "sub_cluster": "list_medications",
+      "target_id": "gold.health.epic.list_medications"
+    },
+    {
+      "query_text": "intent: List active and historical medications for a patient profile",
+      "domain": "health",
+      "sub_cluster": "list_medications",
+      "target_id": "gold.health.epic.list_medications"
+    },
+    {
+      "query_text": "intent: refill prescription",
+      "domain": "health",
+      "sub_cluster": "refill_prescription",
+      "target_id": "gold.health.epic.refill_prescription"
+    },
+    {
+      "query_text": "intent: refill",
+      "domain": "health",
+      "sub_cluster": "refill_prescription",
+      "target_id": "gold.health.epic.refill_prescription"
+    },
+    {
+      "query_text": "intent: refill prescription; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "refill_prescription",
+      "target_id": "gold.health.epic.refill_prescription"
+    },
+    {
+      "query_text": "intent: refill; required_inputs: prescription_id",
+      "domain": "health",
+      "sub_cluster": "refill_prescription",
+      "target_id": "gold.health.epic.refill_prescription"
+    },
+    {
+      "query_text": "intent: Submit a prescription refill request to the prescribing workflow",
+      "domain": "health",
+      "sub_cluster": "refill_prescription",
+      "target_id": "gold.health.epic.refill_prescription"
+    },
+    {
+      "query_text": "intent: log vitals",
+      "domain": "health",
+      "sub_cluster": "log_vitals",
+      "target_id": "gold.health.epic.log_vitals"
+    },
+    {
+      "query_text": "intent: log vitals; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "log_vitals",
+      "target_id": "gold.health.epic.log_vitals"
+    },
+    {
+      "query_text": "intent: record; required_inputs: patient_id vitals",
+      "domain": "health",
+      "sub_cluster": "log_vitals",
+      "target_id": "gold.health.epic.log_vitals"
+    },
+    {
+      "query_text": "intent: Record patient vitals such as blood pressure, heart rate, and temperature",
+      "domain": "health",
+      "sub_cluster": "log_vitals",
+      "target_id": "gold.health.epic.log_vitals"
+    },
+    {
+      "query_text": "intent: get visit summary",
+      "domain": "health",
+      "sub_cluster": "get_visit_summary",
+      "target_id": "gold.health.epic.get_visit_summary"
+    },
+    {
+      "query_text": "intent: get visit summary; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "get_visit_summary",
+      "target_id": "gold.health.epic.get_visit_summary"
+    },
+    {
+      "query_text": "intent: read; required_inputs: encounter_id",
+      "domain": "health",
+      "sub_cluster": "get_visit_summary",
+      "target_id": "gold.health.epic.get_visit_summary"
+    },
+    {
+      "query_text": "intent: Get visit summary including diagnosis, treatment plan, and instructions",
+      "domain": "health",
+      "sub_cluster": "get_visit_summary",
+      "target_id": "gold.health.epic.get_visit_summary"
+    },
+    {
+      "query_text": "intent: submit claim",
+      "domain": "health",
+      "sub_cluster": "submit_claim",
+      "target_id": "gold.health.epic.submit_claim"
+    },
+    {
+      "query_text": "intent: submit",
+      "domain": "health",
+      "sub_cluster": "submit_claim",
+      "target_id": "gold.health.epic.submit_claim"
+    },
+    {
+      "query_text": "intent: submit claim; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "submit_claim",
+      "target_id": "gold.health.epic.submit_claim"
+    },
+    {
+      "query_text": "intent: submit; required_inputs: encounter_id payer_id",
+      "domain": "health",
+      "sub_cluster": "submit_claim",
+      "target_id": "gold.health.epic.submit_claim"
+    },
+    {
+      "query_text": "intent: Submit a medical claim with coding and payer details",
+      "domain": "health",
+      "sub_cluster": "submit_claim",
+      "target_id": "gold.health.epic.submit_claim"
+    },
+    {
+      "query_text": "intent: check eligibility",
+      "domain": "health",
+      "sub_cluster": "check_eligibility",
+      "target_id": "gold.health.epic.check_eligibility"
+    },
+    {
+      "query_text": "intent: check",
+      "domain": "health",
+      "sub_cluster": "check_eligibility",
+      "target_id": "gold.health.epic.check_eligibility"
+    },
+    {
+      "query_text": "intent: check eligibility; domain_hint: health",
+      "domain": "health",
+      "sub_cluster": "check_eligibility",
+      "target_id": "gold.health.epic.check_eligibility"
+    },
+    {
+      "query_text": "intent: check; required_inputs: patient_id payer_id",
+      "domain": "health",
+      "sub_cluster": "check_eligibility",
+      "target_id": "gold.health.epic.check_eligibility"
+    },
+    {
+      "query_text": "intent: Check insurance eligibility and coverage for a patient and service",
+      "domain": "health",
+      "sub_cluster": "check_eligibility",
+      "target_id": "gold.health.epic.check_eligibility"
+    },
+    {
+      "query_text": "intent: create ticket",
+      "domain": "support",
+      "sub_cluster": "create_ticket",
+      "target_id": "gold.support.zendesk.create_ticket"
+    },
+    {
+      "query_text": "intent: create ticket; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "create_ticket",
+      "target_id": "gold.support.zendesk.create_ticket"
+    },
+    {
+      "query_text": "intent: create; required_inputs: requester_id subject description",
+      "domain": "support",
+      "sub_cluster": "create_ticket",
+      "target_id": "gold.support.zendesk.create_ticket"
+    },
+    {
+      "query_text": "intent: Create a customer support ticket with issue summary and channel metadata",
+      "domain": "support",
+      "sub_cluster": "create_ticket",
+      "target_id": "gold.support.zendesk.create_ticket"
+    },
+    {
+      "query_text": "intent: update ticket",
+      "domain": "support",
+      "sub_cluster": "update_ticket",
+      "target_id": "gold.support.zendesk.update_ticket"
+    },
+    {
+      "query_text": "intent: update ticket; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "update_ticket",
+      "target_id": "gold.support.zendesk.update_ticket"
+    },
+    {
+      "query_text": "intent: update; required_inputs: ticket_id",
+      "domain": "support",
+      "sub_cluster": "update_ticket",
+      "target_id": "gold.support.zendesk.update_ticket"
+    },
+    {
+      "query_text": "intent: Update ticket fields such as priority, status, and category",
+      "domain": "support",
+      "sub_cluster": "update_ticket",
+      "target_id": "gold.support.zendesk.update_ticket"
+    },
+    {
+      "query_text": "intent: close ticket",
+      "domain": "support",
+      "sub_cluster": "close_ticket",
+      "target_id": "gold.support.zendesk.close_ticket"
+    },
+    {
+      "query_text": "intent: close",
+      "domain": "support",
+      "sub_cluster": "close_ticket",
+      "target_id": "gold.support.zendesk.close_ticket"
+    },
+    {
+      "query_text": "intent: close ticket; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "close_ticket",
+      "target_id": "gold.support.zendesk.close_ticket"
+    },
+    {
+      "query_text": "intent: close; required_inputs: ticket_id",
+      "domain": "support",
+      "sub_cluster": "close_ticket",
+      "target_id": "gold.support.zendesk.close_ticket"
+    },
+    {
+      "query_text": "intent: Close a resolved support ticket with closure notes",
+      "domain": "support",
+      "sub_cluster": "close_ticket",
+      "target_id": "gold.support.zendesk.close_ticket"
+    },
+    {
+      "query_text": "intent: reopen ticket",
+      "domain": "support",
+      "sub_cluster": "reopen_ticket",
+      "target_id": "gold.support.zendesk.reopen_ticket"
+    },
+    {
+      "query_text": "intent: reopen ticket; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "reopen_ticket",
+      "target_id": "gold.support.zendesk.reopen_ticket"
+    },
+    {
+      "query_text": "intent: reopen; required_inputs: ticket_id reason",
+      "domain": "support",
+      "sub_cluster": "reopen_ticket",
+      "target_id": "gold.support.zendesk.reopen_ticket"
+    },
+    {
+      "query_text": "intent: Reopen a closed ticket when additional customer action is needed",
+      "domain": "support",
+      "sub_cluster": "reopen_ticket",
+      "target_id": "gold.support.zendesk.reopen_ticket"
+    },
+    {
+      "query_text": "intent: assign ticket",
+      "domain": "support",
+      "sub_cluster": "assign_ticket",
+      "target_id": "gold.support.zendesk.assign_ticket"
+    },
+    {
+      "query_text": "intent: assign ticket; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "assign_ticket",
+      "target_id": "gold.support.zendesk.assign_ticket"
+    },
+    {
+      "query_text": "intent: assign; required_inputs: ticket_id assignee_id",
+      "domain": "support",
+      "sub_cluster": "assign_ticket",
+      "target_id": "gold.support.zendesk.assign_ticket"
+    },
+    {
+      "query_text": "intent: Assign a ticket to an agent, queue, or specialist group",
+      "domain": "support",
+      "sub_cluster": "assign_ticket",
+      "target_id": "gold.support.zendesk.assign_ticket"
+    },
+    {
+      "query_text": "intent: add internal note",
+      "domain": "support",
+      "sub_cluster": "add_internal_note",
+      "target_id": "gold.support.zendesk.add_internal_note"
+    },
+    {
+      "query_text": "intent: note",
+      "domain": "support",
+      "sub_cluster": "add_internal_note",
+      "target_id": "gold.support.zendesk.add_internal_note"
+    },
+    {
+      "query_text": "intent: add internal note; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "add_internal_note",
+      "target_id": "gold.support.zendesk.add_internal_note"
+    },
+    {
+      "query_text": "intent: note; required_inputs: ticket_id note",
+      "domain": "support",
+      "sub_cluster": "add_internal_note",
+      "target_id": "gold.support.zendesk.add_internal_note"
+    },
+    {
+      "query_text": "intent: Add an internal note visible only to support staff",
+      "domain": "support",
+      "sub_cluster": "add_internal_note",
+      "target_id": "gold.support.zendesk.add_internal_note"
+    },
+    {
+      "query_text": "intent: reply to customer",
+      "domain": "support",
+      "sub_cluster": "reply_to_customer",
+      "target_id": "gold.support.zendesk.reply_to_customer"
+    },
+    {
+      "query_text": "intent: reply to customer; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "reply_to_customer",
+      "target_id": "gold.support.zendesk.reply_to_customer"
+    },
+    {
+      "query_text": "intent: reply; required_inputs: ticket_id message",
+      "domain": "support",
+      "sub_cluster": "reply_to_customer",
+      "target_id": "gold.support.zendesk.reply_to_customer"
+    },
+    {
+      "query_text": "intent: Send a response to the customer from the ticket conversation",
+      "domain": "support",
+      "sub_cluster": "reply_to_customer",
+      "target_id": "gold.support.zendesk.reply_to_customer"
+    },
+    {
+      "query_text": "intent: list tickets",
+      "domain": "support",
+      "sub_cluster": "list_tickets",
+      "target_id": "gold.support.zendesk.list_tickets"
+    },
+    {
+      "query_text": "intent: list tickets; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "list_tickets",
+      "target_id": "gold.support.zendesk.list_tickets"
+    },
+    {
+      "query_text": "intent: list; required_inputs: view",
+      "domain": "support",
+      "sub_cluster": "list_tickets",
+      "target_id": "gold.support.zendesk.list_tickets"
+    },
+    {
+      "query_text": "intent: List tickets with status, assignee, and date-based filters",
+      "domain": "support",
+      "sub_cluster": "list_tickets",
+      "target_id": "gold.support.zendesk.list_tickets"
+    },
+    {
+      "query_text": "intent: search tickets",
+      "domain": "support",
+      "sub_cluster": "search_tickets",
+      "target_id": "gold.support.zendesk.search_tickets"
+    },
+    {
+      "query_text": "intent: search tickets; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "search_tickets",
+      "target_id": "gold.support.zendesk.search_tickets"
+    },
+    {
+      "query_text": "intent: Search tickets by keywords, requester, tags, or custom fields",
+      "domain": "support",
+      "sub_cluster": "search_tickets",
+      "target_id": "gold.support.zendesk.search_tickets"
+    },
+    {
+      "query_text": "intent: get sla status",
+      "domain": "support",
+      "sub_cluster": "get_sla_status",
+      "target_id": "gold.support.zendesk.get_sla_status"
+    },
+    {
+      "query_text": "intent: get sla status; domain_hint: support",
+      "domain": "support",
+      "sub_cluster": "get_sla_status",
+      "target_id": "gold.support.zendesk.get_sla_status"
+    },
+    {
+      "query_text": "intent: read; required_inputs: ticket_id",
+      "domain": "support",
+      "sub_cluster": "get_sla_status",
+      "target_id": "gold.support.zendesk.get_sla_status"
+    },
+    {
+      "query_text": "intent: Retrieve SLA timers and breach risk for a support ticket",
+      "domain": "support",
+      "sub_cluster": "get_sla_status",
+      "target_id": "gold.support.zendesk.get_sla_status"
+    }
+  ],
+  "adversarial_pairs": []
+}
