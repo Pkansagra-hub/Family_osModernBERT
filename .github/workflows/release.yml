@@ -57,12 +57,26 @@ jobs:
             --build-bundle
 
       - name: Verify package contents
-        shell: bash
         run: |
-          echo "Package contents:"
-          tar -tzf familyos_ultrabert/dist/*.tar.gz | head -20
-          echo "---"
-          unzip -l familyos_ultrabert/dist/*.whl | head -20
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          dist = Path("familyos_ultrabert/dist")
+          sdist = next(dist.glob("*.tar.gz"))
+          wheel = next(dist.glob("*.whl"))
+
+          print("Package contents:")
+          with tarfile.open(sdist, "r:gz") as tf:
+              for member in tf.getnames()[:20]:
+                  print(member)
+
+          print("---")
+          with zipfile.ZipFile(wheel) as zf:
+              for member in zf.namelist()[:20]:
+                  print(member)
+          PY
 
       - name: Upload workflow artifacts
         if: github.event_name == 'workflow_dispatch'
