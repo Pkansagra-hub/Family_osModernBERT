@@ -1,0 +1,171 @@
+# =============================================================================
+# Embedding Head Bake-Off Configuration
+# =============================================================================
+# Train 6 candidate embedding heads under identical conditions.
+# Derived from embedding_head_retrain.yaml.
+#
+# Usage:
+#   # Single head
+#   python scripts/training/train_embedding_heads_bakeoff.py \
+#       --config configs/training/embedding_heads_bakeoff.yaml \
+#       --head_type agreement_gated
+#
+#   # All experiments sequentially
+#   python scripts/training/train_embedding_heads_bakeoff.py \
+#       --config configs/training/embedding_heads_bakeoff.yaml \
+#       --run_all
+#
+#   # Debug mode
+#   python scripts/training/train_embedding_heads_bakeoff.py \
+#       --config configs/training/embedding_heads_bakeoff.yaml \
+#       --head_type mean_baseline --debug --max_samples 500
+#
+# Output: outputs/embedding-bakeoff/<head_type>/
+
+# =============================================================================
+# Encoder Configuration (FROZEN)
+# =============================================================================
+encoder:
+  checkpoint: outputs/globalpointer-unified-v1/best
+  freeze: true
+  hidden_size: 768
+  dtype: float32
+
+# =============================================================================
+# Default Embedding Head Parameters
+# =============================================================================
+# These are defaults; per-experiment overrides are in experiments.heads[].params
+embedding_head:
+  output_dim: null      # null = keep full 768
+  normalize: true
+
+# =============================================================================
+# Loss Configuration
+# =============================================================================
+loss:
+  type: infonce
+  temperature: 0.07
+  hard_negative_weight: 1.5
+  learnable_temperature: true
+  temperature_lr: 1.0e-3
+  use_in_batch_negatives: true
+
+# =============================================================================
+# Training Configuration
+# =============================================================================
+training:
+  learning_rate: 2.0e-4
+  encoder_lr: 0.0
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-8
+  max_grad_norm: 1.0
+
+  # Mixed Precision (A100/H100)
+  bf16: true
+  fp16: false
+  tf32: true
+  flash_attention: true
+
+  # EMA and Early Stopping
+  ema:
+    enabled: true
+  early_stopping:
+    enabled: true
+    patience: 5
+
+  # Curriculum Learning
+  curriculum:
+    enabled: true
+    warmup_epochs: 2
+
+  # Matryoshka
+  matryoshka:
+    enabled: true
+    dims: [768, 512, 256, 128]
+
+  # Schedule
+  lr_scheduler_type: cosine
+  warmup_steps: 200
+
+  # Training duration
+  num_epochs: 7
+  max_steps: -1
+  val_split: 0.1
+
+  # Batch size
+  batch_size: 2048
+  gradient_accumulation_steps: 1
+
+  # Evaluation & saving
+  eval_steps: 500
+  save_steps: 500
+  save_total_limit: 5
+  max_eval_batches: 100
+
+  # Logging
+  logging_steps: 50
+  seed: 42
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  root: data
+  max_length: 128
+  num_workers: 12
+  embedding:
+    train: familyos/embeddings/silver_synthetic,familyos/embeddings/hard_negatives
+    validation: ""
+
+# =============================================================================
+# Output Configuration
+# =============================================================================
+output:
+  # Base output directory. Each experiment creates a subdirectory.
+  dir: outputs/embedding-bakeoff
+  save_encoder: true
+  save_heads: true
+  save_optimizer: true
+  save_history: true
+
+# =============================================================================
+# Experiment Definitions (6-Head Bake-Off)
+# =============================================================================
+experiments:
+  heads:
+    # E0: Baseline - no learned params (control)
+    - head_type: mean_baseline
+      params: {}
+
+    # E1: Simplest learned residual over encoder_mean
+    - head_type: residual_mlp_mean
+      params:
+        intermediate_dim: 768
+
+    # E2: Bounded latent-attention residual
+    - head_type: latent_residual
+      params:
+        num_latents: 4
+        num_attn_heads: 4
+
+    # E3: Novel agreement-gated refinement (flagship candidate)
+    - head_type: agreement_gated
+      params:
+        num_latents: 4
+        num_attn_heads: 4
+        gate_hidden: 64
+
+    # E4: Multi-view low-rank fusion
+    - head_type: multi_pool_low_rank
+      params:
+        num_latents: 4
+        num_attn_heads: 4
+        rank: 8
+
+    # E5: Anisotropy correction (cosine geometry repair)
+    - head_type: anisotropy_corrected
+      params:
+        use_low_rank_whiten: true
+        whiten_rank: 32

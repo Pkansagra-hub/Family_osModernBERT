@@ -86,6 +86,12 @@ from modeling_studio.models.heads import (  # noqa: E402
     create_globalpointer_head,  # Factory function for GlobalPointer heads
 )
 
+# Import bake-off embedding head factory for checkpoint reload support
+from modeling_studio.models.heads_embedding import (  # noqa: E402
+    EMBEDDING_HEAD_REGISTRY,
+    create_embedding_head,
+)
+
 # Import decoder head (Stage C - Issue 14.1.2)
 # NOTE: MoE decoder deprecated due to Chinchilla scaling failure (22M tokens << 8.4B required)
 # Using pre-trained GPT-2 Medium with prefix injection instead
@@ -797,6 +803,31 @@ class ModernBertMultiTaskModel(PreTrainedModel):
 
         if checkpoint_embedding_metadata is not None:
             setattr(model, "_checkpoint_embedding_metadata", checkpoint_embedding_metadata)
+
+        # Restore bake-off embedding head from metadata if present
+        if (
+            checkpoint_embedding_metadata is not None
+            and "bakeoff" in checkpoint_embedding_metadata
+            and Capability.EMBEDDING in (capabilities or [])
+        ):
+            bakeoff_info = checkpoint_embedding_metadata["bakeoff"]
+            bakeoff_head_type = bakeoff_info.get("head_type")
+            if bakeoff_head_type and bakeoff_head_type in EMBEDDING_HEAD_REGISTRY:
+                bakeoff_params = bakeoff_info.get("head_constructor_params", {})
+                bakeoff_params.pop("head_type", None)
+                hidden_size = getattr(config, "hidden_size", 768)
+                model.heads[Capability.EMBEDDING.value] = create_embedding_head(
+                    head_type=bakeoff_head_type,
+                    hidden_size=hidden_size,
+                    output_dim=bakeoff_params.get("output_dim"),
+                    normalize=bakeoff_params.get("normalize", True),
+                    **{k: v for k, v in bakeoff_params.items()
+                       if k not in ("hidden_size", "output_dim", "normalize")},
+                )
+                logger.info(
+                    f"Restored bake-off embedding head: {bakeoff_head_type} "
+                    f"({type(model.heads[Capability.EMBEDDING.value]).__name__})"
+                )
 
         # Load state dict - try safetensors first, then pytorch format
         safetensors_path = checkpoint_path / "model.safetensors"

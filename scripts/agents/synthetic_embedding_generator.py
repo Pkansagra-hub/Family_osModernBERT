@@ -833,7 +833,9 @@ class VertexAIClient:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
 
-        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_CLOUD_API_KEY")
+        self.api_key = (
+            api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_CLOUD_API_KEY")
+        )
 
         if self.api_key:
             # Use Gemini AI Studio (direct API key, no IAM needed)
@@ -1022,11 +1024,13 @@ class SyntheticDataManager:
                         for line in f:
                             try:
                                 triplet = json.loads(line.strip())
-                                dedup_key = "\t".join([
-                                    triplet.get("anchor", "").lower().strip(),
-                                    triplet.get("positive", "").lower().strip(),
-                                    triplet.get("negative", "").lower().strip(),
-                                ])
+                                dedup_key = "\t".join(
+                                    [
+                                        triplet.get("anchor", "").lower().strip(),
+                                        triplet.get("positive", "").lower().strip(),
+                                        triplet.get("negative", "").lower().strip(),
+                                    ]
+                                )
                                 triplet_hash = hashlib.md5(dedup_key.encode()).hexdigest()
                                 self.seen_hashes.add(triplet_hash)
                             except (json.JSONDecodeError, KeyError):
@@ -1073,11 +1077,13 @@ class SyntheticDataManager:
 
         with self.lock:
             for triplet in triplets:
-                dedup_key = "\t".join([
-                    triplet.get("anchor", "").lower().strip(),
-                    triplet.get("positive", "").lower().strip(),
-                    triplet.get("negative", "").lower().strip(),
-                ])
+                dedup_key = "\t".join(
+                    [
+                        triplet.get("anchor", "").lower().strip(),
+                        triplet.get("positive", "").lower().strip(),
+                        triplet.get("negative", "").lower().strip(),
+                    ]
+                )
                 triplet_hash = hashlib.md5(dedup_key.encode()).hexdigest()
 
                 if triplet_hash in self.seen_hashes:
@@ -1272,9 +1278,7 @@ class EmbeddingTripletGenerator:
         self.delay_between_requests = delay_between_requests
         self.mode = mode
         self.system_prompt = (
-            HARD_NEGATIVE_SYSTEM_PROMPT
-            if mode == GenerationMode.HARD_NEGATIVE
-            else SYSTEM_PROMPT
+            HARD_NEGATIVE_SYSTEM_PROMPT if mode == GenerationMode.HARD_NEGATIVE else SYSTEM_PROMPT
         )
 
         if use_vertex_ai or USE_VERTEX_AI:
@@ -1320,11 +1324,7 @@ class EmbeddingTripletGenerator:
             logger.info(f"Using OpenRouter with {len(self.clients)} API keys")
 
         # Use separate output directory for hard negatives
-        output_dir = (
-            HARD_NEG_OUTPUT_DIR
-            if mode == GenerationMode.HARD_NEGATIVE
-            else OUTPUT_DIR
-        )
+        output_dir = HARD_NEG_OUTPUT_DIR if mode == GenerationMode.HARD_NEGATIVE else OUTPUT_DIR
         self.output_manager = SyntheticDataManager(output_dir=output_dir)
         self.batch_counter = 0
         self.batch_lock = threading.Lock()
