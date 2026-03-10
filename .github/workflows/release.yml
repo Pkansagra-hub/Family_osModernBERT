@@ -90,11 +90,37 @@ jobs:
           name: familyos-ultrabert-${{ steps.version.outputs.version }}
           path: familyos_ultrabert/dist/*
 
+      - name: Prepare PyPI artifacts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          source = Path("familyos_ultrabert/dist")
+          target = Path("familyos_ultrabert/pypi-dist")
+          if target.exists():
+              shutil.rmtree(target)
+          target.mkdir(parents=True, exist_ok=True)
+
+          copied = []
+          for pattern in ("*.whl", "*.tar.gz"):
+              for path in source.glob(pattern):
+                  shutil.copy2(path, target / path.name)
+                  copied.append(path.name)
+
+          if not copied:
+              raise SystemExit("No PyPI-uploadable artifacts found")
+
+          print("Prepared PyPI artifacts:")
+          for name in copied:
+              print(name)
+          PY
+
       - name: Publish to PyPI
         if: github.event_name == 'release' || github.event.inputs.publish_to_pypi == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: familyos_ultrabert/dist/
+          packages-dir: familyos_ultrabert/pypi-dist/
           print-hash: true
 
       - name: Upload GitHub release assets
