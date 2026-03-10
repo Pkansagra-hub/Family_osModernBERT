@@ -9,6 +9,11 @@ on:
         description: 'Version to release (e.g., 4.0.0)'
         required: true
         type: string
+      publish_to_pypi:
+        description: 'Publish built artifacts to PyPI as part of this manual run'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-and-publish:
@@ -86,7 +91,7 @@ jobs:
           path: familyos_ultrabert/dist/*
 
       - name: Publish to PyPI
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || github.event.inputs.publish_to_pypi == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: familyos_ultrabert/dist/
