@@ -1726,6 +1726,11 @@ def main() -> None:
     output_base = Path(config.get("output", {}).get("dir", "outputs/embedding-bakeoff"))
 
     if args.run_all:
+        logger.info("")
+        logger.info("#" * 70)
+        logger.info("# RUN MODE: JOINT MULTI-HEAD BAKE-OFF (--run_all)")
+        logger.info("# Shared encoder pass | all configured heads trained together")
+        logger.info("#" * 70)
         run_joint_bakeoff(
             config=config,
             output_base=output_base,
@@ -1734,6 +1739,11 @@ def main() -> None:
         )
 
     elif args.run_sequential:
+        logger.info("")
+        logger.info("#" * 70)
+        logger.info("# RUN MODE: SEQUENTIAL BAKE-OFF (--run_sequential)")
+        logger.info("# Heads are trained one by one")
+        logger.info("#" * 70)
         experiments = get_configured_head_experiments(config)
         if not experiments:
             logger.error("No experiments defined in config under experiments.heads")
@@ -1772,6 +1782,11 @@ def main() -> None:
         log_head_leaderboard(summary, "SEQUENTIAL BAKE-OFF LEADERBOARD")
 
     elif args.head_type:
+        logger.info("")
+        logger.info("#" * 70)
+        logger.info(f"# RUN MODE: SINGLE HEAD (--head_type {args.head_type})")
+        logger.info("# Only one embedding head will be trained")
+        logger.info("#" * 70)
         # Single experiment from CLI
         # Check if this head has experiment-specific params in config
         merged_params = config.get("embedding_head", {})
