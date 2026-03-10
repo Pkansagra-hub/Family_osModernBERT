@@ -10,10 +10,15 @@
 #       --config configs/training/embedding_heads_bakeoff.yaml \
 #       --head_type agreement_gated
 #
-#   # All experiments sequentially
+#   # Train all heads together in one shared-encoder run
 #   python scripts/training/train_embedding_heads_bakeoff.py \
 #       --config configs/training/embedding_heads_bakeoff.yaml \
 #       --run_all
+#
+#   # Legacy sequential mode
+#   python scripts/training/train_embedding_heads_bakeoff.py \
+#       --config configs/training/embedding_heads_bakeoff.yaml \
+#       --run_sequential
 #
 #   # Debug mode
 #   python scripts/training/train_embedding_heads_bakeoff.py \

@@ -8,7 +8,8 @@ under identical conditions for fair comparison.
 Derived from train_embedding_head.py with these additions:
     - Config-driven head selection via embedding_head.head_type
     - Custom head metadata saved per checkpoint for correct reload
-    - Support for running multiple experiments sequentially via --experiments
+    - Shared-encoder joint bake-off mode via --run_all
+    - Optional sequential fallback via --run_sequential
     - All other behavior (data loading, loss, freezing, eval) is identical
 
 Usage:
@@ -17,10 +18,15 @@ Usage:
         --config configs/training/embedding_heads_bakeoff.yaml \
         --head_type agreement_gated
 
-    # All experiments sequentially
+    # Train all configured heads together (shared encoder pass)
     python scripts/training/train_embedding_heads_bakeoff.py \
         --config configs/training/embedding_heads_bakeoff.yaml \
         --run_all
+
+    # Legacy sequential mode
+    python scripts/training/train_embedding_heads_bakeoff.py \
+        --config configs/training/embedding_heads_bakeoff.yaml \
+        --run_sequential
 
     # Debug mode (small dataset, one head)
     python scripts/training/train_embedding_heads_bakeoff.py \
@@ -35,7 +41,7 @@ Architecture:
         |
         +-- embedding head [REPLACED with candidate, TRAINABLE]
 
-Output: ONE checkpoint per experiment with all capabilities intact
+Output: per-head checkpoints and a combined bake-off summary
 """
 
 from __future__ import annotations
@@ -366,6 +372,89 @@ def get_trainable_params(model: ModernBertMultiTaskModel) -> list[nn.Parameter]:
     return [p for p in model.parameters() if p.requires_grad]
 
 
+def freeze_base_model_for_joint_bakeoff(model: ModernBertMultiTaskModel) -> None:
+    """Freeze encoder and all built-in heads for shared multi-head training."""
+    for param in model.encoder.parameters():
+        param.requires_grad = False
+    for head in model.heads.values():
+        for param in head.parameters():
+            param.requires_grad = False
+
+    encoder_params = sum(p.numel() for p in model.encoder.parameters())
+    frozen_heads = list(model.heads.keys())
+    logger.info(f"  Encoder: {encoder_params:,} params (frozen)")
+    logger.info(f"  Built-in frozen heads: {', '.join(frozen_heads)} ({len(frozen_heads)} heads)")
+
+
+def count_parameters(module: nn.Module) -> int:
+    """Count parameters in a module."""
+    return sum(param.numel() for param in module.parameters())
+
+
+def merge_head_params(
+    default_params: dict[str, Any],
+    experiment_params: dict[str, Any],
+) -> dict[str, Any]:
+    """Merge top-level and experiment-specific head parameters."""
+    merged_params = {**default_params, **experiment_params}
+    merged_params.pop("head_type", None)
+    merged_params.pop("pooling", None)
+    return merged_params
+
+
+def get_configured_head_experiments(config: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    """Return configured head experiments with merged parameters."""
+    experiments_config = config.get("experiments", {})
+    default_params = config.get("embedding_head", {})
+    experiments = experiments_config.get("heads", [])
+    return [
+        (exp["head_type"], merge_head_params(default_params, exp.get("params", {})))
+        for exp in experiments
+    ]
+
+
+def encode_triplet_batch(
+    model: ModernBertMultiTaskModel,
+    batch: dict[str, Any],
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.float16,
+) -> dict[str, torch.Tensor]:
+    """Encode anchor/positive/negative text once with the frozen encoder."""
+    anchor_ids = batch["anchor_input_ids"].to(device)
+    anchor_mask = batch["anchor_attention_mask"].to(device)
+    positive_ids = batch["positive_input_ids"].to(device)
+    positive_mask = batch["positive_attention_mask"].to(device)
+    negative_ids = batch["negative_input_ids"].to(device)
+    negative_mask = batch["negative_attention_mask"].to(device)
+    hard_neg_mask = batch["hard_negative_mask"].to(device)
+
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    with amp_context:
+        with torch.no_grad():
+            enc_out = model.encoder(input_ids=anchor_ids, attention_mask=anchor_mask)
+            anchor_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
+            enc_out = model.encoder(input_ids=positive_ids, attention_mask=positive_mask)
+            positive_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
+            enc_out = model.encoder(input_ids=negative_ids, attention_mask=negative_mask)
+            negative_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
+
+    return {
+        "anchor_hidden": anchor_hidden,
+        "anchor_mask": anchor_mask,
+        "positive_hidden": positive_hidden,
+        "positive_mask": positive_mask,
+        "negative_hidden": negative_hidden,
+        "negative_mask": negative_mask,
+        "hard_neg_mask": hard_neg_mask,
+    }
+
+
 # =============================================================================
 # Data Loading
 # =============================================================================
@@ -402,13 +491,14 @@ def train_step(
     amp_dtype: torch.dtype = torch.float16,
     matryoshka_dims: list[int] | None = None,
 ) -> dict[str, torch.Tensor]:
-    anchor_ids = batch["anchor_input_ids"].to(device)
-    anchor_mask = batch["anchor_attention_mask"].to(device)
-    positive_ids = batch["positive_input_ids"].to(device)
-    positive_mask = batch["positive_attention_mask"].to(device)
-    negative_ids = batch["negative_input_ids"].to(device)
-    negative_mask = batch["negative_attention_mask"].to(device)
-    hard_neg_mask = batch["hard_negative_mask"].to(device)
+    encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
+    anchor_hidden = encoded["anchor_hidden"]
+    anchor_mask = encoded["anchor_mask"]
+    positive_hidden = encoded["positive_hidden"]
+    positive_mask = encoded["positive_mask"]
+    negative_hidden = encoded["negative_hidden"]
+    negative_mask = encoded["negative_mask"]
+    hard_neg_mask = encoded["hard_neg_mask"]
 
     amp_context = (
         autocast("cuda", dtype=amp_dtype, enabled=use_amp)
@@ -417,13 +507,6 @@ def train_step(
     )
 
     with amp_context:
-        with torch.no_grad():
-            enc_out = model.encoder(input_ids=anchor_ids, attention_mask=anchor_mask)
-            anchor_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
-            enc_out = model.encoder(input_ids=positive_ids, attention_mask=positive_mask)
-            positive_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
-            enc_out = model.encoder(input_ids=negative_ids, attention_mask=negative_mask)
-            negative_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
 
         embedding_head = model.heads["embedding"]
         anchor_emb = embedding_head(anchor_hidden, anchor_mask)
@@ -492,22 +575,16 @@ def evaluate(
     for batch_idx, batch in enumerate(val_loader):
         if max_batches is not None and batch_idx >= max_batches:
             break
-        anchor_ids = batch["anchor_input_ids"].to(device)
-        anchor_mask = batch["anchor_attention_mask"].to(device)
-        positive_ids = batch["positive_input_ids"].to(device)
-        positive_mask = batch["positive_attention_mask"].to(device)
-        negative_ids = batch["negative_input_ids"].to(device)
-        negative_mask = batch["negative_attention_mask"].to(device)
-        hard_neg_mask = batch["hard_negative_mask"].to(device)
+        encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
+        anchor_hidden = encoded["anchor_hidden"]
+        anchor_mask = encoded["anchor_mask"]
+        positive_hidden = encoded["positive_hidden"]
+        positive_mask = encoded["positive_mask"]
+        negative_hidden = encoded["negative_hidden"]
+        negative_mask = encoded["negative_mask"]
+        hard_neg_mask = encoded["hard_neg_mask"]
 
         with amp_context:
-            enc_out = model.encoder(input_ids=anchor_ids, attention_mask=anchor_mask)
-            anchor_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
-            enc_out = model.encoder(input_ids=positive_ids, attention_mask=positive_mask)
-            positive_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
-            enc_out = model.encoder(input_ids=negative_ids, attention_mask=negative_mask)
-            negative_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
-
             embedding_head = model.heads["embedding"]
             anchor_emb = embedding_head(anchor_hidden, anchor_mask)
             positive_emb = embedding_head(positive_hidden, positive_mask)
@@ -555,6 +632,147 @@ def evaluate(
         f"hard_neg_acc={metrics['hard_neg_accuracy']:.4f}"
     )
     return metrics
+
+
+@torch.no_grad()
+def evaluate_all_heads(
+    model: ModernBertMultiTaskModel,
+    candidate_heads: nn.ModuleDict,
+    loss_modules: nn.ModuleDict,
+    val_loader: DataLoader,
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    max_batches: int | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Evaluate all candidate heads side-by-side on the same validation set."""
+    model.eval()
+    candidate_heads.eval()
+
+    totals: dict[str, dict[str, float]] = {
+        head_type: {
+            "loss": 0.0,
+            "pos_sim": 0.0,
+            "neg_sim": 0.0,
+            "correct": 0.0,
+            "samples": 0.0,
+            "hard_neg_correct": 0.0,
+            "hard_neg_samples": 0.0,
+        }
+        for head_type in candidate_heads.keys()
+    }
+
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    for batch_idx, batch in enumerate(val_loader):
+        if max_batches is not None and batch_idx >= max_batches:
+            break
+
+        encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
+        anchor_hidden = encoded["anchor_hidden"]
+        anchor_mask = encoded["anchor_mask"]
+        positive_hidden = encoded["positive_hidden"]
+        positive_mask = encoded["positive_mask"]
+        negative_hidden = encoded["negative_hidden"]
+        negative_mask = encoded["negative_mask"]
+        hard_neg_mask = encoded["hard_neg_mask"]
+
+        with amp_context:
+            for head_type, head in candidate_heads.items():
+                anchor_emb = head(anchor_hidden, anchor_mask)
+                positive_emb = head(positive_hidden, positive_mask)
+                negative_emb = head(negative_hidden, negative_mask)
+
+                negatives = negative_emb.unsqueeze(1)
+                hard_neg_mask_expanded = hard_neg_mask.unsqueeze(1)
+                batch_loss = loss_modules[head_type](
+                    anchor=anchor_emb,
+                    positive=positive_emb,
+                    negatives=negatives,
+                    hard_negative_mask=hard_neg_mask_expanded,
+                )
+
+                pos_sim = F.cosine_similarity(anchor_emb, positive_emb)
+                neg_sim = F.cosine_similarity(anchor_emb, negative_emb)
+                correct = (pos_sim > neg_sim).float()
+                batch_size = anchor_emb.size(0)
+
+                totals[head_type]["loss"] += batch_loss.item() * batch_size
+                totals[head_type]["pos_sim"] += pos_sim.sum().item()
+                totals[head_type]["neg_sim"] += neg_sim.sum().item()
+                totals[head_type]["correct"] += correct.sum().item()
+                totals[head_type]["samples"] += batch_size
+
+                if hard_neg_mask.any():
+                    totals[head_type]["hard_neg_correct"] += correct[hard_neg_mask].sum().item()
+                    totals[head_type]["hard_neg_samples"] += hard_neg_mask.sum().item()
+
+    model.train()
+    candidate_heads.train()
+
+    metrics_by_head: dict[str, dict[str, Any]] = {}
+    for head_type, total in totals.items():
+        sample_count = int(total["samples"])
+        if sample_count == 0:
+            metrics_by_head[head_type] = {
+                "val_loss": 0.0,
+                "pos_sim": 0.0,
+                "neg_sim": 0.0,
+                "margin": 0.0,
+                "accuracy": 0.0,
+                "hard_neg_accuracy": 0.0,
+                "hard_neg_samples": 0,
+                "total_samples": 0,
+            }
+            continue
+
+        avg_pos_sim = total["pos_sim"] / sample_count
+        avg_neg_sim = total["neg_sim"] / sample_count
+        hard_neg_samples = int(total["hard_neg_samples"])
+        metrics_by_head[head_type] = {
+            "val_loss": total["loss"] / sample_count,
+            "pos_sim": avg_pos_sim,
+            "neg_sim": avg_neg_sim,
+            "margin": avg_pos_sim - avg_neg_sim,
+            "accuracy": total["correct"] / sample_count,
+            "hard_neg_accuracy": total["hard_neg_correct"] / hard_neg_samples if hard_neg_samples > 0 else 0.0,
+            "hard_neg_samples": hard_neg_samples,
+            "total_samples": sample_count,
+        }
+
+    return metrics_by_head
+
+
+def log_head_leaderboard(
+    metrics_by_head: dict[str, dict[str, Any]],
+    title: str,
+) -> None:
+    """Log a compact per-head leaderboard."""
+    def metric_value(metrics: dict[str, Any], primary: str, fallback: str) -> float:
+        value = metrics.get(primary, metrics.get(fallback, 0.0))
+        return float(value)
+
+    log_section(title)
+    logger.info(f"{'Rank':<6}{'Head':<25}{'Margin':<10}{'Acc':<10}{'HardNeg':<10}{'ValLoss':<10}")
+    logger.info("-" * 71)
+    sorted_heads = sorted(
+        metrics_by_head.items(),
+        key=lambda item: metric_value(item[1], "margin", "best_margin"),
+        reverse=True,
+    )
+    for rank, (head_type, metrics) in enumerate(sorted_heads, 1):
+        margin = metric_value(metrics, "margin", "best_margin")
+        accuracy = metric_value(metrics, "accuracy", "best_accuracy")
+        hard_neg_accuracy = metric_value(metrics, "hard_neg_accuracy", "best_hard_neg_accuracy")
+        val_loss = metric_value(metrics, "val_loss", "best_val_loss")
+        logger.info(
+            f"{rank:<6}{head_type:<25}{margin:<10.4f}{accuracy:<10.4f}"
+            f"{hard_neg_accuracy:<10.4f}{val_loss:<10.4f}"
+        )
 
 
 # =============================================================================
@@ -757,6 +975,7 @@ def save_bakeoff_checkpoint(
     head_params: dict[str, Any] | None = None,
     optimizer: Any = None,
     scheduler: Any = None,
+    embedding_head_override: nn.Module | None = None,
 ) -> None:
     """Save full model checkpoint with bake-off embedding head metadata."""
     from safetensors.torch import save_file
@@ -767,7 +986,8 @@ def save_bakeoff_checkpoint(
     for name, param in model.encoder.state_dict().items():
         state_dict[f"encoder.{name}"] = param
     for head_name, head in model.heads.items():
-        for name, param in head.state_dict().items():
+        current_head = embedding_head_override if head_name == "embedding" and embedding_head_override is not None else head
+        for name, param in current_head.state_dict().items():
             state_dict[f"heads.{head_name}.{name}"] = param
 
     save_file(state_dict, checkpoint_dir / "model.safetensors")
@@ -799,7 +1019,7 @@ def save_bakeoff_checkpoint(
         torch.save(scheduler.state_dict(), checkpoint_dir / "scheduler.pt")
 
     # Bake-off embedding metadata (the key addition)
-    embedding_head = model.heads["embedding"] if "embedding" in model.heads else None
+    embedding_head = embedding_head_override if embedding_head_override is not None else (model.heads["embedding"] if "embedding" in model.heads else None)
     head_constructor_params = get_head_constructor_params(embedding_head) if embedding_head is not None else {}
 
     embedding_metadata = {
@@ -815,14 +1035,15 @@ def save_bakeoff_checkpoint(
         "trained_head": "embedding",
     }
     for hn, h in model.heads.items():
-        info = {"class": type(h).__name__}
+        current_head = embedding_head_override if hn == "embedding" and embedding_head_override is not None else h
+        info = {"class": type(current_head).__name__}
         if hn == "embedding":
             info.update({
                 "head_type": head_type,
-                "pooling": getattr(h, "pooling", None),
-                "output_dim": getattr(h, "output_dim", None),
-                "hidden_size": getattr(h, "hidden_size", None),
-                "normalize": getattr(h, "normalize", None),
+                "pooling": getattr(current_head, "pooling", None),
+                "output_dim": getattr(current_head, "output_dim", None),
+                "hidden_size": getattr(current_head, "hidden_size", None),
+                "normalize": getattr(current_head, "normalize", None),
             })
         embedding_metadata["head_info"][hn] = info
 
@@ -844,6 +1065,471 @@ def save_bakeoff_checkpoint(
                 json.dump({"replaced_heads": list(gp_info.keys()), "head_architecture": "GlobalPointerNERHead", "head_info": gp_info}, f, indent=2)
 
     logger.info(f"Saved: {checkpoint_dir.name} (head_type={head_type})")
+
+
+def run_joint_bakeoff(
+    config: dict[str, Any],
+    output_base: Path,
+    debug: bool = False,
+    max_samples: int | None = None,
+) -> dict[str, Any]:
+    """Train all configured embedding heads together with a shared encoder pass."""
+    head_experiments = get_configured_head_experiments(config)
+    if not head_experiments:
+        raise ValueError("No experiments defined in config under experiments.heads")
+
+    encoder_config = config.get("encoder", {})
+    training_config = config.get("training", {})
+    loss_config = config.get("loss", {})
+    data_config = config.get("data", {})
+
+    checkpoint_path = encoder_config.get("checkpoint", "checkpoints/checkpoint-8000")
+    data_root = Path(data_config.get("root", "data"))
+    learning_rate = training_config.get("learning_rate", 2e-4)
+    weight_decay = training_config.get("weight_decay", 0.01)
+    num_epochs = training_config.get("num_epochs", 3)
+    batch_size = training_config.get("batch_size", 128)
+    max_length = data_config.get("max_length", 128)
+    warmup_steps = training_config.get("warmup_steps", 500)
+    eval_steps = training_config.get("eval_steps", 500)
+    logging_steps = training_config.get("logging_steps", 50)
+    gradient_accumulation_steps = training_config.get("gradient_accumulation_steps", 4)
+    max_grad_norm = training_config.get("max_grad_norm", 1.0)
+    val_split = training_config.get("val_split", 0.1)
+    num_workers = data_config.get("num_workers", 8)
+    max_eval_batches = training_config.get("max_eval_batches", 100)
+    use_bf16 = training_config.get("bf16", False)
+    use_tf32 = training_config.get("tf32", False)
+    use_flash_attention = training_config.get("flash_attention", False)
+    ema_config = training_config.get("ema", {})
+    use_ema = ema_config.get("enabled", True)
+    es_config = training_config.get("early_stopping", {})
+    early_stopping_enabled = es_config.get("enabled", True)
+    early_stopping_patience = es_config.get("patience", 5)
+    lr_scheduler_type = training_config.get("lr_scheduler_type", "cosine")
+    temperature = loss_config.get("temperature", 0.07)
+    hard_negative_weight = loss_config.get("hard_negative_weight", 1.5)
+    learnable_temperature = loss_config.get("learnable_temperature", False)
+    temperature_lr = loss_config.get("temperature_lr", 1e-3)
+    curriculum_config = training_config.get("curriculum", {})
+
+    if debug:
+        max_samples = max_samples or 500
+        eval_steps = 50
+
+    seed = training_config.get("seed", 42)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        gpu_name = torch.cuda.get_device_name(0)
+        logger.info(f"Device: {gpu_name}")
+        if use_tf32 and ("A100" in gpu_name or "H100" in gpu_name):
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+
+    log_section("JOINT BAKE-OFF MODEL")
+    base_model = load_model_and_replace_embedding_head(
+        checkpoint_path,
+        head_type="mean_baseline",
+        head_params={},
+        use_flash_attention=use_flash_attention,
+    )
+    freeze_base_model_for_joint_bakeoff(base_model)
+    base_model = base_model.to(device)
+
+    hidden_size = base_model.config.hidden_size
+    candidate_heads = nn.ModuleDict({
+        head_type: create_embedding_head(head_type=head_type, hidden_size=hidden_size, **head_params)
+        for head_type, head_params in head_experiments
+    }).to(device)
+
+    logger.info("  Candidate heads loaded together:")
+    total_head_params = 0
+    for head_type, head in candidate_heads.items():
+        param_count = count_parameters(head)
+        total_head_params += param_count
+        logger.info(f"    {head_type:<25} {type(head).__name__:<28} {param_count:>10,} params")
+    logger.info(f"  Total candidate head params: {total_head_params:,}")
+
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+
+    log_section("DATA")
+    data_paths = get_embedding_data_paths(data_config, data_root)
+    logger.info(f"  Data sources: {len(data_paths)}")
+    for path in data_paths:
+        logger.info(f"    {path}")
+
+    full_dataset = TripletDataset(data_paths=data_paths, max_samples=max_samples)
+    val_size = int(len(full_dataset) * val_split)
+    train_size = len(full_dataset) - val_size
+    logger.info(f"  Total: {len(full_dataset)} triplets (train={train_size}, val={val_size})")
+
+    train_dataset, val_dataset = torch.utils.data.random_split(
+        full_dataset,
+        [train_size, val_size],
+        generator=torch.Generator().manual_seed(seed),
+    )
+    collator = TripletCollator(tokenizer=tokenizer, max_length=max_length)
+    effective_workers = 0 if platform.system() == "Windows" else num_workers
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collator,
+        num_workers=effective_workers,
+        pin_memory=True,
+        persistent_workers=effective_workers > 0,
+        drop_last=True,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collator,
+        num_workers=effective_workers,
+        pin_memory=True,
+        persistent_workers=effective_workers > 0,
+    )
+
+    loss_modules = nn.ModuleDict({
+        head_type: FamilyContrastiveLoss(
+            temperature=temperature,
+            hard_negative_weight=hard_negative_weight,
+            use_hard_negatives=True,
+            normalize=False,
+        )
+        for head_type, _ in head_experiments
+    }).to(device)
+    if learnable_temperature:
+        for loss_module in loss_modules.values():
+            loss_module.log_temperature.requires_grad_(True)
+
+    param_groups = []
+    for head_type, head in candidate_heads.items():
+        head_params_list = [param for param in head.parameters() if param.requires_grad]
+        if head_params_list:
+            param_groups.append({"params": head_params_list, "lr": learning_rate, "weight_decay": weight_decay})
+        if learnable_temperature:
+            param_groups.append({"params": [loss_modules[head_type].log_temperature], "lr": temperature_lr, "weight_decay": 0.0})
+
+    optimizer = torch.optim.AdamW(
+        param_groups,
+        betas=(training_config.get("adam_beta1", 0.9), training_config.get("adam_beta2", 0.999)),
+        eps=training_config.get("adam_epsilon", 1e-8),
+    )
+
+    num_training_steps = len(train_loader) * num_epochs // gradient_accumulation_steps
+    adaptive_warmup = max(10, int(num_training_steps * 0.05))
+    effective_warmup = min(warmup_steps, adaptive_warmup) if num_training_steps < warmup_steps else warmup_steps
+    if lr_scheduler_type == "cosine":
+        scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=effective_warmup, num_training_steps=num_training_steps)
+    else:
+        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=effective_warmup, num_training_steps=num_training_steps)
+
+    logger.info(f"  Steps: {num_training_steps} total, {effective_warmup} warmup")
+    logger.info(f"  Effective batch size: {batch_size * gradient_accumulation_steps}")
+
+    amp_dtype = torch.bfloat16 if use_bf16 else torch.float16
+    use_scaler = device.type == "cuda" and not use_bf16
+    scaler = GradScaler("cuda", enabled=use_scaler)
+    ema_heads = nn.ModuleDict({head_type: copy.deepcopy(head) for head_type, head in candidate_heads.items()}).to(device) if use_ema else None
+    if ema_heads is not None:
+        ema_heads.eval()
+
+    history: dict[str, Any] = {
+        "mode": "joint_multi_head",
+        "heads": {
+            head_type: {
+                "params": head_params,
+                "train_loss": [],
+                "train_pos_sim": [],
+                "train_neg_sim": [],
+                "train_margin": [],
+                "eval_metrics": [],
+            }
+            for head_type, head_params in head_experiments
+        },
+    }
+    best_margin = {head_type: -1.0 for head_type, _ in head_experiments}
+    no_improve_count = {head_type: 0 for head_type, _ in head_experiments}
+    trainable_heads = {
+        head_type
+        for head_type, head in candidate_heads.items()
+        if count_parameters(head) > 0 or learnable_temperature
+    }
+    active_heads = set(trainable_heads)
+    global_step = 0
+
+    log_section("JOINT TRAINING")
+    logger.info(f"  Heads trained together: {', '.join(candidate_heads.keys())}")
+    logger.info(f"  Epochs: {num_epochs} | Batches: {len(train_loader)} | Grad accum: {gradient_accumulation_steps}")
+    optimizer.zero_grad()
+
+    for epoch in range(num_epochs):
+        logger.info(f"\n--- Joint epoch {epoch + 1}/{num_epochs} ---")
+
+        if curriculum_config and curriculum_config.get("enabled", False):
+            warmup_epochs = curriculum_config.get("warmup_epochs", num_epochs)
+            scale = min(1.0, epoch / max(warmup_epochs - 1, 1))
+            current_hn_weight = hard_negative_weight * scale
+            for loss_module in loss_modules.values():
+                loss_module.hard_negative_weight = current_hn_weight
+            logger.info(f"  Curriculum: hard_negative_weight={current_hn_weight:.3f}")
+
+        if learnable_temperature:
+            temp_line = ", ".join(
+                f"{head_type}={loss_modules[head_type].log_temperature.exp().item():.4f}"
+                for head_type in candidate_heads.keys()
+            )
+            logger.info(f"  Learned temperatures: {temp_line}")
+
+        epoch_totals = {
+            head_type: {"loss": 0.0, "pos": 0.0, "neg": 0.0, "steps": 0}
+            for head_type in candidate_heads.keys()
+        }
+        progress = tqdm(train_loader, desc=f"Joint epoch {epoch + 1}/{num_epochs}")
+
+        for step, batch in enumerate(progress):
+            encoded = encode_triplet_batch(base_model, batch, device, use_amp=use_bf16, amp_dtype=amp_dtype)
+            anchor_hidden = encoded["anchor_hidden"]
+            anchor_mask = encoded["anchor_mask"]
+            positive_hidden = encoded["positive_hidden"]
+            positive_mask = encoded["positive_mask"]
+            negative_hidden = encoded["negative_hidden"]
+            negative_mask = encoded["negative_mask"]
+            hard_neg_mask = encoded["hard_neg_mask"]
+
+            amp_context = (
+                autocast("cuda", dtype=amp_dtype, enabled=use_bf16)
+                if device.type == "cuda"
+                else autocast("cpu", enabled=False)
+            )
+
+            with amp_context:
+                head_losses = {}
+                batch_metrics = {}
+                for head_type, head in candidate_heads.items():
+                    anchor_emb = head(anchor_hidden, anchor_mask)
+                    positive_emb = head(positive_hidden, positive_mask)
+                    negative_emb = head(negative_hidden, negative_mask)
+
+                    if config.get("training", {}).get("matryoshka", {}).get("enabled", False):
+                        dims = config["training"]["matryoshka"].get("dims", [hidden_size])
+                        total_loss = 0.0
+                        for dim in dims:
+                            a_d = F.normalize(anchor_emb[:, :dim], p=2, dim=-1)
+                            p_d = F.normalize(positive_emb[:, :dim], p=2, dim=-1)
+                            n_d = F.normalize(negative_emb[:, :dim], p=2, dim=-1).unsqueeze(1)
+                            hn_mask = hard_neg_mask.unsqueeze(1)
+                            total_loss = total_loss + loss_modules[head_type](
+                                anchor=a_d,
+                                positive=p_d,
+                                negatives=n_d,
+                                hard_negative_mask=hn_mask,
+                            )
+                        loss = total_loss / len(dims)
+                    else:
+                        negatives = negative_emb.unsqueeze(1)
+                        hard_neg_mask_expanded = hard_neg_mask.unsqueeze(1)
+                        loss = loss_modules[head_type](
+                            anchor=anchor_emb,
+                            positive=positive_emb,
+                            negatives=negatives,
+                            hard_negative_mask=hard_neg_mask_expanded,
+                        )
+
+                    pos_sim = F.cosine_similarity(anchor_emb, positive_emb).mean().item()
+                    neg_sim = F.cosine_similarity(anchor_emb, negative_emb).mean().item()
+                    margin = pos_sim - neg_sim
+
+                    head_losses[head_type] = loss
+                    batch_metrics[head_type] = {
+                        "loss": loss.item(),
+                        "pos_sim": pos_sim,
+                        "neg_sim": neg_sim,
+                        "margin": margin,
+                    }
+
+            optim_losses = [head_losses[head_type] for head_type in active_heads if head_type in head_losses]
+            if optim_losses:
+                total_optim_loss = torch.stack(optim_losses).mean()
+                if gradient_accumulation_steps > 1:
+                    total_optim_loss = total_optim_loss / gradient_accumulation_steps
+                if use_scaler:
+                    scaler.scale(total_optim_loss).backward()
+                else:
+                    total_optim_loss.backward()
+
+                if (step + 1) % gradient_accumulation_steps == 0:
+                    if use_scaler:
+                        scaler.unscale_(optimizer)
+                    trainable_params = [param for param_group in optimizer.param_groups for param in param_group["params"]]
+                    torch.nn.utils.clip_grad_norm_(trainable_params, max_grad_norm)
+                    if use_scaler:
+                        scaler.step(optimizer)
+                        scaler.update()
+                    else:
+                        optimizer.step()
+                    scheduler.step()
+                    optimizer.zero_grad()
+                    global_step += 1
+
+                    if ema_heads is not None:
+                        with torch.no_grad():
+                            for head_type in candidate_heads.keys():
+                                ema_state = ema_heads[head_type].state_dict()
+                                current_state = candidate_heads[head_type].state_dict()
+                                for key in ema_state.keys():
+                                    ema_state[key].mul_(0.999).add_(current_state[key], alpha=0.001)
+
+            best_batch_head = max(batch_metrics.items(), key=lambda item: item[1]["margin"])
+            lr = scheduler.get_last_lr()[0]
+            progress.set_postfix(best=f"{best_batch_head[0]}:{best_batch_head[1]['margin']:.3f}", lr=f"{lr:.2e}")
+
+            for head_type, metrics in batch_metrics.items():
+                epoch_totals[head_type]["loss"] += metrics["loss"]
+                epoch_totals[head_type]["pos"] += metrics["pos_sim"]
+                epoch_totals[head_type]["neg"] += metrics["neg_sim"]
+                epoch_totals[head_type]["steps"] += 1
+
+            if global_step > 0 and global_step % logging_steps == 0:
+                top_heads = sorted(batch_metrics.items(), key=lambda item: item[1]["margin"], reverse=True)[:3]
+                top_summary = " | ".join(
+                    f"{head_type}: margin={metrics['margin']:.4f} loss={metrics['loss']:.4f}"
+                    for head_type, metrics in top_heads
+                )
+                logger.info(f"  Step {global_step}: {top_summary} | lr={lr:.2e}")
+
+            if global_step > 0 and global_step % eval_steps == 0 and len(val_loader) > 0:
+                logger.info(f"\n--- Joint eval @ step {global_step} ---")
+                eval_metrics = evaluate_all_heads(
+                    model=base_model,
+                    candidate_heads=ema_heads if ema_heads is not None else candidate_heads,
+                    loss_modules=loss_modules,
+                    val_loader=val_loader,
+                    device=device,
+                    use_amp=use_bf16,
+                    amp_dtype=amp_dtype,
+                    max_batches=max_eval_batches,
+                )
+                log_head_leaderboard(eval_metrics, f"JOINT LEADERBOARD @ STEP {global_step}")
+
+                for head_type, metrics in eval_metrics.items():
+                    history["heads"][head_type]["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, **metrics})
+                    if metrics["margin"] > best_margin[head_type]:
+                        best_margin[head_type] = metrics["margin"]
+                        no_improve_count[head_type] = 0
+                        save_bakeoff_checkpoint(
+                            base_model,
+                            output_base / head_type / "best",
+                            tokenizer=tokenizer,
+                            head_type=head_type,
+                            head_params=dict(history["heads"][head_type]["params"]),
+                            embedding_head_override=(ema_heads if ema_heads is not None else candidate_heads)[head_type],
+                        )
+                    else:
+                        no_improve_count[head_type] += 1
+                        if early_stopping_enabled and head_type in active_heads and no_improve_count[head_type] >= early_stopping_patience:
+                            active_heads.discard(head_type)
+                            logger.info(f"  Deactivating head {head_type} after {no_improve_count[head_type]} non-improving evals")
+
+                if early_stopping_enabled and not active_heads:
+                    logger.info("All trainable heads reached early stopping. Ending joint run.")
+                    break
+
+        for head_type, totals in epoch_totals.items():
+            if totals["steps"] == 0:
+                continue
+            avg_loss = totals["loss"] / totals["steps"]
+            avg_pos = totals["pos"] / totals["steps"]
+            avg_neg = totals["neg"] / totals["steps"]
+            history["heads"][head_type]["train_loss"].append(avg_loss)
+            history["heads"][head_type]["train_pos_sim"].append(avg_pos)
+            history["heads"][head_type]["train_neg_sim"].append(avg_neg)
+            history["heads"][head_type]["train_margin"].append(avg_pos - avg_neg)
+
+        epoch_train_snapshot = {
+            head_type: {
+                "margin": head_history["train_margin"][-1],
+                "accuracy": 0.0,
+                "hard_neg_accuracy": 0.0,
+                "val_loss": head_history["train_loss"][-1],
+            }
+            for head_type, head_history in history["heads"].items()
+            if head_history["train_margin"]
+        }
+        if epoch_train_snapshot:
+            log_head_leaderboard(epoch_train_snapshot, f"TRAIN MARGINS AFTER EPOCH {epoch + 1}")
+
+        if len(val_loader) > 0:
+            logger.info(f"--- Full joint eval epoch {epoch + 1} ---")
+            eval_metrics = evaluate_all_heads(
+                model=base_model,
+                candidate_heads=ema_heads if ema_heads is not None else candidate_heads,
+                loss_modules=loss_modules,
+                val_loader=val_loader,
+                device=device,
+                use_amp=use_bf16,
+                amp_dtype=amp_dtype,
+                max_batches=None,
+            )
+            log_head_leaderboard(eval_metrics, f"FULL EVAL LEADERBOARD EPOCH {epoch + 1}")
+            for head_type, metrics in eval_metrics.items():
+                history["heads"][head_type]["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, "full_eval": True, **metrics})
+                if metrics["margin"] > best_margin[head_type]:
+                    best_margin[head_type] = metrics["margin"]
+                    no_improve_count[head_type] = 0
+                    save_bakeoff_checkpoint(
+                        base_model,
+                        output_base / head_type / "best",
+                        tokenizer=tokenizer,
+                        head_type=head_type,
+                        head_params=dict(history["heads"][head_type]["params"]),
+                        embedding_head_override=(ema_heads if ema_heads is not None else candidate_heads)[head_type],
+                    )
+                else:
+                    no_improve_count[head_type] += 1
+                    if early_stopping_enabled and head_type in active_heads and no_improve_count[head_type] >= early_stopping_patience:
+                        active_heads.discard(head_type)
+                        logger.info(f"  Deactivating head {head_type} after {no_improve_count[head_type]} non-improving evals")
+
+        if early_stopping_enabled and not active_heads:
+            logger.info("All trainable heads reached early stopping. Ending joint run.")
+            break
+
+    summary = {}
+    for head_type, head_history in history["heads"].items():
+        evals = head_history.get("eval_metrics", [])
+        best_eval = max(evals, key=lambda item: item.get("margin", -1.0)) if evals else {}
+        summary[head_type] = {
+            "best_margin": best_eval.get("margin", 0.0),
+            "best_accuracy": best_eval.get("accuracy", 0.0),
+            "best_hard_neg_accuracy": best_eval.get("hard_neg_accuracy", 0.0),
+            "best_val_loss": best_eval.get("val_loss", 0.0),
+            "final_train_loss": head_history["train_loss"][-1] if head_history["train_loss"] else 0.0,
+        }
+        save_bakeoff_checkpoint(
+            base_model,
+            output_base / head_type / "final",
+            tokenizer=tokenizer,
+            head_type=head_type,
+            head_params=dict(head_history["params"]),
+            embedding_head_override=(ema_heads if ema_heads is not None else candidate_heads)[head_type],
+        )
+
+    output_base.mkdir(parents=True, exist_ok=True)
+    with open(output_base / "bakeoff_summary.json", "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    with open(output_base / "training_history.json", "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
+
+    log_head_leaderboard(summary, "FINAL JOINT BAKE-OFF LEADERBOARD")
+    return history
 
 
 # =============================================================================
@@ -1025,7 +1711,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Embedding Head Bake-Off Training")
     parser.add_argument("--config", type=str, required=True, help="Path to YAML config")
     parser.add_argument("--head_type", type=str, default=None, help="Single head type to train (e.g. agreement_gated)")
-    parser.add_argument("--run_all", action="store_true", help="Run all experiments defined in config")
+    parser.add_argument("--run_all", action="store_true", help="Train all configured heads together with a shared encoder pass")
+    parser.add_argument("--run_sequential", action="store_true", help="Legacy mode: run configured heads one by one")
     parser.add_argument("--debug", action="store_true", help="Debug mode (small dataset)")
     parser.add_argument("--max_samples", type=int, default=None, help="Max total samples")
     return parser.parse_args()
@@ -1039,26 +1726,34 @@ def main() -> None:
     output_base = Path(config.get("output", {}).get("dir", "outputs/embedding-bakeoff"))
 
     if args.run_all:
-        # Run all experiments defined in config
-        experiments = experiments_config.get("heads", [])
+        run_joint_bakeoff(
+            config=config,
+            output_base=output_base,
+            debug=args.debug,
+            max_samples=args.max_samples,
+        )
+
+    elif args.run_sequential:
+        experiments = get_configured_head_experiments(config)
         if not experiments:
             logger.error("No experiments defined in config under experiments.heads")
             return
         results = {}
-        for exp in experiments:
-            exp_head_type = exp["head_type"]
-            exp_params = exp.get("params", {})
+        for exp_head_type, exp_params in experiments:
             exp_output = output_base / exp_head_type
             logger.info(f"\n{'#' * 70}")
             logger.info(f"# BAKE-OFF EXPERIMENT: {exp_head_type}")
             logger.info(f"{'#' * 70}")
             history = run_experiment(
-                config=config, head_type=exp_head_type, head_params=exp_params,
-                output_dir=exp_output, debug=args.debug, max_samples=args.max_samples,
+                config=config,
+                head_type=exp_head_type,
+                head_params=exp_params,
+                output_dir=exp_output,
+                debug=args.debug,
+                max_samples=args.max_samples,
             )
             results[exp_head_type] = history
 
-        # Save combined summary
         summary_path = output_base / "bakeoff_summary.json"
         summary = {}
         for ht, hist in results.items():
@@ -1071,33 +1766,19 @@ def main() -> None:
                 "best_val_loss": best_eval.get("val_loss", 0),
                 "final_train_loss": hist["train_loss"][-1] if hist.get("train_loss") else 0,
             }
-        with open(summary_path, "w") as f:
+        with open(summary_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
         logger.info(f"\nBake-off summary -> {summary_path}")
-
-        # Print leaderboard
-        log_section("BAKE-OFF LEADERBOARD")
-        sorted_heads = sorted(summary.items(), key=lambda x: x[1]["best_margin"], reverse=True)
-        logger.info(f"{'Rank':<6}{'Head':<25}{'Margin':<10}{'Accuracy':<10}{'HardNeg Acc':<12}")
-        logger.info("-" * 63)
-        for rank, (ht, metrics) in enumerate(sorted_heads, 1):
-            logger.info(f"{rank:<6}{ht:<25}{metrics['best_margin']:<10.4f}{metrics['best_accuracy']:<10.4f}{metrics['best_hard_neg_accuracy']:<12.4f}")
+        log_head_leaderboard(summary, "SEQUENTIAL BAKE-OFF LEADERBOARD")
 
     elif args.head_type:
         # Single experiment from CLI
         # Check if this head has experiment-specific params in config
-        exp_params = {}
-        for exp in experiments_config.get("heads", []):
-            if exp["head_type"] == args.head_type:
-                exp_params = exp.get("params", {})
+        merged_params = config.get("embedding_head", {})
+        for exp_head_type, exp_params in get_configured_head_experiments(config):
+            if exp_head_type == args.head_type:
+                merged_params = exp_params
                 break
-
-        # Also merge top-level embedding_head params as defaults
-        top_level_params = config.get("embedding_head", {})
-        merged_params = {**top_level_params, **exp_params}
-        # Remove non-constructor keys
-        merged_params.pop("head_type", None)
-        merged_params.pop("pooling", None)
 
         exp_output = output_base / args.head_type
         run_experiment(
@@ -1105,7 +1786,7 @@ def main() -> None:
             output_dir=exp_output, debug=args.debug, max_samples=args.max_samples,
         )
     else:
-        logger.error("Specify --head_type <name> or --run_all")
+        logger.error("Specify --head_type <name>, --run_all, or --run_sequential")
         logger.info(f"Available heads: {', '.join(sorted(EMBEDDING_HEAD_REGISTRY.keys()))}")
 
 
