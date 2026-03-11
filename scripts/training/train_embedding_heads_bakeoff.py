@@ -1172,9 +1172,24 @@ class TeacherEmbeddingCache:
 
         embedding_dim = int(manifest.get("embedding_dim", 0))
         embeddings_by_id: dict[str, torch.Tensor] = {}
+        skipped_shards = 0
+        skipped_entries = 0
         for shard_meta in manifest.get("shards", []):
             shard_path = cache_path / shard_meta["path"]
-            shard_payload = torch.load(shard_path, map_location="cpu")
+            if not shard_path.exists():
+                skipped_shards += 1
+                skipped_entries += int(shard_meta.get("count", 0))
+                logger.warning(f"Teacher cache shard missing; skipping: {shard_path}")
+                continue
+
+            try:
+                shard_payload = torch.load(shard_path, map_location="cpu")
+            except Exception as exc:
+                skipped_shards += 1
+                skipped_entries += int(shard_meta.get("count", 0))
+                logger.warning(f"Teacher cache shard unreadable; skipping: {shard_path} ({exc})")
+                continue
+
             shard_embeddings = shard_payload["embeddings"].float()
             shard_ids = shard_payload.get("ids")
             if shard_ids is not None:
@@ -1188,6 +1203,12 @@ class TeacherEmbeddingCache:
                 raise ValueError(f"Teacher cache shard missing ids/texts/modes: {shard_path}")
             for index, (text, mode) in enumerate(zip(shard_texts, shard_modes)):
                 embeddings_by_id[_teacher_entry_id(str(mode), str(text))] = shard_embeddings[index]
+
+        if skipped_shards:
+            logger.warning(
+                f"Teacher cache loaded with missing/unreadable shards: {skipped_shards} shard(s), "
+                f"~{skipped_entries:,} entry/entries skipped"
+            )
 
         logger.info(
             f"Loaded teacher cache: {len(embeddings_by_id):,} entries | dim={embedding_dim} | path={cache_path}"
