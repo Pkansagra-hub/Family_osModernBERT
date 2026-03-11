@@ -369,6 +369,26 @@ stage_b:
   data_profile: stage_b_v2
   head_type: agreement_gated_v2
   reuse_checkpoint_head_as_is: true
+  training_overrides:
+    learning_rate: 7.5e-5
+    num_epochs: 10
+    warmup_steps: 40
+    early_stopping:
+      patience: 4
+
+  evaluation_overrides:
+    selection_metric: query_doc_recall_at_1
+
+  data_overrides:
+    sampling:
+      strategy: balanced
+      slice_weights:
+        hard_negatives: 1.5
+        wrong_person: 3.5
+        wrong_time: 5.0
+        safety_emotion: 5.0
+        query_doc: 8.0
+
   head_params:
     num_latents: 4
     num_attn_heads: 4

@@ -4755,8 +4755,25 @@ def run_stage_b(
     loss_config = config.get("loss", {})
     data_config = config.get("data", {})
     stage_b_config = config.get("stage_b", {})
+    training_config = copy.deepcopy(training_config)
+    stage_b_training_overrides = stage_b_config.get("training_overrides", {})
+    if stage_b_training_overrides:
+        training_config = _deep_update_dict(training_config, stage_b_training_overrides)
+        logger.info("Applying Stage B training overrides")
+
+    evaluation_config = copy.deepcopy(config.get("evaluation", {}))
+    stage_b_evaluation_overrides = stage_b_config.get("evaluation_overrides", {})
+    if stage_b_evaluation_overrides:
+        evaluation_config = _deep_update_dict(evaluation_config, stage_b_evaluation_overrides)
+        logger.info("Applying Stage B evaluation overrides")
+
     stage_b_data_profile = stage_b_config.get("data_profile", "stage_b_v2")
     stage_b_data_config = resolve_data_config(data_config, stage_b_data_profile)
+    stage_b_data_overrides = stage_b_config.get("data_overrides", {})
+    if stage_b_data_overrides:
+        stage_b_data_config = _deep_update_dict(stage_b_data_config, stage_b_data_overrides)
+        logger.info("Applying Stage B data overrides")
+
     mode_routing_config = stage_b_config.get("mode_routing", {})
     aux_objectives_config = stage_b_config.get("aux_objectives", {})
     retrieval_modes = stage_b_config.get("retrieval_modes", {"query": "query", "document": "document"})
@@ -4793,9 +4810,8 @@ def run_stage_b(
     matryoshka_config = training_config.get("matryoshka", {})
     matryoshka_dims = matryoshka_config.get("dims", None) if matryoshka_config.get("enabled", False) else None
 
-    eval_config = config.get("evaluation", {})
-    composite_weights = eval_config.get("composite_weights", None)
-    selection_metric = eval_config.get("selection_metric", DEFAULT_SELECTION_METRIC)
+    composite_weights = evaluation_config.get("composite_weights", None)
+    selection_metric = evaluation_config.get("selection_metric", DEFAULT_SELECTION_METRIC)
 
     if debug:
         max_samples = max_samples or 500
@@ -4945,6 +4961,9 @@ def run_stage_b(
         "head_type": head_type,
         "head_params": head_params,
         "training_type": "stage_b_domain_adaptation",
+        "selection_metric": selection_metric,
+        "training_overrides": stage_b_training_overrides,
+        "data_overrides": stage_b_data_overrides,
     }
     with open(output_dir / "stage_b_metadata.json", "w") as f:
         json.dump(stage_b_meta, f, indent=2)
