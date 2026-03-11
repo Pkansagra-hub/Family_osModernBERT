@@ -37,7 +37,7 @@
 #   - distill: load student checkpoint + teacher cache and distill
 runtime:
   mode: bakeoff
-  student_checkpoint: /content/Modeling_studio/checkpoints/v2-best-ema
+  student_checkpoint: /content/Modeling_studio/outputs/embedding-bakeoff/agreement_gated_v2/best
 
 # =============================================================================
 # Teacher Configuration (Milestone 1)
@@ -123,10 +123,12 @@ distillation:
     teacher_vector_weight: 0.15
     teacher_ranking_weight: 0.15
     teacher_temperature: 0.05
+    teacher_temperature_start: 0.20
+    teacher_temperature_end: 0.02
     vector_loss_type: cosine
 
   projection:
-    enabled: false
+    enabled: true
     type: linear
     teacher_dim: 2560
     student_dim: 768
@@ -163,6 +165,12 @@ distillation:
     safety_margin_scale: 0.04
     emotion_label_weight: 0.05
     emotion_margin: 0.03
+
+  # 2-phase distillation: warm up projection before full distillation mix
+  two_phase:
+    enabled: true
+    projection_warmup_epochs: 3
+    projection_warmup_lr: 5e-4
 
 # =============================================================================
 # Encoder Configuration (FROZEN)
@@ -349,12 +357,13 @@ data:
 evaluation:
   selection_metric: composite
   composite_weights:
-    aggregate_margin: 0.35
+    aggregate_margin: 0.30
     hard_neg_accuracy: 0.15
     wrong_person_accuracy: 0.15
     wrong_time_accuracy: 0.10
     safety_emotion_accuracy: 0.10
     query_doc_recall_at_5: 0.15
+    confidence_alignment: 0.05
 
 # =============================================================================
 # Stage A Bake-Off Configuration
@@ -413,6 +422,18 @@ stage_b:
     role_entropy_weight: 0.02
     temporal_entropy_weight: 0.02
     safety_entropy_weight: 0.02
+
+  # Teacher regularizer: carry Qwen signal into Stage B as a soft constraint
+  teacher_regularizer:
+    enabled: true
+    teacher_cache_dir: outputs/teacher-cache/qwen3-embedding-4b
+    teacher_temperature: 0.05
+    vector_weight: 0.05
+    ranking_weight: 0.05
+    projection:
+      enabled: true
+      teacher_dim: 2560
+      student_dim: 768
 
 # =============================================================================
 # Output Configuration

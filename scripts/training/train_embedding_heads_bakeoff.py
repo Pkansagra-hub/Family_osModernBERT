@@ -2526,6 +2526,111 @@ def evaluate(
 
 
 @torch.no_grad()
+def evaluate_confidence_alignment(
+    model: ModernBertMultiTaskModel,
+    val_loader: DataLoader,
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    max_batches: int | None = None,
+    mode_routing_config: dict[str, Any] | None = None,
+) -> dict[str, float]:
+    """Measure whether the confidence head predicts retrieval quality.
+
+    Computes Pearson correlation between retrieval_confidence and
+    per-triplet margin (pos_sim - neg_sim).  Returns 0.0 gracefully
+    when the head lacks a confidence output.
+    """
+    embedding_head = model.heads["embedding"]
+    if not getattr(embedding_head, "use_confidence_head", False):
+        return {"confidence_alignment": 0.0, "mean_retrieval_confidence": 0.0}
+
+    model.eval()
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    all_margins: list[float] = []
+    all_retrieval_conf: list[float] = []
+
+    for batch_idx, batch in enumerate(val_loader):
+        if max_batches is not None and batch_idx >= max_batches:
+            break
+
+        encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
+        triplet_idx = encoded["triplet_indices"]
+        if triplet_idx.numel() == 0 or encoded["negative_hidden"] is None:
+            continue
+
+        slice_tags = batch.get("slice_tags", [])
+        routed_modes = resolve_mode_routing_for_batch(slice_tags, mode_routing_config)
+        triplet_batch_indices = triplet_idx.detach().cpu().tolist()
+        negative_modes = [routed_modes["negative"][i] for i in triplet_batch_indices]
+
+        with amp_context:
+            anchor_out = forward_embedding_head_batch(
+                embedding_head,
+                encoded["anchor_hidden"],
+                encoded["anchor_mask"],
+                sample_modes=routed_modes["anchor"],
+                return_aux=True,
+            )
+            if not isinstance(anchor_out, dict) or "confidence" not in anchor_out:
+                continue
+
+            positive_emb = forward_embedding_head_batch(
+                embedding_head,
+                encoded["positive_hidden"],
+                encoded["positive_mask"],
+                sample_modes=routed_modes["positive"],
+                return_aux=False,
+            )
+            negative_emb = forward_embedding_head_batch(
+                embedding_head,
+                encoded["negative_hidden"],
+                encoded["negative_mask"],
+                sample_modes=negative_modes,
+                return_aux=False,
+            )
+
+            anchor_emb = anchor_out["embedding"]
+            confidence = anchor_out["confidence"]  # [B, 3]
+            retrieval_conf = confidence[:, 1]  # retrieval_confidence column
+
+            pos_emb = positive_emb["embedding"] if isinstance(positive_emb, dict) else positive_emb
+            neg_emb = negative_emb["embedding"] if isinstance(negative_emb, dict) else negative_emb
+
+            pos_sim = F.cosine_similarity(anchor_emb[triplet_idx], pos_emb[triplet_idx], dim=-1)
+            neg_sim = F.cosine_similarity(anchor_emb[triplet_idx], neg_emb, dim=-1)
+            margins = pos_sim - neg_sim
+            trip_conf = retrieval_conf[triplet_idx]
+
+            all_margins.extend(margins.cpu().tolist())
+            all_retrieval_conf.extend(trip_conf.cpu().tolist())
+
+    model.train()
+
+    if len(all_margins) < 5:
+        return {"confidence_alignment": 0.0, "mean_retrieval_confidence": 0.0}
+
+    margins_t = torch.tensor(all_margins)
+    confs_t = torch.tensor(all_retrieval_conf)
+    m_centered = margins_t - margins_t.mean()
+    c_centered = confs_t - confs_t.mean()
+    numerator = (m_centered * c_centered).sum()
+    denominator = (m_centered.norm() * c_centered.norm()).clamp(min=1e-8)
+    corr = (numerator / denominator).item()
+    alignment = max(0.0, corr)  # Only positive correlation is useful
+
+    return {
+        "confidence_alignment": alignment,
+        "mean_retrieval_confidence": confs_t.mean().item(),
+    }
+
+
+@torch.no_grad()
 def evaluate_all_heads(
     model: ModernBertMultiTaskModel,
     candidate_heads: nn.ModuleDict,
@@ -3274,12 +3379,13 @@ def evaluate_retrieval(
 
 # Default composite weights for best-model selection (Epic 3.3)
 DEFAULT_COMPOSITE_WEIGHTS: dict[str, float] = {
-    "aggregate_margin": 0.35,
+    "aggregate_margin": 0.30,
     "hard_neg_accuracy": 0.15,
     "wrong_person_accuracy": 0.15,
     "wrong_time_accuracy": 0.10,
     "safety_emotion_accuracy": 0.10,
     "query_doc_recall_at_5": 0.15,
+    "confidence_alignment": 0.05,
 }
 
 
@@ -3326,13 +3432,17 @@ def compute_composite_score(
     if retrieval_metrics:
         recall_at_5 = retrieval_metrics.get("recall@5", 0.0)
 
+    # Confidence alignment (correlation between confidence head and margin)
+    confidence_alignment = float(eval_metrics.get("confidence_alignment", 0.0))
+
     score = (
-        w.get("aggregate_margin", 0.35) * aggregate_margin
+        w.get("aggregate_margin", 0.30) * aggregate_margin
         + w.get("hard_neg_accuracy", 0.15) * hard_neg_acc
         + w.get("wrong_person_accuracy", 0.15) * wrong_person_acc
         + w.get("wrong_time_accuracy", 0.10) * wrong_time_acc
         + w.get("safety_emotion_accuracy", 0.10) * safety_emotion_acc
         + w.get("query_doc_recall_at_5", 0.15) * recall_at_5
+        + w.get("confidence_alignment", 0.05) * confidence_alignment
     )
     return score
 
@@ -3397,6 +3507,8 @@ def build_selection_metric_map(
         "retrieval_recall_at_5": recall_at_5,
         "retrieval_recall_at_10": recall_at_10,
         "retrieval_mrr": mrr,
+        "confidence_alignment": float(eval_metrics.get("confidence_alignment", 0.0)),
+        "mean_retrieval_confidence": float(eval_metrics.get("mean_retrieval_confidence", 0.0)),
     }
 
 
@@ -3543,6 +3655,17 @@ def train(
             loss_fn.hard_negative_weight = current_hn_weight
             logger.info(f"  Curriculum: hard_negative_weight={current_hn_weight:.3f}")
 
+        # Progressive teacher temperature: anneal from soft (exploratory) to sharp (precise)
+        if distillation_config and distillation_config.get("enabled", False):
+            losses_cfg = distillation_config.get("losses", {})
+            temp_start = losses_cfg.get("teacher_temperature_start")
+            temp_end = losses_cfg.get("teacher_temperature_end")
+            if temp_start is not None and temp_end is not None:
+                progress = epoch / max(num_epochs - 1, 1)
+                current_temp = float(temp_start) + (float(temp_end) - float(temp_start)) * progress
+                losses_cfg["teacher_temperature"] = current_temp
+                logger.info(f"  Distillation temperature: {current_temp:.4f} (progress={progress:.2f})")
+
         if loss_fn.log_temperature.requires_grad:
             logger.info(f"  Learned temperature: {loss_fn.log_temperature.exp().item():.4f}")
 
@@ -3636,6 +3759,15 @@ def train(
                             document_mode=(retrieval_modes or {}).get("document", "document"),
                         )
                         eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
+
+                    # Confidence alignment eval
+                    confidence_metrics = evaluate_confidence_alignment(
+                        model, val_loader, device,
+                        use_amp=use_amp, amp_dtype=amp_dtype,
+                        max_batches=max_eval_batches,
+                        mode_routing_config=mode_routing_config,
+                    )
+                    eval_metrics.update(confidence_metrics)
 
                     resolved_selection_metric, selection_score, metric_map = resolve_selection_score(
                         selection_metric,
@@ -3770,6 +3902,15 @@ def train(
                     document_mode=(retrieval_modes or {}).get("document", "document"),
                 )
                 eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
+
+            # Confidence alignment eval (full)
+            confidence_metrics = evaluate_confidence_alignment(
+                model, val_loader, device,
+                use_amp=use_amp, amp_dtype=amp_dtype,
+                max_batches=None,
+                mode_routing_config=mode_routing_config,
+            )
+            eval_metrics.update(confidence_metrics)
 
             resolved_selection_metric, selection_score, metric_map = resolve_selection_score(
                 selection_metric,
@@ -4898,9 +5039,49 @@ def run_stage_b(
     if learnable_temperature:
         loss_fn.log_temperature.requires_grad_(True)
 
+    # ------------------------------------------------------------------
+    # Teacher regularizer: carry Qwen signal into Stage B
+    # ------------------------------------------------------------------
+    teacher_regularizer_config = stage_b_config.get("teacher_regularizer", {})
+    stage_b_teacher_cache: TeacherEmbeddingCache | None = None
+    stage_b_teacher_projection: TeacherProjection | None = None
+    stage_b_distillation_config: dict[str, Any] | None = None
+
+    if teacher_regularizer_config.get("enabled", False):
+        tr_cache_dir = teacher_regularizer_config.get("teacher_cache_dir")
+        if tr_cache_dir:
+            log_section("TEACHER REGULARIZER (Stage B)")
+            stage_b_teacher_cache = TeacherEmbeddingCache.load(tr_cache_dir)
+
+            stage_b_distillation_config = {
+                "enabled": True,
+                "losses": {
+                    "student_contrastive_weight": 1.0,
+                    "teacher_vector_weight": float(teacher_regularizer_config.get("vector_weight", 0.05)),
+                    "teacher_ranking_weight": float(teacher_regularizer_config.get("ranking_weight", 0.05)),
+                    "teacher_temperature": float(teacher_regularizer_config.get("teacher_temperature", 0.05)),
+                },
+            }
+
+            tr_proj_config = teacher_regularizer_config.get("projection", {})
+            if tr_proj_config.get("enabled", False):
+                teacher_dim = int(tr_proj_config.get("teacher_dim", stage_b_teacher_cache.embedding_dim))
+                student_dim = int(tr_proj_config.get("student_dim", model.config.hidden_size))
+                stage_b_teacher_projection = TeacherProjection(teacher_dim, student_dim).to(device)
+                logger.info(f"  Teacher projection: {teacher_dim} -> {student_dim}")
+
+            logger.info(f"  vector_weight={stage_b_distillation_config['losses']['teacher_vector_weight']}")
+            logger.info(f"  ranking_weight={stage_b_distillation_config['losses']['teacher_ranking_weight']}")
+        else:
+            logger.warning("  teacher_regularizer.enabled=true but no teacher_cache_dir; skipping")
+
     # Optimizer
     trainable_params = get_trainable_params(model)
     param_groups = [{"params": trainable_params, "lr": learning_rate, "weight_decay": weight_decay}]
+    if stage_b_teacher_projection is not None:
+        proj_params = [p for p in stage_b_teacher_projection.parameters() if p.requires_grad]
+        if proj_params:
+            param_groups.append({"params": proj_params, "lr": learning_rate, "weight_decay": weight_decay})
     if learnable_temperature:
         param_groups.append({"params": [loss_fn.log_temperature], "lr": temperature_lr, "weight_decay": 0.0})
 
@@ -4928,6 +5109,8 @@ def run_stage_b(
     logger.info(f"  Encoder: FROZEN")
     logger.info(f"  Stage B data profile: {stage_b_data_profile}")
     logger.info(f"  Data slices: {len(stage_b_data_config.get('sources', []))} sources")
+    if stage_b_teacher_cache is not None:
+        logger.info(f"  Teacher regularizer: ACTIVE ({stage_b_teacher_cache.embedding_dim}-dim cache)")
 
     history = train(
         model=model, train_loader=train_loader, val_loader=val_loader,
@@ -4949,12 +5132,24 @@ def run_stage_b(
         mode_routing_config=mode_routing_config,
         aux_objectives_config=aux_objectives_config,
         retrieval_modes=retrieval_modes,
+        teacher_cache=stage_b_teacher_cache,
+        distillation_config=stage_b_distillation_config,
+        teacher_projection=stage_b_teacher_projection,
     )
 
     with open(output_dir / "training_history.json", "w") as f:
         json.dump(history, f, indent=2)
 
     # Save Stage B metadata
+    teacher_regularizer_meta = None
+    if stage_b_teacher_cache is not None:
+        teacher_regularizer_meta = {
+            "enabled": True,
+            "teacher_cache_dir": str(teacher_regularizer_config.get("teacher_cache_dir")),
+            "vector_weight": teacher_regularizer_config.get("vector_weight", 0.05),
+            "ranking_weight": teacher_regularizer_config.get("ranking_weight", 0.05),
+            "projection_enabled": stage_b_teacher_projection is not None,
+        }
     stage_b_meta = {
         "stage": "B",
         "source_checkpoint": str(bakeoff_checkpoint),
@@ -4964,6 +5159,7 @@ def run_stage_b(
         "selection_metric": selection_metric,
         "training_overrides": stage_b_training_overrides,
         "data_overrides": stage_b_data_overrides,
+        "teacher_regularizer": teacher_regularizer_meta,
     }
     with open(output_dir / "stage_b_metadata.json", "w") as f:
         json.dump(stage_b_meta, f, indent=2)
@@ -5132,6 +5328,118 @@ def run_distillation(
     if loss_config.get("learnable_temperature", False):
         loss_fn.log_temperature.requires_grad_(True)
 
+    # ------------------------------------------------------------------
+    # Phase 1: Projection warmup (align teacher -> student space)
+    # ------------------------------------------------------------------
+    two_phase_config = distillation_config.get("two_phase", {})
+    if two_phase_config.get("enabled", False) and teacher_projection is not None:
+        warmup_epochs = int(two_phase_config.get("projection_warmup_epochs", 3))
+        warmup_lr = float(two_phase_config.get("projection_warmup_lr", 5e-4))
+
+        log_section("PHASE 1: PROJECTION WARMUP")
+        logger.info(f"  Epochs: {warmup_epochs}")
+        logger.info(f"  LR: {warmup_lr}")
+        logger.info(f"  Embedding head: FROZEN (projection-only training)")
+
+        # Freeze embedding head during warmup
+        for param in model.heads["embedding"].parameters():
+            param.requires_grad = False
+
+        warmup_optimizer = torch.optim.AdamW(
+            [p for p in teacher_projection.parameters() if p.requires_grad],
+            lr=warmup_lr,
+        )
+
+        amp_dtype = torch.bfloat16 if use_bf16 else torch.float32
+        teacher_projection.train()
+
+        for warmup_epoch in range(warmup_epochs):
+            epoch_loss = 0.0
+            epoch_hits = 0
+            num_steps = 0
+
+            for batch in train_loader:
+                warmup_optimizer.zero_grad()
+
+                amp_context = (
+                    autocast("cuda", dtype=amp_dtype, enabled=use_bf16)
+                    if device.type == "cuda"
+                    else autocast("cpu", enabled=False)
+                )
+
+                with amp_context:
+                    encoded = encode_triplet_batch(model, batch, device, use_amp=use_bf16, amp_dtype=amp_dtype)
+                    embedding_head = model.heads["embedding"]
+
+                    # Get student embeddings (no grad since head is frozen)
+                    with torch.no_grad():
+                        anchor_emb = forward_embedding_head(
+                            embedding_head, encoded["anchor_hidden"], encoded["anchor_mask"], mode="document",
+                        )
+                        if isinstance(anchor_emb, dict):
+                            anchor_emb = anchor_emb["embedding"]
+                        positive_emb = forward_embedding_head(
+                            embedding_head, encoded["positive_hidden"], encoded["positive_mask"], mode="document",
+                        )
+                        if isinstance(positive_emb, dict):
+                            positive_emb = positive_emb["embedding"]
+
+                    # Look up teacher embeddings
+                    anchor_texts = batch.get("anchor_texts", [])
+                    positive_texts = batch.get("positive_texts", [])
+                    all_texts = anchor_texts + positive_texts
+                    all_modes = ["document"] * len(all_texts)
+                    teacher_embs, found_mask = teacher_cache.lookup(all_texts, all_modes, device)
+
+                    n_anchor = len(anchor_texts)
+                    teacher_anchor = teacher_embs[:n_anchor]
+                    teacher_positive = teacher_embs[n_anchor:]
+                    anchor_found = found_mask[:n_anchor]
+                    positive_found = found_mask[n_anchor:]
+
+                    # Project teacher embeddings (this is the only trainable path)
+                    projected_anchor = teacher_projection(teacher_anchor)
+                    projected_positive = teacher_projection(teacher_positive)
+
+                    # Alignment loss: cosine distance between projected teacher and frozen student
+                    loss_terms: list[torch.Tensor] = []
+                    if anchor_found.any():
+                        loss_terms.append(1.0 - F.cosine_similarity(
+                            F.normalize(anchor_emb[anchor_found].detach(), p=2, dim=-1),
+                            F.normalize(projected_anchor[anchor_found], p=2, dim=-1),
+                            dim=-1,
+                        ).mean())
+                    if positive_found.any():
+                        loss_terms.append(1.0 - F.cosine_similarity(
+                            F.normalize(positive_emb[positive_found].detach(), p=2, dim=-1),
+                            F.normalize(projected_positive[positive_found], p=2, dim=-1),
+                            dim=-1,
+                        ).mean())
+
+                    if not loss_terms:
+                        continue
+
+                    warmup_loss = torch.stack(loss_terms).mean()
+
+                warmup_loss.backward()
+                warmup_optimizer.step()
+
+                epoch_loss += warmup_loss.item()
+                epoch_hits += (anchor_found.sum() + positive_found.sum()).item()
+                num_steps += 1
+
+            avg_loss = epoch_loss / max(num_steps, 1)
+            avg_hits = epoch_hits / max(num_steps, 1)
+            logger.info(
+                f"  Warmup epoch {warmup_epoch + 1}/{warmup_epochs}: "
+                f"cosine_dist={avg_loss:.6f} avg_cache_hits={avg_hits:.1f}"
+            )
+
+        # Unfreeze embedding head for Phase 2
+        for param in model.heads["embedding"].parameters():
+            param.requires_grad = True
+        logger.info("  Phase 1 complete. Embedding head unfrozen for Phase 2.")
+
     trainable_params = get_trainable_params(model)
     param_groups = [{
         "params": trainable_params,
@@ -5225,6 +5533,8 @@ def run_distillation(
             "teacher_cache_dir": str(teacher_cache_dir),
             "data_profile": data_profile,
             "projection_enabled": teacher_projection is not None,
+            "two_phase_enabled": two_phase_config.get("enabled", False),
+            "projection_warmup_epochs": int(two_phase_config.get("projection_warmup_epochs", 0)) if two_phase_config.get("enabled", False) else 0,
             "selection_metric": evaluation_config.get("selection_metric", DEFAULT_SELECTION_METRIC),
             "training_overrides": training_overrides,
             "data_overrides": data_overrides,
