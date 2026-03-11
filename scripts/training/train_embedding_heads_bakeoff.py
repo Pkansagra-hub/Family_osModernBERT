@@ -56,7 +56,7 @@ import random
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import torch
 import torch.nn as nn
@@ -378,6 +378,108 @@ class EmbeddingCollator:
         return batch
 
 
+class SliceBalancedSampler(torch.utils.data.Sampler):
+    """Weighted per-slice sampler that rebalances training distribution.
+
+    Prevents large slices (e.g. 261K silver_synthetic) from drowning
+    small but critical slices (e.g. 4K wrong_person).
+
+    Each epoch, draws ``slice_weight * slice_count`` samples per slice
+    (normalised to the target epoch size), shuffles, and yields indices.
+    Small slices are upsampled with replacement; large slices may be
+    subsampled.
+
+    Works with both ``EmbeddingDataset`` and ``torch.utils.data.Subset``
+    wrapping one.
+
+    Args:
+        dataset: The training dataset (EmbeddingDataset or Subset).
+        slice_weights: Mapping of slice_name -> sampling weight.
+            Slices not listed default to weight 1.0.
+        epoch_size: Total samples per epoch.  Defaults to ``len(dataset)``.
+        seed: Base random seed (combined with epoch counter).
+    """
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        slice_weights: dict[str, float],
+        epoch_size: int | None = None,
+        seed: int = 42,
+    ) -> None:
+        self.dataset = dataset
+        self.slice_weights = slice_weights
+        self.seed = seed
+        self.epoch = 0
+
+        # Build local-index groups by slice
+        self._indices_by_slice: dict[str, list[int]] = {}
+
+        if isinstance(dataset, torch.utils.data.Subset):
+            underlying = dataset.dataset
+            for local_idx, global_idx in enumerate(dataset.indices):
+                slice_name = underlying.samples[global_idx]["slice"]
+                self._indices_by_slice.setdefault(slice_name, []).append(local_idx)
+        elif hasattr(dataset, "samples"):
+            for idx, sample in enumerate(dataset.samples):
+                slice_name = sample["slice"]
+                self._indices_by_slice.setdefault(slice_name, []).append(idx)
+        else:
+            raise TypeError("Dataset must be EmbeddingDataset or Subset thereof")
+
+        # Compute per-slice draw counts
+        self._compute_epoch_counts(epoch_size)
+
+        # Log effective distribution
+        logger.info(f"  SliceBalancedSampler: {self._total_size:,} samples/epoch")
+        for sn in sorted(self._epoch_counts):
+            cnt = self._epoch_counts[sn]
+            pool = len(self._indices_by_slice[sn])
+            pct = 100.0 * cnt / self._total_size if self._total_size else 0
+            mode = "upsample" if cnt > pool else "subsample" if cnt < pool else "exact"
+            logger.info(f"    {sn:<25} {cnt:>8,} / {pool:>8,} pool  ({pct:5.1f}%)  [{mode}]")
+
+    def _compute_epoch_counts(self, epoch_size: int | None) -> None:
+        """Compute how many samples to draw from each slice per epoch."""
+        raw_weights: dict[str, float] = {}
+        for slice_name, indices in self._indices_by_slice.items():
+            w = self.slice_weights.get(slice_name, 1.0)
+            raw_weights[slice_name] = w * len(indices)
+
+        total_weight = sum(raw_weights.values())
+        target_size = epoch_size or len(self.dataset)
+
+        self._epoch_counts: dict[str, int] = {}
+        for slice_name, raw_w in raw_weights.items():
+            self._epoch_counts[slice_name] = max(1, int(round(target_size * raw_w / total_weight)))
+
+        self._total_size = sum(self._epoch_counts.values())
+
+    def __iter__(self) -> Iterator[int]:
+        rng = random.Random(self.seed + self.epoch)
+        indices: list[int] = []
+
+        for slice_name, count in self._epoch_counts.items():
+            pool = self._indices_by_slice[slice_name]
+            if count <= len(pool):
+                sampled = rng.sample(pool, count)
+            else:
+                # Upsample with replacement
+                sampled = [rng.choice(pool) for _ in range(count)]
+            indices.extend(sampled)
+
+        rng.shuffle(indices)
+        self.epoch += 1
+        return iter(indices)
+
+    def __len__(self) -> int:
+        return self._total_size
+
+    def set_epoch(self, epoch: int) -> None:
+        """Set epoch index for deterministic shuffling."""
+        self.epoch = epoch
+
+
 # =============================================================================
 # Data loading helpers
 # =============================================================================
@@ -615,6 +717,97 @@ def load_model_and_replace_embedding_head(
     return model
 
 
+def load_model_with_trained_head(
+    bakeoff_checkpoint: str | Path,
+    exclude_decoder: bool = True,
+    use_flash_attention: bool = False,
+) -> tuple[ModernBertMultiTaskModel, str, dict[str, Any]]:
+    """Load model from a Stage A bakeoff checkpoint, keeping the trained embedding head.
+
+    Unlike load_model_and_replace_embedding_head, this does NOT create a fresh
+    head. The embedding head weights from the bakeoff are preserved as-is.
+
+    Args:
+        bakeoff_checkpoint: Path to bakeoff winner checkpoint (e.g. outputs/embedding-bakeoff/agreement_gated_v2/best).
+        exclude_decoder: Skip GPT-2 decoder to save memory.
+        use_flash_attention: Enable Flash Attention 2.
+
+    Returns:
+        Tuple of (model, head_type, head_params) where head_type/params are read from embedding_metadata.json.
+    """
+    from safetensors.torch import load_file
+    from transformers import AutoConfig
+
+    bakeoff_checkpoint = Path(bakeoff_checkpoint)
+    logger.info(f"Loading Stage B model from bakeoff checkpoint: {bakeoff_checkpoint}")
+
+    # Read embedding metadata to get head type and params
+    emb_meta_path = bakeoff_checkpoint / "embedding_metadata.json"
+    if not emb_meta_path.exists():
+        raise FileNotFoundError(f"No embedding_metadata.json in {bakeoff_checkpoint}")
+    with open(emb_meta_path, encoding="utf-8") as f:
+        emb_meta = json.load(f)
+
+    bakeoff_info = emb_meta.get("bakeoff", {})
+    head_type = bakeoff_info.get("head_type", "agreement_gated_v2")
+    head_constructor_params = bakeoff_info.get("head_constructor_params", {})
+    head_params = bakeoff_info.get("head_params", {})
+    logger.info(f"  Bakeoff winner: {head_type} ({bakeoff_info.get('head_class', 'unknown')})")
+
+    config = AutoConfig.from_pretrained(bakeoff_checkpoint, trust_remote_code=True)
+    if use_flash_attention:
+        config.attn_implementation = "flash_attention_2"
+        logger.info("  Flash Attention 2: ENABLED")
+
+    capabilities = load_checkpoint_capabilities(bakeoff_checkpoint, exclude_decoder)
+    model = ModernBertMultiTaskModel(config=config, capabilities=capabilities, freeze_encoder=False)
+    restore_checkpoint_head_architecture(model, bakeoff_checkpoint)
+    model._init_encoder()
+
+    # Create the correct embedding head architecture (so state_dict keys match)
+    hidden_size = model.config.hidden_size
+    new_head = create_embedding_head(
+        head_type=head_type,
+        hidden_size=hidden_size,
+        **head_params,
+    )
+    model.heads["embedding"] = new_head
+
+    # Load ALL weights including the trained embedding head
+    weights_path = bakeoff_checkpoint / "model.safetensors"
+    if weights_path.exists():
+        state_dict = load_file(str(weights_path))
+    else:
+        weights_path = bakeoff_checkpoint / "pytorch_model.bin"
+        if weights_path.exists():
+            state_dict = torch.load(weights_path, map_location="cpu", weights_only=True)
+        else:
+            raise FileNotFoundError(f"No weights found in {bakeoff_checkpoint}")
+
+    # Encoder weights
+    encoder_state = {k.replace("encoder.", ""): v for k, v in state_dict.items() if k.startswith("encoder.")}
+    model.encoder.load_state_dict(encoder_state, strict=True)
+    logger.info(f"  Loaded encoder: {len(encoder_state)} tensors")
+
+    # ALL head weights including the trained embedding head
+    loaded_heads = []
+    for head_name in model.heads.keys():
+        head_prefix = f"heads.{head_name}."
+        head_state = {k.replace(head_prefix, ""): v for k, v in state_dict.items() if k.startswith(head_prefix)}
+        if head_state:
+            try:
+                model.heads[head_name].load_state_dict(head_state, strict=True)
+                loaded_heads.append(head_name)
+            except Exception as e:
+                logger.warning(f"  Could not load {head_name} head: {e}")
+
+    emb_params = sum(p.numel() for p in model.heads["embedding"].parameters())
+    logger.info(f"  Loaded {len(loaded_heads)} heads (including trained embedding head)")
+    logger.info(f"  Embedding head: {type(model.heads['embedding']).__name__} ({emb_params:,} params, TRAINED weights preserved)")
+
+    return model, head_type, head_params
+
+
 def freeze_model_except_embedding_head(model: ModernBertMultiTaskModel) -> None:
     for param in model.encoder.parameters():
         param.requires_grad = False
@@ -682,15 +875,21 @@ def encode_triplet_batch(
     device: torch.device,
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.float16,
-) -> dict[str, torch.Tensor]:
-    """Encode anchor/positive/negative text once with the frozen encoder."""
+) -> dict[str, torch.Tensor | None]:
+    """Encode anchor/positive/negative text once with the frozen encoder.
+
+    Skips negative encoding entirely when the batch contains no triplet
+    samples (pure pair batch), saving ~33% encoder forward cost.
+    """
     anchor_ids = batch["anchor_input_ids"].to(device)
     anchor_mask = batch["anchor_attention_mask"].to(device)
     positive_ids = batch["positive_input_ids"].to(device)
     positive_mask = batch["positive_attention_mask"].to(device)
-    negative_ids = batch["negative_input_ids"].to(device)
-    negative_mask = batch["negative_attention_mask"].to(device)
     hard_neg_mask = batch["hard_negative_mask"].to(device)
+
+    triplet_indices = batch["triplet_indices"].to(device)
+    pair_indices = batch["pair_indices"].to(device)
+    has_triplets = triplet_indices.numel() > 0
 
     amp_context = (
         autocast("cuda", dtype=amp_dtype, enabled=use_amp)
@@ -704,8 +903,15 @@ def encode_triplet_batch(
             anchor_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
             enc_out = model.encoder(input_ids=positive_ids, attention_mask=positive_mask)
             positive_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
-            enc_out = model.encoder(input_ids=negative_ids, attention_mask=negative_mask)
-            negative_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
+
+            if has_triplets:
+                negative_ids = batch["negative_input_ids"].to(device)
+                negative_mask = batch["negative_attention_mask"].to(device)
+                enc_out = model.encoder(input_ids=negative_ids, attention_mask=negative_mask)
+                negative_hidden = enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
+            else:
+                negative_hidden = None
+                negative_mask = None
 
     return {
         "anchor_hidden": anchor_hidden,
@@ -715,6 +921,8 @@ def encode_triplet_batch(
         "negative_hidden": negative_hidden,
         "negative_mask": negative_mask,
         "hard_neg_mask": hard_neg_mask,
+        "triplet_indices": triplet_indices,
+        "pair_indices": pair_indices,
     }
 
 
@@ -741,6 +949,8 @@ def train_step(
     negative_hidden = encoded["negative_hidden"]
     negative_mask = encoded["negative_mask"]
     hard_neg_mask = encoded["hard_neg_mask"]
+    triplet_idx = encoded["triplet_indices"]
+    pair_idx = encoded["pair_indices"]
 
     amp_context = (
         autocast("cuda", dtype=amp_dtype, enabled=use_amp)
@@ -749,34 +959,69 @@ def train_step(
     )
 
     with amp_context:
-
         embedding_head = model.heads["embedding"]
         anchor_emb = embedding_head(anchor_hidden, anchor_mask)
         positive_emb = embedding_head(positive_hidden, positive_mask)
-        negative_emb = embedding_head(negative_hidden, negative_mask)
 
-        if matryoshka_dims:
-            total_loss = 0.0
-            for dim in matryoshka_dims:
-                a_d = F.normalize(anchor_emb[:, :dim], p=2, dim=-1)
-                p_d = F.normalize(positive_emb[:, :dim], p=2, dim=-1)
-                n_d = F.normalize(negative_emb[:, :dim], p=2, dim=-1).unsqueeze(1)
+        loss = torch.tensor(0.0, device=device)
+        loss_count = 0
+
+        # --- Triplet sub-batch: explicit negatives ---
+        if triplet_idx.numel() > 0 and negative_hidden is not None:
+            negative_emb = embedding_head(negative_hidden, negative_mask)
+
+            if matryoshka_dims:
+                trip_loss = torch.tensor(0.0, device=device)
+                for dim in matryoshka_dims:
+                    a_d = F.normalize(anchor_emb[triplet_idx, :dim], p=2, dim=-1)
+                    p_d = F.normalize(positive_emb[triplet_idx, :dim], p=2, dim=-1)
+                    n_d = F.normalize(negative_emb[:, :dim], p=2, dim=-1).unsqueeze(1)
+                    hn_mask = hard_neg_mask.unsqueeze(1)
+                    trip_loss = trip_loss + loss_fn(
+                        anchor=a_d, positive=p_d, negatives=n_d, hard_negative_mask=hn_mask,
+                    )
+                loss = loss + trip_loss / len(matryoshka_dims)
+            else:
+                a_trip = anchor_emb[triplet_idx]
+                p_trip = positive_emb[triplet_idx]
+                negatives = negative_emb.unsqueeze(1)
                 hn_mask = hard_neg_mask.unsqueeze(1)
-                dim_loss = loss_fn(anchor=a_d, positive=p_d, negatives=n_d, hard_negative_mask=hn_mask)
-                total_loss = total_loss + dim_loss
-            loss = total_loss / len(matryoshka_dims)
-        else:
-            negatives = negative_emb.unsqueeze(1)
-            hard_neg_mask_expanded = hard_neg_mask.unsqueeze(1)
-            loss = loss_fn(
-                anchor=anchor_emb, positive=positive_emb,
-                negatives=negatives, hard_negative_mask=hard_neg_mask_expanded,
-            )
+                loss = loss + loss_fn(
+                    anchor=a_trip, positive=p_trip,
+                    negatives=negatives, hard_negative_mask=hn_mask,
+                )
+            loss_count += 1
 
+        # --- Pair sub-batch: in-batch negatives only ---
+        if pair_idx.numel() > 0:
+            a_pair = anchor_emb[pair_idx]
+            p_pair = positive_emb[pair_idx]
+
+            if matryoshka_dims:
+                pair_loss = torch.tensor(0.0, device=device)
+                for dim in matryoshka_dims:
+                    a_d = F.normalize(a_pair[:, :dim], p=2, dim=-1)
+                    p_d = F.normalize(p_pair[:, :dim], p=2, dim=-1)
+                    pair_loss = pair_loss + loss_fn(anchor=a_d, positive=p_d, negatives=None)
+                loss = loss + pair_loss / len(matryoshka_dims)
+            else:
+                loss = loss + loss_fn(anchor=a_pair, positive=p_pair, negatives=None)
+            loss_count += 1
+
+        if loss_count > 1:
+            loss = loss / loss_count
+
+    # Metrics: pos_sim always available; neg_sim only for triplet sub-batch
+    neg_emb_for_metric = None
     with torch.no_grad():
         pos_sim = F.cosine_similarity(anchor_emb, positive_emb).mean().item()
-        neg_sim = F.cosine_similarity(anchor_emb, negative_emb).mean().item()
-        margin = pos_sim - neg_sim
+        if triplet_idx.numel() > 0 and negative_hidden is not None:
+            neg_emb_for_metric = embedding_head(negative_hidden, negative_mask)
+            neg_sim = F.cosine_similarity(anchor_emb[triplet_idx], neg_emb_for_metric).mean().item()
+            margin = pos_sim - neg_sim
+        else:
+            neg_sim = 0.0
+            margin = pos_sim
 
     result = {"total_loss": loss, "pos_sim": pos_sim, "neg_sim": neg_sim, "margin": margin}
     if debug:
@@ -811,6 +1056,8 @@ def evaluate(
     total_neg_sim = 0.0
     total_correct = 0
     total_samples = 0
+    total_triplet_samples = 0
+    total_pair_samples = 0
     total_hard_neg_correct = 0
     total_hard_neg_samples = 0
 
@@ -825,53 +1072,86 @@ def evaluate(
         negative_hidden = encoded["negative_hidden"]
         negative_mask = encoded["negative_mask"]
         hard_neg_mask = encoded["hard_neg_mask"]
+        triplet_idx = encoded["triplet_indices"]
+        pair_idx = encoded["pair_indices"]
 
         with amp_context:
             embedding_head = model.heads["embedding"]
             anchor_emb = embedding_head(anchor_hidden, anchor_mask)
             positive_emb = embedding_head(positive_hidden, positive_mask)
-            negative_emb = embedding_head(negative_hidden, negative_mask)
 
-            negatives = negative_emb.unsqueeze(1)
-            hard_neg_mask_expanded = hard_neg_mask.unsqueeze(1)
-            batch_loss = loss_fn(
-                anchor=anchor_emb, positive=positive_emb,
-                negatives=negatives, hard_negative_mask=hard_neg_mask_expanded,
-            )
+            batch_loss = torch.tensor(0.0, device=device)
+            loss_count = 0
 
-        pos_sim = F.cosine_similarity(anchor_emb, positive_emb)
-        neg_sim = F.cosine_similarity(anchor_emb, negative_emb)
-        correct = (pos_sim > neg_sim).float()
+            # Triplet sub-batch
+            if triplet_idx.numel() > 0 and negative_hidden is not None:
+                negative_emb = embedding_head(negative_hidden, negative_mask)
+                a_trip = anchor_emb[triplet_idx]
+                p_trip = positive_emb[triplet_idx]
+                negatives = negative_emb.unsqueeze(1)
+                hn_mask = hard_neg_mask.unsqueeze(1)
+                batch_loss = batch_loss + loss_fn(
+                    anchor=a_trip, positive=p_trip,
+                    negatives=negatives, hard_negative_mask=hn_mask,
+                )
+                loss_count += 1
+
+                # Triplet metrics
+                trip_pos_sim = F.cosine_similarity(a_trip, p_trip)
+                trip_neg_sim = F.cosine_similarity(a_trip, negative_emb)
+                correct = (trip_pos_sim > trip_neg_sim).float()
+                n_trip = triplet_idx.numel()
+                total_pos_sim += trip_pos_sim.sum().item()
+                total_neg_sim += trip_neg_sim.sum().item()
+                total_correct += correct.sum().item()
+                total_triplet_samples += n_trip
+
+                if hard_neg_mask.any():
+                    total_hard_neg_correct += correct[hard_neg_mask].sum().item()
+                    total_hard_neg_samples += hard_neg_mask.sum().item()
+
+            # Pair sub-batch
+            if pair_idx.numel() > 0:
+                a_pair = anchor_emb[pair_idx]
+                p_pair = positive_emb[pair_idx]
+                batch_loss = batch_loss + loss_fn(anchor=a_pair, positive=p_pair, negatives=None)
+                loss_count += 1
+
+                pair_pos_sim = F.cosine_similarity(a_pair, p_pair)
+                total_pos_sim += pair_pos_sim.sum().item()
+                total_pair_samples += pair_idx.numel()
+
+            if loss_count > 1:
+                batch_loss = batch_loss / loss_count
+
         batch_size = anchor_emb.size(0)
         total_loss += batch_loss.item() * batch_size
-        total_pos_sim += pos_sim.sum().item()
-        total_neg_sim += neg_sim.sum().item()
-        total_correct += correct.sum().item()
         total_samples += batch_size
-        if hard_neg_mask.any():
-            total_hard_neg_correct += correct[hard_neg_mask].sum().item()
-            total_hard_neg_samples += hard_neg_mask.sum().item()
 
     model.train()
     if total_samples == 0:
         return {"val_loss": 0, "pos_sim": 0, "neg_sim": 0, "margin": 0, "accuracy": 0}
 
     avg_pos_sim = total_pos_sim / total_samples
-    avg_neg_sim = total_neg_sim / total_samples
+    avg_neg_sim = total_neg_sim / total_triplet_samples if total_triplet_samples > 0 else 0.0
+    triplet_accuracy = total_correct / total_triplet_samples if total_triplet_samples > 0 else 0.0
     metrics = {
         "val_loss": total_loss / total_samples,
         "pos_sim": avg_pos_sim,
         "neg_sim": avg_neg_sim,
         "margin": avg_pos_sim - avg_neg_sim,
-        "accuracy": total_correct / total_samples,
+        "accuracy": triplet_accuracy,
         "hard_neg_accuracy": total_hard_neg_correct / total_hard_neg_samples if total_hard_neg_samples > 0 else 0.0,
         "hard_neg_samples": total_hard_neg_samples,
         "total_samples": total_samples,
+        "triplet_samples": total_triplet_samples,
+        "pair_samples": total_pair_samples,
     }
     logger.info(
         f"  val_loss={metrics['val_loss']:.4f} | pos_sim={avg_pos_sim:.4f} neg_sim={avg_neg_sim:.4f} "
-        f"margin={metrics['margin']:.4f} | acc={metrics['accuracy']:.4f} "
-        f"hard_neg_acc={metrics['hard_neg_accuracy']:.4f}"
+        f"margin={metrics['margin']:.4f} | acc={triplet_accuracy:.4f} "
+        f"hard_neg_acc={metrics['hard_neg_accuracy']:.4f} "
+        f"(triplets={total_triplet_samples} pairs={total_pair_samples})"
     )
     return metrics
 
@@ -898,6 +1178,8 @@ def evaluate_all_heads(
             "neg_sim": 0.0,
             "correct": 0.0,
             "samples": 0.0,
+            "triplet_samples": 0.0,
+            "pair_samples": 0.0,
             "hard_neg_correct": 0.0,
             "hard_neg_samples": 0.0,
         }
@@ -922,36 +1204,63 @@ def evaluate_all_heads(
         negative_hidden = encoded["negative_hidden"]
         negative_mask = encoded["negative_mask"]
         hard_neg_mask = encoded["hard_neg_mask"]
+        triplet_idx = encoded["triplet_indices"]
+        pair_idx = encoded["pair_indices"]
+        has_triplets = triplet_idx.numel() > 0 and negative_hidden is not None
 
         with amp_context:
             for head_type, head in candidate_heads.items():
                 anchor_emb = head(anchor_hidden, anchor_mask)
                 positive_emb = head(positive_hidden, positive_mask)
-                negative_emb = head(negative_hidden, negative_mask)
 
-                negatives = negative_emb.unsqueeze(1)
-                hard_neg_mask_expanded = hard_neg_mask.unsqueeze(1)
-                batch_loss = loss_modules[head_type](
-                    anchor=anchor_emb,
-                    positive=positive_emb,
-                    negatives=negatives,
-                    hard_negative_mask=hard_neg_mask_expanded,
-                )
+                batch_loss = torch.tensor(0.0, device=anchor_emb.device)
+                loss_count = 0
 
-                pos_sim = F.cosine_similarity(anchor_emb, positive_emb)
-                neg_sim = F.cosine_similarity(anchor_emb, negative_emb)
-                correct = (pos_sim > neg_sim).float()
+                # Triplet sub-batch
+                if has_triplets:
+                    negative_emb = head(negative_hidden, negative_mask)
+                    a_trip = anchor_emb[triplet_idx]
+                    p_trip = positive_emb[triplet_idx]
+                    negatives = negative_emb.unsqueeze(1)
+                    hn_mask = hard_neg_mask.unsqueeze(1)
+                    batch_loss = batch_loss + loss_modules[head_type](
+                        anchor=a_trip, positive=p_trip,
+                        negatives=negatives, hard_negative_mask=hn_mask,
+                    )
+                    loss_count += 1
+
+                    trip_pos_sim = F.cosine_similarity(a_trip, p_trip)
+                    trip_neg_sim = F.cosine_similarity(a_trip, negative_emb)
+                    correct = (trip_pos_sim > trip_neg_sim).float()
+                    n_trip = triplet_idx.numel()
+                    totals[head_type]["pos_sim"] += trip_pos_sim.sum().item()
+                    totals[head_type]["neg_sim"] += trip_neg_sim.sum().item()
+                    totals[head_type]["correct"] += correct.sum().item()
+                    totals[head_type]["triplet_samples"] += n_trip
+
+                    if hard_neg_mask.any():
+                        totals[head_type]["hard_neg_correct"] += correct[hard_neg_mask].sum().item()
+                        totals[head_type]["hard_neg_samples"] += hard_neg_mask.sum().item()
+
+                # Pair sub-batch
+                if pair_idx.numel() > 0:
+                    a_pair = anchor_emb[pair_idx]
+                    p_pair = positive_emb[pair_idx]
+                    batch_loss = batch_loss + loss_modules[head_type](
+                        anchor=a_pair, positive=p_pair, negatives=None,
+                    )
+                    loss_count += 1
+
+                    pair_pos_sim = F.cosine_similarity(a_pair, p_pair)
+                    totals[head_type]["pos_sim"] += pair_pos_sim.sum().item()
+                    totals[head_type]["pair_samples"] += pair_idx.numel()
+
+                if loss_count > 1:
+                    batch_loss = batch_loss / loss_count
+
                 batch_size = anchor_emb.size(0)
-
                 totals[head_type]["loss"] += batch_loss.item() * batch_size
-                totals[head_type]["pos_sim"] += pos_sim.sum().item()
-                totals[head_type]["neg_sim"] += neg_sim.sum().item()
-                totals[head_type]["correct"] += correct.sum().item()
                 totals[head_type]["samples"] += batch_size
-
-                if hard_neg_mask.any():
-                    totals[head_type]["hard_neg_correct"] += correct[hard_neg_mask].sum().item()
-                    totals[head_type]["hard_neg_samples"] += hard_neg_mask.sum().item()
 
     model.train()
     candidate_heads.train()
@@ -973,20 +1282,637 @@ def evaluate_all_heads(
             continue
 
         avg_pos_sim = total["pos_sim"] / sample_count
-        avg_neg_sim = total["neg_sim"] / sample_count
+        triplet_count = int(total["triplet_samples"])
+        avg_neg_sim = total["neg_sim"] / triplet_count if triplet_count > 0 else 0.0
         hard_neg_samples = int(total["hard_neg_samples"])
+        triplet_accuracy = total["correct"] / triplet_count if triplet_count > 0 else 0.0
         metrics_by_head[head_type] = {
             "val_loss": total["loss"] / sample_count,
             "pos_sim": avg_pos_sim,
             "neg_sim": avg_neg_sim,
             "margin": avg_pos_sim - avg_neg_sim,
-            "accuracy": total["correct"] / sample_count,
+            "accuracy": triplet_accuracy,
             "hard_neg_accuracy": total["hard_neg_correct"] / hard_neg_samples if hard_neg_samples > 0 else 0.0,
             "hard_neg_samples": hard_neg_samples,
             "total_samples": sample_count,
+            "triplet_samples": triplet_count,
+            "pair_samples": int(total["pair_samples"]),
         }
 
     return metrics_by_head
+
+
+@torch.no_grad()
+def compute_per_slice_metrics(
+    batch: dict[str, Any],
+    model: ModernBertMultiTaskModel,
+    loss_fn: FamilyContrastiveLoss,
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.float16,
+    head: nn.Module | None = None,
+) -> dict[str, dict[str, float]]:
+    """Compute per-slice loss and pos_sim for a single batch.
+
+    Called at logging steps only (not every step) to avoid overhead.
+    Returns ``{slice_name: {"loss": ..., "pos_sim": ..., "count": ...}}``.
+    """
+    slice_tags: list[str] = batch.get("slice_tags", [])
+    if not slice_tags:
+        return {}
+
+    encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
+    anchor_hidden = encoded["anchor_hidden"]
+    anchor_mask = encoded["anchor_mask"]
+    positive_hidden = encoded["positive_hidden"]
+    positive_mask = encoded["positive_mask"]
+    negative_hidden = encoded["negative_hidden"]
+    negative_mask = encoded["negative_mask"]
+    hard_neg_mask = encoded["hard_neg_mask"]
+    triplet_idx = encoded["triplet_indices"]
+
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    embedding_head = head if head is not None else model.heads["embedding"]
+
+    with amp_context:
+        anchor_emb = embedding_head(anchor_hidden, anchor_mask)
+        positive_emb = embedding_head(positive_hidden, positive_mask)
+
+    # Build per-slice index groups
+    slice_indices: dict[str, list[int]] = {}
+    for i, tag in enumerate(slice_tags):
+        slice_indices.setdefault(tag, []).append(i)
+
+    # Build triplet set for quick lookup
+    triplet_set = set(triplet_idx.cpu().tolist()) if triplet_idx.numel() > 0 else set()
+
+    # Encode negatives once if any triplets exist
+    negative_emb = None
+    if triplet_idx.numel() > 0 and negative_hidden is not None:
+        with amp_context:
+            negative_emb = embedding_head(negative_hidden, negative_mask)
+
+    results: dict[str, dict[str, float]] = {}
+    for slice_name, indices in slice_indices.items():
+        idx_t = torch.tensor(indices, dtype=torch.long, device=device)
+        a_slice = anchor_emb[idx_t]
+        p_slice = positive_emb[idx_t]
+
+        pos_sim = F.cosine_similarity(a_slice, p_slice).mean().item()
+
+        # Determine if this slice has triplets or pairs
+        slice_triplet_indices = [i for i in indices if i in triplet_set]
+        if slice_triplet_indices and negative_emb is not None:
+            # Map batch-level triplet indices to negative tensor indices
+            triplet_list = triplet_idx.cpu().tolist()
+            neg_indices = [triplet_list.index(i) for i in slice_triplet_indices]
+            neg_idx_t = torch.tensor(neg_indices, dtype=torch.long, device=device)
+            trip_idx_t = torch.tensor(slice_triplet_indices, dtype=torch.long, device=device)
+            with amp_context:
+                slice_loss = loss_fn(
+                    anchor=anchor_emb[trip_idx_t],
+                    positive=positive_emb[trip_idx_t],
+                    negatives=negative_emb[neg_idx_t].unsqueeze(1),
+                    hard_negative_mask=hard_neg_mask[neg_idx_t].unsqueeze(1),
+                ).item()
+        elif len(indices) >= 2:
+            # Pair sub-batch needs at least 2 for in-batch negatives
+            with amp_context:
+                slice_loss = loss_fn(anchor=a_slice, positive=p_slice, negatives=None).item()
+        else:
+            slice_loss = 0.0
+
+        results[slice_name] = {
+            "loss": slice_loss,
+            "pos_sim": pos_sim,
+            "count": len(indices),
+        }
+
+    return results
+
+
+def format_per_slice_log(slice_metrics: dict[str, dict[str, float]]) -> str:
+    """Format per-slice metrics into a compact log line."""
+    parts = []
+    for sn in sorted(slice_metrics):
+        m = slice_metrics[sn]
+        parts.append(f"{sn}={m['loss']:.3f}")
+    return " ".join(parts)
+
+
+# =============================================================================
+# Per-Slice Evaluation (Epic 3.1)
+# =============================================================================
+
+
+@torch.no_grad()
+def evaluate_by_slice(
+    model: ModernBertMultiTaskModel,
+    val_loader: DataLoader,
+    loss_fn: FamilyContrastiveLoss,
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    max_batches: int | None = None,
+    head: nn.Module | None = None,
+) -> dict[str, dict[str, float]]:
+    """Evaluate each held-out slice separately and return per-slice metrics.
+
+    Args:
+        model: The multi-task model (encoder + heads).
+        val_loader: Validation DataLoader with mixed triplet/pair batches.
+        loss_fn: The contrastive loss function.
+        device: Torch device.
+        use_amp: Whether to use automatic mixed precision.
+        amp_dtype: AMP data type.
+        max_batches: Cap on number of eval batches (None = all).
+        head: Override embedding head (used for multi-head bakeoff).
+
+    Returns:
+        Dict mapping slice names to metric dicts, plus an ``_aggregate`` key.
+        Triplet slices: val_loss, pos_sim, neg_sim, margin, accuracy,
+                        hard_neg_accuracy, sample_count.
+        Pair slices (query_doc): val_loss, pair_accuracy, pos_sim, sample_count.
+    """
+    model.eval()
+    embedding_head = head if head is not None else model.heads["embedding"]
+
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    # Per-slice accumulators
+    slice_acc: dict[str, dict[str, float]] = {}
+
+    def _ensure_slice(name: str) -> dict[str, float]:
+        if name not in slice_acc:
+            slice_acc[name] = {
+                "loss_sum": 0.0,
+                "pos_sim_sum": 0.0,
+                "neg_sim_sum": 0.0,
+                "correct": 0.0,
+                "hard_neg_correct": 0.0,
+                "hard_neg_count": 0.0,
+                "triplet_count": 0.0,
+                "pair_count": 0.0,
+                "pair_correct": 0.0,
+                "total": 0.0,
+            }
+        return slice_acc[name]
+
+    for batch_idx, batch in enumerate(val_loader):
+        if max_batches is not None and batch_idx >= max_batches:
+            break
+
+        slice_tags: list[str] = batch.get("slice_tags", [])
+        if not slice_tags:
+            continue
+
+        encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
+        anchor_hidden = encoded["anchor_hidden"]
+        anchor_mask = encoded["anchor_mask"]
+        positive_hidden = encoded["positive_hidden"]
+        positive_mask = encoded["positive_mask"]
+        negative_hidden = encoded["negative_hidden"]
+        negative_mask = encoded["negative_mask"]
+        hard_neg_mask = encoded["hard_neg_mask"]
+        triplet_idx = encoded["triplet_indices"]
+        pair_idx = encoded["pair_indices"]
+
+        with amp_context:
+            anchor_emb = embedding_head(anchor_hidden, anchor_mask)
+            positive_emb = embedding_head(positive_hidden, positive_mask)
+
+            negative_emb = None
+            if triplet_idx.numel() > 0 and negative_hidden is not None:
+                negative_emb = embedding_head(negative_hidden, negative_mask)
+
+        # Build per-sample slice mapping
+        triplet_set = set(triplet_idx.cpu().tolist()) if triplet_idx.numel() > 0 else set()
+        pair_set = set(pair_idx.cpu().tolist()) if pair_idx.numel() > 0 else set()
+        triplet_list = triplet_idx.cpu().tolist() if triplet_idx.numel() > 0 else []
+
+        # Group batch indices by slice
+        slice_indices: dict[str, list[int]] = {}
+        for i, tag in enumerate(slice_tags):
+            slice_indices.setdefault(tag, []).append(i)
+
+        for slice_name, indices in slice_indices.items():
+            acc = _ensure_slice(slice_name)
+
+            # Separate triplet vs pair indices for this slice
+            s_triplet = [i for i in indices if i in triplet_set]
+            s_pair = [i for i in indices if i in pair_set]
+
+            # --- Triplet metrics ---
+            if s_triplet and negative_emb is not None:
+                # Map batch-level triplet indices to negative tensor indices
+                neg_indices = [triplet_list.index(i) for i in s_triplet]
+                trip_t = torch.tensor(s_triplet, dtype=torch.long, device=device)
+                neg_t = torch.tensor(neg_indices, dtype=torch.long, device=device)
+
+                a_trip = anchor_emb[trip_t]
+                p_trip = positive_emb[trip_t]
+                n_trip = negative_emb[neg_t]
+
+                pos_sim = F.cosine_similarity(a_trip, p_trip)
+                neg_sim = F.cosine_similarity(a_trip, n_trip)
+                correct = (pos_sim > neg_sim).float()
+
+                acc["pos_sim_sum"] += pos_sim.sum().item()
+                acc["neg_sim_sum"] += neg_sim.sum().item()
+                acc["correct"] += correct.sum().item()
+                acc["triplet_count"] += len(s_triplet)
+                acc["total"] += len(s_triplet)
+
+                # Per-slice loss
+                with amp_context:
+                    hn_slice = hard_neg_mask[neg_t]
+                    s_loss = loss_fn(
+                        anchor=a_trip, positive=p_trip,
+                        negatives=n_trip.unsqueeze(1),
+                        hard_negative_mask=hn_slice.unsqueeze(1),
+                    ).item()
+                acc["loss_sum"] += s_loss * len(s_triplet)
+
+                # Hard negative accuracy
+                if hn_slice.any():
+                    acc["hard_neg_correct"] += correct[hn_slice].sum().item()
+                    acc["hard_neg_count"] += hn_slice.sum().item()
+
+            # --- Pair metrics (query_doc style: in-batch accuracy) ---
+            if s_pair:
+                pair_t = torch.tensor(s_pair, dtype=torch.long, device=device)
+                a_pair = anchor_emb[pair_t]
+                p_pair = positive_emb[pair_t]
+
+                acc["pos_sim_sum"] += F.cosine_similarity(a_pair, p_pair).sum().item()
+                acc["total"] += len(s_pair)
+                acc["pair_count"] += len(s_pair)
+
+                # In-batch pair loss
+                if len(s_pair) >= 2:
+                    with amp_context:
+                        p_loss = loss_fn(anchor=a_pair, positive=p_pair, negatives=None).item()
+                    acc["loss_sum"] += p_loss * len(s_pair)
+
+                    # Pair accuracy: for each anchor, correct positive has highest sim
+                    sim_matrix = a_pair @ p_pair.T  # [n_pair, n_pair]
+                    targets = torch.arange(len(s_pair), device=device)
+                    predicted = sim_matrix.argmax(dim=1)
+                    acc["pair_correct"] += (predicted == targets).float().sum().item()
+
+    model.train()
+
+    # Build final per-slice metrics
+    results: dict[str, dict[str, float]] = {}
+
+    # Aggregate accumulators
+    agg = {
+        "loss_sum": 0.0, "pos_sim_sum": 0.0, "neg_sim_sum": 0.0,
+        "correct": 0.0, "hard_neg_correct": 0.0, "hard_neg_count": 0.0,
+        "triplet_count": 0.0, "pair_count": 0.0, "pair_correct": 0.0, "total": 0.0,
+    }
+
+    for slice_name, acc in sorted(slice_acc.items()):
+        total = acc["total"]
+        if total == 0:
+            continue
+
+        # Accumulate into aggregate
+        for k in agg:
+            agg[k] += acc[k]
+
+        trip_n = acc["triplet_count"]
+        pair_n = acc["pair_count"]
+
+        if trip_n > 0:
+            # Triplet slice
+            avg_pos = acc["pos_sim_sum"] / total
+            avg_neg = acc["neg_sim_sum"] / trip_n
+            results[slice_name] = {
+                "val_loss": acc["loss_sum"] / total,
+                "pos_sim": avg_pos,
+                "neg_sim": avg_neg,
+                "margin": avg_pos - avg_neg,
+                "accuracy": acc["correct"] / trip_n,
+                "hard_neg_accuracy": (
+                    acc["hard_neg_correct"] / acc["hard_neg_count"]
+                    if acc["hard_neg_count"] > 0 else 0.0
+                ),
+                "sample_count": int(total),
+            }
+        else:
+            # Pair-only slice (query_doc)
+            results[slice_name] = {
+                "val_loss": acc["loss_sum"] / total if total > 0 else 0.0,
+                "pair_accuracy": acc["pair_correct"] / pair_n if pair_n > 0 else 0.0,
+                "pos_sim": acc["pos_sim_sum"] / total,
+                "sample_count": int(total),
+            }
+
+    # Aggregate row
+    agg_total = agg["total"]
+    if agg_total > 0:
+        agg_trip = agg["triplet_count"]
+        agg_pos_sim = agg["pos_sim_sum"] / agg_total
+        agg_neg_sim = agg["neg_sim_sum"] / agg_trip if agg_trip > 0 else 0.0
+        results["_aggregate"] = {
+            "val_loss": agg["loss_sum"] / agg_total,
+            "pos_sim": agg_pos_sim,
+            "neg_sim": agg_neg_sim,
+            "margin": agg_pos_sim - agg_neg_sim,
+            "accuracy": agg["correct"] / agg_trip if agg_trip > 0 else 0.0,
+            "hard_neg_accuracy": (
+                agg["hard_neg_correct"] / agg["hard_neg_count"]
+                if agg["hard_neg_count"] > 0 else 0.0
+            ),
+            "sample_count": int(agg_total),
+        }
+
+    return results
+
+
+@torch.no_grad()
+def evaluate_all_heads_by_slice(
+    model: ModernBertMultiTaskModel,
+    candidate_heads: nn.ModuleDict,
+    loss_modules: nn.ModuleDict,
+    val_loader: DataLoader,
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    max_batches: int | None = None,
+) -> dict[str, dict[str, dict[str, float]]]:
+    """Per-slice evaluation for all candidate heads.
+
+    Returns:
+        Dict mapping head_type -> slice_name -> metrics dict.
+        Each head gets the same structure as evaluate_by_slice().
+    """
+    model.eval()
+    candidate_heads.eval()
+
+    results: dict[str, dict[str, dict[str, float]]] = {}
+    for head_type, head in candidate_heads.items():
+        results[head_type] = evaluate_by_slice(
+            model=model,
+            val_loader=val_loader,
+            loss_fn=loss_modules[head_type],
+            device=device,
+            use_amp=use_amp,
+            amp_dtype=amp_dtype,
+            max_batches=max_batches,
+            head=head,
+        )
+
+    model.train()
+    candidate_heads.train()
+    return results
+
+
+def log_slice_eval_table(
+    slice_metrics: dict[str, dict[str, float]],
+    title: str,
+) -> None:
+    """Log a formatted per-slice evaluation table.
+
+    Prints the leaderboard-style table from the Epic 3.1 spec with
+    Margin, Acc, HardNeg, Loss, and N columns. Pair-only slices show
+    ``--`` for margin and hard_neg_accuracy.
+    """
+    log_section(title)
+    header = f"{'Slice':<22}{'Margin':<10}{'Acc':<10}{'HardNeg':<10}{'Loss':<10}{'N':>8}"
+    logger.info(header)
+    logger.info("-" * len(header))
+
+    # Sort: named slices first (alphabetical), then _aggregate last
+    ordered = sorted(
+        (k for k in slice_metrics if not k.startswith("_")),
+    )
+    if "_aggregate" in slice_metrics:
+        ordered.append("_aggregate")
+
+    for slice_name in ordered:
+        m = slice_metrics[slice_name]
+        n = int(m.get("sample_count", 0))
+        loss_str = f"{m.get('val_loss', 0.0):.4f}"
+
+        if "margin" in m:
+            # Triplet slice or aggregate
+            margin_str = f"{m['margin']:.4f}"
+            acc_str = f"{m['accuracy']:.4f}"
+            hn_str = f"{m.get('hard_neg_accuracy', 0.0):.4f}"
+        else:
+            # Pair-only slice (query_doc)
+            margin_str = "--"
+            acc_str = f"{m.get('pair_accuracy', 0.0):.4f}"
+            hn_str = "--"
+
+        logger.info(
+            f"{slice_name:<22}{margin_str:<10}{acc_str:<10}"
+            f"{hn_str:<10}{loss_str:<10}{n:>8,}"
+        )
+
+
+# =============================================================================
+# Retrieval Eval for Query-Doc (Epic 3.2)
+# =============================================================================
+
+
+def _embed_texts(
+    texts: list[str],
+    model: ModernBertMultiTaskModel,
+    tokenizer: Any,
+    device: torch.device,
+    max_length: int,
+    batch_size: int,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    head: nn.Module | None = None,
+) -> torch.Tensor:
+    """Encode a list of texts into embeddings using the embedding head."""
+    embedding_head = head if head is not None else model.heads["embedding"]
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+    all_embs: list[torch.Tensor] = []
+    for start in range(0, len(texts), batch_size):
+        batch_texts = texts[start : start + batch_size]
+        encoded = tokenizer(
+            batch_texts,
+            padding=True,
+            truncation=True,
+            max_length=max_length,
+            return_tensors="pt",
+        )
+        input_ids = encoded["input_ids"].to(device)
+        attention_mask = encoded["attention_mask"].to(device)
+        with amp_context:
+            hidden = model.encoder(input_ids=input_ids, attention_mask=attention_mask)
+            if hasattr(hidden, "last_hidden_state"):
+                hidden = hidden.last_hidden_state
+            embs = embedding_head(hidden, attention_mask)
+        all_embs.append(embs.float())
+    return torch.cat(all_embs, dim=0)
+
+
+@torch.no_grad()
+def evaluate_retrieval(
+    model: ModernBertMultiTaskModel,
+    query_doc_eval_samples: list[dict[str, Any]],
+    tokenizer: Any,
+    device: torch.device,
+    max_length: int = 128,
+    batch_size: int = 256,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    head: nn.Module | None = None,
+) -> dict[str, float]:
+    """Compute retrieval metrics (Recall@k, MRR) on query-doc eval pairs.
+
+    Args:
+        model: The multi-task model.
+        query_doc_eval_samples: List of normalized dicts with 'anchor' (query)
+            and 'positive' (document) fields.
+        tokenizer: Tokenizer for encoding texts.
+        device: Torch device.
+        max_length: Max token length for encoding.
+        batch_size: Encoding batch size.
+        use_amp: Use automatic mixed precision.
+        amp_dtype: AMP dtype.
+        head: Override embedding head (for multi-head bakeoff).
+
+    Returns:
+        {"recall@1": ..., "recall@5": ..., "recall@10": ..., "mrr": ..., "n_pairs": ...}
+    """
+    if not query_doc_eval_samples:
+        return {"recall@1": 0.0, "recall@5": 0.0, "recall@10": 0.0, "mrr": 0.0, "n_pairs": 0}
+
+    model.eval()
+    queries = [s["anchor"] for s in query_doc_eval_samples]
+    documents = [s["positive"] for s in query_doc_eval_samples]
+
+    # Embed queries and documents
+    q_embs = _embed_texts(
+        queries, model, tokenizer, device, max_length, batch_size,
+        use_amp=use_amp, amp_dtype=amp_dtype, head=head,
+    )
+    d_embs = _embed_texts(
+        documents, model, tokenizer, device, max_length, batch_size,
+        use_amp=use_amp, amp_dtype=amp_dtype, head=head,
+    )
+
+    # Normalize for cosine similarity
+    q_embs = F.normalize(q_embs, p=2, dim=-1)
+    d_embs = F.normalize(d_embs, p=2, dim=-1)
+
+    # Similarity matrix [N_q, N_d] — each query's correct doc is at same index
+    sim_matrix = q_embs @ d_embs.T  # [N, N]
+    n = sim_matrix.size(0)
+
+    # Rank of correct document for each query
+    # For query i, correct doc is document i
+    targets = torch.arange(n, device=device)
+    # Sort similarities descending per query row
+    sorted_indices = sim_matrix.argsort(dim=1, descending=True)  # [N, N]
+    # Find rank of target (0-indexed)
+    ranks = (sorted_indices == targets.unsqueeze(1)).nonzero(as_tuple=True)[1].float()
+    # Convert to 1-indexed
+    ranks = ranks + 1.0
+
+    recall_at_1 = (ranks <= 1).float().mean().item()
+    recall_at_5 = (ranks <= 5).float().mean().item()
+    recall_at_10 = (ranks <= 10).float().mean().item()
+    mrr = (1.0 / ranks).mean().item()
+
+    metrics = {
+        "recall@1": recall_at_1,
+        "recall@5": recall_at_5,
+        "recall@10": recall_at_10,
+        "mrr": mrr,
+        "n_pairs": n,
+    }
+    logger.info(
+        f"  Retrieval eval: R@1={recall_at_1:.4f} R@5={recall_at_5:.4f} "
+        f"R@10={recall_at_10:.4f} MRR={mrr:.4f} (n={n})"
+    )
+    model.train()
+    return metrics
+
+
+# Default composite weights for best-model selection (Epic 3.3)
+DEFAULT_COMPOSITE_WEIGHTS: dict[str, float] = {
+    "aggregate_margin": 0.35,
+    "hard_neg_accuracy": 0.15,
+    "wrong_person_accuracy": 0.15,
+    "wrong_time_accuracy": 0.10,
+    "safety_emotion_accuracy": 0.10,
+    "query_doc_recall_at_5": 0.15,
+}
+
+
+def compute_composite_score(
+    eval_metrics: dict[str, Any],
+    slice_eval: dict[str, dict[str, float]] | None = None,
+    retrieval_metrics: dict[str, float] | None = None,
+    weights: dict[str, float] | None = None,
+) -> float:
+    """Compute weighted composite score for best-model selection.
+
+    Falls back to aggregate margin when slice or retrieval data is missing.
+
+    Args:
+        eval_metrics: Overall eval metrics dict (must have 'margin',
+            'hard_neg_accuracy').
+        slice_eval: Per-slice metrics from evaluate_by_slice().
+        retrieval_metrics: Retrieval metrics from evaluate_retrieval().
+        weights: Configurable weight dict. Uses DEFAULT_COMPOSITE_WEIGHTS
+            if not provided.
+
+    Returns:
+        Weighted composite score (higher is better).
+    """
+    w = weights or DEFAULT_COMPOSITE_WEIGHTS
+
+    aggregate_margin = eval_metrics.get("margin", 0.0)
+    hard_neg_acc = eval_metrics.get("hard_neg_accuracy", 0.0)
+
+    # Per-slice accuracies from slice eval
+    wrong_person_acc = 0.0
+    wrong_time_acc = 0.0
+    safety_emotion_acc = 0.0
+    if slice_eval:
+        wp = slice_eval.get("wrong_person", {})
+        wrong_person_acc = wp.get("accuracy", 0.0)
+        wt = slice_eval.get("wrong_time", {})
+        wrong_time_acc = wt.get("accuracy", 0.0)
+        se = slice_eval.get("safety_emotion", {})
+        safety_emotion_acc = se.get("accuracy", 0.0)
+
+    # Retrieval recall@5
+    recall_at_5 = 0.0
+    if retrieval_metrics:
+        recall_at_5 = retrieval_metrics.get("recall@5", 0.0)
+
+    score = (
+        w.get("aggregate_margin", 0.35) * aggregate_margin
+        + w.get("hard_neg_accuracy", 0.15) * hard_neg_acc
+        + w.get("wrong_person_accuracy", 0.15) * wrong_person_acc
+        + w.get("wrong_time_accuracy", 0.10) * wrong_time_acc
+        + w.get("safety_emotion_accuracy", 0.10) * safety_emotion_acc
+        + w.get("query_doc_recall_at_5", 0.15) * recall_at_5
+    )
+    return score
 
 
 def log_head_leaderboard(
@@ -1049,6 +1975,9 @@ def train(
     base_hard_negative_weight: float = 1.5,
     head_type: str = "mean_baseline",
     head_params: dict[str, Any] | None = None,
+    query_doc_eval_samples: list[dict[str, Any]] | None = None,
+    composite_weights: dict[str, float] | None = None,
+    train_sampler: SliceBalancedSampler | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     amp_dtype = torch.bfloat16 if use_bf16 else torch.float16
@@ -1061,7 +1990,7 @@ def train(
 
     model.train()
     global_step = 0
-    best_margin = -1.0
+    best_score = -1.0
     no_improve_count = 0
     history: dict[str, list] = {
         "train_loss": [], "train_pos_sim": [], "train_neg_sim": [],
@@ -1073,6 +2002,9 @@ def train(
 
     for epoch in range(num_epochs):
         logger.info(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
+
+        if train_sampler is not None:
+            train_sampler.set_epoch(epoch)
 
         if curriculum_config and curriculum_config.get("enabled", False):
             warmup_epochs = curriculum_config.get("warmup_epochs", num_epochs)
@@ -1135,10 +2067,33 @@ def train(
                     current_margin = eval_metrics["margin"]
                     history["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, **eval_metrics})
 
-                    if current_margin > best_margin:
-                        best_margin = current_margin
+                    # Per-slice eval table
+                    slice_eval = evaluate_by_slice(
+                        model, val_loader, loss_fn, device,
+                        use_amp=use_amp, amp_dtype=amp_dtype,
+                        max_batches=max_eval_batches,
+                    )
+                    log_slice_eval_table(slice_eval, f"SLICE EVAL @ STEP {global_step} ({head_type})")
+
+                    # Retrieval eval on query_doc
+                    retrieval_result = None
+                    if query_doc_eval_samples:
+                        retrieval_result = evaluate_retrieval(
+                            model, query_doc_eval_samples, tokenizer, device,
+                            use_amp=use_amp, amp_dtype=amp_dtype,
+                        )
+                        eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
+
+                    current_score = compute_composite_score(
+                        eval_metrics, slice_eval, retrieval_result, composite_weights,
+                    )
+                    eval_metrics["composite_score"] = current_score
+                    logger.info(f"  Composite score: {current_score:.4f}")
+
+                    if current_score > best_score:
+                        best_score = current_score
                         no_improve_count = 0
-                        logger.info(f"New best margin={best_margin:.4f}! Saving...")
+                        logger.info(f"New best composite={best_score:.4f}! Saving...")
                         save_bakeoff_checkpoint(model, output_dir / "best", tokenizer, head_type, head_params, optimizer, scheduler)
                         if ema_model is not None:
                             save_bakeoff_checkpoint(ema_model.module, output_dir / "best-ema", tokenizer, head_type, head_params)
@@ -1165,6 +2120,14 @@ def train(
                 avg_pos = epoch_pos_sim / epoch_steps
                 avg_neg = epoch_neg_sim / epoch_steps
                 logger.info(f"  Step {global_step}: loss={avg_loss:.4f} pos_sim={avg_pos:.4f} neg_sim={avg_neg:.4f} margin={avg_pos - avg_neg:.4f} lr={lr:.2e}")
+                # Per-slice diagnostics
+                slice_metrics = compute_per_slice_metrics(
+                    batch, model, loss_fn, device,
+                    use_amp=use_amp, amp_dtype=amp_dtype,
+                )
+                if slice_metrics:
+                    logger.info(f"    Per-slice loss: {format_per_slice_log(slice_metrics)}")
+                model.train()
 
         # Epoch summary
         if epoch_steps > 0:
@@ -1182,11 +2145,35 @@ def train(
             logger.info(f"--- Full eval epoch {epoch + 1} ---")
             eval_metrics = evaluate(model, val_loader, loss_fn, device, debug=debug, use_amp=use_amp, amp_dtype=amp_dtype, max_batches=None)
             history["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, "full_eval": True, **eval_metrics})
+
+            # Per-slice eval table (full)
+            slice_eval = evaluate_by_slice(
+                model, val_loader, loss_fn, device,
+                use_amp=use_amp, amp_dtype=amp_dtype,
+                max_batches=None,
+            )
+            log_slice_eval_table(slice_eval, f"SLICE EVAL EPOCH {epoch + 1} ({head_type})")
+
+            # Retrieval eval on query_doc (full)
+            retrieval_result = None
+            if query_doc_eval_samples:
+                retrieval_result = evaluate_retrieval(
+                    model, query_doc_eval_samples, tokenizer, device,
+                    use_amp=use_amp, amp_dtype=amp_dtype,
+                )
+                eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
+
+            current_score = compute_composite_score(
+                eval_metrics, slice_eval, retrieval_result, composite_weights,
+            )
+            eval_metrics["composite_score"] = current_score
+            logger.info(f"  Composite score: {current_score:.4f}")
+
             current_margin = eval_metrics["margin"]
-            if current_margin > best_margin:
-                best_margin = current_margin
+            if current_score > best_score:
+                best_score = current_score
                 no_improve_count = 0
-                logger.info(f"New best margin={best_margin:.4f}! Saving...")
+                logger.info(f"New best composite={best_score:.4f}! Saving...")
                 save_bakeoff_checkpoint(model, output_dir / "best", tokenizer, head_type, head_params, optimizer, scheduler)
                 if ema_model is not None:
                     save_bakeoff_checkpoint(ema_model.module, output_dir / "best-ema", tokenizer, head_type, head_params)
@@ -1197,7 +2184,7 @@ def train(
                 break
 
     log_section("TRAINING COMPLETE")
-    logger.info(f"  Best margin: {best_margin:.4f}")
+    logger.info(f"  Best composite score: {best_score:.4f}")
     save_bakeoff_checkpoint(model, output_dir / "final", tokenizer, head_type, head_params, optimizer, scheduler)
     if ema_model is not None:
         save_bakeoff_checkpoint(ema_model.module, output_dir / "final-ema", tokenizer, head_type, head_params)
@@ -1355,6 +2342,9 @@ def run_joint_bakeoff(
     temperature_lr = loss_config.get("temperature_lr", 1e-3)
     curriculum_config = training_config.get("curriculum", {})
 
+    eval_config = config.get("evaluation", {})
+    composite_weights = eval_config.get("composite_weights", None)
+
     if debug:
         max_samples = max_samples or 500
         eval_steps = 50
@@ -1404,7 +2394,6 @@ def run_joint_bakeoff(
         data_config=data_config,
         data_root=data_root,
         max_samples=max_samples,
-        val_split=val_split,
         seed=seed,
     )
     logger.info(f"  Total: {len(train_dataset) + len(val_dataset)} samples "
@@ -1415,16 +2404,37 @@ def run_joint_bakeoff(
     collator = EmbeddingCollator(tokenizer=tokenizer, max_length=max_length)
     effective_workers = 0 if platform.system() == "Windows" else num_workers
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        collate_fn=collator,
-        num_workers=effective_workers,
-        pin_memory=True,
-        persistent_workers=effective_workers > 0,
-        drop_last=True,
-    )
+    # Slice-balanced sampling
+    sampling_config = data_config.get("sampling", {})
+    slice_weights = sampling_config.get("slice_weights", {})
+    if slice_weights:
+        train_sampler = SliceBalancedSampler(
+            dataset=train_dataset,
+            slice_weights=slice_weights,
+            seed=seed,
+        )
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=train_sampler,
+            collate_fn=collator,
+            num_workers=effective_workers,
+            pin_memory=True,
+            persistent_workers=effective_workers > 0,
+            drop_last=True,
+        )
+    else:
+        train_sampler = None
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            collate_fn=collator,
+            num_workers=effective_workers,
+            pin_memory=True,
+            persistent_workers=effective_workers > 0,
+            drop_last=True,
+        )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
@@ -1494,7 +2504,7 @@ def run_joint_bakeoff(
             for head_type, head_params in head_experiments
         },
     }
-    best_margin = {head_type: -1.0 for head_type, _ in head_experiments}
+    best_score = {head_type: -1.0 for head_type, _ in head_experiments}
     no_improve_count = {head_type: 0 for head_type, _ in head_experiments}
     trainable_heads = {
         head_type
@@ -1511,6 +2521,9 @@ def run_joint_bakeoff(
 
     for epoch in range(num_epochs):
         logger.info(f"\n--- Joint epoch {epoch + 1}/{num_epochs} ---")
+
+        if train_sampler is not None:
+            train_sampler.set_epoch(epoch)
 
         if curriculum_config and curriculum_config.get("enabled", False):
             warmup_epochs = curriculum_config.get("warmup_epochs", num_epochs)
@@ -1542,6 +2555,9 @@ def run_joint_bakeoff(
             negative_hidden = encoded["negative_hidden"]
             negative_mask = encoded["negative_mask"]
             hard_neg_mask = encoded["hard_neg_mask"]
+            triplet_idx = encoded["triplet_indices"]
+            pair_idx = encoded["pair_indices"]
+            has_triplets = triplet_idx.numel() > 0 and negative_hidden is not None
 
             amp_context = (
                 autocast("cuda", dtype=amp_dtype, enabled=use_bf16)
@@ -1555,35 +2571,64 @@ def run_joint_bakeoff(
                 for head_type, head in candidate_heads.items():
                     anchor_emb = head(anchor_hidden, anchor_mask)
                     positive_emb = head(positive_hidden, positive_mask)
-                    negative_emb = head(negative_hidden, negative_mask)
 
-                    if config.get("training", {}).get("matryoshka", {}).get("enabled", False):
-                        dims = config["training"]["matryoshka"].get("dims", [hidden_size])
-                        total_loss = 0.0
-                        for dim in dims:
-                            a_d = F.normalize(anchor_emb[:, :dim], p=2, dim=-1)
-                            p_d = F.normalize(positive_emb[:, :dim], p=2, dim=-1)
-                            n_d = F.normalize(negative_emb[:, :dim], p=2, dim=-1).unsqueeze(1)
+                    loss = torch.tensor(0.0, device=device)
+                    loss_count = 0
+
+                    # Triplet sub-batch
+                    if has_triplets:
+                        negative_emb = head(negative_hidden, negative_mask)
+
+                        if config.get("training", {}).get("matryoshka", {}).get("enabled", False):
+                            dims = config["training"]["matryoshka"].get("dims", [hidden_size])
+                            trip_loss = torch.tensor(0.0, device=device)
+                            for dim in dims:
+                                a_d = F.normalize(anchor_emb[triplet_idx, :dim], p=2, dim=-1)
+                                p_d = F.normalize(positive_emb[triplet_idx, :dim], p=2, dim=-1)
+                                n_d = F.normalize(negative_emb[:, :dim], p=2, dim=-1).unsqueeze(1)
+                                hn_mask = hard_neg_mask.unsqueeze(1)
+                                trip_loss = trip_loss + loss_modules[head_type](
+                                    anchor=a_d, positive=p_d,
+                                    negatives=n_d, hard_negative_mask=hn_mask,
+                                )
+                            loss = loss + trip_loss / len(dims)
+                        else:
+                            negatives = negative_emb.unsqueeze(1)
                             hn_mask = hard_neg_mask.unsqueeze(1)
-                            total_loss = total_loss + loss_modules[head_type](
-                                anchor=a_d,
-                                positive=p_d,
-                                negatives=n_d,
-                                hard_negative_mask=hn_mask,
+                            loss = loss + loss_modules[head_type](
+                                anchor=anchor_emb[triplet_idx], positive=positive_emb[triplet_idx],
+                                negatives=negatives, hard_negative_mask=hn_mask,
                             )
-                        loss = total_loss / len(dims)
-                    else:
-                        negatives = negative_emb.unsqueeze(1)
-                        hard_neg_mask_expanded = hard_neg_mask.unsqueeze(1)
-                        loss = loss_modules[head_type](
-                            anchor=anchor_emb,
-                            positive=positive_emb,
-                            negatives=negatives,
-                            hard_negative_mask=hard_neg_mask_expanded,
-                        )
+                        loss_count += 1
+
+                    # Pair sub-batch
+                    if pair_idx.numel() > 0:
+                        a_pair = anchor_emb[pair_idx]
+                        p_pair = positive_emb[pair_idx]
+                        if config.get("training", {}).get("matryoshka", {}).get("enabled", False):
+                            dims = config["training"]["matryoshka"].get("dims", [hidden_size])
+                            pair_loss = torch.tensor(0.0, device=device)
+                            for dim in dims:
+                                a_d = F.normalize(a_pair[:, :dim], p=2, dim=-1)
+                                p_d = F.normalize(p_pair[:, :dim], p=2, dim=-1)
+                                pair_loss = pair_loss + loss_modules[head_type](
+                                    anchor=a_d, positive=p_d, negatives=None,
+                                )
+                            loss = loss + pair_loss / len(dims)
+                        else:
+                            loss = loss + loss_modules[head_type](
+                                anchor=a_pair, positive=p_pair, negatives=None,
+                            )
+                        loss_count += 1
+
+                    if loss_count > 1:
+                        loss = loss / loss_count
 
                     pos_sim = F.cosine_similarity(anchor_emb, positive_emb).mean().item()
-                    neg_sim = F.cosine_similarity(anchor_emb, negative_emb).mean().item()
+                    if has_triplets:
+                        neg_sim = F.cosine_similarity(anchor_emb[triplet_idx], negative_emb).mean().item()
+                    else:
+                        neg_sim = 0.0
                     margin = pos_sim - neg_sim
 
                     head_losses[head_type] = loss
@@ -1643,6 +2688,17 @@ def run_joint_bakeoff(
                     for head_type, metrics in top_heads
                 )
                 logger.info(f"  Step {global_step}: {top_summary} | lr={lr:.2e}")
+                # Per-slice diagnostics (use first active head)
+                first_head_type = next(iter(candidate_heads))
+                slice_metrics = compute_per_slice_metrics(
+                    batch, base_model, loss_modules[first_head_type], device,
+                    use_amp=use_bf16, amp_dtype=amp_dtype,
+                    head=candidate_heads[first_head_type],
+                )
+                if slice_metrics:
+                    logger.info(f"    Per-slice loss: {format_per_slice_log(slice_metrics)}")
+                base_model.train()
+                candidate_heads.train()
 
             if global_step > 0 and global_step % eval_steps == 0 and len(val_loader) > 0:
                 logger.info(f"\n--- Joint eval @ step {global_step} ---")
@@ -1658,10 +2714,40 @@ def run_joint_bakeoff(
                 )
                 log_head_leaderboard(eval_metrics, f"JOINT LEADERBOARD @ STEP {global_step}")
 
+                # Per-slice eval for all heads
+                slice_eval_all = evaluate_all_heads_by_slice(
+                    model=base_model,
+                    candidate_heads=ema_heads if ema_heads is not None else candidate_heads,
+                    loss_modules=loss_modules,
+                    val_loader=val_loader,
+                    device=device,
+                    use_amp=use_bf16,
+                    amp_dtype=amp_dtype,
+                    max_batches=max_eval_batches,
+                )
+                for ht, slice_eval in slice_eval_all.items():
+                    log_slice_eval_table(slice_eval, f"SLICE EVAL @ STEP {global_step} ({ht})")
+
+                # Retrieval eval on query_doc per head
+                if query_doc_eval_samples:
+                    eval_heads = ema_heads if ema_heads is not None else candidate_heads
+                    for ht in eval_heads:
+                        retrieval_metrics = evaluate_retrieval(
+                            base_model, query_doc_eval_samples, tokenizer, device,
+                            use_amp=use_bf16, amp_dtype=amp_dtype, head=eval_heads[ht],
+                        )
+                        eval_metrics[ht].update({f"retrieval_{k}": v for k, v in retrieval_metrics.items()})
+
                 for head_type, metrics in eval_metrics.items():
+                    # Compute composite score per head
+                    head_slice_eval = slice_eval_all.get(head_type)
+                    head_retrieval = {k.replace("retrieval_", ""): v for k, v in metrics.items() if k.startswith("retrieval_")} or None
+                    head_score = compute_composite_score(metrics, head_slice_eval, head_retrieval, composite_weights)
+                    metrics["composite_score"] = head_score
+
                     history["heads"][head_type]["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, **metrics})
-                    if metrics["margin"] > best_margin[head_type]:
-                        best_margin[head_type] = metrics["margin"]
+                    if head_score > best_score[head_type]:
+                        best_score[head_type] = head_score
                         no_improve_count[head_type] = 0
                         save_bakeoff_checkpoint(
                             base_model,
@@ -1718,10 +2804,41 @@ def run_joint_bakeoff(
                 max_batches=None,
             )
             log_head_leaderboard(eval_metrics, f"FULL EVAL LEADERBOARD EPOCH {epoch + 1}")
+
+            # Per-slice eval for all heads (full)
+            slice_eval_all = evaluate_all_heads_by_slice(
+                model=base_model,
+                candidate_heads=ema_heads if ema_heads is not None else candidate_heads,
+                loss_modules=loss_modules,
+                val_loader=val_loader,
+                device=device,
+                use_amp=use_bf16,
+                amp_dtype=amp_dtype,
+                max_batches=None,
+            )
+            for ht, slice_eval in slice_eval_all.items():
+                log_slice_eval_table(slice_eval, f"SLICE EVAL EPOCH {epoch + 1} ({ht})")
+
+            # Retrieval eval on query_doc per head (full)
+            if query_doc_eval_samples:
+                eval_heads = ema_heads if ema_heads is not None else candidate_heads
+                for ht in eval_heads:
+                    retrieval_metrics = evaluate_retrieval(
+                        base_model, query_doc_eval_samples, tokenizer, device,
+                        use_amp=use_bf16, amp_dtype=amp_dtype, head=eval_heads[ht],
+                    )
+                    eval_metrics[ht].update({f"retrieval_{k}": v for k, v in retrieval_metrics.items()})
+
             for head_type, metrics in eval_metrics.items():
                 history["heads"][head_type]["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, "full_eval": True, **metrics})
-                if metrics["margin"] > best_margin[head_type]:
-                    best_margin[head_type] = metrics["margin"]
+                # Compute composite score per head
+                head_slice_eval = slice_eval_all.get(head_type)
+                head_retrieval = {k.replace("retrieval_", ""): v for k, v in metrics.items() if k.startswith("retrieval_")} or None
+                head_score = compute_composite_score(metrics, head_slice_eval, head_retrieval, composite_weights)
+                metrics["composite_score"] = head_score
+
+                if head_score > best_score[head_type]:
+                    best_score[head_type] = head_score
                     no_improve_count[head_type] = 0
                     save_bakeoff_checkpoint(
                         base_model,
@@ -1744,8 +2861,9 @@ def run_joint_bakeoff(
     summary = {}
     for head_type, head_history in history["heads"].items():
         evals = head_history.get("eval_metrics", [])
-        best_eval = max(evals, key=lambda item: item.get("margin", -1.0)) if evals else {}
+        best_eval = max(evals, key=lambda item: item.get("composite_score", item.get("margin", -1.0))) if evals else {}
         summary[head_type] = {
+            "best_composite_score": best_eval.get("composite_score", 0.0),
             "best_margin": best_eval.get("margin", 0.0),
             "best_accuracy": best_eval.get("accuracy", 0.0),
             "best_hard_neg_accuracy": best_eval.get("hard_neg_accuracy", 0.0),
@@ -1826,6 +2944,9 @@ def run_experiment(
     matryoshka_config = training_config.get("matryoshka", {})
     matryoshka_dims = matryoshka_config.get("dims", None) if matryoshka_config.get("enabled", False) else None
 
+    eval_config = config.get("evaluation", {})
+    composite_weights = eval_config.get("composite_weights", None)
+
     if debug:
         max_samples = max_samples or 500
         save_steps = 50
@@ -1858,28 +2979,41 @@ def run_experiment(
 
     # Data
     log_section("DATA")
-    data_paths = get_embedding_data_paths(data_config, data_root)
-    logger.info(f"  Data sources: {len(data_paths)}")
-    for p in data_paths:
-        logger.info(f"    {p}")
-
-    full_dataset = TripletDataset(data_paths=data_paths, max_samples=max_samples)
-    val_size = int(len(full_dataset) * val_split)
-    train_size = len(full_dataset) - val_size
-    logger.info(f"  Total: {len(full_dataset)} triplets (train={train_size}, val={val_size})")
-
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        full_dataset, [train_size, val_size],
-        generator=torch.Generator().manual_seed(seed),
+    train_dataset, val_dataset, query_doc_eval_samples = build_train_val_datasets(
+        data_config=data_config,
+        data_root=data_root,
+        max_samples=max_samples,
+        seed=seed,
     )
-    collator = TripletCollator(tokenizer=tokenizer, max_length=max_length)
+    logger.info(f"  Total: {len(train_dataset) + len(val_dataset)} samples "
+                f"(train={len(train_dataset)}, val={len(val_dataset)})")
+    if query_doc_eval_samples:
+        logger.info(f"  Query-doc eval pairs: {len(query_doc_eval_samples)}")
+
+    collator = EmbeddingCollator(tokenizer=tokenizer, max_length=max_length)
     effective_workers = 0 if platform.system() == "Windows" else num_workers
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collator,
-        num_workers=effective_workers, pin_memory=True,
-        persistent_workers=effective_workers > 0, drop_last=True,
-    )
+    # Slice-balanced sampling
+    sampling_config = data_config.get("sampling", {})
+    slice_weights = sampling_config.get("slice_weights", {})
+    if slice_weights:
+        train_sampler = SliceBalancedSampler(
+            dataset=train_dataset,
+            slice_weights=slice_weights,
+            seed=seed,
+        )
+        train_loader = DataLoader(
+            train_dataset, batch_size=batch_size, sampler=train_sampler, collate_fn=collator,
+            num_workers=effective_workers, pin_memory=True,
+            persistent_workers=effective_workers > 0, drop_last=True,
+        )
+    else:
+        train_sampler = None
+        train_loader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collator,
+            num_workers=effective_workers, pin_memory=True,
+            persistent_workers=effective_workers > 0, drop_last=True,
+        )
     val_loader = DataLoader(
         val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collator,
         num_workers=effective_workers, pin_memory=True,
@@ -1932,12 +3066,236 @@ def run_experiment(
         matryoshka_dims=matryoshka_dims,
         base_hard_negative_weight=hard_negative_weight,
         head_type=head_type, head_params=head_params,
+        query_doc_eval_samples=query_doc_eval_samples,
+        composite_weights=composite_weights,
+        train_sampler=train_sampler,
     )
 
     with open(output_dir / "training_history.json", "w") as f:
         json.dump(history, f, indent=2)
 
     logger.info(f"Experiment {head_type} complete -> {output_dir}")
+    return history
+
+
+# =============================================================================
+# Stage B: Domain Adaptation (trained head + all data slices)
+# =============================================================================
+
+
+def run_stage_b(
+    config: dict[str, Any],
+    bakeoff_checkpoint: str | Path,
+    output_dir: Path,
+    debug: bool = False,
+    max_samples: int | None = None,
+) -> dict[str, Any]:
+    """Stage B: Continue training the bakeoff winner head with all data slices.
+
+    Loads the trained embedding head from a Stage A bakeoff checkpoint and
+    trains it further with all 6 data slices (including query/doc pairs,
+    hard negatives, role/temporal/safety slices).
+
+    Encoder remains frozen. Only the embedding head is trained.
+
+    Args:
+        config: Full YAML config dict.
+        bakeoff_checkpoint: Path to the bakeoff winner checkpoint dir
+            (e.g. outputs/embedding-bakeoff/agreement_gated_v2/best).
+        output_dir: Where to save Stage B outputs.
+        debug: Enable debug mode (small dataset).
+        max_samples: Limit total samples loaded.
+
+    Returns:
+        Training history dict.
+    """
+    log_section("STAGE B: DOMAIN ADAPTATION")
+    logger.info(f"  Bakeoff checkpoint: {bakeoff_checkpoint}")
+    logger.info(f"  Output: {output_dir}")
+
+    training_config = config.get("training", {})
+    loss_config = config.get("loss", {})
+    data_config = config.get("data", {})
+
+    data_root = Path(data_config.get("root", "data"))
+
+    # Training params
+    learning_rate = training_config.get("learning_rate", 2e-4)
+    weight_decay = training_config.get("weight_decay", 0.01)
+    num_epochs = training_config.get("num_epochs", 7)
+    batch_size = training_config.get("batch_size", 128)
+    max_length = data_config.get("max_length", 128)
+    warmup_steps = training_config.get("warmup_steps", 200)
+    save_steps = training_config.get("save_steps", 500)
+    eval_steps = training_config.get("eval_steps", 500)
+    logging_steps = training_config.get("logging_steps", 50)
+    gradient_accumulation_steps = training_config.get("gradient_accumulation_steps", 1)
+    max_grad_norm = training_config.get("max_grad_norm", 1.0)
+    num_workers = data_config.get("num_workers", 0)
+    max_eval_batches = training_config.get("max_eval_batches", 100)
+    use_bf16 = training_config.get("bf16", False)
+    use_tf32 = training_config.get("tf32", False)
+    use_flash_attention = training_config.get("flash_attention", False)
+    ema_config = training_config.get("ema", {})
+    use_ema = ema_config.get("enabled", True)
+    es_config = training_config.get("early_stopping", {})
+    early_stopping_patience = es_config.get("patience", 5) if es_config.get("enabled", True) else 100000
+    lr_scheduler_type = training_config.get("lr_scheduler_type", "cosine")
+    temperature = loss_config.get("temperature", 0.07)
+    hard_negative_weight = loss_config.get("hard_negative_weight", 1.5)
+    learnable_temperature = loss_config.get("learnable_temperature", False)
+    temperature_lr = loss_config.get("temperature_lr", 1e-3)
+    curriculum_config = training_config.get("curriculum", {})
+    matryoshka_config = training_config.get("matryoshka", {})
+    matryoshka_dims = matryoshka_config.get("dims", None) if matryoshka_config.get("enabled", False) else None
+
+    eval_config = config.get("evaluation", {})
+    composite_weights = eval_config.get("composite_weights", None)
+
+    if debug:
+        max_samples = max_samples or 500
+        save_steps = 50
+        eval_steps = 50
+
+    seed = training_config.get("seed", 42)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        gpu_name = torch.cuda.get_device_name(0)
+        logger.info(f"Device: {gpu_name}")
+        if use_tf32 and "A100" in gpu_name:
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+
+    # Load model with TRAINED embedding head from bakeoff
+    log_section("MODEL (Stage B)")
+    model, head_type, head_params = load_model_with_trained_head(
+        bakeoff_checkpoint=bakeoff_checkpoint,
+        use_flash_attention=use_flash_attention,
+    )
+    freeze_model_except_embedding_head(model)
+    model = model.to(device)
+
+    tokenizer = AutoTokenizer.from_pretrained(bakeoff_checkpoint)
+
+    # Data -- all 6 slices
+    log_section("DATA (Stage B - all slices)")
+    train_dataset, val_dataset, query_doc_eval_samples = build_train_val_datasets(
+        data_config=data_config,
+        data_root=data_root,
+        max_samples=max_samples,
+        seed=seed,
+    )
+    logger.info(f"  Total: {len(train_dataset) + len(val_dataset)} samples "
+                f"(train={len(train_dataset)}, val={len(val_dataset)})")
+    if query_doc_eval_samples:
+        logger.info(f"  Query-doc eval pairs: {len(query_doc_eval_samples)}")
+
+    collator = EmbeddingCollator(tokenizer=tokenizer, max_length=max_length)
+    effective_workers = 0 if platform.system() == "Windows" else num_workers
+
+    # Slice-balanced sampling
+    sampling_config = data_config.get("sampling", {})
+    slice_weights = sampling_config.get("slice_weights", {})
+    if slice_weights:
+        train_sampler = SliceBalancedSampler(
+            dataset=train_dataset,
+            slice_weights=slice_weights,
+            seed=seed,
+        )
+        train_loader = DataLoader(
+            train_dataset, batch_size=batch_size, sampler=train_sampler, collate_fn=collator,
+            num_workers=effective_workers, pin_memory=True,
+            persistent_workers=effective_workers > 0, drop_last=True,
+        )
+    else:
+        train_sampler = None
+        train_loader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collator,
+            num_workers=effective_workers, pin_memory=True,
+            persistent_workers=effective_workers > 0, drop_last=True,
+        )
+    val_loader = DataLoader(
+        val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collator,
+        num_workers=effective_workers, pin_memory=True,
+        persistent_workers=effective_workers > 0,
+    )
+
+    # Loss
+    loss_fn = FamilyContrastiveLoss(
+        temperature=temperature, hard_negative_weight=hard_negative_weight,
+        use_hard_negatives=True, normalize=False,
+    )
+    if learnable_temperature:
+        loss_fn.log_temperature.requires_grad_(True)
+
+    # Optimizer
+    trainable_params = get_trainable_params(model)
+    param_groups = [{"params": trainable_params, "lr": learning_rate, "weight_decay": weight_decay}]
+    if learnable_temperature:
+        param_groups.append({"params": [loss_fn.log_temperature], "lr": temperature_lr, "weight_decay": 0.0})
+
+    optimizer = torch.optim.AdamW(
+        param_groups,
+        betas=(training_config.get("adam_beta1", 0.9), training_config.get("adam_beta2", 0.999)),
+        eps=training_config.get("adam_epsilon", 1e-8),
+    )
+
+    num_training_steps = len(train_loader) * num_epochs // gradient_accumulation_steps
+    adaptive_warmup = max(10, int(num_training_steps * 0.05))
+    effective_warmup = min(warmup_steps, adaptive_warmup) if num_training_steps < warmup_steps else warmup_steps
+
+    if lr_scheduler_type == "cosine":
+        scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=effective_warmup, num_training_steps=num_training_steps)
+    else:
+        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=effective_warmup, num_training_steps=num_training_steps)
+
+    logger.info(f"  Steps: {num_training_steps} total, {effective_warmup} warmup")
+    logger.info(f"  Effective batch size: {batch_size * gradient_accumulation_steps}")
+
+    # Train
+    log_section("STAGE B TRAINING")
+    logger.info(f"  Head: {head_type} (trained weights from Stage A)")
+    logger.info(f"  Encoder: FROZEN")
+    logger.info(f"  Data slices: {len(data_config.get('sources', []))} sources")
+
+    history = train(
+        model=model, train_loader=train_loader, val_loader=val_loader,
+        loss_fn=loss_fn, optimizer=optimizer, scheduler=scheduler,
+        device=device, num_epochs=num_epochs, output_dir=output_dir,
+        tokenizer=tokenizer, save_steps=save_steps, eval_steps=eval_steps,
+        logging_steps=logging_steps, gradient_accumulation_steps=gradient_accumulation_steps,
+        max_grad_norm=max_grad_norm, debug=debug,
+        use_amp=use_bf16, use_bf16=use_bf16, use_ema=use_ema,
+        early_stopping_patience=early_stopping_patience,
+        max_eval_batches=max_eval_batches, curriculum_config=curriculum_config,
+        matryoshka_dims=matryoshka_dims,
+        base_hard_negative_weight=hard_negative_weight,
+        head_type=head_type, head_params=head_params,
+        query_doc_eval_samples=query_doc_eval_samples,
+        composite_weights=composite_weights,
+        train_sampler=train_sampler,
+    )
+
+    with open(output_dir / "training_history.json", "w") as f:
+        json.dump(history, f, indent=2)
+
+    # Save Stage B metadata
+    stage_b_meta = {
+        "stage": "B",
+        "source_checkpoint": str(bakeoff_checkpoint),
+        "head_type": head_type,
+        "head_params": head_params,
+        "training_type": "stage_b_domain_adaptation",
+    }
+    with open(output_dir / "stage_b_metadata.json", "w") as f:
+        json.dump(stage_b_meta, f, indent=2)
+
+    logger.info(f"Stage B complete -> {output_dir}")
     return history
 
 
@@ -1952,6 +3310,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--head_type", type=str, default=None, help="Single head type to train (e.g. agreement_gated)")
     parser.add_argument("--run_all", action="store_true", help="Train all configured heads together with a shared encoder pass")
     parser.add_argument("--run_sequential", action="store_true", help="Legacy mode: run configured heads one by one")
+    parser.add_argument("--stage_b", type=str, default=None,
+                        help="Stage B: path to bakeoff winner checkpoint (e.g. outputs/embedding-bakeoff/agreement_gated_v2/best). "
+                             "Loads trained head weights and continues training with all data slices.")
     parser.add_argument("--debug", action="store_true", help="Debug mode (small dataset)")
     parser.add_argument("--max_samples", type=int, default=None, help="Max total samples")
     return parser.parse_args()
@@ -1964,7 +3325,23 @@ def main() -> None:
     experiments_config = config.get("experiments", {})
     output_base = Path(config.get("output", {}).get("dir", "outputs/embedding-bakeoff"))
 
-    if args.run_all:
+    if args.stage_b:
+        logger.info("")
+        logger.info("#" * 70)
+        logger.info("# RUN MODE: STAGE B - DOMAIN ADAPTATION")
+        logger.info("# Trained head from bakeoff + all data slices")
+        logger.info("#" * 70)
+        stage_b_output = output_base / "stage_b"
+        stage_b_output.mkdir(parents=True, exist_ok=True)
+        run_stage_b(
+            config=config,
+            bakeoff_checkpoint=args.stage_b,
+            output_dir=stage_b_output,
+            debug=args.debug,
+            max_samples=args.max_samples,
+        )
+
+    elif args.run_all:
         logger.info("")
         logger.info("#" * 70)
         logger.info("# RUN MODE: JOINT MULTI-HEAD BAKE-OFF (--run_all)")

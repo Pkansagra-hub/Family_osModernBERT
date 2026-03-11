@@ -1,0 +1,18 @@
+{
+  "mode": "safety_emotion_negative",
+  "generator_model": "gemini-2.5-flash",
+  "input_source": "unified_output_synthetic",
+  "source_candidate_count": 200000,
+  "system_prompt_registered": true,
+  "target_triplets": 10000,
+  "generated_triplets_this_run": 10037,
+  "accepted_triplets_this_run": 10037,
+  "total_records_on_disk": 10037,
+  "duplicates_skipped": 0,
+  "output_dir": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\safety_emotion",
+  "shard_prefix": "safety_emotion_negatives",
+  "shard_count": 2,
+  "start_time": "2026-03-10T16:16:26.423708",
+  "end_time": "2026-03-10T18:12:56.675763",
+  "duration_minutes": 116.50420136666666
+}

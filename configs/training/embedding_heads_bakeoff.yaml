@@ -1,7 +1,7 @@
 # =============================================================================
 # Embedding Head Bake-Off Configuration
 # =============================================================================
-# Train 6 candidate embedding heads under identical conditions.
+# Train 7 candidate embedding heads under identical conditions.
 # Derived from embedding_head_retrain.yaml.
 #
 # Usage:
@@ -120,9 +120,56 @@ data:
   root: data
   max_length: 128
   num_workers: 12
-  embedding:
-    train: familyos/embeddings/silver_synthetic,familyos/embeddings/hard_negatives
-    validation: ""
+  eval_split_per_slice: 0.15
+
+  # Structured source list (replaces old embedding.train comma string)
+  sources:
+    - path: familyos/embeddings/silver_synthetic
+      slice: silver_synthetic
+      format: triplet
+
+    - path: familyos/embeddings/hard_negatives
+      slice: hard_negatives
+      format: triplet
+
+    - path: familyos/embeddings/mined_v2/wrong_person
+      slice: wrong_person
+      format: triplet
+
+    - path: familyos/embeddings/mined_v2/wrong_time
+      slice: wrong_time
+      format: triplet
+
+    - path: familyos/embeddings/mined_v2/safety_emotion
+      slice: safety_emotion
+      format: triplet
+
+    - path: familyos/embeddings/mined_v2/query_doc
+      slice: query_doc
+      format: pair
+
+  sampling:
+    strategy: balanced
+    slice_weights:
+      silver_synthetic: 1.0
+      hard_negatives: 2.0
+      wrong_person: 4.0
+      wrong_time: 4.0
+      safety_emotion: 5.0
+      query_doc: 3.0
+
+# =============================================================================
+# Evaluation & Model Selection
+# =============================================================================
+evaluation:
+  selection_metric: composite
+  composite_weights:
+    aggregate_margin: 0.35
+    hard_neg_accuracy: 0.15
+    wrong_person_accuracy: 0.15
+    wrong_time_accuracy: 0.10
+    safety_emotion_accuracy: 0.10
+    query_doc_recall_at_5: 0.15
 
 # =============================================================================
 # Output Configuration
@@ -136,7 +183,7 @@ output:
   save_history: true
 
 # =============================================================================
-# Experiment Definitions (6-Head Bake-Off)
+# Experiment Definitions (7-Head Bake-Off)
 # =============================================================================
 experiments:
   heads:
@@ -174,3 +221,14 @@ experiments:
       params:
         use_low_rank_whiten: true
         whiten_rank: 32
+
+    # E6: Agreement-Gated V2 (6-view, 37-dim agreement, vector gate)
+    - head_type: agreement_gated_v2
+      params:
+        num_latents: 4
+        num_attn_heads: 4
+        gate_hidden: 128
+        gate_rank: 4
+        use_mode_prompts: true
+        use_confidence_head: true
+        dropout: 0.1
