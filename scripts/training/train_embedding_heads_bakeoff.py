@@ -865,6 +865,7 @@ def load_model_for_stage_b_v2(
     """Load a bakeoff checkpoint and install AgreementGatedHeadV2 for Stage B."""
     stage_b_config = config.get("stage_b", {})
     target_head_type = stage_b_config.get("head_type", "agreement_gated_v2")
+    reuse_checkpoint_head_as_is = stage_b_config.get("reuse_checkpoint_head_as_is", True)
     target_head_params = stage_b_config.get("head_params") or get_head_params_from_config(config, target_head_type)
 
     model, source_head_type, source_head_params = load_model_with_trained_head(
@@ -872,6 +873,13 @@ def load_model_for_stage_b_v2(
         exclude_decoder=exclude_decoder,
         use_flash_attention=use_flash_attention,
     )
+
+    if source_head_type == target_head_type and reuse_checkpoint_head_as_is:
+        logger.info(
+            f"  Stage B reusing checkpoint head as-is: {target_head_type} "
+            f"(no head reinitialization, full checkpoint weights preserved)"
+        )
+        return model, source_head_type, source_head_params
 
     if source_head_type == target_head_type and (not target_head_params or target_head_params == source_head_params):
         logger.info(f"  Stage B head already matches target {target_head_type}; keeping trained head as-is")

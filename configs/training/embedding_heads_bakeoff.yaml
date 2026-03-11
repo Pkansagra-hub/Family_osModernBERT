@@ -231,6 +231,7 @@ bakeoff:
 stage_b:
   data_profile: stage_b_v2
   head_type: agreement_gated_v2
+  reuse_checkpoint_head_as_is: true
   head_params:
     num_latents: 4
     num_attn_heads: 4
