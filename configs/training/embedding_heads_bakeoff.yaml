@@ -31,7 +31,7 @@
 # Encoder Configuration (FROZEN)
 # =============================================================================
 encoder:
-  checkpoint: outputs/globalpointer-unified-v1/checkpoint-8000
+  checkpoint: checkpoints/checkpoint-8000
   freeze: true
   hidden_size: 768
   dtype: float32
@@ -158,6 +158,54 @@ data:
       safety_emotion: 5.0
       query_doc: 3.0
 
+  profiles:
+    stage_a_core:
+      sources:
+        - path: familyos/embeddings/silver_synthetic
+          slice: silver_synthetic
+          format: triplet
+
+        - path: familyos/embeddings/hard_negatives
+          slice: hard_negatives
+          format: triplet
+
+      sampling:
+        strategy: balanced
+        slice_weights:
+          silver_synthetic: 1.0
+          hard_negatives: 2.0
+
+    stage_b_v2:
+      sources:
+        - path: familyos/embeddings/hard_negatives
+          slice: hard_negatives
+          format: triplet
+
+        - path: familyos/embeddings/mined_v2/wrong_person
+          slice: wrong_person
+          format: triplet
+
+        - path: familyos/embeddings/mined_v2/wrong_time
+          slice: wrong_time
+          format: triplet
+
+        - path: familyos/embeddings/mined_v2/safety_emotion
+          slice: safety_emotion
+          format: triplet
+
+        - path: familyos/embeddings/mined_v2/query_doc
+          slice: query_doc
+          format: pair
+
+      sampling:
+        strategy: balanced
+        slice_weights:
+          hard_negatives: 2.0
+          wrong_person: 4.0
+          wrong_time: 4.0
+          safety_emotion: 5.0
+          query_doc: 4.0
+
 # =============================================================================
 # Evaluation & Model Selection
 # =============================================================================
@@ -170,6 +218,43 @@ evaluation:
     wrong_time_accuracy: 0.10
     safety_emotion_accuracy: 0.10
     query_doc_recall_at_5: 0.15
+
+# =============================================================================
+# Stage A Bake-Off Configuration
+# =============================================================================
+bakeoff:
+  data_profile: stage_a_core
+
+# =============================================================================
+# Stage B Configuration
+# =============================================================================
+stage_b:
+  data_profile: stage_b_v2
+  head_type: agreement_gated_v2
+  head_params:
+    num_latents: 4
+    num_attn_heads: 4
+    gate_hidden: 128
+    gate_rank: 4
+    use_mode_prompts: true
+    use_confidence_head: true
+    dropout: 0.1
+
+  mode_routing:
+    default_anchor_mode: document
+    default_positive_mode: document
+    default_negative_mode: document
+    anchor_query_slices: [query_doc]
+
+  retrieval_modes:
+    query: query
+    document: document
+
+  aux_objectives:
+    enabled: true
+    role_entropy_weight: 0.02
+    temporal_entropy_weight: 0.02
+    safety_entropy_weight: 0.02
 
 # =============================================================================
 # Output Configuration

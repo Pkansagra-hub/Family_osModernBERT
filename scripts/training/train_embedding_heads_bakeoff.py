@@ -194,6 +194,7 @@ class EmbeddingDataset(Dataset):
         sources: list[dict[str, Any]],
         max_samples: int | None,
     ) -> None:
+        per_source_cap = max(1, math.ceil(max_samples / len(sources))) if max_samples and sources else None
         for src in sources:
             path = Path(src["path"])
             slice_name = src.get("slice", path.name)
@@ -209,11 +210,31 @@ class EmbeddingDataset(Dataset):
                 if not jsonl_files:
                     jsonl_files = sorted(path.glob("**/*.jsonl"))
                 for jsonl_file in jsonl_files:
-                    self._load_jsonl(jsonl_file, slice_name, fmt, max_samples)
+                    remaining_for_source = None
+                    if per_source_cap is not None:
+                        loaded_for_source = len(self.samples) - count_before
+                        remaining_for_source = max(0, per_source_cap - loaded_for_source)
+                        if remaining_for_source == 0:
+                            break
+                    self._load_jsonl(
+                        jsonl_file,
+                        slice_name,
+                        fmt,
+                        max_samples,
+                        max_source_samples=remaining_for_source,
+                    )
                     if max_samples and len(self.samples) >= max_samples:
                         break
+                    if per_source_cap is not None and (len(self.samples) - count_before) >= per_source_cap:
+                        break
             elif path.suffix == ".jsonl":
-                self._load_jsonl(path, slice_name, fmt, max_samples)
+                self._load_jsonl(
+                    path,
+                    slice_name,
+                    fmt,
+                    max_samples,
+                    max_source_samples=per_source_cap,
+                )
 
             loaded = len(self.samples) - count_before
             self.slice_counts[slice_name] = self.slice_counts.get(slice_name, 0) + loaded
@@ -227,6 +248,7 @@ class EmbeddingDataset(Dataset):
         slice_name: str,
         fmt: str,
         max_samples: int | None,
+        max_source_samples: int | None = None,
     ) -> None:
         if any(path.name.startswith(p) for p in _SKIP_PREFIXES):
             return
@@ -235,8 +257,11 @@ class EmbeddingDataset(Dataset):
         count_before = len(self.samples)
 
         with open(path, encoding="utf-8") as f:
+            loaded_from_file = 0
             for line in f:
                 if max_samples and len(self.samples) >= max_samples:
+                    break
+                if max_source_samples is not None and loaded_from_file >= max_source_samples:
                     break
                 line = line.strip()
                 if not line:
@@ -249,6 +274,7 @@ class EmbeddingDataset(Dataset):
                 record = self._normalize_record(raw, slice_name, fmt, is_hard_neg_dir)
                 if record is not None:
                     self.samples.append(record)
+                    loaded_from_file += 1
 
         loaded = len(self.samples) - count_before
         if loaded > 0:
@@ -586,6 +612,28 @@ def build_train_val_datasets(
     return train_dataset, val_dataset, query_doc_eval_samples
 
 
+def resolve_data_config(
+    data_config: dict[str, Any],
+    profile_name: str | None = None,
+) -> dict[str, Any]:
+    """Resolve an optional stage-specific data profile from the YAML config."""
+    resolved = copy.deepcopy(data_config)
+    if not profile_name:
+        return resolved
+
+    profiles = data_config.get("profiles", {})
+    profile = profiles.get(profile_name)
+    if not profile:
+        return resolved
+
+    for key in ("sources", "sampling", "eval_split_per_slice"):
+        if key in profile:
+            resolved[key] = copy.deepcopy(profile[key])
+
+    logger.info(f"Using data profile '{profile_name}' with {len(resolved.get('sources', []))} sources")
+    return resolved
+
+
 def load_checkpoint_capabilities(
     checkpoint_path: Path,
     exclude_decoder: bool = True,
@@ -808,6 +856,44 @@ def load_model_with_trained_head(
     return model, head_type, head_params
 
 
+def load_model_for_stage_b_v2(
+    config: dict[str, Any],
+    bakeoff_checkpoint: str | Path,
+    exclude_decoder: bool = True,
+    use_flash_attention: bool = False,
+) -> tuple[ModernBertMultiTaskModel, str, dict[str, Any]]:
+    """Load a bakeoff checkpoint and install AgreementGatedHeadV2 for Stage B."""
+    stage_b_config = config.get("stage_b", {})
+    target_head_type = stage_b_config.get("head_type", "agreement_gated_v2")
+    target_head_params = stage_b_config.get("head_params") or get_head_params_from_config(config, target_head_type)
+
+    model, source_head_type, source_head_params = load_model_with_trained_head(
+        bakeoff_checkpoint=bakeoff_checkpoint,
+        exclude_decoder=exclude_decoder,
+        use_flash_attention=use_flash_attention,
+    )
+
+    if source_head_type == target_head_type and (not target_head_params or target_head_params == source_head_params):
+        logger.info(f"  Stage B head already matches target {target_head_type}; keeping trained head as-is")
+        return model, source_head_type, source_head_params
+
+    hidden_size = model.config.hidden_size
+    source_embedding_state = model.heads["embedding"].state_dict()
+    stage_b_head = create_embedding_head(
+        head_type=target_head_type,
+        hidden_size=hidden_size,
+        **target_head_params,
+    )
+    matched, skipped = load_matching_state_dict(stage_b_head, source_embedding_state)
+    model.heads["embedding"] = stage_b_head
+
+    logger.info(
+        f"  Stage B head upgraded: {source_head_type} -> {target_head_type} "
+        f"(matched {matched} tensors, skipped {skipped})"
+    )
+    return model, target_head_type, target_head_params
+
+
 def freeze_model_except_embedding_head(model: ModernBertMultiTaskModel) -> None:
     for param in model.encoder.parameters():
         param.requires_grad = False
@@ -867,6 +953,231 @@ def get_configured_head_experiments(config: dict[str, Any]) -> list[tuple[str, d
         (exp["head_type"], merge_head_params(default_params, exp.get("params", {})))
         for exp in experiments
     ]
+
+
+def get_head_params_from_config(
+    config: dict[str, Any],
+    head_type: str,
+) -> dict[str, Any]:
+    """Return merged params for a configured head type."""
+    for configured_head_type, params in get_configured_head_experiments(config):
+        if configured_head_type == head_type:
+            return copy.deepcopy(params)
+    return {}
+
+
+def head_supports_mode_routing(head: nn.Module) -> bool:
+    """Return whether the embedding head supports query/document routing."""
+    return getattr(head, "pooling", None) == "agreement_gated_v2"
+
+
+def forward_embedding_head(
+    head: nn.Module,
+    hidden_states: torch.Tensor,
+    attention_mask: torch.Tensor | None,
+    mode: str = "document",
+    return_aux: bool = False,
+) -> torch.Tensor | dict[str, Any]:
+    """Forward helper that preserves compatibility with older heads."""
+    if head_supports_mode_routing(head):
+        return head(hidden_states, attention_mask, mode=mode, return_aux=return_aux)
+
+    embedding = head(hidden_states, attention_mask)
+    if return_aux:
+        return {"embedding": embedding}
+    return embedding
+
+
+def load_matching_state_dict(
+    module: nn.Module,
+    source_state_dict: dict[str, torch.Tensor],
+) -> tuple[int, int]:
+    """Load only keys whose names and shapes match the target module."""
+    target_state = module.state_dict()
+    matched: dict[str, torch.Tensor] = {}
+    skipped = 0
+
+    for key, value in source_state_dict.items():
+        if key in target_state and target_state[key].shape == value.shape:
+            matched[key] = value
+        else:
+            skipped += 1
+
+    target_state.update(matched)
+    module.load_state_dict(target_state)
+    return len(matched), skipped
+
+
+def get_embedding_modes(stage_config: dict[str, Any] | None = None) -> dict[str, str]:
+    """Return anchor/positive/negative routing modes for embedding forward."""
+    stage_cfg = stage_config or {}
+    return {
+        "anchor": stage_cfg.get("anchor_mode", "document"),
+        "positive": stage_cfg.get("positive_mode", "document"),
+        "negative": stage_cfg.get("negative_mode", "document"),
+    }
+
+
+def resolve_mode_routing_for_batch(
+    slice_tags: list[str],
+    mode_routing_config: dict[str, Any] | None = None,
+) -> dict[str, list[str]]:
+    """Resolve per-sample query/document routing modes for a mixed batch."""
+    config = mode_routing_config or {}
+    defaults = get_embedding_modes({
+        "anchor_mode": config.get("default_anchor_mode", config.get("anchor_mode", "document")),
+        "positive_mode": config.get("default_positive_mode", config.get("positive_mode", "document")),
+        "negative_mode": config.get("default_negative_mode", config.get("negative_mode", "document")),
+    })
+
+    anchor_query_slices = set(config.get("anchor_query_slices", config.get("query_slices", [])))
+    positive_query_slices = set(config.get("positive_query_slices", []))
+    negative_query_slices = set(config.get("negative_query_slices", []))
+
+    anchor_modes = ["query" if tag in anchor_query_slices else defaults["anchor"] for tag in slice_tags]
+    positive_modes = ["query" if tag in positive_query_slices else defaults["positive"] for tag in slice_tags]
+    negative_modes = ["query" if tag in negative_query_slices else defaults["negative"] for tag in slice_tags]
+
+    return {
+        "anchor": anchor_modes,
+        "positive": positive_modes,
+        "negative": negative_modes,
+    }
+
+
+def _reorder_batched_output(
+    chunks: list[Any],
+    index_chunks: list[list[int]],
+) -> Any:
+    """Restore original batch order after grouped mode forwards."""
+    if not chunks:
+        raise ValueError("Cannot reorder empty output chunks")
+
+    ordered_indices = [index for chunk in index_chunks for index in chunk]
+    first_chunk = chunks[0]
+
+    if torch.is_tensor(first_chunk):
+        concat = torch.cat(chunks, dim=0)
+        inverse_order = torch.tensor(ordered_indices, dtype=torch.long, device=concat.device).argsort()
+        return concat.index_select(0, inverse_order)
+
+    if isinstance(first_chunk, dict):
+        return {
+            key: _reorder_batched_output([chunk[key] for chunk in chunks], index_chunks)
+            for key in first_chunk
+        }
+
+    raise TypeError(f"Unsupported batched output type: {type(first_chunk)!r}")
+
+
+def forward_embedding_head_batch(
+    head: nn.Module,
+    hidden_states: torch.Tensor,
+    attention_mask: torch.Tensor | None,
+    sample_modes: list[str] | None = None,
+    return_aux: bool = False,
+) -> torch.Tensor | dict[str, Any]:
+    """Forward an embedding head with optional per-sample mode routing."""
+    batch_size = hidden_states.size(0)
+    if batch_size == 0:
+        raise ValueError("Cannot forward an empty batch through embedding head")
+
+    if not sample_modes:
+        return forward_embedding_head(
+            head,
+            hidden_states,
+            attention_mask,
+            mode="document",
+            return_aux=return_aux,
+        )
+
+    if not head_supports_mode_routing(head):
+        return forward_embedding_head(
+            head,
+            hidden_states,
+            attention_mask,
+            mode=sample_modes[0],
+            return_aux=return_aux,
+        )
+
+    unique_modes = sorted(set(sample_modes))
+    if len(unique_modes) == 1:
+        return forward_embedding_head(
+            head,
+            hidden_states,
+            attention_mask,
+            mode=unique_modes[0],
+            return_aux=return_aux,
+        )
+
+    output_chunks: list[torch.Tensor | dict[str, Any]] = []
+    index_chunks: list[list[int]] = []
+    for mode in unique_modes:
+        batch_indices = [i for i, sample_mode in enumerate(sample_modes) if sample_mode == mode]
+        if not batch_indices:
+            continue
+
+        index_tensor = torch.tensor(batch_indices, dtype=torch.long, device=hidden_states.device)
+        mode_hidden = hidden_states.index_select(0, index_tensor)
+        mode_mask = attention_mask.index_select(0, index_tensor) if attention_mask is not None else None
+        mode_output = forward_embedding_head(
+            head,
+            mode_hidden,
+            mode_mask,
+            mode=mode,
+            return_aux=return_aux,
+        )
+
+        output_chunks.append(mode_output)
+        index_chunks.append(batch_indices)
+
+    if not output_chunks:
+        raise RuntimeError("Failed to route embedding head outputs for mixed-mode batch")
+    return _reorder_batched_output(output_chunks, index_chunks)
+
+
+def _salience_entropy(weights: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
+    """Compute entropy over token-salience weights."""
+    clamped = weights.clamp(min=eps)
+    return -(clamped * clamped.log()).sum(dim=-1)
+
+
+def compute_stage_b_auxiliary_loss(
+    anchor_aux: dict[str, Any],
+    slice_tags: list[str],
+    device: torch.device,
+    aux_config: dict[str, Any] | None = None,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """Compute Stage B salience-sharpening auxiliary losses for V2."""
+    config = aux_config or {}
+    if not config.get("enabled", False):
+        return torch.tensor(0.0, device=device), {}
+
+    salience = anchor_aux.get("salience")
+    if not salience:
+        return torch.tensor(0.0, device=device), {}
+
+    total_loss = torch.tensor(0.0, device=device)
+    metrics: dict[str, float] = {}
+
+    slice_specs = [
+        ("wrong_person", "role", salience.get("role_weights"), config.get("role_entropy_weight", 0.0)),
+        ("wrong_time", "temporal", salience.get("temporal_weights"), config.get("temporal_entropy_weight", 0.0)),
+        ("safety_emotion", "safety", salience.get("safety_weights"), config.get("safety_entropy_weight", 0.0)),
+    ]
+
+    for slice_name, metric_name, weights, loss_weight in slice_specs:
+        if weights is None or loss_weight <= 0:
+            continue
+        indices = [i for i, tag in enumerate(slice_tags) if tag == slice_name]
+        if not indices:
+            continue
+        index_tensor = torch.tensor(indices, dtype=torch.long, device=device)
+        entropy = _salience_entropy(weights[index_tensor]).mean()
+        total_loss = total_loss + (float(loss_weight) * entropy)
+        metrics[f"{metric_name}_entropy"] = entropy.item()
+
+    return total_loss, metrics
 
 
 def encode_triplet_batch(
@@ -940,6 +1251,8 @@ def train_step(
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.float16,
     matryoshka_dims: list[int] | None = None,
+    mode_routing_config: dict[str, Any] | None = None,
+    aux_objectives_config: dict[str, Any] | None = None,
 ) -> dict[str, torch.Tensor]:
     encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
     anchor_hidden = encoded["anchor_hidden"]
@@ -960,15 +1273,43 @@ def train_step(
 
     with amp_context:
         embedding_head = model.heads["embedding"]
-        anchor_emb = embedding_head(anchor_hidden, anchor_mask)
-        positive_emb = embedding_head(positive_hidden, positive_mask)
+        slice_tags = batch.get("slice_tags", [])
+        routed_modes = resolve_mode_routing_for_batch(slice_tags, mode_routing_config)
+        triplet_batch_indices = triplet_idx.detach().cpu().tolist() if triplet_idx.numel() > 0 else []
+        negative_modes = [routed_modes["negative"][i] for i in triplet_batch_indices]
+        request_aux = bool(aux_objectives_config and aux_objectives_config.get("enabled", False))
+
+        anchor_out = forward_embedding_head_batch(
+            embedding_head,
+            anchor_hidden,
+            anchor_mask,
+            sample_modes=routed_modes["anchor"],
+            return_aux=request_aux,
+        )
+        positive_out = forward_embedding_head_batch(
+            embedding_head,
+            positive_hidden,
+            positive_mask,
+            sample_modes=routed_modes["positive"],
+            return_aux=False,
+        )
+        anchor_emb = anchor_out["embedding"] if isinstance(anchor_out, dict) else anchor_out
+        positive_emb = positive_out["embedding"] if isinstance(positive_out, dict) else positive_out
 
         loss = torch.tensor(0.0, device=device)
         loss_count = 0
+        negative_emb = None
 
         # --- Triplet sub-batch: explicit negatives ---
         if triplet_idx.numel() > 0 and negative_hidden is not None:
-            negative_emb = embedding_head(negative_hidden, negative_mask)
+            negative_out = forward_embedding_head_batch(
+                embedding_head,
+                negative_hidden,
+                negative_mask,
+                sample_modes=negative_modes,
+                return_aux=False,
+            )
+            negative_emb = negative_out["embedding"] if isinstance(negative_out, dict) else negative_out
 
             if matryoshka_dims:
                 trip_loss = torch.tensor(0.0, device=device)
@@ -1011,19 +1352,36 @@ def train_step(
         if loss_count > 1:
             loss = loss / loss_count
 
+        aux_loss = torch.tensor(0.0, device=device)
+        aux_metrics: dict[str, float] = {}
+        if isinstance(anchor_out, dict):
+            aux_loss, aux_metrics = compute_stage_b_auxiliary_loss(
+                anchor_aux=anchor_out,
+                slice_tags=batch.get("slice_tags", []),
+                device=device,
+                aux_config=aux_objectives_config,
+            )
+            loss = loss + aux_loss
+
     # Metrics: pos_sim always available; neg_sim only for triplet sub-batch
-    neg_emb_for_metric = None
     with torch.no_grad():
         pos_sim = F.cosine_similarity(anchor_emb, positive_emb).mean().item()
-        if triplet_idx.numel() > 0 and negative_hidden is not None:
-            neg_emb_for_metric = embedding_head(negative_hidden, negative_mask)
-            neg_sim = F.cosine_similarity(anchor_emb[triplet_idx], neg_emb_for_metric).mean().item()
+        if triplet_idx.numel() > 0 and negative_emb is not None:
+            neg_sim = F.cosine_similarity(anchor_emb[triplet_idx], negative_emb).mean().item()
             margin = pos_sim - neg_sim
         else:
             neg_sim = 0.0
             margin = pos_sim
 
-    result = {"total_loss": loss, "pos_sim": pos_sim, "neg_sim": neg_sim, "margin": margin}
+    result = {
+        "total_loss": loss,
+        "pos_sim": pos_sim,
+        "neg_sim": neg_sim,
+        "margin": margin,
+        "aux_loss": aux_loss,
+    }
+    for metric_name, metric_value in aux_metrics.items():
+        result[f"aux_{metric_name}"] = torch.tensor(metric_value, device=device)
     if debug:
         logger.debug(f"  loss={loss.item():.4f} pos_sim={pos_sim:.4f} neg_sim={neg_sim:.4f} margin={margin:.4f}")
     return result
@@ -1044,6 +1402,7 @@ def evaluate(
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.bfloat16,
     max_batches: int | None = None,
+    mode_routing_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     model.eval()
     amp_context = (
@@ -1074,18 +1433,40 @@ def evaluate(
         hard_neg_mask = encoded["hard_neg_mask"]
         triplet_idx = encoded["triplet_indices"]
         pair_idx = encoded["pair_indices"]
+        slice_tags = batch.get("slice_tags", [])
+        routed_modes = resolve_mode_routing_for_batch(slice_tags, mode_routing_config)
+        triplet_batch_indices = triplet_idx.detach().cpu().tolist() if triplet_idx.numel() > 0 else []
+        negative_modes = [routed_modes["negative"][i] for i in triplet_batch_indices]
 
         with amp_context:
             embedding_head = model.heads["embedding"]
-            anchor_emb = embedding_head(anchor_hidden, anchor_mask)
-            positive_emb = embedding_head(positive_hidden, positive_mask)
+            anchor_emb = forward_embedding_head_batch(
+                embedding_head,
+                anchor_hidden,
+                anchor_mask,
+                sample_modes=routed_modes["anchor"],
+                return_aux=False,
+            )
+            positive_emb = forward_embedding_head_batch(
+                embedding_head,
+                positive_hidden,
+                positive_mask,
+                sample_modes=routed_modes["positive"],
+                return_aux=False,
+            )
 
             batch_loss = torch.tensor(0.0, device=device)
             loss_count = 0
 
             # Triplet sub-batch
             if triplet_idx.numel() > 0 and negative_hidden is not None:
-                negative_emb = embedding_head(negative_hidden, negative_mask)
+                negative_emb = forward_embedding_head_batch(
+                    embedding_head,
+                    negative_hidden,
+                    negative_mask,
+                    sample_modes=negative_modes,
+                    return_aux=False,
+                )
                 a_trip = anchor_emb[triplet_idx]
                 p_trip = positive_emb[triplet_idx]
                 negatives = negative_emb.unsqueeze(1)
@@ -1311,6 +1692,7 @@ def compute_per_slice_metrics(
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.float16,
     head: nn.Module | None = None,
+    mode_routing_config: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, float]]:
     """Compute per-slice loss and pos_sim for a single batch.
 
@@ -1330,6 +1712,9 @@ def compute_per_slice_metrics(
     negative_mask = encoded["negative_mask"]
     hard_neg_mask = encoded["hard_neg_mask"]
     triplet_idx = encoded["triplet_indices"]
+    routed_modes = resolve_mode_routing_for_batch(slice_tags, mode_routing_config)
+    triplet_batch_indices = triplet_idx.detach().cpu().tolist() if triplet_idx.numel() > 0 else []
+    negative_modes = [routed_modes["negative"][i] for i in triplet_batch_indices]
 
     amp_context = (
         autocast("cuda", dtype=amp_dtype, enabled=use_amp)
@@ -1340,8 +1725,20 @@ def compute_per_slice_metrics(
     embedding_head = head if head is not None else model.heads["embedding"]
 
     with amp_context:
-        anchor_emb = embedding_head(anchor_hidden, anchor_mask)
-        positive_emb = embedding_head(positive_hidden, positive_mask)
+        anchor_emb = forward_embedding_head_batch(
+            embedding_head,
+            anchor_hidden,
+            anchor_mask,
+            sample_modes=routed_modes["anchor"],
+            return_aux=False,
+        )
+        positive_emb = forward_embedding_head_batch(
+            embedding_head,
+            positive_hidden,
+            positive_mask,
+            sample_modes=routed_modes["positive"],
+            return_aux=False,
+        )
 
     # Build per-slice index groups
     slice_indices: dict[str, list[int]] = {}
@@ -1355,7 +1752,13 @@ def compute_per_slice_metrics(
     negative_emb = None
     if triplet_idx.numel() > 0 and negative_hidden is not None:
         with amp_context:
-            negative_emb = embedding_head(negative_hidden, negative_mask)
+            negative_emb = forward_embedding_head_batch(
+                embedding_head,
+                negative_hidden,
+                negative_mask,
+                sample_modes=negative_modes,
+                return_aux=False,
+            )
 
     results: dict[str, dict[str, float]] = {}
     for slice_name, indices in slice_indices.items():
@@ -1420,6 +1823,7 @@ def evaluate_by_slice(
     amp_dtype: torch.dtype = torch.bfloat16,
     max_batches: int | None = None,
     head: nn.Module | None = None,
+    mode_routing_config: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, float]]:
     """Evaluate each held-out slice separately and return per-slice metrics.
 
@@ -1485,14 +1889,35 @@ def evaluate_by_slice(
         hard_neg_mask = encoded["hard_neg_mask"]
         triplet_idx = encoded["triplet_indices"]
         pair_idx = encoded["pair_indices"]
+        routed_modes = resolve_mode_routing_for_batch(slice_tags, mode_routing_config)
+        triplet_batch_indices = triplet_idx.detach().cpu().tolist() if triplet_idx.numel() > 0 else []
+        negative_modes = [routed_modes["negative"][i] for i in triplet_batch_indices]
 
         with amp_context:
-            anchor_emb = embedding_head(anchor_hidden, anchor_mask)
-            positive_emb = embedding_head(positive_hidden, positive_mask)
+            anchor_emb = forward_embedding_head_batch(
+                embedding_head,
+                anchor_hidden,
+                anchor_mask,
+                sample_modes=routed_modes["anchor"],
+                return_aux=False,
+            )
+            positive_emb = forward_embedding_head_batch(
+                embedding_head,
+                positive_hidden,
+                positive_mask,
+                sample_modes=routed_modes["positive"],
+                return_aux=False,
+            )
 
             negative_emb = None
             if triplet_idx.numel() > 0 and negative_hidden is not None:
-                negative_emb = embedding_head(negative_hidden, negative_mask)
+                negative_emb = forward_embedding_head_batch(
+                    embedding_head,
+                    negative_hidden,
+                    negative_mask,
+                    sample_modes=negative_modes,
+                    return_aux=False,
+                )
 
         # Build per-sample slice mapping
         triplet_set = set(triplet_idx.cpu().tolist()) if triplet_idx.numel() > 0 else set()
@@ -1737,6 +2162,7 @@ def _embed_texts(
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.bfloat16,
     head: nn.Module | None = None,
+    mode: str = "document",
 ) -> torch.Tensor:
     """Encode a list of texts into embeddings using the embedding head."""
     embedding_head = head if head is not None else model.heads["embedding"]
@@ -1761,7 +2187,13 @@ def _embed_texts(
             hidden = model.encoder(input_ids=input_ids, attention_mask=attention_mask)
             if hasattr(hidden, "last_hidden_state"):
                 hidden = hidden.last_hidden_state
-            embs = embedding_head(hidden, attention_mask)
+            embs = forward_embedding_head(
+                embedding_head,
+                hidden,
+                attention_mask,
+                mode=mode,
+                return_aux=False,
+            )
         all_embs.append(embs.float())
     return torch.cat(all_embs, dim=0)
 
@@ -1777,6 +2209,8 @@ def evaluate_retrieval(
     use_amp: bool = True,
     amp_dtype: torch.dtype = torch.bfloat16,
     head: nn.Module | None = None,
+    query_mode: str = "query",
+    document_mode: str = "document",
 ) -> dict[str, float]:
     """Compute retrieval metrics (Recall@k, MRR) on query-doc eval pairs.
 
@@ -1805,11 +2239,11 @@ def evaluate_retrieval(
     # Embed queries and documents
     q_embs = _embed_texts(
         queries, model, tokenizer, device, max_length, batch_size,
-        use_amp=use_amp, amp_dtype=amp_dtype, head=head,
+        use_amp=use_amp, amp_dtype=amp_dtype, head=head, mode=query_mode,
     )
     d_embs = _embed_texts(
         documents, model, tokenizer, device, max_length, batch_size,
-        use_amp=use_amp, amp_dtype=amp_dtype, head=head,
+        use_amp=use_amp, amp_dtype=amp_dtype, head=head, mode=document_mode,
     )
 
     # Normalize for cosine similarity
@@ -1978,6 +2412,9 @@ def train(
     query_doc_eval_samples: list[dict[str, Any]] | None = None,
     composite_weights: dict[str, float] | None = None,
     train_sampler: SliceBalancedSampler | None = None,
+    mode_routing_config: dict[str, Any] | None = None,
+    aux_objectives_config: dict[str, Any] | None = None,
+    retrieval_modes: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     amp_dtype = torch.bfloat16 if use_bf16 else torch.float16
@@ -2028,6 +2465,8 @@ def train(
             losses = train_step(
                 model, batch, loss_fn, device, debug=step_debug,
                 use_amp=use_amp, amp_dtype=amp_dtype, matryoshka_dims=matryoshka_dims,
+                mode_routing_config=mode_routing_config,
+                aux_objectives_config=aux_objectives_config,
             )
             loss = losses["total_loss"]
             if gradient_accumulation_steps > 1:
@@ -2063,7 +2502,17 @@ def train(
 
                 if global_step > 0 and global_step % eval_steps == 0 and val_loader is not None:
                     logger.info(f"\n--- Eval @ step {global_step} ---")
-                    eval_metrics = evaluate(model, val_loader, loss_fn, device, debug=debug, use_amp=use_amp, amp_dtype=amp_dtype, max_batches=max_eval_batches)
+                    eval_metrics = evaluate(
+                        model,
+                        val_loader,
+                        loss_fn,
+                        device,
+                        debug=debug,
+                        use_amp=use_amp,
+                        amp_dtype=amp_dtype,
+                        max_batches=max_eval_batches,
+                        mode_routing_config=mode_routing_config,
+                    )
                     current_margin = eval_metrics["margin"]
                     history["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, **eval_metrics})
 
@@ -2072,6 +2521,7 @@ def train(
                         model, val_loader, loss_fn, device,
                         use_amp=use_amp, amp_dtype=amp_dtype,
                         max_batches=max_eval_batches,
+                        mode_routing_config=mode_routing_config,
                     )
                     log_slice_eval_table(slice_eval, f"SLICE EVAL @ STEP {global_step} ({head_type})")
 
@@ -2081,6 +2531,8 @@ def train(
                         retrieval_result = evaluate_retrieval(
                             model, query_doc_eval_samples, tokenizer, device,
                             use_amp=use_amp, amp_dtype=amp_dtype,
+                            query_mode=(retrieval_modes or {}).get("query", "query"),
+                            document_mode=(retrieval_modes or {}).get("document", "document"),
                         )
                         eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
 
@@ -2124,6 +2576,7 @@ def train(
                 slice_metrics = compute_per_slice_metrics(
                     batch, model, loss_fn, device,
                     use_amp=use_amp, amp_dtype=amp_dtype,
+                    mode_routing_config=mode_routing_config,
                 )
                 if slice_metrics:
                     logger.info(f"    Per-slice loss: {format_per_slice_log(slice_metrics)}")
@@ -2143,7 +2596,17 @@ def train(
         # Full eval at epoch end
         if val_loader is not None:
             logger.info(f"--- Full eval epoch {epoch + 1} ---")
-            eval_metrics = evaluate(model, val_loader, loss_fn, device, debug=debug, use_amp=use_amp, amp_dtype=amp_dtype, max_batches=None)
+            eval_metrics = evaluate(
+                model,
+                val_loader,
+                loss_fn,
+                device,
+                debug=debug,
+                use_amp=use_amp,
+                amp_dtype=amp_dtype,
+                max_batches=None,
+                mode_routing_config=mode_routing_config,
+            )
             history["eval_metrics"].append({"step": global_step, "epoch": epoch + 1, "full_eval": True, **eval_metrics})
 
             # Per-slice eval table (full)
@@ -2151,6 +2614,7 @@ def train(
                 model, val_loader, loss_fn, device,
                 use_amp=use_amp, amp_dtype=amp_dtype,
                 max_batches=None,
+                mode_routing_config=mode_routing_config,
             )
             log_slice_eval_table(slice_eval, f"SLICE EVAL EPOCH {epoch + 1} ({head_type})")
 
@@ -2160,6 +2624,8 @@ def train(
                 retrieval_result = evaluate_retrieval(
                     model, query_doc_eval_samples, tokenizer, device,
                     use_amp=use_amp, amp_dtype=amp_dtype,
+                    query_mode=(retrieval_modes or {}).get("query", "query"),
+                    document_mode=(retrieval_modes or {}).get("document", "document"),
                 )
                 eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
 
@@ -2311,9 +2777,12 @@ def run_joint_bakeoff(
     training_config = config.get("training", {})
     loss_config = config.get("loss", {})
     data_config = config.get("data", {})
+    bakeoff_config = config.get("bakeoff", {})
+    bakeoff_data_profile = bakeoff_config.get("data_profile")
+    resolved_data_config = resolve_data_config(data_config, bakeoff_data_profile)
 
     checkpoint_path = encoder_config.get("checkpoint", "checkpoints/checkpoint-8000")
-    data_root = Path(data_config.get("root", "data"))
+    data_root = Path(resolved_data_config.get("root", "data"))
     learning_rate = training_config.get("learning_rate", 2e-4)
     weight_decay = training_config.get("weight_decay", 0.01)
     num_epochs = training_config.get("num_epochs", 3)
@@ -2390,8 +2859,10 @@ def run_joint_bakeoff(
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
 
     log_section("DATA")
+    if bakeoff_data_profile:
+        logger.info(f"  Bake-off data profile: {bakeoff_data_profile}")
     train_dataset, val_dataset, query_doc_eval_samples = build_train_val_datasets(
-        data_config=data_config,
+        data_config=resolved_data_config,
         data_root=data_root,
         max_samples=max_samples,
         seed=seed,
@@ -2403,9 +2874,12 @@ def run_joint_bakeoff(
 
     collator = EmbeddingCollator(tokenizer=tokenizer, max_length=max_length)
     effective_workers = 0 if platform.system() == "Windows" else num_workers
+    drop_last_train = len(train_dataset) >= batch_size
+    if not drop_last_train:
+        logger.info(f"  Train dataset smaller than batch_size ({len(train_dataset)} < {batch_size}); using drop_last=False")
 
     # Slice-balanced sampling
-    sampling_config = data_config.get("sampling", {})
+    sampling_config = resolved_data_config.get("sampling", {})
     slice_weights = sampling_config.get("slice_weights", {})
     if slice_weights:
         train_sampler = SliceBalancedSampler(
@@ -2421,7 +2895,7 @@ def run_joint_bakeoff(
             num_workers=effective_workers,
             pin_memory=True,
             persistent_workers=effective_workers > 0,
-            drop_last=True,
+            drop_last=drop_last_train,
         )
     else:
         train_sampler = None
@@ -2433,7 +2907,7 @@ def run_joint_bakeoff(
             num_workers=effective_workers,
             pin_memory=True,
             persistent_workers=effective_workers > 0,
-            drop_last=True,
+            drop_last=drop_last_train,
         )
     val_loader = DataLoader(
         val_dataset,
@@ -2909,9 +3383,12 @@ def run_experiment(
     training_config = config.get("training", {})
     loss_config = config.get("loss", {})
     data_config = config.get("data", {})
+    bakeoff_config = config.get("bakeoff", {})
+    bakeoff_data_profile = bakeoff_config.get("data_profile")
+    resolved_data_config = resolve_data_config(data_config, bakeoff_data_profile)
 
     checkpoint_path = encoder_config.get("checkpoint", "checkpoints/checkpoint-8000")
-    data_root = Path(data_config.get("root", "data"))
+    data_root = Path(resolved_data_config.get("root", "data"))
 
     # Training params
     learning_rate = training_config.get("learning_rate", 2e-4)
@@ -2979,8 +3456,10 @@ def run_experiment(
 
     # Data
     log_section("DATA")
+    if bakeoff_data_profile:
+        logger.info(f"  Bake-off data profile: {bakeoff_data_profile}")
     train_dataset, val_dataset, query_doc_eval_samples = build_train_val_datasets(
-        data_config=data_config,
+        data_config=resolved_data_config,
         data_root=data_root,
         max_samples=max_samples,
         seed=seed,
@@ -2992,9 +3471,12 @@ def run_experiment(
 
     collator = EmbeddingCollator(tokenizer=tokenizer, max_length=max_length)
     effective_workers = 0 if platform.system() == "Windows" else num_workers
+    drop_last_train = len(train_dataset) >= batch_size
+    if not drop_last_train:
+        logger.info(f"  Train dataset smaller than batch_size ({len(train_dataset)} < {batch_size}); using drop_last=False")
 
     # Slice-balanced sampling
-    sampling_config = data_config.get("sampling", {})
+    sampling_config = resolved_data_config.get("sampling", {})
     slice_weights = sampling_config.get("slice_weights", {})
     if slice_weights:
         train_sampler = SliceBalancedSampler(
@@ -3005,14 +3487,14 @@ def run_experiment(
         train_loader = DataLoader(
             train_dataset, batch_size=batch_size, sampler=train_sampler, collate_fn=collator,
             num_workers=effective_workers, pin_memory=True,
-            persistent_workers=effective_workers > 0, drop_last=True,
+            persistent_workers=effective_workers > 0, drop_last=drop_last_train,
         )
     else:
         train_sampler = None
         train_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collator,
             num_workers=effective_workers, pin_memory=True,
-            persistent_workers=effective_workers > 0, drop_last=True,
+            persistent_workers=effective_workers > 0, drop_last=drop_last_train,
         )
     val_loader = DataLoader(
         val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collator,
@@ -3069,6 +3551,9 @@ def run_experiment(
         query_doc_eval_samples=query_doc_eval_samples,
         composite_weights=composite_weights,
         train_sampler=train_sampler,
+        mode_routing_config=None,
+        aux_objectives_config=None,
+        retrieval_modes=None,
     )
 
     with open(output_dir / "training_history.json", "w") as f:
@@ -3079,7 +3564,7 @@ def run_experiment(
 
 
 # =============================================================================
-# Stage B: Domain Adaptation (trained head + all data slices)
+# Stage B: AgreementGatedHeadV2 specialization
 # =============================================================================
 
 
@@ -3090,11 +3575,11 @@ def run_stage_b(
     debug: bool = False,
     max_samples: int | None = None,
 ) -> dict[str, Any]:
-    """Stage B: Continue training the bakeoff winner head with all data slices.
+    """Stage B: specialize AgreementGatedHeadV2 on FamilyOS retrieval slices.
 
-    Loads the trained embedding head from a Stage A bakeoff checkpoint and
-    trains it further with all 6 data slices (including query/doc pairs,
-    hard negatives, role/temporal/safety slices).
+    Loads a Stage A bakeoff checkpoint, upgrades or preserves the embedding
+    head as ``agreement_gated_v2``, and trains it on the dedicated Stage B
+    profile with query/document asymmetry and auxiliary objectives.
 
     Encoder remains frozen. Only the embedding head is trained.
 
@@ -3116,8 +3601,14 @@ def run_stage_b(
     training_config = config.get("training", {})
     loss_config = config.get("loss", {})
     data_config = config.get("data", {})
+    stage_b_config = config.get("stage_b", {})
+    stage_b_data_profile = stage_b_config.get("data_profile", "stage_b_v2")
+    stage_b_data_config = resolve_data_config(data_config, stage_b_data_profile)
+    mode_routing_config = stage_b_config.get("mode_routing", {})
+    aux_objectives_config = stage_b_config.get("aux_objectives", {})
+    retrieval_modes = stage_b_config.get("retrieval_modes", {"query": "query", "document": "document"})
 
-    data_root = Path(data_config.get("root", "data"))
+    data_root = Path(stage_b_data_config.get("root", "data"))
 
     # Training params
     learning_rate = training_config.get("learning_rate", 2e-4)
@@ -3171,9 +3662,10 @@ def run_stage_b(
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
 
-    # Load model with TRAINED embedding head from bakeoff
+    # Load model with Stage B target head from the bakeoff checkpoint
     log_section("MODEL (Stage B)")
-    model, head_type, head_params = load_model_with_trained_head(
+    model, head_type, head_params = load_model_for_stage_b_v2(
+        config=config,
         bakeoff_checkpoint=bakeoff_checkpoint,
         use_flash_attention=use_flash_attention,
     )
@@ -3182,10 +3674,10 @@ def run_stage_b(
 
     tokenizer = AutoTokenizer.from_pretrained(bakeoff_checkpoint)
 
-    # Data -- all 6 slices
-    log_section("DATA (Stage B - all slices)")
+    # Data -- dedicated Stage B profile
+    log_section("DATA (Stage B profile)")
     train_dataset, val_dataset, query_doc_eval_samples = build_train_val_datasets(
-        data_config=data_config,
+        data_config=stage_b_data_config,
         data_root=data_root,
         max_samples=max_samples,
         seed=seed,
@@ -3197,9 +3689,12 @@ def run_stage_b(
 
     collator = EmbeddingCollator(tokenizer=tokenizer, max_length=max_length)
     effective_workers = 0 if platform.system() == "Windows" else num_workers
+    drop_last_train = len(train_dataset) >= batch_size
+    if not drop_last_train:
+        logger.info(f"  Train dataset smaller than batch_size ({len(train_dataset)} < {batch_size}); using drop_last=False")
 
     # Slice-balanced sampling
-    sampling_config = data_config.get("sampling", {})
+    sampling_config = stage_b_data_config.get("sampling", {})
     slice_weights = sampling_config.get("slice_weights", {})
     if slice_weights:
         train_sampler = SliceBalancedSampler(
@@ -3210,14 +3705,14 @@ def run_stage_b(
         train_loader = DataLoader(
             train_dataset, batch_size=batch_size, sampler=train_sampler, collate_fn=collator,
             num_workers=effective_workers, pin_memory=True,
-            persistent_workers=effective_workers > 0, drop_last=True,
+            persistent_workers=effective_workers > 0, drop_last=drop_last_train,
         )
     else:
         train_sampler = None
         train_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collator,
             num_workers=effective_workers, pin_memory=True,
-            persistent_workers=effective_workers > 0, drop_last=True,
+            persistent_workers=effective_workers > 0, drop_last=drop_last_train,
         )
     val_loader = DataLoader(
         val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collator,
@@ -3261,7 +3756,8 @@ def run_stage_b(
     log_section("STAGE B TRAINING")
     logger.info(f"  Head: {head_type} (trained weights from Stage A)")
     logger.info(f"  Encoder: FROZEN")
-    logger.info(f"  Data slices: {len(data_config.get('sources', []))} sources")
+    logger.info(f"  Stage B data profile: {stage_b_data_profile}")
+    logger.info(f"  Data slices: {len(stage_b_data_config.get('sources', []))} sources")
 
     history = train(
         model=model, train_loader=train_loader, val_loader=val_loader,
@@ -3279,6 +3775,9 @@ def run_stage_b(
         query_doc_eval_samples=query_doc_eval_samples,
         composite_weights=composite_weights,
         train_sampler=train_sampler,
+        mode_routing_config=mode_routing_config,
+        aux_objectives_config=aux_objectives_config,
+        retrieval_modes=retrieval_modes,
     )
 
     with open(output_dir / "training_history.json", "w") as f:
@@ -3329,7 +3828,7 @@ def main() -> None:
         logger.info("")
         logger.info("#" * 70)
         logger.info("# RUN MODE: STAGE B - DOMAIN ADAPTATION")
-        logger.info("# Trained head from bakeoff + all data slices")
+        logger.info("# Trained head from bakeoff + AgreementGatedHeadV2 specialization")
         logger.info("#" * 70)
         stage_b_output = output_base / "stage_b"
         stage_b_output.mkdir(parents=True, exist_ok=True)
