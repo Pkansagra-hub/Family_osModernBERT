@@ -959,26 +959,47 @@ def encode_teacher_entries(
     return torch.cat(all_embeddings, dim=0)
 
 
-def save_teacher_cache(
-    entries: list[dict[str, Any]],
-    embeddings: torch.Tensor,
+def _resolve_teacher_cache_storage_dtype(
+    cache_config: dict[str, Any],
     teacher_config: dict[str, Any],
-) -> Path:
-    """Persist teacher-cache shards and manifest."""
+) -> tuple[torch.dtype, str]:
+    save_dtype_name = str(cache_config.get("save_dtype", teacher_config.get("dtype", "float32"))).strip().lower()
+    save_dtype = _resolve_dtype(save_dtype_name)
+    if save_dtype is None:
+        return torch.float32, "float32"
+    return save_dtype, save_dtype_name
+
+
+def _prepare_teacher_cache_output(
+    entries: list[dict[str, Any]],
+    teacher_config: dict[str, Any],
+) -> tuple[Path, dict[str, Any], int, bool, torch.dtype]:
     cache_config = teacher_config.get("cache", {})
     cache_dir = resolve_workspace_path(cache_config.get("dir", "outputs/teacher-cache"))
     overwrite = bool(cache_config.get("overwrite", False))
     shard_size = int(cache_config.get("shard_size", 50000))
     save_text_index = bool(cache_config.get("save_text_index", True))
+    save_dtype, save_dtype_name = _resolve_teacher_cache_storage_dtype(cache_config, teacher_config)
 
     cache_dir.mkdir(parents=True, exist_ok=True)
-    existing_shards = list(cache_dir.glob("shard_*.pt"))
-    if existing_shards and not overwrite:
+    existing_artifacts = [
+        *cache_dir.glob("shard_*.pt"),
+        *cache_dir.glob(".shard_*.pt.tmp"),
+    ]
+    manifest_path = cache_dir / "manifest.json"
+    index_path = cache_dir / "index.jsonl"
+    if manifest_path.exists():
+        existing_artifacts.append(manifest_path)
+    if index_path.exists():
+        existing_artifacts.append(index_path)
+
+    if existing_artifacts and not overwrite:
         raise FileExistsError(
             f"Teacher cache already exists in {cache_dir}; set teacher.cache.overwrite=true to rebuild"
         )
-    for existing_shard in existing_shards:
-        existing_shard.unlink()
+
+    for artifact in existing_artifacts:
+        artifact.unlink()
 
     manifest = {
         "model_name": teacher_config.get("model_name"),
@@ -986,26 +1007,66 @@ def save_teacher_cache(
         "max_length": teacher_config.get("max_length", 256),
         "normalize": teacher_config.get("normalize", True),
         "num_entries": len(entries),
-        "embedding_dim": int(embeddings.shape[1]) if embeddings.ndim == 2 and embeddings.numel() > 0 else 0,
+        "embedding_dim": 0,
         "shard_size": shard_size,
+        "storage_dtype": save_dtype_name,
         "payload_format": "id_embedding_only",
         "shards": [],
     }
+    return cache_dir, manifest, shard_size, save_text_index, save_dtype
+
+
+def _write_teacher_cache_shard(
+    cache_dir: Path,
+    shard_entries: list[dict[str, Any]],
+    shard_embeddings: torch.Tensor,
+    shard_idx: int,
+    save_dtype: torch.dtype,
+) -> dict[str, Any]:
+    shard_tensor = shard_embeddings.to(dtype=save_dtype).contiguous()
+    shard_path = cache_dir / f"shard_{shard_idx:05d}.pt"
+    temp_shard_path = cache_dir / f".{shard_path.name}.tmp"
+    payload = {
+        "ids": [entry["id"] for entry in shard_entries],
+        "embeddings": shard_tensor,
+    }
+    try:
+        torch.save(
+            payload,
+            temp_shard_path,
+            _use_new_zipfile_serialization=False,
+        )
+        temp_shard_path.replace(shard_path)
+    except Exception as exc:
+        if temp_shard_path.exists():
+            temp_shard_path.unlink()
+        raise RuntimeError(
+            "Failed to write teacher cache shard. This is often caused by Colab filesystem write issues; "
+            "retry with a smaller teacher.cache.shard_size (for example 10000) or keep outputs on local /content storage."
+        ) from exc
+
+    return {
+        "path": shard_path.name,
+        "count": len(shard_entries),
+    }
+
+
+def save_teacher_cache(
+    entries: list[dict[str, Any]],
+    embeddings: torch.Tensor,
+    teacher_config: dict[str, Any],
+) -> Path:
+    """Persist teacher-cache shards and manifest."""
+    cache_dir, manifest, shard_size, save_text_index, save_dtype = _prepare_teacher_cache_output(entries, teacher_config)
+    manifest["embedding_dim"] = int(embeddings.shape[1]) if embeddings.ndim == 2 and embeddings.numel() > 0 else 0
 
     for shard_idx, start in enumerate(range(0, len(entries), shard_size)):
         shard_entries = entries[start : start + shard_size]
-        shard_embeddings = embeddings[start : start + shard_size].contiguous()
-        shard_path = cache_dir / f"shard_{shard_idx:05d}.pt"
-        torch.save(
-            {
-                "ids": [entry["id"] for entry in shard_entries],
-                "embeddings": shard_embeddings,
-            },
-            shard_path,
-        )
+        shard_embeddings = embeddings[start : start + shard_size]
+        shard_meta = _write_teacher_cache_shard(cache_dir, shard_entries, shard_embeddings, shard_idx, save_dtype)
         manifest["shards"].append({
-            "path": shard_path.name,
-            "count": len(shard_entries),
+            "path": shard_meta["path"],
+            "count": shard_meta["count"],
             "start": start,
             "end": start + len(shard_entries),
         })
@@ -1045,10 +1106,49 @@ def build_teacher_cache(
     device = torch.device(device_name)
 
     tokenizer, model = load_teacher_model(teacher_config, device)
-    embeddings = encode_teacher_entries(entries, tokenizer, model, teacher_config, device)
-    cache_dir = save_teacher_cache(entries, embeddings, teacher_config)
+    cache_dir, manifest, shard_size, save_text_index, save_dtype = _prepare_teacher_cache_output(entries, teacher_config)
+    manifest_path = cache_dir / "manifest.json"
+    index_path = cache_dir / "index.jsonl"
+    embedding_dim = 0
+
+    index_handle = open(index_path, "w", encoding="utf-8") if save_text_index else None
+    try:
+        for shard_idx, start in enumerate(range(0, len(entries), shard_size)):
+            shard_entries = entries[start : start + shard_size]
+            shard_embeddings = encode_teacher_entries(shard_entries, tokenizer, model, teacher_config, device)
+            if embedding_dim == 0 and shard_embeddings.ndim == 2 and shard_embeddings.numel() > 0:
+                embedding_dim = int(shard_embeddings.shape[1])
+                manifest["embedding_dim"] = embedding_dim
+
+            shard_meta = _write_teacher_cache_shard(cache_dir, shard_entries, shard_embeddings, shard_idx, save_dtype)
+            manifest["shards"].append({
+                "path": shard_meta["path"],
+                "count": shard_meta["count"],
+                "start": start,
+                "end": start + len(shard_entries),
+            })
+
+            if index_handle is not None:
+                for entry in shard_entries:
+                    index_handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                index_handle.flush()
+
+            with open(manifest_path, "w", encoding="utf-8") as handle:
+                json.dump(manifest, handle, indent=2)
+
+            logger.info(
+                f"  Saved teacher shard {shard_idx + 1}/{math.ceil(len(entries) / shard_size)} "
+                f"({start + len(shard_entries):,}/{len(entries):,} entries persisted)"
+            )
+            del shard_embeddings
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
+    finally:
+        if index_handle is not None:
+            index_handle.close()
+
     logger.info(
-        f"Teacher cache complete: {len(entries):,} entries | dim={embeddings.shape[1] if embeddings.ndim == 2 else 0}"
+        f"Teacher cache complete: {len(entries):,} entries | dim={embedding_dim}"
     )
     return cache_dir
 
