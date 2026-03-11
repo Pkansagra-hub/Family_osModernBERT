@@ -50,8 +50,8 @@ teacher:
   device: cuda
   dtype: bfloat16
   attn_implementation: flash_attention_2
-  max_length: 256
-  batch_size: 64
+  max_length: 128
+  batch_size: 256
   normalize: true
 
   cache:

@@ -988,6 +988,7 @@ def save_teacher_cache(
         "num_entries": len(entries),
         "embedding_dim": int(embeddings.shape[1]) if embeddings.ndim == 2 and embeddings.numel() > 0 else 0,
         "shard_size": shard_size,
+        "payload_format": "id_embedding_only",
         "shards": [],
     }
 
@@ -998,9 +999,6 @@ def save_teacher_cache(
         torch.save(
             {
                 "ids": [entry["id"] for entry in shard_entries],
-                "texts": [entry["text"] for entry in shard_entries],
-                "modes": [entry["mode"] for entry in shard_entries],
-                "slices": [entry["slices"] for entry in shard_entries],
                 "embeddings": shard_embeddings,
             },
             shard_path,
@@ -1058,9 +1056,9 @@ def build_teacher_cache(
 class TeacherEmbeddingCache:
     """In-memory teacher embedding cache loaded from sharded artifacts."""
 
-    def __init__(self, embedding_dim: int, embeddings_by_key: dict[tuple[str, str], torch.Tensor]):
+    def __init__(self, embedding_dim: int, embeddings_by_id: dict[str, torch.Tensor]):
         self.embedding_dim = embedding_dim
-        self.embeddings_by_key = embeddings_by_key
+        self.embeddings_by_id = embeddings_by_id
 
     @classmethod
     def load(cls, cache_dir: str | Path) -> "TeacherEmbeddingCache":
@@ -1073,18 +1071,28 @@ class TeacherEmbeddingCache:
             manifest = json.load(handle)
 
         embedding_dim = int(manifest.get("embedding_dim", 0))
-        embeddings_by_key: dict[tuple[str, str], torch.Tensor] = {}
+        embeddings_by_id: dict[str, torch.Tensor] = {}
         for shard_meta in manifest.get("shards", []):
             shard_path = cache_path / shard_meta["path"]
             shard_payload = torch.load(shard_path, map_location="cpu")
             shard_embeddings = shard_payload["embeddings"].float()
-            for index, (text, mode) in enumerate(zip(shard_payload["texts"], shard_payload["modes"])):
-                embeddings_by_key[(mode, text)] = shard_embeddings[index]
+            shard_ids = shard_payload.get("ids")
+            if shard_ids is not None:
+                for index, entry_id in enumerate(shard_ids):
+                    embeddings_by_id[str(entry_id)] = shard_embeddings[index]
+                continue
+
+            shard_texts = shard_payload.get("texts")
+            shard_modes = shard_payload.get("modes")
+            if shard_texts is None or shard_modes is None:
+                raise ValueError(f"Teacher cache shard missing ids/texts/modes: {shard_path}")
+            for index, (text, mode) in enumerate(zip(shard_texts, shard_modes)):
+                embeddings_by_id[_teacher_entry_id(str(mode), str(text))] = shard_embeddings[index]
 
         logger.info(
-            f"Loaded teacher cache: {len(embeddings_by_key):,} entries | dim={embedding_dim} | path={cache_path}"
+            f"Loaded teacher cache: {len(embeddings_by_id):,} entries | dim={embedding_dim} | path={cache_path}"
         )
-        return cls(embedding_dim=embedding_dim, embeddings_by_key=embeddings_by_key)
+        return cls(embedding_dim=embedding_dim, embeddings_by_id=embeddings_by_id)
 
     def lookup(self, texts: list[str], modes: list[str], device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
         if len(texts) != len(modes):
@@ -1098,9 +1106,9 @@ class TeacherEmbeddingCache:
         found_vectors: list[torch.Tensor] = []
         found_mask: list[bool] = []
         for text, mode in zip(texts, modes):
-            vector = self.embeddings_by_key.get((mode, text))
+            vector = self.embeddings_by_id.get(_teacher_entry_id(mode, text))
             if vector is None and mode != "document":
-                vector = self.embeddings_by_key.get(("document", text))
+                vector = self.embeddings_by_id.get(_teacher_entry_id("document", text))
             if vector is None:
                 vector = torch.zeros(self.embedding_dim, dtype=torch.float32)
                 found_mask.append(False)
