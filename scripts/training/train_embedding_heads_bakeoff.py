@@ -5054,8 +5054,20 @@ def run_stage_b(
             tr_cache_dir = config.get("distillation", {}).get("teacher_cache_dir")
         if tr_cache_dir:
             tr_cache_path = resolve_workspace_path(tr_cache_dir)
+            # Validate the manifest actually exists; fall back to distillation path if not
+            if not (tr_cache_path / "manifest.json").exists():
+                fallback = config.get("distillation", {}).get("teacher_cache_dir")
+                if fallback and fallback != tr_cache_dir:
+                    tr_cache_path = resolve_workspace_path(fallback)
+                    logger.warning(f"  teacher_regularizer cache missing manifest, falling back to distillation cache: {tr_cache_path}")
             log_section("TEACHER REGULARIZER (Stage B)")
             logger.info(f"  Teacher cache dir: {tr_cache_path}")
+            if not (tr_cache_path / "manifest.json").exists():
+                raise FileNotFoundError(
+                    f"Teacher cache manifest not found at {tr_cache_path / 'manifest.json'}. "
+                    f"Run --build_teacher_cache first, or set stage_b.teacher_regularizer.teacher_cache_dir "
+                    f"to the correct path."
+                )
             stage_b_teacher_cache = TeacherEmbeddingCache.load(str(tr_cache_path))
 
             stage_b_distillation_config = {
