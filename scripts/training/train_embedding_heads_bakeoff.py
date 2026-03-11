@@ -1485,6 +1485,34 @@ def load_model_with_trained_head(
     head_type = bakeoff_info.get("head_type", "agreement_gated_v2")
     head_constructor_params = bakeoff_info.get("head_constructor_params", {})
     head_params = bakeoff_info.get("head_params", {})
+
+    if head_type not in EMBEDDING_HEAD_REGISTRY:
+        inferred_head_type = head_constructor_params.get("head_type")
+        if inferred_head_type not in EMBEDDING_HEAD_REGISTRY:
+            head_class = bakeoff_info.get("head_class")
+            class_to_head_type = {
+                "MeanBaselineHead": "mean_baseline",
+                "ResidualMLPMeanHead": "residual_mlp_mean",
+                "LatentResidualHead": "latent_residual",
+                "AgreementGatedHead": "agreement_gated",
+                "AgreementGatedHeadV2": "agreement_gated_v2",
+                "MultiPoolLowRankHead": "multi_pool_low_rank",
+                "AnisotropyCorrectedHead": "anisotropy_corrected",
+            }
+            inferred_head_type = class_to_head_type.get(str(head_class))
+
+        if inferred_head_type in EMBEDDING_HEAD_REGISTRY:
+            logger.warning(
+                f"  Checkpoint metadata head_type '{head_type}' is not a registered embedding head; "
+                f"recovering as '{inferred_head_type}'"
+            )
+            head_type = inferred_head_type
+            if not head_params:
+                recovered_params = dict(head_constructor_params)
+                recovered_params.pop("head_type", None)
+                recovered_params.pop("hidden_size", None)
+                head_params = recovered_params
+
     logger.info(f"  Bakeoff winner: {head_type} ({bakeoff_info.get('head_class', 'unknown')})")
 
     config = AutoConfig.from_pretrained(bakeoff_checkpoint, trust_remote_code=True)
@@ -3288,6 +3316,10 @@ def train(
         epoch_loss = 0.0
         epoch_pos_sim = 0.0
         epoch_neg_sim = 0.0
+        epoch_teacher_loss = 0.0
+        epoch_teacher_anchor_found = 0.0
+        epoch_teacher_positive_found = 0.0
+        epoch_teacher_negative_found = 0.0
         epoch_steps = 0
         model.train()
         progress = tqdm(train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}")
@@ -3397,6 +3429,10 @@ def train(
             epoch_loss += losses["total_loss"].item()
             epoch_pos_sim += losses["pos_sim"]
             epoch_neg_sim += losses["neg_sim"]
+            epoch_teacher_loss += losses.get("teacher_loss", torch.tensor(0.0, device=device)).item()
+            epoch_teacher_anchor_found += losses.get("distill_teacher_anchor_found_rate", torch.tensor(0.0, device=device)).item()
+            epoch_teacher_positive_found += losses.get("distill_teacher_positive_found_rate", torch.tensor(0.0, device=device)).item()
+            epoch_teacher_negative_found += losses.get("distill_teacher_negative_found_rate", torch.tensor(0.0, device=device)).item()
             epoch_steps += 1
 
             lr = scheduler.get_last_lr()[0]
@@ -3406,7 +3442,20 @@ def train(
                 avg_loss = epoch_loss / epoch_steps
                 avg_pos = epoch_pos_sim / epoch_steps
                 avg_neg = epoch_neg_sim / epoch_steps
-                logger.info(f"  Step {global_step}: loss={avg_loss:.4f} pos_sim={avg_pos:.4f} neg_sim={avg_neg:.4f} margin={avg_pos - avg_neg:.4f} lr={lr:.2e}")
+                avg_teacher_loss = epoch_teacher_loss / epoch_steps
+                avg_teacher_anchor_found = epoch_teacher_anchor_found / epoch_steps
+                avg_teacher_positive_found = epoch_teacher_positive_found / epoch_steps
+                avg_teacher_negative_found = epoch_teacher_negative_found / epoch_steps
+                log_message = (
+                    f"  Step {global_step}: loss={avg_loss:.4f} pos_sim={avg_pos:.4f} "
+                    f"neg_sim={avg_neg:.4f} margin={avg_pos - avg_neg:.4f} lr={lr:.2e}"
+                )
+                if teacher_cache is not None and distillation_config and distillation_config.get("enabled", False):
+                    log_message += (
+                        f" teacher_loss={avg_teacher_loss:.4f}"
+                        f" teacher_found(a/p/n)={avg_teacher_anchor_found:.2%}/{avg_teacher_positive_found:.2%}/{avg_teacher_negative_found:.2%}"
+                    )
+                logger.info(log_message)
                 # Per-slice diagnostics
                 slice_metrics = compute_per_slice_metrics(
                     batch, model, loss_fn, device,
@@ -3422,11 +3471,21 @@ def train(
             avg_loss = epoch_loss / epoch_steps
             avg_pos = epoch_pos_sim / epoch_steps
             avg_neg = epoch_neg_sim / epoch_steps
+            avg_teacher_loss = epoch_teacher_loss / epoch_steps
+            avg_teacher_anchor_found = epoch_teacher_anchor_found / epoch_steps
+            avg_teacher_positive_found = epoch_teacher_positive_found / epoch_steps
+            avg_teacher_negative_found = epoch_teacher_negative_found / epoch_steps
             history["train_loss"].append(avg_loss)
             history["train_pos_sim"].append(avg_pos)
             history["train_neg_sim"].append(avg_neg)
             history["train_margin"].append(avg_pos - avg_neg)
-            logger.info(f"Epoch {epoch + 1} summary: loss={avg_loss:.4f} margin={avg_pos - avg_neg:.4f}")
+            epoch_summary = f"Epoch {epoch+1} summary: loss={avg_loss:.4f} margin={avg_pos - avg_neg:.4f}"
+            if teacher_cache is not None and distillation_config and distillation_config.get("enabled", False):
+                epoch_summary += (
+                    f" teacher_loss={avg_teacher_loss:.4f}"
+                    f" teacher_found(a/p/n)={avg_teacher_anchor_found:.2%}/{avg_teacher_positive_found:.2%}/{avg_teacher_negative_found:.2%}"
+                )
+            logger.info(epoch_summary)
 
         # Full eval at epoch end
         if val_loader is not None:
@@ -4681,6 +4740,20 @@ def run_distillation(
         raise ValueError("distillation.teacher_cache_dir is required for distillation mode")
     teacher_cache = TeacherEmbeddingCache.load(teacher_cache_dir)
 
+    checkpoint_head_type = stage_b_config.get("head_type", "agreement_gated_v2")
+    checkpoint_head_params = get_head_params_from_config(config, checkpoint_head_type)
+    student_embedding_metadata_path = resolve_workspace_path(student_checkpoint) / "embedding_metadata.json"
+    if student_embedding_metadata_path.exists():
+        with open(student_embedding_metadata_path, encoding="utf-8") as handle:
+            student_embedding_metadata = json.load(handle)
+        student_bakeoff_info = student_embedding_metadata.get("bakeoff", {})
+        metadata_head_type = student_bakeoff_info.get("head_type")
+        if metadata_head_type in EMBEDDING_HEAD_REGISTRY:
+            checkpoint_head_type = metadata_head_type
+        metadata_head_params = student_bakeoff_info.get("head_params") or {}
+        if metadata_head_params:
+            checkpoint_head_params = metadata_head_params
+
     log_section("MODEL (Distillation)")
     model = load_model_checkpoint(
         checkpoint_path=student_checkpoint,
@@ -4835,8 +4908,8 @@ def run_distillation(
         curriculum_config=training_config.get("curriculum", {}),
         matryoshka_dims=training_config.get("matryoshka", {}).get("dims") if training_config.get("matryoshka", {}).get("enabled", False) else None,
         base_hard_negative_weight=loss_config.get("hard_negative_weight", 1.5),
-        head_type="embedding_distill",
-        head_params={"student_checkpoint": str(student_checkpoint)},
+        head_type=checkpoint_head_type,
+        head_params=checkpoint_head_params,
         query_doc_eval_samples=query_doc_eval_samples,
         composite_weights=config.get("evaluation", {}).get("composite_weights"),
         train_sampler=train_sampler,
