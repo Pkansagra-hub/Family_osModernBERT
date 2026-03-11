@@ -110,6 +110,17 @@ def log_section(title: str) -> None:
     logger.info("=" * 60)
 
 
+def _deep_update_dict(base: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge overrides into a copy of base."""
+    merged = copy.deepcopy(base)
+    for key, value in overrides.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_update_dict(merged[key], value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
+
+
 def _resolve_dtype(dtype_name: str | None) -> torch.dtype | None:
     if dtype_name is None:
         return None
@@ -356,6 +367,10 @@ class EmbeddingDataset(Dataset):
                 "is_hard_negative": False,
                 "slice": slice_name,
                 "difficulty": raw.get("difficulty", "unknown"),
+                "anchor_safety_label": raw.get("safety_label_anchor"),
+                "negative_safety_label": raw.get("safety_label_negative"),
+                "anchor_emotion_label": raw.get("emotion_label_anchor"),
+                "negative_emotion_label": raw.get("emotion_label_negative"),
             }
         else:
             # Schema A/B: anchor / positive / negative
@@ -372,6 +387,10 @@ class EmbeddingDataset(Dataset):
                 "is_hard_negative": is_hard_neg_dir or bool(raw.get("hard_negative_type")),
                 "slice": slice_name,
                 "difficulty": raw.get("difficulty", "unknown"),
+                "anchor_safety_label": raw.get("safety_label_anchor"),
+                "negative_safety_label": raw.get("safety_label_negative"),
+                "anchor_emotion_label": raw.get("emotion_label_anchor"),
+                "negative_emotion_label": raw.get("emotion_label_negative"),
             }
 
     # ------------------------------------------------------------------ #
@@ -412,6 +431,8 @@ class EmbeddingCollator:
         has_neg = [f.get("has_negative", True) for f in features]
         hard_neg_flags = [f.get("is_hard_negative", False) for f in features]
         slice_tags = [f.get("slice", "unknown") for f in features]
+        anchor_safety_labels = [f.get("anchor_safety_label") for f in features]
+        anchor_emotion_labels = [f.get("anchor_emotion_label") for f in features]
 
         # Separate triplet vs pair indices
         triplet_indices = [i for i, hn in enumerate(has_neg) if hn]
@@ -438,12 +459,16 @@ class EmbeddingCollator:
             "triplet_indices": torch.tensor(triplet_indices, dtype=torch.long),
             "pair_indices": torch.tensor(pair_indices, dtype=torch.long),
             "slice_tags": slice_tags,
+            "anchor_safety_labels": anchor_safety_labels,
+            "anchor_emotion_labels": anchor_emotion_labels,
         }
 
         # Tokenize negatives ONLY for triplet samples
         if triplet_indices:
             negatives = [features[i]["negative"] for i in triplet_indices]
             trip_hard_neg = [hard_neg_flags[i] for i in triplet_indices]
+            negative_safety_labels = [features[i].get("negative_safety_label") for i in triplet_indices]
+            negative_emotion_labels = [features[i].get("negative_emotion_label") for i in triplet_indices]
             negative_enc = self.tokenizer(
                 negatives, padding=True, truncation=True,
                 max_length=self.max_length, return_tensors="pt",
@@ -452,12 +477,16 @@ class EmbeddingCollator:
             batch["negative_attention_mask"] = negative_enc["attention_mask"]
             batch["hard_negative_mask"] = torch.tensor(trip_hard_neg, dtype=torch.bool)
             batch["negative_texts"] = negatives
+            batch["negative_safety_labels"] = negative_safety_labels
+            batch["negative_emotion_labels"] = negative_emotion_labels
         else:
             # Pure pair batch - no negatives
             batch["negative_input_ids"] = torch.zeros(0, 1, dtype=torch.long)
             batch["negative_attention_mask"] = torch.zeros(0, 1, dtype=torch.long)
             batch["hard_negative_mask"] = torch.zeros(0, dtype=torch.bool)
             batch["negative_texts"] = []
+            batch["negative_safety_labels"] = []
+            batch["negative_emotion_labels"] = []
 
         return batch
 
@@ -2073,6 +2102,94 @@ def compute_teacher_distillation_loss(
     return total_loss, metrics
 
 
+def compute_distillation_label_auxiliary_loss(
+    anchor_emb: torch.Tensor,
+    positive_emb: torch.Tensor,
+    negative_emb: torch.Tensor | None,
+    batch: dict[str, Any],
+    triplet_idx: torch.Tensor,
+    device: torch.device,
+    aux_config: dict[str, Any] | None = None,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """Apply label-aware margin pressure for safety/emotion near-miss negatives."""
+    config = aux_config or {}
+    if not config.get("enabled", False) or negative_emb is None or triplet_idx.numel() == 0:
+        return torch.tensor(0.0, device=device), {}
+
+    apply_slices = set(config.get("apply_slices", ["safety_emotion"]))
+    if not apply_slices:
+        return torch.tensor(0.0, device=device), {}
+
+    safety_weight = float(config.get("safety_label_weight", 0.0))
+    emotion_weight = float(config.get("emotion_label_weight", 0.0))
+    if safety_weight <= 0 and emotion_weight <= 0:
+        return torch.tensor(0.0, device=device), {}
+
+    base_margin = float(config.get("base_margin", 0.05))
+    safety_margin_scale = float(config.get("safety_margin_scale", 0.03))
+    emotion_margin = float(config.get("emotion_margin", 0.02))
+
+    triplet_anchor = anchor_emb[triplet_idx]
+    triplet_positive = positive_emb[triplet_idx]
+    positive_similarity = F.cosine_similarity(triplet_anchor, triplet_positive, dim=-1)
+    negative_similarity = F.cosine_similarity(triplet_anchor, negative_emb, dim=-1)
+    observed_margin = positive_similarity - negative_similarity
+
+    slice_tags = batch.get("slice_tags", [])
+    anchor_safety_labels = batch.get("anchor_safety_labels", [])
+    negative_safety_labels = batch.get("negative_safety_labels", [])
+    anchor_emotion_labels = batch.get("anchor_emotion_labels", [])
+    negative_emotion_labels = batch.get("negative_emotion_labels", [])
+    triplet_indices = triplet_idx.detach().cpu().tolist()
+
+    safety_losses: list[torch.Tensor] = []
+    emotion_losses: list[torch.Tensor] = []
+    safety_gap_sum = 0.0
+    safety_count = 0
+    emotion_count = 0
+
+    for local_idx, batch_idx in enumerate(triplet_indices):
+        if batch_idx >= len(slice_tags) or slice_tags[batch_idx] not in apply_slices:
+            continue
+
+        if safety_weight > 0 and local_idx < len(negative_safety_labels) and batch_idx < len(anchor_safety_labels):
+            anchor_safety_score = _coerce_safety_label_score(anchor_safety_labels[batch_idx])
+            negative_safety_score = _coerce_safety_label_score(negative_safety_labels[local_idx])
+            if anchor_safety_score is not None and negative_safety_score is not None:
+                severity_gap = abs(negative_safety_score - anchor_safety_score)
+                if severity_gap > 0:
+                    target_margin = base_margin + (safety_margin_scale * severity_gap)
+                    safety_losses.append(F.relu(target_margin - observed_margin[local_idx]))
+                    safety_gap_sum += severity_gap
+                    safety_count += 1
+
+        if emotion_weight > 0 and local_idx < len(negative_emotion_labels) and batch_idx < len(anchor_emotion_labels):
+            anchor_emotion = anchor_emotion_labels[batch_idx]
+            negative_emotion = negative_emotion_labels[local_idx]
+            if anchor_emotion and negative_emotion and str(anchor_emotion).strip().lower() != str(negative_emotion).strip().lower():
+                target_margin = base_margin + emotion_margin
+                emotion_losses.append(F.relu(target_margin - observed_margin[local_idx]))
+                emotion_count += 1
+
+    total_loss = torch.tensor(0.0, device=device)
+    metrics: dict[str, float] = {}
+
+    if safety_losses:
+        safety_loss = torch.stack(safety_losses).mean()
+        total_loss = total_loss + (safety_weight * safety_loss)
+        metrics["safety_label_loss"] = safety_loss.item()
+        metrics["safety_label_samples"] = float(safety_count)
+        metrics["safety_label_avg_gap"] = safety_gap_sum / max(safety_count, 1)
+
+    if emotion_losses:
+        emotion_loss = torch.stack(emotion_losses).mean()
+        total_loss = total_loss + (emotion_weight * emotion_loss)
+        metrics["emotion_label_loss"] = emotion_loss.item()
+        metrics["emotion_label_samples"] = float(emotion_count)
+
+    return total_loss, metrics
+
+
 # =============================================================================
 # Training Step
 # =============================================================================
@@ -2217,6 +2334,17 @@ def train_step(
         )
         loss = loss + teacher_loss
 
+        distillation_aux_loss, distillation_aux_metrics = compute_distillation_label_auxiliary_loss(
+            anchor_emb=anchor_emb,
+            positive_emb=positive_emb,
+            negative_emb=negative_emb,
+            batch=batch,
+            triplet_idx=triplet_idx,
+            device=device,
+            aux_config=(distillation_config or {}).get("auxiliary_losses"),
+        )
+        loss = loss + distillation_aux_loss
+
     # Metrics: pos_sim always available; neg_sim only for triplet sub-batch
     with torch.no_grad():
         pos_sim = F.cosine_similarity(anchor_emb, positive_emb).mean().item()
@@ -2234,10 +2362,13 @@ def train_step(
         "margin": margin,
         "aux_loss": aux_loss,
         "teacher_loss": teacher_loss,
+        "distillation_aux_loss": distillation_aux_loss,
     }
     for metric_name, metric_value in aux_metrics.items():
         result[f"aux_{metric_name}"] = torch.tensor(metric_value, device=device)
     for metric_name, metric_value in teacher_metrics.items():
+        result[f"distill_{metric_name}"] = torch.tensor(metric_value, device=device)
+    for metric_name, metric_value in distillation_aux_metrics.items():
         result[f"distill_{metric_name}"] = torch.tensor(metric_value, device=device)
     if debug:
         logger.debug(f"  loss={loss.item():.4f} pos_sim={pos_sim:.4f} neg_sim={neg_sim:.4f} margin={margin:.4f}")
@@ -3206,6 +3337,106 @@ def compute_composite_score(
     return score
 
 
+DEFAULT_SELECTION_METRIC = "composite"
+SAFETY_LABEL_SCORES: dict[str, int] = {
+    "GREEN": 0,
+    "AMBER": 1,
+    "RED": 2,
+    "CRISIS": 3,
+}
+
+
+def _normalize_metric_name(metric_name: str) -> str:
+    """Normalize metric names so config aliases resolve cleanly."""
+    return (
+        str(metric_name)
+        .strip()
+        .lower()
+        .replace("@", "_at_")
+        .replace("-", "_")
+        .replace("/", "_")
+        .replace(" ", "_")
+    )
+
+
+def build_selection_metric_map(
+    eval_metrics: dict[str, Any],
+    slice_eval: dict[str, dict[str, float]] | None = None,
+    retrieval_metrics: dict[str, float] | None = None,
+    composite_weights: dict[str, float] | None = None,
+) -> dict[str, float]:
+    """Build a flat metric map for configurable checkpoint selection."""
+    composite_score = compute_composite_score(
+        eval_metrics,
+        slice_eval,
+        retrieval_metrics,
+        composite_weights,
+    )
+
+    wrong_person_acc = float((slice_eval or {}).get("wrong_person", {}).get("accuracy", 0.0))
+    wrong_time_acc = float((slice_eval or {}).get("wrong_time", {}).get("accuracy", 0.0))
+    safety_emotion_acc = float((slice_eval or {}).get("safety_emotion", {}).get("accuracy", 0.0))
+    recall_at_1 = float((retrieval_metrics or {}).get("recall@1", 0.0))
+    recall_at_5 = float((retrieval_metrics or {}).get("recall@5", 0.0))
+    recall_at_10 = float((retrieval_metrics or {}).get("recall@10", 0.0))
+    mrr = float((retrieval_metrics or {}).get("mrr", 0.0))
+
+    return {
+        "composite": composite_score,
+        "aggregate_margin": float(eval_metrics.get("margin", 0.0)),
+        "margin": float(eval_metrics.get("margin", 0.0)),
+        "hard_neg_accuracy": float(eval_metrics.get("hard_neg_accuracy", 0.0)),
+        "wrong_person_accuracy": wrong_person_acc,
+        "wrong_time_accuracy": wrong_time_acc,
+        "safety_emotion_accuracy": safety_emotion_acc,
+        "query_doc_recall_at_1": recall_at_1,
+        "query_doc_recall_at_5": recall_at_5,
+        "query_doc_recall_at_10": recall_at_10,
+        "query_doc_mrr": mrr,
+        "retrieval_recall_at_1": recall_at_1,
+        "retrieval_recall_at_5": recall_at_5,
+        "retrieval_recall_at_10": recall_at_10,
+        "retrieval_mrr": mrr,
+    }
+
+
+def resolve_selection_score(
+    selection_metric: str | None,
+    eval_metrics: dict[str, Any],
+    slice_eval: dict[str, dict[str, float]] | None = None,
+    retrieval_metrics: dict[str, float] | None = None,
+    composite_weights: dict[str, float] | None = None,
+) -> tuple[str, float, dict[str, float]]:
+    """Resolve the configured checkpoint-selection metric into a concrete score."""
+    metric_map = build_selection_metric_map(
+        eval_metrics,
+        slice_eval,
+        retrieval_metrics,
+        composite_weights,
+    )
+    requested_metric = selection_metric or DEFAULT_SELECTION_METRIC
+    normalized_target = _normalize_metric_name(requested_metric)
+
+    for metric_name, metric_value in metric_map.items():
+        if _normalize_metric_name(metric_name) == normalized_target:
+            return metric_name, metric_value, metric_map
+
+    logger.warning(
+        f"Unknown evaluation.selection_metric='{requested_metric}'; falling back to '{DEFAULT_SELECTION_METRIC}'"
+    )
+    return DEFAULT_SELECTION_METRIC, metric_map[DEFAULT_SELECTION_METRIC], metric_map
+
+
+def _coerce_safety_label_score(label: Any) -> int | None:
+    """Map ordinal safety labels onto an integer scale for margin shaping."""
+    if label is None:
+        return None
+    normalized = str(label).strip().upper()
+    if not normalized:
+        return None
+    return SAFETY_LABEL_SCORES.get(normalized)
+
+
 def log_head_leaderboard(
     metrics_by_head: dict[str, dict[str, Any]],
     title: str,
@@ -3268,6 +3499,7 @@ def train(
     head_params: dict[str, Any] | None = None,
     query_doc_eval_samples: list[dict[str, Any]] | None = None,
     composite_weights: dict[str, float] | None = None,
+    selection_metric: str = DEFAULT_SELECTION_METRIC,
     train_sampler: SliceBalancedSampler | None = None,
     mode_routing_config: dict[str, Any] | None = None,
     aux_objectives_config: dict[str, Any] | None = None,
@@ -3287,7 +3519,7 @@ def train(
 
     model.train()
     global_step = 0
-    best_score = -1.0
+    best_score = float("-inf")
     no_improve_count = 0
     history: dict[str, list] = {
         "train_loss": [], "train_pos_sim": [], "train_neg_sim": [],
@@ -3296,6 +3528,7 @@ def train(
 
     log_section(f"TRAINING: {head_type}")
     logger.info(f"  Epochs: {num_epochs} | Batches: {len(train_loader)} | Grad accum: {gradient_accumulation_steps}")
+    logger.info(f"  Selection metric: {selection_metric}")
 
     for epoch in range(num_epochs):
         logger.info(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
@@ -3317,6 +3550,7 @@ def train(
         epoch_pos_sim = 0.0
         epoch_neg_sim = 0.0
         epoch_teacher_loss = 0.0
+        epoch_distillation_aux_loss = 0.0
         epoch_teacher_anchor_found = 0.0
         epoch_teacher_positive_found = 0.0
         epoch_teacher_negative_found = 0.0
@@ -3403,16 +3637,25 @@ def train(
                         )
                         eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
 
-                    current_score = compute_composite_score(
-                        eval_metrics, slice_eval, retrieval_result, composite_weights,
+                    resolved_selection_metric, selection_score, metric_map = resolve_selection_score(
+                        selection_metric,
+                        eval_metrics,
+                        slice_eval,
+                        retrieval_result,
+                        composite_weights,
                     )
-                    eval_metrics["composite_score"] = current_score
-                    logger.info(f"  Composite score: {current_score:.4f}")
+                    eval_metrics["composite_score"] = metric_map["composite"]
+                    eval_metrics["selection_metric"] = resolved_selection_metric
+                    eval_metrics["selection_score"] = selection_score
+                    logger.info(
+                        f"  Selection metric ({resolved_selection_metric}): {selection_score:.4f} | "
+                        f"Composite score: {metric_map['composite']:.4f}"
+                    )
 
-                    if current_score > best_score:
-                        best_score = current_score
+                    if selection_score > best_score:
+                        best_score = selection_score
                         no_improve_count = 0
-                        logger.info(f"New best composite={best_score:.4f}! Saving...")
+                        logger.info(f"New best {resolved_selection_metric}={best_score:.4f}! Saving...")
                         save_bakeoff_checkpoint(model, output_dir / "best", tokenizer, head_type, head_params, optimizer, scheduler)
                         if ema_model is not None:
                             save_bakeoff_checkpoint(ema_model.module, output_dir / "best-ema", tokenizer, head_type, head_params)
@@ -3430,6 +3673,7 @@ def train(
             epoch_pos_sim += losses["pos_sim"]
             epoch_neg_sim += losses["neg_sim"]
             epoch_teacher_loss += losses.get("teacher_loss", torch.tensor(0.0, device=device)).item()
+            epoch_distillation_aux_loss += losses.get("distillation_aux_loss", torch.tensor(0.0, device=device)).item()
             epoch_teacher_anchor_found += losses.get("distill_teacher_anchor_found_rate", torch.tensor(0.0, device=device)).item()
             epoch_teacher_positive_found += losses.get("distill_teacher_positive_found_rate", torch.tensor(0.0, device=device)).item()
             epoch_teacher_negative_found += losses.get("distill_teacher_negative_found_rate", torch.tensor(0.0, device=device)).item()
@@ -3443,6 +3687,7 @@ def train(
                 avg_pos = epoch_pos_sim / epoch_steps
                 avg_neg = epoch_neg_sim / epoch_steps
                 avg_teacher_loss = epoch_teacher_loss / epoch_steps
+                avg_distillation_aux_loss = epoch_distillation_aux_loss / epoch_steps
                 avg_teacher_anchor_found = epoch_teacher_anchor_found / epoch_steps
                 avg_teacher_positive_found = epoch_teacher_positive_found / epoch_steps
                 avg_teacher_negative_found = epoch_teacher_negative_found / epoch_steps
@@ -3453,6 +3698,7 @@ def train(
                 if teacher_cache is not None and distillation_config and distillation_config.get("enabled", False):
                     log_message += (
                         f" teacher_loss={avg_teacher_loss:.4f}"
+                        f" distill_aux={avg_distillation_aux_loss:.4f}"
                         f" teacher_found(a/p/n)={avg_teacher_anchor_found:.2%}/{avg_teacher_positive_found:.2%}/{avg_teacher_negative_found:.2%}"
                     )
                 logger.info(log_message)
@@ -3472,6 +3718,7 @@ def train(
             avg_pos = epoch_pos_sim / epoch_steps
             avg_neg = epoch_neg_sim / epoch_steps
             avg_teacher_loss = epoch_teacher_loss / epoch_steps
+            avg_distillation_aux_loss = epoch_distillation_aux_loss / epoch_steps
             avg_teacher_anchor_found = epoch_teacher_anchor_found / epoch_steps
             avg_teacher_positive_found = epoch_teacher_positive_found / epoch_steps
             avg_teacher_negative_found = epoch_teacher_negative_found / epoch_steps
@@ -3483,6 +3730,7 @@ def train(
             if teacher_cache is not None and distillation_config and distillation_config.get("enabled", False):
                 epoch_summary += (
                     f" teacher_loss={avg_teacher_loss:.4f}"
+                    f" distill_aux={avg_distillation_aux_loss:.4f}"
                     f" teacher_found(a/p/n)={avg_teacher_anchor_found:.2%}/{avg_teacher_positive_found:.2%}/{avg_teacher_negative_found:.2%}"
                 )
             logger.info(epoch_summary)
@@ -3523,17 +3771,26 @@ def train(
                 )
                 eval_metrics.update({f"retrieval_{k}": v for k, v in retrieval_result.items()})
 
-            current_score = compute_composite_score(
-                eval_metrics, slice_eval, retrieval_result, composite_weights,
+            resolved_selection_metric, selection_score, metric_map = resolve_selection_score(
+                selection_metric,
+                eval_metrics,
+                slice_eval,
+                retrieval_result,
+                composite_weights,
             )
-            eval_metrics["composite_score"] = current_score
-            logger.info(f"  Composite score: {current_score:.4f}")
+            eval_metrics["composite_score"] = metric_map["composite"]
+            eval_metrics["selection_metric"] = resolved_selection_metric
+            eval_metrics["selection_score"] = selection_score
+            logger.info(
+                f"  Selection metric ({resolved_selection_metric}): {selection_score:.4f} | "
+                f"Composite score: {metric_map['composite']:.4f}"
+            )
 
             current_margin = eval_metrics["margin"]
-            if current_score > best_score:
-                best_score = current_score
+            if selection_score > best_score:
+                best_score = selection_score
                 no_improve_count = 0
-                logger.info(f"New best composite={best_score:.4f}! Saving...")
+                logger.info(f"New best {resolved_selection_metric}={best_score:.4f}! Saving...")
                 save_bakeoff_checkpoint(model, output_dir / "best", tokenizer, head_type, head_params, optimizer, scheduler)
                 if ema_model is not None:
                     save_bakeoff_checkpoint(ema_model.module, output_dir / "best-ema", tokenizer, head_type, head_params)
@@ -3544,7 +3801,7 @@ def train(
                 break
 
     log_section("TRAINING COMPLETE")
-    logger.info(f"  Best composite score: {best_score:.4f}")
+    logger.info(f"  Best {selection_metric}: {best_score:.4f}")
     save_bakeoff_checkpoint(model, output_dir / "final", tokenizer, head_type, head_params, optimizer, scheduler)
     if ema_model is not None:
         save_bakeoff_checkpoint(ema_model.module, output_dir / "final-ema", tokenizer, head_type, head_params)
@@ -3707,6 +3964,7 @@ def run_joint_bakeoff(
 
     eval_config = config.get("evaluation", {})
     composite_weights = eval_config.get("composite_weights", None)
+    selection_metric = eval_config.get("selection_metric", DEFAULT_SELECTION_METRIC)
 
     if debug:
         max_samples = max_samples or 500
@@ -4444,6 +4702,7 @@ def run_experiment(
         head_type=head_type, head_params=head_params,
         query_doc_eval_samples=query_doc_eval_samples,
         composite_weights=composite_weights,
+        selection_metric=selection_metric,
         train_sampler=train_sampler,
         mode_routing_config=None,
         aux_objectives_config=None,
@@ -4536,6 +4795,7 @@ def run_stage_b(
 
     eval_config = config.get("evaluation", {})
     composite_weights = eval_config.get("composite_weights", None)
+    selection_metric = eval_config.get("selection_metric", DEFAULT_SELECTION_METRIC)
 
     if debug:
         max_samples = max_samples or 500
@@ -4668,6 +4928,7 @@ def run_stage_b(
         head_type=head_type, head_params=head_params,
         query_doc_eval_samples=query_doc_eval_samples,
         composite_weights=composite_weights,
+        selection_metric=selection_metric,
         train_sampler=train_sampler,
         mode_routing_config=mode_routing_config,
         aux_objectives_config=aux_objectives_config,
@@ -4703,10 +4964,21 @@ def run_distillation(
 
     runtime_config = config.get("runtime", {})
     distillation_config = copy.deepcopy(config.get("distillation", {}))
-    training_config = config.get("training", {})
+    training_config = copy.deepcopy(config.get("training", {}))
     loss_config = config.get("loss", {})
     data_config = config.get("data", {})
     stage_b_config = config.get("stage_b", {})
+    evaluation_config = copy.deepcopy(config.get("evaluation", {}))
+
+    training_overrides = distillation_config.get("training_overrides", {})
+    if training_overrides:
+        training_config = _deep_update_dict(training_config, training_overrides)
+        logger.info("Applying distillation training overrides")
+
+    evaluation_overrides = distillation_config.get("evaluation_overrides", {})
+    if evaluation_overrides:
+        evaluation_config = _deep_update_dict(evaluation_config, evaluation_overrides)
+        logger.info("Applying distillation evaluation overrides")
 
     student_checkpoint = runtime_config.get("student_checkpoint")
     if not student_checkpoint:
@@ -4716,6 +4988,10 @@ def run_distillation(
     use_stage_b_profile = train_sources_config.get("use_stage_b_profile", True)
     data_profile = stage_b_config.get("data_profile") if use_stage_b_profile else config.get("bakeoff", {}).get("data_profile")
     resolved_data_config = resolve_data_config(data_config, data_profile)
+    data_overrides = distillation_config.get("data_overrides", {})
+    if data_overrides:
+        resolved_data_config = _deep_update_dict(resolved_data_config, data_overrides)
+        logger.info("Applying distillation data overrides")
     data_root = resolve_workspace_path(resolved_data_config.get("root", "data"))
 
     seed = training_config.get("seed", 42)
@@ -4911,7 +5187,8 @@ def run_distillation(
         head_type=checkpoint_head_type,
         head_params=checkpoint_head_params,
         query_doc_eval_samples=query_doc_eval_samples,
-        composite_weights=config.get("evaluation", {}).get("composite_weights"),
+        composite_weights=evaluation_config.get("composite_weights"),
+        selection_metric=evaluation_config.get("selection_metric", DEFAULT_SELECTION_METRIC),
         train_sampler=train_sampler,
         mode_routing_config=stage_b_config.get("mode_routing") if use_stage_b_profile else None,
         aux_objectives_config=stage_b_config.get("aux_objectives") if use_stage_b_profile else None,
@@ -4929,6 +5206,9 @@ def run_distillation(
             "teacher_cache_dir": str(teacher_cache_dir),
             "data_profile": data_profile,
             "projection_enabled": teacher_projection is not None,
+            "selection_metric": evaluation_config.get("selection_metric", DEFAULT_SELECTION_METRIC),
+            "training_overrides": training_overrides,
+            "data_overrides": data_overrides,
         }, handle, indent=2)
 
     logger.info(f"Distillation complete -> {output_dir}")

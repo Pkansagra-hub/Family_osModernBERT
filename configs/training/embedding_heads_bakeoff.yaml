@@ -135,6 +135,35 @@ distillation:
     use_data_sources: true
     use_stage_b_profile: true
 
+  training_overrides:
+    learning_rate: 7.5e-5
+    num_epochs: 16
+    warmup_steps: 400
+    early_stopping:
+      patience: 6
+
+  evaluation_overrides:
+    selection_metric: query_doc_recall_at_5
+
+  data_overrides:
+    sampling:
+      strategy: balanced
+      slice_weights:
+        hard_negatives: 2.0
+        wrong_person: 4.0
+        wrong_time: 6.0
+        safety_emotion: 6.0
+        query_doc: 5.0
+
+  auxiliary_losses:
+    enabled: true
+    apply_slices: [safety_emotion]
+    base_margin: 0.05
+    safety_label_weight: 0.08
+    safety_margin_scale: 0.04
+    emotion_label_weight: 0.05
+    emotion_margin: 0.03
+
 # =============================================================================
 # Encoder Configuration (FROZEN)
 # =============================================================================
