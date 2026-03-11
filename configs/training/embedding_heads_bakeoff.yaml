@@ -95,7 +95,7 @@ training:
   warmup_steps: 200
 
   # Training duration
-  num_epochs: 7
+  num_epochs: 12
   max_steps: -1
   val_split: 0.1
 
