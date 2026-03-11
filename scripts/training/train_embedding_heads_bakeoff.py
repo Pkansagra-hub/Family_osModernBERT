@@ -5049,9 +5049,14 @@ def run_stage_b(
 
     if teacher_regularizer_config.get("enabled", False):
         tr_cache_dir = teacher_regularizer_config.get("teacher_cache_dir")
+        # Fallback: reuse the distillation teacher cache if stage_b-specific one isn't set
+        if not tr_cache_dir:
+            tr_cache_dir = config.get("distillation", {}).get("teacher_cache_dir")
         if tr_cache_dir:
+            tr_cache_path = resolve_workspace_path(tr_cache_dir)
             log_section("TEACHER REGULARIZER (Stage B)")
-            stage_b_teacher_cache = TeacherEmbeddingCache.load(tr_cache_dir)
+            logger.info(f"  Teacher cache dir: {tr_cache_path}")
+            stage_b_teacher_cache = TeacherEmbeddingCache.load(str(tr_cache_path))
 
             stage_b_distillation_config = {
                 "enabled": True,

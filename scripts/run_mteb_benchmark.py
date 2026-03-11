@@ -29,6 +29,42 @@ import numpy as np
 from scipy.stats import pearsonr, spearmanr
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = PROJECT_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+
+def load_local_tokenizer(checkpoint_path: Path) -> Any:
+    """Load a tokenizer from checkpoint with a fast-tokenizer fallback."""
+    from transformers import AutoTokenizer, PreTrainedTokenizerFast
+
+    try:
+        return AutoTokenizer.from_pretrained(str(checkpoint_path), local_files_only=True)
+    except ValueError as exc:
+        tokenizer_config_path = checkpoint_path / "tokenizer_config.json"
+        tokenizer_json_path = checkpoint_path / "tokenizer.json"
+        if not tokenizer_config_path.exists() or not tokenizer_json_path.exists():
+            raise exc
+
+        with open(tokenizer_config_path, encoding="utf-8") as handle:
+            tokenizer_config = json.load(handle)
+
+        return PreTrainedTokenizerFast(
+            tokenizer_file=str(tokenizer_json_path),
+            cls_token=tokenizer_config.get("cls_token", "[CLS]"),
+            sep_token=tokenizer_config.get("sep_token", "[SEP]"),
+            pad_token=tokenizer_config.get("pad_token", "[PAD]"),
+            mask_token=tokenizer_config.get("mask_token", "[MASK]"),
+            unk_token=tokenizer_config.get("unk_token", "[UNK]"),
+            model_max_length=int(tokenizer_config.get("model_max_length", 512)),
+            truncation_side=tokenizer_config.get("truncation_side", "right"),
+            clean_up_tokenization_spaces=bool(
+                tokenizer_config.get("clean_up_tokenization_spaces", True)
+            ),
+        )
+
+
 # ---------------------------------------------------------------------------
 # MTEB-compatible model wrapper
 # ---------------------------------------------------------------------------
@@ -41,35 +77,64 @@ class UltraBERTMTEBWrapper:
 
     def __init__(
         self,
+        model_path: str | None = None,
         backend: str = "pytorch",
         device: str = "auto",
         method: str = "embedding_head",
     ) -> None:
-        from familyos_ultrabert import Client
         import torch
 
-        self.client = Client(
-            backend=backend,
-            device=device,
-            warmup=True,
-            warmup_rounds=3,
-            verbose=True,
-        )
         self.method = method
         self._torch = torch
+        self.client = None
+        self.engine = None
+        self.model_path = model_path
+        self.backend = backend
 
-        ultrabert = self.client._model
-        if ultrabert is None:
-            raise RuntimeError("Client failed to initialize UltraBERT")
+        if model_path:
+            from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 
-        if not hasattr(ultrabert, "_engine"):
-            raise RuntimeError("UltraBERT backend does not expose a PyTorch engine")
+            checkpoint_path = Path(model_path)
+            if not checkpoint_path.exists():
+                raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
-        self.engine = ultrabert._engine
-        self.model = getattr(self.engine, "model", None)
-        self.encoder = getattr(self.engine, "encoder", None)
-        self.tokenizer = getattr(self.engine, "tokenizer", None)
-        self.runtime_device = getattr(self.engine, "device", device)
+            resolved_device = device
+            if resolved_device == "auto":
+                resolved_device = "cuda" if torch.cuda.is_available() else "cpu"
+
+            self.model = ModernBertMultiTaskModel.load_checkpoint(
+                str(checkpoint_path),
+                device=resolved_device,
+            )
+            self.model = self.model.to(resolved_device)
+            self.model.eval()
+            self.encoder = getattr(self.model, "encoder", None)
+            self.tokenizer = load_local_tokenizer(checkpoint_path)
+            self.runtime_device = resolved_device
+        else:
+            from familyos_ultrabert import Client
+
+            self.client = Client(
+                model_path=model_path,
+                backend=backend,
+                device=device,
+                warmup=True,
+                warmup_rounds=3,
+                verbose=True,
+            )
+
+            ultrabert = self.client._model
+            if ultrabert is None:
+                raise RuntimeError("Client failed to initialize UltraBERT")
+
+            if not hasattr(ultrabert, "_engine"):
+                raise RuntimeError("UltraBERT backend does not expose a PyTorch engine")
+
+            self.engine = ultrabert._engine
+            self.model = getattr(self.engine, "model", None)
+            self.encoder = getattr(self.engine, "encoder", None)
+            self.tokenizer = getattr(self.engine, "tokenizer", None)
+            self.runtime_device = getattr(self.engine, "device", device)
 
         if method != "embedding_head" and backend != "pytorch":
             raise ValueError(f"Method '{method}' requires the PyTorch backend")
@@ -82,7 +147,7 @@ class UltraBERTMTEBWrapper:
         """Return metadata about the active embedding method."""
         description: Dict[str, Any] = {
             "method": self.method,
-            "backend": self.client.backend,
+            "backend": self.client.backend if self.client is not None else self.backend,
             "device": self.runtime_device,
         }
 
@@ -325,6 +390,7 @@ def evaluate_sts_task(
 
 def run_mteb_sts(
     tasks: Optional[List[str]] = None,
+    model_path: Optional[str] = None,
     backend: str = "pytorch",
     device: str = "auto",
     methods: Optional[List[str]] = None,
@@ -369,6 +435,7 @@ def run_mteb_sts(
     # Get package version
     from familyos_ultrabert import __version__
     print(f"Package version: {__version__}")
+    print(f"Model path: {model_path or '[package default]'}")
     print(f"Backend: {backend}")
     print(f"Tasks: {', '.join(tasks)}")
     print(f"Methods: {', '.join(methods)}")
@@ -378,7 +445,7 @@ def run_mteb_sts(
     models: Dict[str, UltraBERTMTEBWrapper] = {}
     for method in methods:
         print(f"  Loading method: {method}")
-        model = UltraBERTMTEBWrapper(backend=backend, device=device, method=method)
+        model = UltraBERTMTEBWrapper(model_path=model_path, backend=backend, device=device, method=method)
         models[method] = model
         description = model.describe()
         print(
@@ -492,6 +559,11 @@ def main() -> None:
         help="Embedding methods to run side-by-side",
     )
     parser.add_argument(
+        "--model-path",
+        default=None,
+        help="Path to a local checkpoint/model directory to benchmark",
+    )
+    parser.add_argument(
         "--backend",
         default="pytorch",
         choices=["pytorch", "onnx"],
@@ -517,6 +589,7 @@ def main() -> None:
 
     run_mteb_sts(
         tasks=args.tasks,
+        model_path=args.model_path,
         backend=args.backend,
         device=args.device,
         methods=args.methods,
