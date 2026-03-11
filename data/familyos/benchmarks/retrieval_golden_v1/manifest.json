@@ -1,0 +1,90 @@
+{
+  "benchmark_version": "retrieval_golden_v1",
+  "created_from": "bootstrap_stage_b_sources",
+  "review_status": "bootstrap_unreviewed",
+  "notes": [
+    "This benchmark is deterministic and held out from the selected source slices.",
+    "It is suitable for checkpoint comparison, but should receive human review before final promotion gating."
+  ],
+  "splits": {
+    "dev": {
+      "total": 700,
+      "by_task_type": {
+        "triplet": 400,
+        "pair": 300
+      },
+      "by_slice": {
+        "hard_negatives": 100,
+        "query_doc": 300,
+        "safety_emotion": 100,
+        "wrong_person": 100,
+        "wrong_time": 100
+      },
+      "by_difficulty": {
+        "unknown": 100,
+        "easy": 207,
+        "medium": 93,
+        "very_hard": 100,
+        "hard": 200
+      }
+    },
+    "holdout": {
+      "total": 700,
+      "by_task_type": {
+        "triplet": 400,
+        "pair": 300
+      },
+      "by_slice": {
+        "hard_negatives": 100,
+        "query_doc": 300,
+        "safety_emotion": 100,
+        "wrong_person": 100,
+        "wrong_time": 100
+      },
+      "by_difficulty": {
+        "unknown": 100,
+        "easy": 227,
+        "medium": 72,
+        "hard": 201,
+        "very_hard": 100
+      }
+    }
+  },
+  "sources": {
+    "query_doc": {
+      "path": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\query_doc",
+      "format": "pair",
+      "available_records": 10019,
+      "dev_count": 300,
+      "holdout_count": 300
+    },
+    "hard_negatives": {
+      "path": "D:\\Modeling_studio\\data\\familyos\\embeddings\\hard_negatives",
+      "format": "triplet",
+      "available_records": 42945,
+      "dev_count": 100,
+      "holdout_count": 100
+    },
+    "wrong_person": {
+      "path": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\wrong_person",
+      "format": "triplet",
+      "available_records": 12041,
+      "dev_count": 100,
+      "holdout_count": 100
+    },
+    "wrong_time": {
+      "path": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\wrong_time",
+      "format": "triplet",
+      "available_records": 10019,
+      "dev_count": 100,
+      "holdout_count": 100
+    },
+    "safety_emotion": {
+      "path": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\safety_emotion",
+      "format": "triplet",
+      "available_records": 10037,
+      "dev_count": 100,
+      "holdout_count": 100
+    }
+  }
+}

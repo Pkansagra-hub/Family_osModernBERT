@@ -28,6 +28,114 @@
 # Output: outputs/embedding-bakeoff/<head_type>/
 
 # =============================================================================
+# Runtime / Colab Execution Mode
+# =============================================================================
+# Backward-compatible run selector. Existing bake-off flows remain the default.
+# Future script support will use this section to switch between:
+#   - bakeoff: existing head bake-off / stage_b flows
+#   - teacher_cache: build Qwen teacher embedding cache only
+#   - distill: load student checkpoint + teacher cache and distill
+runtime:
+  mode: bakeoff
+  student_checkpoint: /content/Modeling_studio/checkpoints/v2-best-ema
+
+# =============================================================================
+# Teacher Configuration (Milestone 1)
+# =============================================================================
+# Declarative config only for now. Milestone 2 will wire this into the existing
+# training script without introducing new files.
+teacher:
+  enabled: false
+  model_name: Qwen/Qwen3-Embedding-4B
+  device: cuda
+  dtype: bfloat16
+  attn_implementation: flash_attention_2
+  max_length: 256
+  batch_size: 64
+  normalize: true
+
+  cache:
+    dir: outputs/teacher-cache/qwen3-embedding-4b
+    overwrite: false
+    shard_size: 50000
+    save_text_index: true
+
+  # Query/doc asymmetry matters for query_doc retrieval.
+  prompts:
+    use_query_prompt_for_query_doc: true
+    query_instruction: "Given a user query, retrieve the most relevant FamilyOS memory or passage."
+
+  # Reuse existing embedding sources and optionally add broader FamilyOS corpus.
+  source_sets:
+    use_data_sources: true
+    use_stage_b_profile: false
+
+  corpus_sources:
+    - path: familyos/unified/output_healed_merged
+      slice: unified_corpus
+      format: text
+      text_keys: [text]
+      mode: document
+
+    - path: familyos/emotions
+      slice: emotions_corpus
+      format: text
+      text_keys: [text]
+      mode: document
+
+    - path: familyos/safety
+      slice: safety_corpus
+      format: text
+      text_keys: [text]
+      mode: document
+
+    - path: familyos/relations
+      slice: relations_corpus
+      format: text
+      text_keys: [text, text_a, text_b]
+      mode: document
+
+    - path: familyos/temporal
+      slice: temporal_corpus
+      format: text
+      text_keys: [text, tokens]
+      mode: document
+
+    - path: familyos/temporal_span
+      slice: temporal_span_corpus
+      format: text
+      text_keys: [text]
+      mode: document
+
+# =============================================================================
+# Distillation Configuration (Milestone 1)
+# =============================================================================
+# Distillation remains disabled until Milestone 3 wires these values into the
+# existing bake-off training loop.
+distillation:
+  enabled: false
+  teacher_cache_dir: outputs/teacher-cache/qwen3-embedding-4b
+  freeze_encoder: true
+  use_teacher_for_query_doc_only: false
+
+  losses:
+    student_contrastive_weight: 0.70
+    teacher_vector_weight: 0.15
+    teacher_ranking_weight: 0.15
+    teacher_temperature: 0.05
+    vector_loss_type: cosine
+
+  projection:
+    enabled: false
+    type: linear
+    teacher_dim: 2560
+    student_dim: 768
+
+  train_sources:
+    use_data_sources: true
+    use_stage_b_profile: true
+
+# =============================================================================
 # Encoder Configuration (FROZEN)
 # =============================================================================
 encoder:

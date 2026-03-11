@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import logging
 import math
@@ -72,7 +73,7 @@ project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from transformers import AutoTokenizer, get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
+from transformers import AutoModel, AutoTokenizer, PreTrainedTokenizerFast, get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
 
 from modeling_studio.models.modernbert_multitask import (
     ModernBertMultiTaskModel,
@@ -109,6 +110,43 @@ def log_section(title: str) -> None:
     logger.info("=" * 60)
 
 
+def _resolve_dtype(dtype_name: str | None) -> torch.dtype | None:
+    if dtype_name is None:
+        return None
+    normalized = str(dtype_name).strip().lower()
+    mapping = {
+        "float32": torch.float32,
+        "fp32": torch.float32,
+        "float16": torch.float16,
+        "fp16": torch.float16,
+        "half": torch.float16,
+        "bfloat16": torch.bfloat16,
+        "bf16": torch.bfloat16,
+    }
+    if normalized not in mapping:
+        raise ValueError(f"Unsupported dtype: {dtype_name}")
+    return mapping[normalized]
+
+
+def resolve_workspace_path(path_value: str | Path, base_dir: Path | None = None) -> Path:
+    """Resolve config paths robustly relative to cwd, base_dir, or project root."""
+    path = Path(path_value)
+    if path.is_absolute():
+        return path
+
+    candidates: list[Path] = []
+    if base_dir is not None:
+        candidates.append(base_dir / path)
+    candidates.append(project_root / path)
+    candidates.append(path)
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return candidates[0] if candidates else path
+
+
 # =============================================================================
 # Configuration
 # =============================================================================
@@ -122,6 +160,22 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
         config = yaml.safe_load(f)
     logger.info(f"Loaded config from {config_path}")
     return config
+
+
+def load_checkpoint_tokenizer(checkpoint_path: str | Path) -> Any:
+    """Load tokenizer with fallback for custom tokenizer_class metadata."""
+    checkpoint_path = resolve_workspace_path(checkpoint_path)
+    try:
+        return AutoTokenizer.from_pretrained(checkpoint_path)
+    except ValueError as exc:
+        tokenizer_json = checkpoint_path / "tokenizer.json"
+        if not tokenizer_json.exists():
+            raise
+
+        logger.warning(
+            f"AutoTokenizer failed for {checkpoint_path.name}; falling back to PreTrainedTokenizerFast ({exc})"
+        )
+        return PreTrainedTokenizerFast(tokenizer_file=str(tokenizer_json))
 
 
 # =============================================================================
@@ -378,6 +432,8 @@ class EmbeddingCollator:
             "anchor_attention_mask": anchor_enc["attention_mask"],
             "positive_input_ids": positive_enc["input_ids"],
             "positive_attention_mask": positive_enc["attention_mask"],
+            "anchor_texts": anchors,
+            "positive_texts": positives,
             "has_negative": torch.tensor(has_neg, dtype=torch.bool),
             "triplet_indices": torch.tensor(triplet_indices, dtype=torch.long),
             "pair_indices": torch.tensor(pair_indices, dtype=torch.long),
@@ -395,11 +451,13 @@ class EmbeddingCollator:
             batch["negative_input_ids"] = negative_enc["input_ids"]
             batch["negative_attention_mask"] = negative_enc["attention_mask"]
             batch["hard_negative_mask"] = torch.tensor(trip_hard_neg, dtype=torch.bool)
+            batch["negative_texts"] = negatives
         else:
             # Pure pair batch - no negatives
             batch["negative_input_ids"] = torch.zeros(0, 1, dtype=torch.long)
             batch["negative_attention_mask"] = torch.zeros(0, 1, dtype=torch.long)
             batch["hard_negative_mask"] = torch.zeros(0, dtype=torch.bool)
+            batch["negative_texts"] = []
 
         return batch
 
@@ -521,11 +579,12 @@ def get_embedding_data_sources(
         List of dicts with keys ``path`` (resolved Path), ``slice``, ``format``.
     """
     sources_cfg = data_config.get("sources")
+    resolved_data_root = resolve_workspace_path(data_root)
     if sources_cfg is not None:
         resolved = []
         for src in sources_cfg:
             raw_path = src["path"]
-            path = data_root / raw_path if not Path(raw_path).is_absolute() else Path(raw_path)
+            path = resolve_workspace_path(raw_path, resolved_data_root)
             resolved.append({
                 "path": path,
                 "slice": src.get("slice", path.name),
@@ -541,7 +600,7 @@ def get_embedding_data_sources(
     path_strings = [p.strip() for p in train_paths_str.split(",") if p.strip()]
     resolved = []
     for path_str in path_strings:
-        path = data_root / path_str if not Path(path_str).is_absolute() else Path(path_str)
+        path = resolve_workspace_path(path_str, resolved_data_root)
         if path.exists():
             resolved.append({"path": path, "slice": path.name, "format": "triplet"})
         else:
@@ -632,6 +691,437 @@ def resolve_data_config(
 
     logger.info(f"Using data profile '{profile_name}' with {len(resolved.get('sources', []))} sources")
     return resolved
+
+
+# =============================================================================
+# Teacher Cache Build Helpers (Milestone 2)
+# =============================================================================
+
+
+def iter_source_jsonl_files(path: Path) -> list[Path]:
+    """Return JSONL files for a source path, skipping metadata helpers."""
+    if not path.exists():
+        return []
+    if path.is_file() and path.suffix == ".jsonl":
+        return [path] if not any(path.name.startswith(prefix) for prefix in _SKIP_PREFIXES) else []
+
+    jsonl_files = sorted(path.glob("*.jsonl"))
+    if not jsonl_files:
+        jsonl_files = sorted(path.glob("**/*.jsonl"))
+    return [jsonl_file for jsonl_file in jsonl_files if not any(jsonl_file.name.startswith(prefix) for prefix in _SKIP_PREFIXES)]
+
+
+def iter_jsonl_records(path: Path) -> Iterator[tuple[Path, dict[str, Any]]]:
+    """Yield decoded JSONL records from a file or directory."""
+    for jsonl_file in iter_source_jsonl_files(path):
+        with open(jsonl_file, encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    yield jsonl_file, json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+
+def _normalize_text_value(value: Any) -> str | None:
+    if isinstance(value, str):
+        text = value.strip()
+        return text if text else None
+
+    if isinstance(value, list) and value and all(isinstance(item, str) for item in value):
+        text = " ".join(item.strip() for item in value if item.strip()).strip()
+        return text if text else None
+
+    return None
+
+
+def _teacher_entry_id(mode: str, text: str) -> str:
+    digest = hashlib.sha256(f"{mode}\n{text}".encode("utf-8")).hexdigest()
+    return digest[:16]
+
+
+def _add_teacher_entry(
+    entries: list[dict[str, Any]],
+    dedupe_index: dict[tuple[str, str], int],
+    text: str,
+    mode: str,
+    slice_name: str,
+    source_path: Path,
+    text_key: str,
+) -> None:
+    dedupe_key = (mode, text)
+    if dedupe_key in dedupe_index:
+        existing = entries[dedupe_index[dedupe_key]]
+        existing.setdefault("slices", [])
+        if slice_name not in existing["slices"]:
+            existing["slices"].append(slice_name)
+        return
+
+    dedupe_index[dedupe_key] = len(entries)
+    entries.append({
+        "id": _teacher_entry_id(mode, text),
+        "text": text,
+        "mode": mode,
+        "slice": slice_name,
+        "slices": [slice_name],
+        "source_path": str(source_path),
+        "text_key": text_key,
+    })
+
+
+def collect_teacher_entries(
+    config: dict[str, Any],
+    max_texts: int | None = None,
+) -> list[dict[str, Any]]:
+    """Collect deduplicated teacher-cache text entries from configured sources."""
+    teacher_config = config.get("teacher", {})
+    data_config = config.get("data", {})
+    data_root = resolve_workspace_path(data_config.get("root", "data"))
+
+    source_sets = teacher_config.get("source_sets", {})
+    use_stage_b_profile = source_sets.get("use_stage_b_profile", False)
+    active_data_config = resolve_data_config(
+        data_config,
+        config.get("stage_b", {}).get("data_profile") if use_stage_b_profile else None,
+    )
+
+    configured_sources: list[dict[str, Any]] = []
+    if source_sets.get("use_data_sources", True):
+        configured_sources.extend(get_embedding_data_sources(active_data_config, data_root))
+
+    for source in teacher_config.get("corpus_sources", []):
+        raw_path = source["path"]
+        resolved_path = resolve_workspace_path(raw_path, data_root)
+        configured_sources.append({
+            "path": resolved_path,
+            "slice": source.get("slice", resolved_path.name),
+            "format": source.get("format", "text"),
+            "text_keys": source.get("text_keys", ["text"]),
+            "mode": source.get("mode", "document"),
+        })
+
+    entries: list[dict[str, Any]] = []
+    dedupe_index: dict[tuple[str, str], int] = {}
+
+    for source in configured_sources:
+        source_path = Path(source["path"])
+        source_format = source.get("format", "triplet")
+        slice_name = source.get("slice", source_path.name)
+        text_keys = source.get("text_keys", ["text"])
+        default_mode = source.get("mode", "document")
+
+        if not source_path.exists():
+            logger.warning(f"Teacher source not found: {source_path}")
+            continue
+
+        logger.info(f"  Collecting teacher texts: slice={slice_name} format={source_format} path={source_path}")
+        before_count = len(entries)
+        for jsonl_file, record in iter_jsonl_records(source_path):
+            if source_format == "pair":
+                query_text = _normalize_text_value(record.get("query") or record.get("anchor"))
+                document_text = _normalize_text_value(record.get("document") or record.get("positive"))
+                if query_text is not None:
+                    _add_teacher_entry(entries, dedupe_index, query_text, "query", slice_name, jsonl_file, "query")
+                if document_text is not None:
+                    _add_teacher_entry(entries, dedupe_index, document_text, "document", slice_name, jsonl_file, "document")
+            elif source_format == "triplet":
+                for key in ("anchor", "positive", "negative"):
+                    text = _normalize_text_value(record.get(key))
+                    if text is not None:
+                        _add_teacher_entry(entries, dedupe_index, text, default_mode, slice_name, jsonl_file, key)
+            elif source_format == "text":
+                for key in text_keys:
+                    text = _normalize_text_value(record.get(key))
+                    if text is not None:
+                        _add_teacher_entry(entries, dedupe_index, text, default_mode, slice_name, jsonl_file, key)
+            else:
+                raise ValueError(f"Unsupported teacher source format: {source_format}")
+
+            if max_texts is not None and len(entries) >= max_texts:
+                break
+
+        added = len(entries) - before_count
+        logger.info(f"    Added {added:,} unique entries from {slice_name}")
+        if max_texts is not None and len(entries) >= max_texts:
+            logger.info(f"  Reached max_texts limit ({max_texts:,}); stopping collection")
+            break
+
+    logger.info(f"Collected {len(entries):,} deduplicated teacher entries")
+    return entries
+
+
+def _teacher_prompt_text(text: str, mode: str, teacher_config: dict[str, Any]) -> str:
+    prompts_config = teacher_config.get("prompts", {})
+    use_query_prompt = prompts_config.get("use_query_prompt_for_query_doc", True)
+    if mode == "query" and use_query_prompt:
+        instruction = prompts_config.get(
+            "query_instruction",
+            "Given a user query, retrieve the most relevant FamilyOS memory or passage.",
+        )
+        return f"Instruct: {instruction}\nQuery: {text}"
+    return text
+
+
+def last_token_pool(last_hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    """Pool the last non-padding token embedding."""
+    left_padding = bool((attention_mask[:, -1].sum() == attention_mask.shape[0]).item())
+    if left_padding:
+        return last_hidden_states[:, -1]
+
+    sequence_lengths = attention_mask.sum(dim=1) - 1
+    batch_indices = torch.arange(last_hidden_states.shape[0], device=last_hidden_states.device)
+    return last_hidden_states[batch_indices, sequence_lengths]
+
+
+def load_teacher_model(teacher_config: dict[str, Any], device: torch.device) -> tuple[Any, Any]:
+    """Load teacher tokenizer/model for cache generation."""
+    model_name = teacher_config.get("model_name")
+    if not model_name:
+        raise ValueError("teacher.model_name is required for teacher cache mode")
+
+    dtype = _resolve_dtype(teacher_config.get("dtype", "bfloat16"))
+    attn_implementation = teacher_config.get("attn_implementation")
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
+    model_kwargs: dict[str, Any] = {}
+    if dtype is not None:
+        model_kwargs["dtype"] = dtype
+    if attn_implementation and device.type == "cuda":
+        model_kwargs["attn_implementation"] = attn_implementation
+
+    try:
+        model = AutoModel.from_pretrained(model_name, **model_kwargs)
+    except ImportError as exc:
+        if "FlashAttention2" not in str(exc):
+            raise
+
+        logger.warning(
+            "FlashAttention2 unavailable for teacher load; retrying without attn_implementation"
+        )
+        model_kwargs.pop("attn_implementation", None)
+        model = AutoModel.from_pretrained(model_name, **model_kwargs)
+
+    model = model.to(device)
+    model.eval()
+    return tokenizer, model
+
+
+@torch.no_grad()
+def encode_teacher_entries(
+    entries: list[dict[str, Any]],
+    tokenizer: Any,
+    model: Any,
+    teacher_config: dict[str, Any],
+    device: torch.device,
+) -> torch.Tensor:
+    """Encode teacher entries into a single CPU tensor."""
+    if not entries:
+        return torch.empty((0, 0), dtype=torch.float32)
+
+    max_length = int(teacher_config.get("max_length", 256))
+    batch_size = int(teacher_config.get("batch_size", 64))
+    normalize = bool(teacher_config.get("normalize", True))
+
+    dtype = _resolve_dtype(teacher_config.get("dtype", "bfloat16"))
+    use_amp = device.type == "cuda" and dtype in (torch.float16, torch.bfloat16)
+    amp_context = (
+        autocast("cuda", dtype=dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    all_embeddings: list[torch.Tensor] = []
+    for start in range(0, len(entries), batch_size):
+        batch_entries = entries[start : start + batch_size]
+        texts = [_teacher_prompt_text(entry["text"], entry["mode"], teacher_config) for entry in batch_entries]
+        encoded = tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=max_length,
+            return_tensors="pt",
+        )
+        encoded = {key: value.to(device) for key, value in encoded.items()}
+
+        with amp_context:
+            outputs = model(**encoded)
+            hidden_states = outputs.last_hidden_state if hasattr(outputs, "last_hidden_state") else outputs[0]
+            pooled = last_token_pool(hidden_states, encoded["attention_mask"])
+            if normalize:
+                pooled = F.normalize(pooled, p=2, dim=-1)
+
+        all_embeddings.append(pooled.float().cpu())
+        if (start // batch_size) % 20 == 0:
+            logger.info(f"  Teacher encoded {min(start + len(batch_entries), len(entries)):,}/{len(entries):,} entries")
+
+    return torch.cat(all_embeddings, dim=0)
+
+
+def save_teacher_cache(
+    entries: list[dict[str, Any]],
+    embeddings: torch.Tensor,
+    teacher_config: dict[str, Any],
+) -> Path:
+    """Persist teacher-cache shards and manifest."""
+    cache_config = teacher_config.get("cache", {})
+    cache_dir = resolve_workspace_path(cache_config.get("dir", "outputs/teacher-cache"))
+    overwrite = bool(cache_config.get("overwrite", False))
+    shard_size = int(cache_config.get("shard_size", 50000))
+    save_text_index = bool(cache_config.get("save_text_index", True))
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    existing_shards = list(cache_dir.glob("shard_*.pt"))
+    if existing_shards and not overwrite:
+        raise FileExistsError(
+            f"Teacher cache already exists in {cache_dir}; set teacher.cache.overwrite=true to rebuild"
+        )
+    for existing_shard in existing_shards:
+        existing_shard.unlink()
+
+    manifest = {
+        "model_name": teacher_config.get("model_name"),
+        "dtype": teacher_config.get("dtype", "bfloat16"),
+        "max_length": teacher_config.get("max_length", 256),
+        "normalize": teacher_config.get("normalize", True),
+        "num_entries": len(entries),
+        "embedding_dim": int(embeddings.shape[1]) if embeddings.ndim == 2 and embeddings.numel() > 0 else 0,
+        "shard_size": shard_size,
+        "shards": [],
+    }
+
+    for shard_idx, start in enumerate(range(0, len(entries), shard_size)):
+        shard_entries = entries[start : start + shard_size]
+        shard_embeddings = embeddings[start : start + shard_size].contiguous()
+        shard_path = cache_dir / f"shard_{shard_idx:05d}.pt"
+        torch.save(
+            {
+                "ids": [entry["id"] for entry in shard_entries],
+                "texts": [entry["text"] for entry in shard_entries],
+                "modes": [entry["mode"] for entry in shard_entries],
+                "slices": [entry["slices"] for entry in shard_entries],
+                "embeddings": shard_embeddings,
+            },
+            shard_path,
+        )
+        manifest["shards"].append({
+            "path": shard_path.name,
+            "count": len(shard_entries),
+            "start": start,
+            "end": start + len(shard_entries),
+        })
+
+    with open(cache_dir / "manifest.json", "w", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    if save_text_index:
+        with open(cache_dir / "index.jsonl", "w", encoding="utf-8") as handle:
+            for entry in entries:
+                handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    logger.info(f"Saved teacher cache -> {cache_dir}")
+    return cache_dir
+
+
+def build_teacher_cache(
+    config: dict[str, Any],
+    max_samples: int | None = None,
+) -> Path:
+    """Build a deduplicated teacher embedding cache using existing data sources."""
+    teacher_config = config.get("teacher", {})
+    if not teacher_config:
+        raise ValueError("teacher configuration is required for --build_teacher_cache")
+
+    log_section("TEACHER CACHE BUILD")
+    logger.info(f"  Teacher model: {teacher_config.get('model_name')}")
+
+    entries = collect_teacher_entries(config, max_texts=max_samples)
+    if not entries:
+        raise ValueError("No teacher entries collected; check teacher/source configuration")
+
+    device_name = teacher_config.get("device", "cuda")
+    if device_name == "cuda" and not torch.cuda.is_available():
+        logger.warning("CUDA requested for teacher cache but not available; falling back to CPU")
+        device_name = "cpu"
+    device = torch.device(device_name)
+
+    tokenizer, model = load_teacher_model(teacher_config, device)
+    embeddings = encode_teacher_entries(entries, tokenizer, model, teacher_config, device)
+    cache_dir = save_teacher_cache(entries, embeddings, teacher_config)
+    logger.info(
+        f"Teacher cache complete: {len(entries):,} entries | dim={embeddings.shape[1] if embeddings.ndim == 2 else 0}"
+    )
+    return cache_dir
+
+
+class TeacherEmbeddingCache:
+    """In-memory teacher embedding cache loaded from sharded artifacts."""
+
+    def __init__(self, embedding_dim: int, embeddings_by_key: dict[tuple[str, str], torch.Tensor]):
+        self.embedding_dim = embedding_dim
+        self.embeddings_by_key = embeddings_by_key
+
+    @classmethod
+    def load(cls, cache_dir: str | Path) -> "TeacherEmbeddingCache":
+        cache_path = resolve_workspace_path(cache_dir)
+        manifest_path = cache_path / "manifest.json"
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"Teacher cache manifest not found: {manifest_path}")
+
+        with open(manifest_path, encoding="utf-8") as handle:
+            manifest = json.load(handle)
+
+        embedding_dim = int(manifest.get("embedding_dim", 0))
+        embeddings_by_key: dict[tuple[str, str], torch.Tensor] = {}
+        for shard_meta in manifest.get("shards", []):
+            shard_path = cache_path / shard_meta["path"]
+            shard_payload = torch.load(shard_path, map_location="cpu")
+            shard_embeddings = shard_payload["embeddings"].float()
+            for index, (text, mode) in enumerate(zip(shard_payload["texts"], shard_payload["modes"])):
+                embeddings_by_key[(mode, text)] = shard_embeddings[index]
+
+        logger.info(
+            f"Loaded teacher cache: {len(embeddings_by_key):,} entries | dim={embedding_dim} | path={cache_path}"
+        )
+        return cls(embedding_dim=embedding_dim, embeddings_by_key=embeddings_by_key)
+
+    def lookup(self, texts: list[str], modes: list[str], device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+        if len(texts) != len(modes):
+            raise ValueError("texts and modes must have the same length for teacher cache lookup")
+
+        if not texts:
+            empty_emb = torch.zeros((0, self.embedding_dim), dtype=torch.float32, device=device)
+            empty_mask = torch.zeros((0,), dtype=torch.bool, device=device)
+            return empty_emb, empty_mask
+
+        found_vectors: list[torch.Tensor] = []
+        found_mask: list[bool] = []
+        for text, mode in zip(texts, modes):
+            vector = self.embeddings_by_key.get((mode, text))
+            if vector is None and mode != "document":
+                vector = self.embeddings_by_key.get(("document", text))
+            if vector is None:
+                vector = torch.zeros(self.embedding_dim, dtype=torch.float32)
+                found_mask.append(False)
+            else:
+                found_mask.append(True)
+            found_vectors.append(vector)
+
+        stacked = torch.stack(found_vectors, dim=0).to(device)
+        mask = torch.tensor(found_mask, dtype=torch.bool, device=device)
+        return stacked, mask
+
+
+class TeacherProjection(nn.Module):
+    """Optional trainable projection from teacher space into student space."""
+
+    def __init__(self, teacher_dim: int, student_dim: int):
+        super().__init__()
+        self.linear = nn.Linear(teacher_dim, student_dim, bias=False)
+
+    def forward(self, embeddings: torch.Tensor) -> torch.Tensor:
+        return self.linear(embeddings)
 
 
 def load_checkpoint_capabilities(
@@ -762,6 +1252,72 @@ def load_model_and_replace_embedding_head(
     logger.info(f"    Old: {old_class} ({old_params:,} params)")
     logger.info(f"    New: {type(new_head).__name__}[{head_type}] ({new_params:,} params)")
 
+    return model
+
+
+def load_model_checkpoint(
+    checkpoint_path: str | Path,
+    exclude_decoder: bool = True,
+    use_flash_attention: bool = False,
+) -> ModernBertMultiTaskModel:
+    """Load a checkpoint and preserve the existing embedding head weights."""
+    from safetensors.torch import load_file
+    from transformers import AutoConfig
+
+    checkpoint_path = resolve_workspace_path(checkpoint_path)
+    logger.info(f"Loading checkpoint model from {checkpoint_path}")
+
+    config = AutoConfig.from_pretrained(checkpoint_path, trust_remote_code=True)
+    if use_flash_attention:
+        config.attn_implementation = "flash_attention_2"
+        logger.info("  Flash Attention 2: ENABLED")
+
+    capabilities = load_checkpoint_capabilities(checkpoint_path, exclude_decoder)
+    model = ModernBertMultiTaskModel(config=config, capabilities=capabilities, freeze_encoder=False)
+    restore_checkpoint_head_architecture(model, checkpoint_path)
+    model._init_encoder()
+
+    embedding_metadata_path = checkpoint_path / "embedding_metadata.json"
+    if embedding_metadata_path.exists():
+        with open(embedding_metadata_path, encoding="utf-8") as handle:
+            embedding_metadata = json.load(handle)
+        bakeoff_info = embedding_metadata.get("bakeoff", {})
+        head_type = bakeoff_info.get("head_type")
+        head_params = bakeoff_info.get("head_params") or {}
+        if head_type:
+            hidden_size = model.config.hidden_size
+            model.heads["embedding"] = create_embedding_head(
+                head_type=head_type,
+                hidden_size=hidden_size,
+                **head_params,
+            )
+            logger.info(f"  Restored embedding head architecture from metadata: {head_type}")
+
+    weights_path = checkpoint_path / "model.safetensors"
+    if weights_path.exists():
+        state_dict = load_file(str(weights_path))
+    else:
+        weights_path = checkpoint_path / "pytorch_model.bin"
+        if weights_path.exists():
+            state_dict = torch.load(weights_path, map_location="cpu", weights_only=True)
+        else:
+            raise FileNotFoundError(f"No weights found in {checkpoint_path}")
+
+    encoder_state = {k.replace("encoder.", ""): v for k, v in state_dict.items() if k.startswith("encoder.")}
+    model.encoder.load_state_dict(encoder_state, strict=True)
+
+    loaded_heads: list[str] = []
+    for head_name in model.heads.keys():
+        head_prefix = f"heads.{head_name}."
+        head_state = {k.replace(head_prefix, ""): v for k, v in state_dict.items() if k.startswith(head_prefix)}
+        if head_state:
+            try:
+                model.heads[head_name].load_state_dict(head_state, strict=True)
+                loaded_heads.append(head_name)
+            except Exception as exc:
+                logger.warning(f"Could not load {head_name} head: {exc}")
+
+    logger.info(f"  Loaded checkpoint heads: {', '.join(loaded_heads)}")
     return model
 
 
@@ -1245,6 +1801,121 @@ def encode_triplet_batch(
     }
 
 
+def compute_teacher_distillation_loss(
+    anchor_emb: torch.Tensor,
+    positive_emb: torch.Tensor,
+    negative_emb: torch.Tensor | None,
+    batch: dict[str, Any],
+    triplet_idx: torch.Tensor,
+    pair_idx: torch.Tensor,
+    routed_modes: dict[str, list[str]],
+    teacher_cache: TeacherEmbeddingCache | None,
+    distillation_config: dict[str, Any] | None,
+    teacher_projection: nn.Module | None,
+    device: torch.device,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """Compute optional teacher-guided vector and ranking losses."""
+    if teacher_cache is None or not distillation_config or not distillation_config.get("enabled", False):
+        return torch.tensor(0.0, device=device), {}
+
+    losses_config = distillation_config.get("losses", {})
+    vector_weight = float(losses_config.get("teacher_vector_weight", 0.0))
+    ranking_weight = float(losses_config.get("teacher_ranking_weight", 0.0))
+    teacher_temperature = float(losses_config.get("teacher_temperature", 0.05))
+
+    teacher_anchor, anchor_found = teacher_cache.lookup(batch.get("anchor_texts", []), routed_modes["anchor"], device)
+    teacher_positive, positive_found = teacher_cache.lookup(batch.get("positive_texts", []), routed_modes["positive"], device)
+
+    negative_modes = [routed_modes["negative"][i] for i in triplet_idx.detach().cpu().tolist()] if triplet_idx.numel() > 0 else []
+    teacher_negative, negative_found = teacher_cache.lookup(batch.get("negative_texts", []), negative_modes, device)
+
+    total_loss = torch.tensor(0.0, device=device)
+    metrics: dict[str, float] = {
+        "teacher_anchor_found_rate": anchor_found.float().mean().item() if anchor_found.numel() > 0 else 0.0,
+        "teacher_positive_found_rate": positive_found.float().mean().item() if positive_found.numel() > 0 else 0.0,
+        "teacher_negative_found_rate": negative_found.float().mean().item() if negative_found.numel() > 0 else 0.0,
+    }
+
+    def _project_teacher(teacher_tensor: torch.Tensor, student_dim: int) -> torch.Tensor | None:
+        if teacher_projection is not None:
+            return teacher_projection(teacher_tensor)
+        if teacher_tensor.shape[-1] == student_dim:
+            return teacher_tensor
+        return None
+
+    if vector_weight > 0:
+        vector_terms: list[torch.Tensor] = []
+        teacher_anchor_proj = _project_teacher(teacher_anchor, anchor_emb.shape[-1])
+        teacher_positive_proj = _project_teacher(teacher_positive, positive_emb.shape[-1])
+        teacher_negative_proj = _project_teacher(teacher_negative, negative_emb.shape[-1]) if negative_emb is not None and teacher_negative.numel() > 0 else None
+
+        if teacher_anchor_proj is not None and anchor_found.any():
+            vector_terms.append(1.0 - F.cosine_similarity(
+                F.normalize(anchor_emb[anchor_found], p=2, dim=-1),
+                F.normalize(teacher_anchor_proj[anchor_found], p=2, dim=-1),
+                dim=-1,
+            ).mean())
+        if teacher_positive_proj is not None and positive_found.any():
+            vector_terms.append(1.0 - F.cosine_similarity(
+                F.normalize(positive_emb[positive_found], p=2, dim=-1),
+                F.normalize(teacher_positive_proj[positive_found], p=2, dim=-1),
+                dim=-1,
+            ).mean())
+        if teacher_negative_proj is not None and negative_emb is not None and negative_found.any():
+            vector_terms.append(1.0 - F.cosine_similarity(
+                F.normalize(negative_emb[negative_found], p=2, dim=-1),
+                F.normalize(teacher_negative_proj[negative_found], p=2, dim=-1),
+                dim=-1,
+            ).mean())
+
+        if vector_terms:
+            vector_loss = torch.stack(vector_terms).mean()
+            total_loss = total_loss + (vector_weight * vector_loss)
+            metrics["teacher_vector_loss"] = vector_loss.item()
+        else:
+            metrics["teacher_vector_loss"] = 0.0
+
+    if ranking_weight > 0:
+        ranking_terms: list[torch.Tensor] = []
+
+        if pair_idx.numel() > 1:
+            pair_mask = anchor_found[pair_idx] & positive_found[pair_idx]
+            if pair_mask.sum().item() >= 2:
+                pair_indices = pair_idx[pair_mask]
+                student_pair_scores = F.normalize(anchor_emb[pair_indices], p=2, dim=-1) @ F.normalize(positive_emb[pair_indices], p=2, dim=-1).T
+                teacher_pair_scores = F.normalize(teacher_anchor[pair_indices], p=2, dim=-1) @ F.normalize(teacher_positive[pair_indices], p=2, dim=-1).T
+                ranking_terms.append(F.mse_loss(student_pair_scores, teacher_pair_scores))
+
+        if triplet_idx.numel() > 0 and negative_emb is not None and negative_found.numel() > 0:
+            triplet_mask = anchor_found[triplet_idx] & positive_found[triplet_idx] & negative_found
+            if triplet_mask.any():
+                triplet_indices = triplet_idx[triplet_mask]
+                student_logits = torch.stack([
+                    F.cosine_similarity(anchor_emb[triplet_indices], positive_emb[triplet_indices], dim=-1),
+                    F.cosine_similarity(anchor_emb[triplet_indices], negative_emb[triplet_mask], dim=-1),
+                ], dim=-1) / teacher_temperature
+                teacher_logits = torch.stack([
+                    F.cosine_similarity(teacher_anchor[triplet_indices], teacher_positive[triplet_indices], dim=-1),
+                    F.cosine_similarity(teacher_anchor[triplet_indices], teacher_negative[triplet_mask], dim=-1),
+                ], dim=-1) / teacher_temperature
+                ranking_terms.append(
+                    F.kl_div(
+                        F.log_softmax(student_logits, dim=-1),
+                        F.softmax(teacher_logits, dim=-1),
+                        reduction="batchmean",
+                    )
+                )
+
+        if ranking_terms:
+            ranking_loss = torch.stack(ranking_terms).mean()
+            total_loss = total_loss + (ranking_weight * ranking_loss)
+            metrics["teacher_ranking_loss"] = ranking_loss.item()
+        else:
+            metrics["teacher_ranking_loss"] = 0.0
+
+    return total_loss, metrics
+
+
 # =============================================================================
 # Training Step
 # =============================================================================
@@ -1261,6 +1932,9 @@ def train_step(
     matryoshka_dims: list[int] | None = None,
     mode_routing_config: dict[str, Any] | None = None,
     aux_objectives_config: dict[str, Any] | None = None,
+    teacher_cache: TeacherEmbeddingCache | None = None,
+    distillation_config: dict[str, Any] | None = None,
+    teacher_projection: nn.Module | None = None,
 ) -> dict[str, torch.Tensor]:
     encoded = encode_triplet_batch(model, batch, device, use_amp=use_amp, amp_dtype=amp_dtype)
     anchor_hidden = encoded["anchor_hidden"]
@@ -1371,6 +2045,21 @@ def train_step(
             )
             loss = loss + aux_loss
 
+        teacher_loss, teacher_metrics = compute_teacher_distillation_loss(
+            anchor_emb=anchor_emb,
+            positive_emb=positive_emb,
+            negative_emb=negative_emb,
+            batch=batch,
+            triplet_idx=triplet_idx,
+            pair_idx=pair_idx,
+            routed_modes=routed_modes,
+            teacher_cache=teacher_cache,
+            distillation_config=distillation_config,
+            teacher_projection=teacher_projection,
+            device=device,
+        )
+        loss = loss + teacher_loss
+
     # Metrics: pos_sim always available; neg_sim only for triplet sub-batch
     with torch.no_grad():
         pos_sim = F.cosine_similarity(anchor_emb, positive_emb).mean().item()
@@ -1387,9 +2076,12 @@ def train_step(
         "neg_sim": neg_sim,
         "margin": margin,
         "aux_loss": aux_loss,
+        "teacher_loss": teacher_loss,
     }
     for metric_name, metric_value in aux_metrics.items():
         result[f"aux_{metric_name}"] = torch.tensor(metric_value, device=device)
+    for metric_name, metric_value in teacher_metrics.items():
+        result[f"distill_{metric_name}"] = torch.tensor(metric_value, device=device)
     if debug:
         logger.debug(f"  loss={loss.item():.4f} pos_sim={pos_sim:.4f} neg_sim={neg_sim:.4f} margin={margin:.4f}")
     return result
@@ -2423,6 +3115,9 @@ def train(
     mode_routing_config: dict[str, Any] | None = None,
     aux_objectives_config: dict[str, Any] | None = None,
     retrieval_modes: dict[str, str] | None = None,
+    teacher_cache: TeacherEmbeddingCache | None = None,
+    distillation_config: dict[str, Any] | None = None,
+    teacher_projection: nn.Module | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     amp_dtype = torch.bfloat16 if use_bf16 else torch.float16
@@ -2475,6 +3170,9 @@ def train(
                 use_amp=use_amp, amp_dtype=amp_dtype, matryoshka_dims=matryoshka_dims,
                 mode_routing_config=mode_routing_config,
                 aux_objectives_config=aux_objectives_config,
+                teacher_cache=teacher_cache,
+                distillation_config=distillation_config,
+                teacher_projection=teacher_projection,
             )
             loss = losses["total_loss"]
             if gradient_accumulation_steps > 1:
@@ -2864,7 +3562,7 @@ def run_joint_bakeoff(
         logger.info(f"    {head_type:<25} {type(head).__name__:<28} {param_count:>10,} params")
     logger.info(f"  Total candidate head params: {total_head_params:,}")
 
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+    tokenizer = load_checkpoint_tokenizer(checkpoint_path)
 
     log_section("DATA")
     if bakeoff_data_profile:
@@ -3460,7 +4158,7 @@ def run_experiment(
     freeze_model_except_embedding_head(model)
     model = model.to(device)
 
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+    tokenizer = load_checkpoint_tokenizer(checkpoint_path)
 
     # Data
     log_section("DATA")
@@ -3680,7 +4378,7 @@ def run_stage_b(
     freeze_model_except_embedding_head(model)
     model = model.to(device)
 
-    tokenizer = AutoTokenizer.from_pretrained(bakeoff_checkpoint)
+    tokenizer = load_checkpoint_tokenizer(bakeoff_checkpoint)
 
     # Data -- dedicated Stage B profile
     log_section("DATA (Stage B profile)")
@@ -3806,6 +4504,235 @@ def run_stage_b(
     return history
 
 
+def run_distillation(
+    config: dict[str, Any],
+    output_dir: Path,
+    debug: bool = False,
+    max_samples: int | None = None,
+) -> dict[str, Any]:
+    """Milestone 3: distill a student embedding head from the teacher cache."""
+    log_section("DISTILLATION")
+
+    runtime_config = config.get("runtime", {})
+    distillation_config = copy.deepcopy(config.get("distillation", {}))
+    training_config = config.get("training", {})
+    loss_config = config.get("loss", {})
+    data_config = config.get("data", {})
+    stage_b_config = config.get("stage_b", {})
+
+    student_checkpoint = runtime_config.get("student_checkpoint")
+    if not student_checkpoint:
+        raise ValueError("runtime.student_checkpoint is required for distillation mode")
+
+    train_sources_config = distillation_config.get("train_sources", {})
+    use_stage_b_profile = train_sources_config.get("use_stage_b_profile", True)
+    data_profile = stage_b_config.get("data_profile") if use_stage_b_profile else config.get("bakeoff", {}).get("data_profile")
+    resolved_data_config = resolve_data_config(data_config, data_profile)
+    data_root = resolve_workspace_path(resolved_data_config.get("root", "data"))
+
+    seed = training_config.get("seed", 42)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    use_bf16 = training_config.get("bf16", False)
+    use_tf32 = training_config.get("tf32", False)
+    use_flash_attention = training_config.get("flash_attention", False)
+    if torch.cuda.is_available():
+        gpu_name = torch.cuda.get_device_name(0)
+        logger.info(f"Device: {gpu_name}")
+        if use_tf32 and "A100" in gpu_name:
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+
+    teacher_cache_dir = distillation_config.get("teacher_cache_dir")
+    if not teacher_cache_dir:
+        raise ValueError("distillation.teacher_cache_dir is required for distillation mode")
+    teacher_cache = TeacherEmbeddingCache.load(teacher_cache_dir)
+
+    log_section("MODEL (Distillation)")
+    model = load_model_checkpoint(
+        checkpoint_path=student_checkpoint,
+        use_flash_attention=use_flash_attention,
+    )
+    freeze_model_except_embedding_head(model)
+    model = model.to(device)
+
+    teacher_projection: nn.Module | None = None
+    projection_config = distillation_config.get("projection", {})
+    if projection_config.get("enabled", False):
+        teacher_projection = TeacherProjection(
+            teacher_dim=int(projection_config.get("teacher_dim", teacher_cache.embedding_dim)),
+            student_dim=int(projection_config.get("student_dim", model.heads["embedding"].output_dim if hasattr(model.heads["embedding"], "output_dim") and model.heads["embedding"].output_dim is not None else model.config.hidden_size)),
+        ).to(device)
+        logger.info(
+            f"  Teacher projection enabled: {projection_config.get('teacher_dim', teacher_cache.embedding_dim)} -> "
+            f"{projection_config.get('student_dim', model.config.hidden_size)}"
+        )
+
+    tokenizer = load_checkpoint_tokenizer(student_checkpoint)
+
+    log_section("DATA (Distillation)")
+    train_dataset, val_dataset, query_doc_eval_samples = build_train_val_datasets(
+        data_config=resolved_data_config,
+        data_root=data_root,
+        max_samples=max_samples,
+        seed=seed,
+    )
+    logger.info(f"  Total: {len(train_dataset) + len(val_dataset)} samples (train={len(train_dataset)}, val={len(val_dataset)})")
+    if query_doc_eval_samples:
+        logger.info(f"  Query-doc eval pairs: {len(query_doc_eval_samples)}")
+
+    collator = EmbeddingCollator(tokenizer=tokenizer, max_length=resolved_data_config.get("max_length", 128))
+    effective_workers = 0 if platform.system() == "Windows" else resolved_data_config.get("num_workers", 8)
+    batch_size = training_config.get("batch_size", 128)
+    drop_last_train = len(train_dataset) >= batch_size
+
+    sampling_config = resolved_data_config.get("sampling", {})
+    slice_weights = sampling_config.get("slice_weights", {})
+    if slice_weights:
+        train_sampler = SliceBalancedSampler(dataset=train_dataset, slice_weights=slice_weights, seed=seed)
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=train_sampler,
+            collate_fn=collator,
+            num_workers=effective_workers,
+            pin_memory=True,
+            persistent_workers=effective_workers > 0,
+            drop_last=drop_last_train,
+        )
+    else:
+        train_sampler = None
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            collate_fn=collator,
+            num_workers=effective_workers,
+            pin_memory=True,
+            persistent_workers=effective_workers > 0,
+            drop_last=drop_last_train,
+        )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collator,
+        num_workers=effective_workers,
+        pin_memory=True,
+        persistent_workers=effective_workers > 0,
+    )
+
+    loss_fn = FamilyContrastiveLoss(
+        temperature=loss_config.get("temperature", 0.07),
+        hard_negative_weight=loss_config.get("hard_negative_weight", 1.5),
+        use_hard_negatives=True,
+        normalize=False,
+    )
+    if loss_config.get("learnable_temperature", False):
+        loss_fn.log_temperature.requires_grad_(True)
+
+    trainable_params = get_trainable_params(model)
+    param_groups = [{
+        "params": trainable_params,
+        "lr": training_config.get("learning_rate", 2e-4),
+        "weight_decay": training_config.get("weight_decay", 0.01),
+    }]
+    if teacher_projection is not None:
+        param_groups.append({
+            "params": [param for param in teacher_projection.parameters() if param.requires_grad],
+            "lr": training_config.get("learning_rate", 2e-4),
+            "weight_decay": training_config.get("weight_decay", 0.01),
+        })
+    if loss_config.get("learnable_temperature", False):
+        param_groups.append({
+            "params": [loss_fn.log_temperature],
+            "lr": loss_config.get("temperature_lr", 1e-3),
+            "weight_decay": 0.0,
+        })
+
+    optimizer = torch.optim.AdamW(
+        param_groups,
+        betas=(training_config.get("adam_beta1", 0.9), training_config.get("adam_beta2", 0.999)),
+        eps=training_config.get("adam_epsilon", 1e-8),
+    )
+
+    num_epochs = training_config.get("num_epochs", 12)
+    gradient_accumulation_steps = training_config.get("gradient_accumulation_steps", 1)
+    num_training_steps = len(train_loader) * num_epochs // gradient_accumulation_steps
+    warmup_steps = training_config.get("warmup_steps", 200)
+    adaptive_warmup = max(10, int(num_training_steps * 0.05))
+    effective_warmup = min(warmup_steps, adaptive_warmup) if num_training_steps < warmup_steps else warmup_steps
+
+    if training_config.get("lr_scheduler_type", "cosine") == "cosine":
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=effective_warmup,
+            num_training_steps=num_training_steps,
+        )
+    else:
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=effective_warmup,
+            num_training_steps=num_training_steps,
+        )
+
+    distillation_config["enabled"] = True
+    history = train(
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        loss_fn=loss_fn,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        device=device,
+        num_epochs=num_epochs,
+        output_dir=output_dir,
+        tokenizer=tokenizer,
+        save_steps=training_config.get("save_steps", 500),
+        eval_steps=training_config.get("eval_steps", 500),
+        logging_steps=training_config.get("logging_steps", 50),
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        max_grad_norm=training_config.get("max_grad_norm", 1.0),
+        debug=debug,
+        use_amp=use_bf16,
+        use_bf16=use_bf16,
+        use_ema=training_config.get("ema", {}).get("enabled", True),
+        early_stopping_patience=training_config.get("early_stopping", {}).get("patience", 5),
+        max_eval_batches=training_config.get("max_eval_batches", 100),
+        curriculum_config=training_config.get("curriculum", {}),
+        matryoshka_dims=training_config.get("matryoshka", {}).get("dims") if training_config.get("matryoshka", {}).get("enabled", False) else None,
+        base_hard_negative_weight=loss_config.get("hard_negative_weight", 1.5),
+        head_type="embedding_distill",
+        head_params={"student_checkpoint": str(student_checkpoint)},
+        query_doc_eval_samples=query_doc_eval_samples,
+        composite_weights=config.get("evaluation", {}).get("composite_weights"),
+        train_sampler=train_sampler,
+        mode_routing_config=stage_b_config.get("mode_routing") if use_stage_b_profile else None,
+        aux_objectives_config=stage_b_config.get("aux_objectives") if use_stage_b_profile else None,
+        retrieval_modes=stage_b_config.get("retrieval_modes") if use_stage_b_profile else None,
+        teacher_cache=teacher_cache,
+        distillation_config=distillation_config,
+        teacher_projection=teacher_projection,
+    )
+
+    with open(output_dir / "training_history.json", "w", encoding="utf-8") as handle:
+        json.dump(history, handle, indent=2)
+    with open(output_dir / "distillation_metadata.json", "w", encoding="utf-8") as handle:
+        json.dump({
+            "student_checkpoint": str(student_checkpoint),
+            "teacher_cache_dir": str(teacher_cache_dir),
+            "data_profile": data_profile,
+            "projection_enabled": teacher_projection is not None,
+        }, handle, indent=2)
+
+    logger.info(f"Distillation complete -> {output_dir}")
+    return history
+
+
 # =============================================================================
 # Main
 # =============================================================================
@@ -3814,6 +4741,10 @@ def run_stage_b(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Embedding Head Bake-Off Training")
     parser.add_argument("--config", type=str, required=True, help="Path to YAML config")
+    parser.add_argument("--build_teacher_cache", action="store_true",
+                        help="Milestone 2: build teacher embedding cache using configured teacher/data sources")
+    parser.add_argument("--distill_teacher_cache", action="store_true",
+                        help="Milestone 3: load runtime.student_checkpoint and distill using distillation.teacher_cache_dir")
     parser.add_argument("--head_type", type=str, default=None, help="Single head type to train (e.g. agreement_gated)")
     parser.add_argument("--run_all", action="store_true", help="Train all configured heads together with a shared encoder pass")
     parser.add_argument("--run_sequential", action="store_true", help="Legacy mode: run configured heads one by one")
@@ -3832,7 +4763,34 @@ def main() -> None:
     experiments_config = config.get("experiments", {})
     output_base = Path(config.get("output", {}).get("dir", "outputs/embedding-bakeoff"))
 
-    if args.stage_b:
+    if args.build_teacher_cache:
+        logger.info("")
+        logger.info("#" * 70)
+        logger.info("# RUN MODE: BUILD TEACHER CACHE (--build_teacher_cache)")
+        logger.info("# Existing source loader + Qwen teacher cache generation")
+        logger.info("#" * 70)
+        build_teacher_cache(
+            config=config,
+            max_samples=args.max_samples,
+        )
+
+    elif args.distill_teacher_cache:
+        logger.info("")
+        logger.info("#" * 70)
+        logger.info("# RUN MODE: DISTILL FROM TEACHER CACHE (--distill_teacher_cache)")
+        logger.info("# Existing student checkpoint + cached Qwen teacher supervision")
+        logger.info("#" * 70)
+        config.setdefault("distillation", {})["enabled"] = True
+        distill_output = output_base / "distill"
+        distill_output.mkdir(parents=True, exist_ok=True)
+        run_distillation(
+            config=config,
+            output_dir=distill_output,
+            debug=args.debug,
+            max_samples=args.max_samples,
+        )
+
+    elif args.stage_b:
         logger.info("")
         logger.info("#" * 70)
         logger.info("# RUN MODE: STAGE B - DOMAIN ADAPTATION")
