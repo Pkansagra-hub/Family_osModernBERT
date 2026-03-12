@@ -85,77 +85,6 @@ print(result.safety)    # "GREEN"
 
 ---
 
-## 🧠 v2 Multi-Task Encoder
-
-The production encoder powering FamilyOS classification, NER, embeddings, and safety detection.
-
-### Architecture
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ModernBERT-base v2 (Production)                                            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Base: answerdotai/ModernBERT-base                                          │
-│  Layers: 22 │ Hidden: 768 │ Heads: 12 │ Params: 149M                        │
-│  Context: 8192 tokens │ Flash Attention 2 │ RoPE Positional Encoding        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  12 Task-Specific Heads (~6M params total)                                  │
-│                                                                             │
-│  Sequence Classification:                                                   │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │Sentiment │ │ Emotions │ │ Safety   │ │  Intent  │ │  Ingress │           │
-│  │ (5-cls)  │ │(44 multi)│ │(4-band)  │ │  (8-cls) │ │  (6-cls) │           │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
-│                                                                             │
-│  Token Classification:                                                      │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐                                     │
-│  │   NER    │ │   NER    │ │ Temporal │                                     │
-│  │ General  │ │  Family  │ │  (7 BIO) │                                     │
-│  └──────────┘ └──────────┘ └──────────┘                                     │
-│                                                                             │
-│  Pair Classification:                                                       │
-│  ┌──────────┐ ┌──────────┐                                                  │
-│  │   NLI    │ │ Relation │     Dense Embeddings:                            │
-│  │  (3-cls) │ │ (15-cls) │     ┌──────────┐                                 │
-│  └──────────┘ └──────────┘     │ 768-dim  │                                 │
-│                                └──────────┘                                 │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Training Pipeline
-
-| Stage | Description | Data | Output |
-|-------|-------------|------|--------|
-| **Stage A** | Generic multi-task pretraining | CoNLL, SST-2, GoEmotions, MNLI, etc. | 7 heads trained |
-| **Stage B** | FamilyOS domain adaptation | FamilyOS unified shards + 15% replay | 12 heads trained |
-
-### Key Features
-
-- **Flash Attention 2** — 2x speedup on A100/H100
-- **EMA Checkpointing** — +0.8-1.5 pt consistent improvement
-- **Head-wise Learning Rates** — Encoder 2e-5, heads 1e-4
-- **Uncertainty Weighting** — Auto-balanced multi-task loss
-- **Safety Oversampling** — CRISIS 20x, RED 5x for recall ≥98%
-
-### Checkpoint Status
-
-| Checkpoint | Step | Status | Weighted Score |
-|------------|------|--------|----------------|
-| `checkpoint-18000` | 18,000 | ✅ Production | **90.58%** |
-
----
-
-batch_size: 128 (per GPU)
-gradient_accumulation_steps: 2
-effective_batch_size: 256
-learning_rate: 1e-4 (cosine decay)
-warmup_ratio: 0.1
-num_train_epochs: 5
-temperature: 1.0
-top_k: 50
-top_p: 0.9
-repetition_penalty: 1.2
-
 ## 🧠 v4 Multi-Task Encoder
 
 The production encoder powering FamilyOS classification, NER, embeddings, safety detection, and all core tasks.
@@ -213,6 +142,77 @@ The production encoder powering FamilyOS classification, NER, embeddings, safety
 | Checkpoint         | Step   | Status        | Weighted Score |
 |--------------------|--------|--------------|----------------|
 | `checkpoint-18000` | 18,000 | Production | **90.58%**     |
+
+### Retrieval Embedding Head: AgreementGatedHeadV2
+
+The old generic embedding path has been replaced by `AgreementGatedHeadV2`, the retrieval head used by the released `distil_stage_b_bestema` model.
+
+Design principle:
+
+> Keep masked mean pooling as the safe anchor, then allow bounded residual refinement only where auxiliary views agree.
+
+```text
+             AgreementGatedHeadV2
+
+hidden_states [B, L, 768]
+    |
+    +---------------------------+
+    |                           |
+    v                           v
+   mode prompt                 masked mean pool
+ (query/document)                  e_mean
+    |
+    v
+  normalized token states
+    |
+   +------+------+------+------+------+
+   |      |      |      |      |      |
+   v      v      v      v      v      v
+  CLS   latent  max    role  temporal safety
+ pool   cross   pool   view    view   salience
+ e_cls  attn    e_max  e_role  e_temp features
+    \      |      |      |      /
+     \-----+------+------+-----/
+        project to 768-d
+        |
+        v
+    concat([e_cls, e_lat, e_max, e_role, e_temp])
+        |
+         refine_mlp
+        |
+        v
+      e_refined = e_mean + delta
+        |
+         agreement features across 6 views
+    (cosines, norm ratios, salience stats, mode bit)
+        |
+        v
+       gate_mlp -> gate_expand -> sigmoid
+        |
+        v
+      e_out = e_mean + g * (e_refined - e_mean)
+        |
+        v
+     layer norm + L2 normalization
+        |
+        v
+       final embedding [B, 768]
+```
+
+What changed in the release embedding head:
+
+- adds lightweight query/document asymmetry via mode prompts
+- uses six views instead of a single pooled representation
+- computes a per-dimension vector gate instead of applying an unconstrained projection
+- keeps the original `get_embedding(...)` API intact while adding:
+  - `get_query_embedding(...)`
+  - `get_document_embedding(...)`
+
+### Retrieval Release Checkpoint
+
+| Checkpoint | Purpose | Head | Status |
+|------------|---------|------|--------|
+| `distil_stage_b_bestema` | Hosted retrieval release | `AgreementGatedHeadV2` | ✅ Released as `encoder/v2/fp32/` |
 
 ---
 
@@ -336,14 +336,20 @@ Cross-head consistency metrics measuring how well the 12 heads work together:
 
 **Performance:** 20.3ms/sample for all 12 heads in single forward pass.
 
-### Embedding Quality
+### Embedding Quality (AgreementGatedHeadV2 release)
 
-| Benchmark | Metric | Score |
-|-----------|--------|-------|
-| 10 distractors | Recall@1 | **84.5%** |
-| 100 distractors | Recall@1 | **75.0%** |
-| 100 distractors | Recall@10 | **100%** |
-| Triplet Accuracy | Binary | **70%** |
+These are the current retrieval-release numbers from `scripts/evaluation/evaluate_retrieval_checkpoints.py` on `checkpoints/distil_stage_b_bestema`.
+
+| Split | Queries | Recall@1 | Recall@5 | Recall@10 | nDCG@10 | MRR | Triplet Accuracy | Selection Score |
+|-------|---------|----------|----------|-----------|---------|-----|------------------|-----------------|
+| Dev | 300 | **0.8800** | **0.9933** | **1.0000** | **0.9492** | **0.9319** | **0.7975** | **0.9134** |
+| Holdout | 300 | **0.8833** | **0.9933** | **1.0000** | **0.9499** | **0.9329** | **0.8175** | **0.9170** |
+
+Release readout:
+
+- `Recall@5` is effectively saturated on both splits
+- holdout slightly exceeds dev on `Recall@1`, `MRR`, and selection score
+- the released embedding head is optimized for FamilyOS retrieval rather than generic STS-only quality
 
 ### Throughput
 
@@ -788,6 +794,171 @@ python scripts/train_stage_a.py \
 | **Robustness** | PASS | All edge/unicode/adversarial tests |
 
 **Overall Verdict:** **Production Ready** for FamilyOS deployment.
+
+---
+
+## 🧪 Embedding Head Training Recipe
+
+The embedding release was built with the bake-off and Stage B specialization flow implemented in:
+
+- `scripts/training/train_embedding_heads_bakeoff.py`
+- `configs/training/embedding_heads_bakeoff.yaml`
+
+### What the trainer actually does
+
+The bake-off trainer loads the shared multi-task checkpoint, freezes the encoder and all non-embedding heads, replaces only the embedding head, and trains multiple candidate retrieval heads under matched conditions.
+
+Core setup:
+
+- source checkpoint: `outputs/globalpointer-unified-v1/checkpoint-8000`
+- encoder: frozen
+- non-embedding heads: frozen
+- trainable module: embedding head only
+- hidden size: `768`
+- tokenizer max length: `128`
+
+### Candidate heads in the bake-off
+
+- `mean_baseline`
+- `residual_mlp_mean`
+- `latent_residual`
+- `agreement_gated`
+- `multi_pool_low_rank`
+- `anisotropy_corrected`
+- `agreement_gated_v2`
+
+### Shared optimization recipe
+
+From `configs/training/embedding_heads_bakeoff.yaml`:
+
+- learning rate: `2.0e-4`
+- encoder learning rate: `0.0`
+- weight decay: `0.01`
+- Adam betas: `0.9`, `0.999`
+- Adam epsilon: `1.0e-8`
+- max grad norm: `1.0`
+- scheduler: cosine
+- warmup steps: `200`
+- num epochs: `12`
+- batch size: `2048`
+- gradient accumulation: `1`
+- BF16: enabled
+- TF32: enabled
+- Flash Attention 2: enabled when available
+- EMA: enabled
+- early stopping patience: `5`
+- curriculum warmup: `2` epochs
+- matryoshka dimensions: `[768, 512, 256, 128]`
+
+### Loss recipe
+
+- loss family: InfoNCE / contrastive retrieval loss
+- base temperature: `0.07`
+- learnable temperature: enabled
+- temperature LR: `1.0e-3`
+- hard negative weight: `1.5`
+- in-batch negatives: enabled
+
+### Training data slices
+
+Configured slices:
+
+- `silver_synthetic`
+- `hard_negatives`
+- `wrong_person`
+- `wrong_time`
+- `safety_emotion`
+- `query_doc`
+
+The trainer uses per-slice holdout and balanced slice-aware sampling.
+
+Global data settings:
+
+- eval split per slice: `0.15`
+- sampler strategy: `balanced`
+
+### Stage A core bake-off profile
+
+Stage A uses:
+
+- `silver_synthetic`
+- `hard_negatives`
+
+Stage A slice weights:
+
+- `silver_synthetic: 1.0`
+- `hard_negatives: 2.0`
+
+### Stage B specialization profile used for the release head
+
+Stage B config is explicitly retrieval-focused:
+
+- data profile: `stage_b_v2`
+- target head: `agreement_gated_v2`
+- reuse checkpoint head as-is: `true`
+- learning rate: `7.5e-5`
+- num epochs: `10`
+- warmup steps: `40`
+- early stopping patience: `4`
+
+Stage B slices:
+
+- `hard_negatives`
+- `wrong_person`
+- `wrong_time`
+- `safety_emotion`
+- `query_doc`
+
+Stage B slice weights:
+
+- `hard_negatives: 1.5`
+- `wrong_person: 3.5`
+- `wrong_time: 5.0`
+- `safety_emotion: 5.0`
+- `query_doc: 8.0`
+
+Stage B routing and auxiliary recipe:
+
+- anchor mode defaults to `document`
+- positives default to `document`
+- negatives default to `document`
+- `query_doc` anchors route through `query` mode
+- role entropy weight: `0.02`
+- temporal entropy weight: `0.02`
+- safety entropy weight: `0.02`
+
+Teacher and distillation scaffolding are present in the trainer for future runs, but the base config keeps them disabled by default:
+
+- `teacher.enabled: false`
+- `distillation.enabled: false`
+
+### Commands
+
+Run a single head:
+
+```bash
+python scripts/training/train_embedding_heads_bakeoff.py \
+  --config configs/training/embedding_heads_bakeoff.yaml \
+  --head_type agreement_gated_v2
+```
+
+Run the full bake-off:
+
+```bash
+python scripts/training/train_embedding_heads_bakeoff.py \
+  --config configs/training/embedding_heads_bakeoff.yaml \
+  --run_all
+```
+
+Run a debug slice:
+
+```bash
+python scripts/training/train_embedding_heads_bakeoff.py \
+  --config configs/training/embedding_heads_bakeoff.yaml \
+  --head_type mean_baseline \
+  --debug \
+  --max_samples 500
+```
 
 ---
 
