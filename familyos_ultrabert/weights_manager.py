@@ -15,7 +15,7 @@ Usage:
     from familyos_ultrabert.weights_manager import download_encoder
 
     # Download encoder (first time downloads, subsequent calls use cache)
-    encoder_path = download_encoder(version="v1", quantization="int8")
+    encoder_path = download_encoder(version="v2", quantization="fp32")
 
     # Clear cache
     clear_cache()
@@ -225,7 +225,7 @@ def list_cached_versions() -> dict[str, list[str]]:
 
     Returns:
         Dictionary with "encoder" key containing
-        a list of cached variants like "v1/int8".
+        a list of cached variants like "v2/fp32".
     """
     cache = get_cache_dir()
     result = {"encoder": []}
@@ -250,7 +250,7 @@ def is_cached(
 
     Args:
         component: "encoder"
-        version: Version string (e.g., "v1", "v2-checkpoint-18000")
+        version: Version string (e.g., "v2")
         quantization: Quantization variant
 
     Returns:

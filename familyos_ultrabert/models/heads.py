@@ -30,7 +30,7 @@ Epic 5.0 Enhancements:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import torch
 import torch.nn as nn
@@ -791,6 +791,335 @@ class EmbeddingHead(nn.Module):
         """Unfreeze all parameters."""
         for param in self.parameters():
             param.requires_grad = True
+
+
+class AgreementGatedHeadV2(nn.Module):
+    """Agreement-gated residual refinement V2 for retrieval embeddings.
+
+    The masked mean-pooled encoder representation is treated as the safe base
+    embedding. Auxiliary views contribute only through a bounded, per-dimension
+    gate computed from agreement features across multiple views.
+
+    Args:
+        hidden_size: Encoder hidden dimension.
+        output_dim: Output embedding dimension. None keeps hidden_size.
+        normalize: Whether to L2-normalize the final embedding.
+        num_latents: Number of learnable latent query tokens.
+        num_attn_heads: Number of attention heads used for latent attention.
+        gate_hidden: Hidden dimension used inside gate and refinement MLPs.
+        gate_rank: Low-rank bottleneck width before gate expansion.
+        use_mode_prompts: Enable additive query/document prompts.
+        use_confidence_head: Enable auxiliary confidence diagnostics.
+        dropout: Dropout probability.
+        eps: Numerical stability constant.
+    """
+
+    NUM_VIEWS = 6
+    NUM_GATE_FEATURES = 37
+
+    def __init__(
+        self,
+        hidden_size: int,
+        output_dim: int | None = None,
+        normalize: bool = True,
+        num_latents: int = 4,
+        num_attn_heads: int = 4,
+        gate_hidden: int = 128,
+        gate_rank: int = 4,
+        use_mode_prompts: bool = True,
+        use_confidence_head: bool = True,
+        dropout: float = 0.1,
+        eps: float = 1e-8,
+    ):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.output_dim = output_dim or hidden_size
+        self.normalize = normalize
+        self.pooling = "agreement_gated_v2"
+        self.num_latents = num_latents
+        self.num_attn_heads = num_attn_heads
+        self.gate_hidden = gate_hidden
+        self.gate_rank = gate_rank
+        self.use_mode_prompts = use_mode_prompts
+        self.use_confidence_head = use_confidence_head
+        self.dropout_rate = dropout
+        self.eps = eps
+
+        output_size = self.output_dim
+
+        self.input_norm = nn.LayerNorm(hidden_size)
+        self.base_proj = nn.Linear(hidden_size, output_size) if output_size != hidden_size else None
+        self.fusion_norm = nn.LayerNorm(output_size)
+
+        self.latent_queries = nn.Parameter(torch.randn(1, num_latents, hidden_size) * 0.02)
+        self.cross_attn = nn.MultiheadAttention(
+            embed_dim=hidden_size,
+            num_heads=num_attn_heads,
+            dropout=dropout,
+            batch_first=True,
+        )
+        self.attn_norm = nn.LayerNorm(hidden_size)
+
+        if use_mode_prompts:
+            self.query_prompt = nn.Parameter(torch.zeros(1, 1, hidden_size))
+            self.document_prompt = nn.Parameter(torch.zeros(1, 1, hidden_size))
+
+        self.role_scorer = nn.Sequential(
+            nn.Linear(hidden_size, gate_hidden),
+            nn.GELU(),
+            nn.Linear(gate_hidden, 1),
+        )
+        self.temporal_scorer = nn.Sequential(
+            nn.Linear(hidden_size, gate_hidden),
+            nn.GELU(),
+            nn.Linear(gate_hidden, 1),
+        )
+        self.safety_scorer = nn.Sequential(
+            nn.Linear(hidden_size, gate_hidden),
+            nn.GELU(),
+            nn.Linear(gate_hidden, 1),
+        )
+
+        self.cls_proj = nn.Linear(hidden_size, output_size, bias=False)
+        self.latent_proj = nn.Linear(hidden_size, output_size, bias=False)
+        self.max_proj = nn.Linear(hidden_size, output_size, bias=False)
+        self.role_proj = nn.Linear(hidden_size, output_size, bias=False)
+        self.temporal_proj = nn.Linear(hidden_size, output_size, bias=False)
+
+        self.refine_mlp = nn.Sequential(
+            nn.Linear(5 * output_size, gate_hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(gate_hidden, output_size),
+        )
+
+        self.gate_mlp = nn.Sequential(
+            nn.Linear(self.NUM_GATE_FEATURES, gate_hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(gate_hidden, gate_rank),
+        )
+        self.gate_expand = nn.Linear(gate_rank, output_size)
+
+        if use_confidence_head:
+            self.confidence_head = nn.Sequential(
+                nn.Linear(self.NUM_GATE_FEATURES + output_size, gate_hidden),
+                nn.GELU(),
+                nn.Linear(gate_hidden, 3),
+            )
+        else:
+            self.confidence_head = None
+
+        self._init_weights()
+
+    def _init_weights(self) -> None:
+        """Bias the head toward mean-pool behavior at initialization."""
+        nn.init.constant_(self.gate_mlp[-1].bias, -2.0)
+        nn.init.normal_(self.gate_expand.weight, std=0.01)
+        nn.init.constant_(self.gate_expand.bias, -2.0)
+        nn.init.normal_(self.refine_mlp[-1].weight, std=0.01)
+        nn.init.zeros_(self.refine_mlp[-1].bias)
+
+    def _masked_mean_pool(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if attention_mask is None:
+            return hidden_states.mean(dim=1)
+        mask = attention_mask.unsqueeze(-1).float()
+        return (hidden_states * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=self.eps)
+
+    def _masked_max_pool(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if attention_mask is not None:
+            mask = attention_mask.unsqueeze(-1).expand_as(hidden_states)
+            hidden_states = hidden_states.masked_fill(mask == 0, -1e9)
+        return hidden_states.max(dim=1)[0]
+
+    def _cls_pool(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        return hidden_states[:, 0, :]
+
+    def _salience_pool(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+        scorer: nn.Module,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        logits = scorer(hidden_states).squeeze(-1)
+        if attention_mask is not None:
+            logits = logits.masked_fill(attention_mask == 0, -1e9)
+        weights = torch.softmax(logits, dim=-1)
+        pooled = torch.bmm(weights.unsqueeze(1), hidden_states).squeeze(1)
+        return pooled, weights
+
+    def _compute_agreement_features(
+        self,
+        views: list[torch.Tensor],
+        salience_weights: list[torch.Tensor],
+        mode_flag: float,
+    ) -> torch.Tensor:
+        batch_size = views[0].size(0)
+        device = views[0].device
+
+        cosines = []
+        norm_ratios = []
+        for i in range(self.NUM_VIEWS):
+            for j in range(i + 1, self.NUM_VIEWS):
+                cosines.append(F.cosine_similarity(views[i], views[j], dim=-1, eps=self.eps))
+                ni = views[i].norm(dim=-1).clamp(min=self.eps)
+                nj = views[j].norm(dim=-1).clamp(min=self.eps)
+                norm_ratios.append(ni / nj)
+
+        entropies = []
+        concentrations = []
+        for weights in salience_weights:
+            weights_clamped = weights.clamp(min=self.eps)
+            entropies.append(-(weights_clamped * weights_clamped.log()).sum(dim=-1))
+            concentrations.append(weights.topk(min(3, weights.size(-1)), dim=-1).values.sum(dim=-1))
+
+        mode_tensor = torch.full(
+            (batch_size,),
+            mode_flag,
+            device=device,
+            dtype=views[0].dtype,
+        )
+        return torch.stack(
+            cosines + norm_ratios + entropies + concentrations + [mode_tensor],
+            dim=-1,
+        )
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        mode: str = "document",
+        return_aux: bool = False,
+    ) -> torch.Tensor | dict[str, Any]:
+        batch_size = hidden_states.size(0)
+        hidden = self.input_norm(hidden_states)
+
+        if self.use_mode_prompts:
+            prompt = self.query_prompt if mode == "query" else self.document_prompt
+            hidden = hidden + prompt
+
+        mean_raw = self._masked_mean_pool(hidden, attention_mask)
+        cls_raw = self._cls_pool(hidden)
+        max_raw = self._masked_max_pool(hidden, attention_mask)
+
+        queries = self.latent_queries.expand(batch_size, -1, -1)
+        key_padding_mask = (attention_mask == 0) if attention_mask is not None else None
+        attn_out, _ = self.cross_attn(
+            query=queries,
+            key=hidden,
+            value=hidden,
+            key_padding_mask=key_padding_mask,
+        )
+        attn_out = self.attn_norm(attn_out + queries)
+        latent_raw = attn_out.mean(dim=1)
+
+        role_raw, role_weights = self._salience_pool(hidden, attention_mask, self.role_scorer)
+        temporal_raw, temporal_weights = self._salience_pool(
+            hidden,
+            attention_mask,
+            self.temporal_scorer,
+        )
+        _, safety_weights = self._salience_pool(hidden, attention_mask, self.safety_scorer)
+
+        mean_view = self.base_proj(mean_raw) if self.base_proj is not None else mean_raw
+        cls_view = self.cls_proj(cls_raw)
+        latent_view = self.latent_proj(latent_raw)
+        max_view = self.max_proj(max_raw)
+        role_view = self.role_proj(role_raw)
+        temporal_view = self.temporal_proj(temporal_raw)
+
+        aux_features = torch.cat(
+            [cls_view, latent_view, max_view, role_view, temporal_view],
+            dim=-1,
+        )
+        refined_view = mean_view + self.refine_mlp(aux_features)
+
+        views = [mean_view, cls_view, latent_view, max_view, role_view, temporal_view]
+        gate_features = self._compute_agreement_features(
+            views,
+            [role_weights, temporal_weights, safety_weights],
+            1.0 if mode == "query" else 0.0,
+        )
+
+        gate_hidden = self.gate_mlp(gate_features)
+        gate = torch.sigmoid(self.gate_expand(gate_hidden))
+
+        embedding = mean_view + gate * (refined_view - mean_view)
+        embedding = self.fusion_norm(embedding)
+
+        if self.normalize:
+            embedding = F.normalize(embedding, p=2, dim=-1)
+
+        if not return_aux:
+            return embedding
+
+        output: dict[str, Any] = {
+            "embedding": embedding,
+            "gate": gate,
+            "gate_features": gate_features,
+            "views": {
+                "mean": mean_view,
+                "cls": cls_view,
+                "latent": latent_view,
+                "max": max_view,
+                "role": role_view,
+                "temporal": temporal_view,
+            },
+            "salience": {
+                "role_weights": role_weights,
+                "temporal_weights": temporal_weights,
+                "safety_weights": safety_weights,
+            },
+        }
+        if self.confidence_head is not None:
+            confidence_input = torch.cat([gate_features, embedding.detach()], dim=-1)
+            output["confidence"] = self.confidence_head(confidence_input)
+        return output
+
+    def freeze(self) -> None:
+        """Freeze all parameters."""
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def unfreeze(self) -> None:
+        """Unfreeze all parameters."""
+        for param in self.parameters():
+            param.requires_grad = True
+
+
+def get_embedding_head_constructor_params(head: nn.Module) -> dict[str, Any]:
+    """Extract serializable constructor parameters for embedding heads."""
+    params: dict[str, Any] = {
+        "hidden_size": getattr(head, "hidden_size", None),
+        "output_dim": getattr(head, "output_dim", None),
+        "normalize": getattr(head, "normalize", True),
+    }
+
+    pooling = getattr(head, "pooling", None)
+    if pooling is not None:
+        params["head_type"] = pooling
+
+    if isinstance(head, EmbeddingHead):
+        params["pooling"] = head.pooling
+
+    if isinstance(head, AgreementGatedHeadV2):
+        params["num_latents"] = head.num_latents
+        params["num_attn_heads"] = head.num_attn_heads
+        params["gate_hidden"] = head.gate_hidden
+        params["gate_rank"] = head.gate_rank
+        params["use_mode_prompts"] = head.use_mode_prompts
+        params["use_confidence_head"] = head.use_confidence_head
+        params["dropout"] = head.dropout_rate
+
+    return params
 
 
 # =============================================================================
@@ -4467,6 +4796,8 @@ __all__ = [
     "GlobalPointerNERHead",  # NEW - v2 SOTA span-based NER
     "create_globalpointer_head",  # Factory function
     "EmbeddingHead",
+    "AgreementGatedHeadV2",
+    "get_embedding_head_constructor_params",
     "NLIHead",
     "SafetyHead",
     "EnhancedSafetyHead",  # NEW - v2

@@ -1395,3 +1395,204 @@ The right way to define the FamilyOS retrieval plan is:
 - **Benchmarking**: create a FamilyOS golden retrieval benchmark with curated hard slices and strict holdout discipline
 
 That is the shortest credible path from a good bake-off result to a production-grade, world-class FamilyOS retrieval system.
+
+## Release readout
+
+You’re in a good spot to turn `distil_stage_b_bestema` into the new UltraBERT embedding release.
+
+The short version:
+
+- `distil_stage_b_bestema` looks like the right **retrieval release candidate**
+- the package already defaults to `encoder_version="v2"` in model.py
+- weights_manager.py already expects embedding_metadata.json for `v2/fp32`
+- the main remaining release risk is that `AgreementGatedHeadV2` is still **not package-native**
+- right now the package loader works in a **hybrid** way by importing the head from modeling_studio, which is fine for local validation but not ideal for a clean published package
+
+So the release path is real; it just needs one proper packaging pass rather than more model research.
+
+## What needs to change
+
+### 1. Make `AgreementGatedHeadV2` native to familyos_ultrabert
+
+This is the most important item.
+
+Right now:
+
+- canonical implementation lives in heads_embedding.py
+- modernbert_multitask.py tries to import it from src
+
+For release, I would **not** ship that dependency bridge. Instead:
+
+- add `AgreementGatedHeadV2` to models
+- either:
+  - extend heads.py, or
+  - better: create a dedicated package file like `familyos_ultrabert/models/heads_embedding.py`
+
+I’d lean toward the second option because the V2 head is substantial and deserves its own file.
+
+Also bring over the small supporting helpers the runtime needs, especially the equivalent of:
+
+- registry/factory behavior for embedding heads
+- constructor-param serialization helper like `get_head_constructor_params(...)`
+
+That keeps save/load deterministic instead of “best effort and vibes.”
+
+### 2. Remove the temporary src import dependency
+
+After the package-native head exists, clean up modernbert_multitask.py so it no longer depends on:
+
+- `sys.path` injection for src
+- importing `AgreementGatedHeadV2` from `modeling_studio`
+
+The loader should instantiate the head entirely from package code plus checkpoint metadata.
+
+That gives you:
+
+- reproducible wheel installs
+- fewer environment-specific failures
+- no accidental success locally that later breaks in a clean install
+
+### 3. Keep embedding_metadata.json as a required release artifact
+
+This is already effectively true, and it should stay that way.
+
+For this release, the encoder snapshot in `encoder/v2/fp32/` should include at least:
+
+- `model.safetensors`
+- `config.json`
+- capabilities.json
+- `tokenizer.json`
+- `tokenizer_config.json`
+- embedding_metadata.json
+
+That last file is the key to reconstructing `AgreementGatedHeadV2` correctly.
+
+### 4. Treat this as the new `v2` encoder weights, not a new folder shape
+
+Based on what I inspected:
+
+- package loader default is already `encoder_version="v2"`
+- weights manager examples/documentation have some stale `v1` text, but runtime shape already supports `v2`
+- prepare_release.py also references runtime weights from `encoder/v2/fp32/`
+
+So unless you specifically want a brand-new public weight namespace, I would keep the release under the same expected path:
+
+- `encoder/v2/fp32/`
+
+That matches your stated goal of uploading to the same `v2` folder and avoids unnecessary client/API churn.
+
+## Recommended release sequence
+
+### Phase A: package integration
+
+1. Port `AgreementGatedHeadV2` into models
+2. Update modernbert_multitask.py
+   - import package-native head
+   - reconstruct from embedding_metadata.json
+   - remove src fallback path
+3. Verify `save_pretrained(...)` / `load_checkpoint(...)` still round-trip metadata cleanly
+4. Add/adjust package tests around local checkpoint loading
+
+Success condition:
+- familyos_ultrabert can load distil_stage_b_bestema in a clean environment without access to modeling_studio
+
+### Phase B: release-weight validation
+
+Using distil_stage_b_bestema, confirm the release payload is complete and stable:
+
+- PyTorch load works through package API
+- embedding output shape is correct
+- embedding_metadata.json is preserved and read
+- benchmark smoke suite passes except for already-known backend/runtime issues
+- retrieval evaluator still matches the strong results you saw
+
+I’d specifically re-run:
+
+- package smoke benchmark
+- retrieval evaluator on dev
+- one simple client-side embedding call through `familyos_ultrabert.Client` or `UltraBERT.load(...)`
+
+### Phase C: Hugging Face upload
+
+Use upload_weights_to_hf.py, but I would first align any stale defaults/examples so they clearly target:
+
+- repo: `Pkansagra/ultrabert-weights`
+- destination: `encoder/v2/fp32/`
+
+Before upload, confirm the script does not accidentally assume older layout conventions in a way that could misplace files.
+
+Success condition:
+- a fresh machine can download `encoder/v2/fp32/` via `download_encoder(version="v2", quantization="fp32")`
+- cache completeness check passes
+- package loads without local files
+
+### Phase D: package release
+
+Then run prepare_release.py for the package release itself.
+
+That script already gives you most of what you want:
+
+- version bump
+- build wheel/sdist
+- verify no weights are bundled
+- optional test install
+- checksums
+- release summary
+- release bundle
+
+I would use it after the HF weights are already published, so the test-install step exercises the real hosted artifacts rather than stale local state.
+
+## What I would update before cutting the release
+
+A few low-drama cleanup items will make the release much cleaner:
+
+- update stale `v1` examples/comments in weights_manager.py
+- update any upload utility help text/examples that still imply older encoder layout
+- add a short architecture note to package docs/release notes explaining that:
+  - the embedding head is now `AgreementGatedHeadV2`
+  - loading depends on embedding_metadata.json
+  - retrieval quality is the primary reason for this release
+
+## Biggest release risk
+
+The biggest risk is **not** the checkpoint.
+
+It’s this:
+
+- local development currently succeeds because familyos_ultrabert can reach into modeling_studio
+
+If that remains in place, you can end up with the classic “works on my machine” release bug. Tiny gremlin, enormous annoyance.
+
+So if I were prioritizing ruthlessly:
+
+1. package-native V2 head
+2. clean loader
+3. HF upload validation
+4. package build/test-install
+5. tag release
+
+## My recommendation
+
+I would release:
+
+- checkpoint: distil_stage_b_bestema
+- architecture: `AgreementGatedHeadV2`
+- hosted weights path: `encoder/v2/fp32/`
+- package: familyos_ultrabert with native V2 head support
+
+And I would **not** release until the package can load that checkpoint without importing anything from modeling_studio.
+
+## Checklist status
+
+- [x] Inspect release entrypoints
+- [x] Verify weight path assumptions
+- [x] Map V2 head integration gaps
+- [x] Draft release plan
+
+## Best next move
+
+The highest-value next step is to implement the package-native head integration in models and remove the temporary src import path.
+
+I can do that next and wire it through the loader, then run a clean validation pass against `distil_stage_b_bestema`.
+
+Completed the release-planning analysis for promoting `distil_stage_b_bestema` with `AgreementGatedHeadV2`, identified the package-native integration gap, confirmed the `v2` weight-path assumptions, and outlined the recommended end-to-end release sequence and validation criteria.I finished the release assessment: verified the `v2` weight-path assumptions, identified the package-native `AgreementGatedHeadV2` integration as the key blocker for a clean release, and provided the concrete release sequence and validation criteria to ship `distil_stage_b_bestema` safely.

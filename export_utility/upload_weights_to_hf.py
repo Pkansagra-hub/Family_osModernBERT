@@ -2,16 +2,19 @@
 """
 Upload UltraBERT weights to HuggingFace private repository.
 
-v3 Structure:
+Current structure:
     Pkansagra/ultrabert-weights/
     ├── README.md
     ├── encoder/
-    │   └── v1/
+    │   └── v2/
     │       ├── fp32/
     │       │   ├── model.safetensors
-    │       │   └── config.json
+    │       │   ├── config.json
+    │       │   ├── capabilities.json
+    │       │   ├── tokenizer files
+    │       │   └── embedding_metadata.json
     │       └── int8/
-    │           └── *.onnx (quantized heads)
+    │           └── *.onnx
     └── decoder/
         └── v3/
             ├── fp32/
@@ -21,25 +24,15 @@ v3 Structure:
                 └── decoder_core.onnx
 
 Usage:
-    # First time setup - login to HuggingFace
     huggingface-cli login
-
-    # Upload encoder weights (all quantizations)
-    python export_utility/upload_weights_to_hf.py --component encoder --version v1
-
-    # Upload decoder weights
+    python export_utility/upload_weights_to_hf.py --component encoder --version v2
     python export_utility/upload_weights_to_hf.py --component decoder --version v3
-
-    # Upload all components
     python export_utility/upload_weights_to_hf.py --component all
-
-    # Check repo status
     python export_utility/upload_weights_to_hf.py --component status
 """
 
 import argparse
 import logging
-import shutil
 from pathlib import Path
 from typing import Optional, List
 
@@ -61,6 +54,21 @@ DEFAULT_PATHS = {
     "decoder_pytorch": PROJECT_ROOT / "outputs" / "ultrabert-gen-decoder-v3",
     "decoder_onnx": PROJECT_ROOT / "exports" / "onnx" / "decoder",
 }
+
+ENCODER_REQUIRED_RUNTIME_FILES = [
+    "model.safetensors",
+    "config.json",
+    "capabilities.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "special_tokens_map.json",
+]
+
+ENCODER_OPTIONAL_RUNTIME_FILES = [
+    "embedding_metadata.json",
+    "globalpointer_metadata.json",
+    "pruning_metadata.json",
+]
 
 
 def check_huggingface_login() -> bool:
@@ -105,7 +113,7 @@ def create_repo_if_not_exists() -> bool:
 
 
 def upload_encoder(
-    version: str = "v1",
+    version: str = "v2",
     pytorch_path: Optional[Path] = None,
     onnx_path: Optional[Path] = None,
 ) -> bool:
@@ -125,20 +133,28 @@ def upload_encoder(
 
     # Upload PyTorch weights (fp32)
     if pytorch_path.exists():
-        required_files = ["model.safetensors", "config.json"]
+        required_files = list(ENCODER_REQUIRED_RUNTIME_FILES)
+        if version == "v2":
+            required_files.append("embedding_metadata.json")
         missing = [f for f in required_files if not (pytorch_path / f).exists()]
         if missing:
             logger.error(f"Missing required files in {pytorch_path}: {missing}")
             success = False
         else:
             logger.info(f"Uploading encoder fp32 from: {pytorch_path}")
-            api.upload_folder(
-                folder_path=str(pytorch_path),
-                repo_id=HF_REPO_ID,
-                repo_type=HF_REPO_TYPE,
-                path_in_repo=f"encoder/{version}/fp32",
-                commit_message=f"Upload encoder {version} fp32 weights",
-            )
+            runtime_files = required_files + [
+                file_name
+                for file_name in ENCODER_OPTIONAL_RUNTIME_FILES
+                if (pytorch_path / file_name).exists() and file_name not in required_files
+            ]
+            for file_name in runtime_files:
+                api.upload_file(
+                    path_or_fileobj=str(pytorch_path / file_name),
+                    path_in_repo=f"encoder/{version}/fp32/{file_name}",
+                    repo_id=HF_REPO_ID,
+                    repo_type=HF_REPO_TYPE,
+                    commit_message=f"Upload encoder {version} fp32 weights",
+                )
             logger.info(f"Encoder fp32 uploaded to encoder/{version}/fp32/")
     else:
         logger.warning(f"PyTorch encoder path not found: {pytorch_path}")
@@ -250,7 +266,7 @@ private: true
 
 # FamilyOS UltraBERT v3 Weights
 
-Private model weights for FamilyOS UltraBERT v3.0.0.
+Private model weights for FamilyOS UltraBERT v4.x.
 
 ## Repository Structure
 
@@ -258,13 +274,15 @@ Private model weights for FamilyOS UltraBERT v3.0.0.
 ultrabert-weights/
 ├── encoder/
 │   └── v1/
+│   └── v2/
 │       ├── fp32/
-│       │   ├── model.safetensors (592 MB)
+│       │   ├── model.safetensors
 │       │   ├── config.json
 │       │   ├── capabilities.json
-│       │   └── tokenizer files
+│       │   ├── tokenizer files
+│       │   └── embedding_metadata.json
 │       └── int8/
-│           └── *_quantized_dynamic.onnx (175 MB total)
+│           └── *.onnx
 └── decoder/
     └── v3/
         ├── fp32/
@@ -286,25 +304,23 @@ result = client.analyze("Mom picked up the kids from school!")
 print(result.sentiment)  # "very_positive"
 print(result.safety)     # "GREEN"
 
-# Counterfactual generation (decoder loaded on demand)
-with client.create_decoder_session() as decoder:
-    output = client.encode("I felt overwhelmed today")
-    suggestion = decoder.generate(output)
-    print(suggestion)
+query_embedding = client.get_query_embedding("When did Mom pick up Panda from school?")
+document_embedding = client.get_document_embedding(
+    "Mom picked up Panda from school after math club."
+)
+print(len(query_embedding), len(document_embedding))
 ```
 
 ## Memory Footprint
 
 | Configuration | Memory |
 |---------------|--------|
-| Encoder only (INT8) | ~175 MB |
-| Encoder + Decoder (INT8) | ~525 MB |
-| Encoder only (FP32) | ~620 MB |
-| Encoder + Decoder (FP32) | ~2020 MB |
+| Encoder only (FP32) | Check repo artifact size |
+| Encoder + Decoder (FP32) | Check combined artifact size |
 
 ## Version History
 
-- **v3.0.0** - Edge-ready with lazy decoder loading, INT8 quantization
+- **v4.x** - AgreementGatedHeadV2 encoder release under `encoder/v2/fp32/`
 - **v2.x** - 12 capabilities, bundled weights
 - **v1.x** - Initial release
 
@@ -365,7 +381,7 @@ def print_repo_status():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Upload UltraBERT v3 weights to HuggingFace private repo"
+        description="Upload UltraBERT weights to HuggingFace private repo"
     )
     parser.add_argument(
         "--component",
@@ -377,7 +393,7 @@ def main():
         "--version",
         type=str,
         default=None,
-        help="Version string (e.g., v1 for encoder, v3 for decoder)"
+        help="Version string (e.g., v2 for encoder, v3 for decoder)"
     )
     parser.add_argument(
         "--pytorch-path",
@@ -416,7 +432,7 @@ def main():
     success = True
 
     if args.component in ["encoder", "all"]:
-        version = args.version or "v1"
+        version = args.version or "v2"
         success = upload_encoder(
             version=version,
             pytorch_path=args.pytorch_path,

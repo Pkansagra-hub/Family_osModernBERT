@@ -70,9 +70,11 @@ logger = logging.getLogger(__name__)
 
 # Import heads
 from familyos_ultrabert.models.heads import (  # noqa: E402
+    AgreementGatedHeadV2,
     EmbeddingHead,
     EnhancedSafetyHead,
     GlobalPointerNERHead,
+    get_embedding_head_constructor_params,
     HierarchicalEmotionHead,
     IntentHead,
     IntentHeadV2,  # V2 Label-Description Embedding
@@ -159,6 +161,10 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.EMBEDDING: EmbeddingHead,
 }
 
+SUPPORTED_EMBEDDING_HEAD_TYPES = {
+    "agreement_gated_v2": AgreementGatedHeadV2,
+}
+
 
 def get_problem_type(capability: Capability) -> str:
     """Get the problem type for a capability (for loss computation)."""
@@ -177,9 +183,17 @@ def _extract_embedding_config(
         "pooling": "mean",
         "normalize": True,
         "output_dim": None,
+        "head_type": None,
+        "head_constructor_params": {},
     }
 
     if embedding_metadata is not None:
+        bakeoff_info = embedding_metadata.get("bakeoff", {})
+        if isinstance(bakeoff_info, dict):
+            config["head_type"] = bakeoff_info.get("head_type")
+            constructor_params = bakeoff_info.get("head_constructor_params", {})
+            if isinstance(constructor_params, dict):
+                config["head_constructor_params"] = constructor_params
         head_info = embedding_metadata.get("head_info", {}).get("embedding", {})
         if isinstance(head_info, dict):
             config["pooling"] = head_info.get("pooling", config["pooling"])
@@ -421,12 +435,24 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 output_dim = self._embedding_config.get("output_dim")
                 if output_dim is not None:
                     output_dim = int(output_dim)
-                head = head_cls(
-                    hidden_size=hidden_size,
-                    output_dim=output_dim,
-                    pooling=str(self._embedding_config.get("pooling", "mean")),
-                    normalize=bool(self._embedding_config.get("normalize", True)),
-                )
+                head_type = self._embedding_config.get("head_type")
+                if head_type in SUPPORTED_EMBEDDING_HEAD_TYPES:
+                    constructor_params = dict(self._embedding_config.get("head_constructor_params", {}))
+                    constructor_params.pop("head_type", None)
+                    constructor_params.setdefault("hidden_size", hidden_size)
+                    constructor_params.setdefault("output_dim", output_dim or hidden_size)
+                    constructor_params.setdefault(
+                        "normalize",
+                        bool(self._embedding_config.get("normalize", True)),
+                    )
+                    head = SUPPORTED_EMBEDDING_HEAD_TYPES[str(head_type)](**constructor_params)
+                else:
+                    head = head_cls(
+                        hidden_size=hidden_size,
+                        output_dim=output_dim,
+                        pooling=str(self._embedding_config.get("pooling", "mean")),
+                        normalize=bool(self._embedding_config.get("normalize", True)),
+                    )
             elif capability in (Capability.NER_GENERAL, Capability.NER_FAMILY, Capability.TEMPORAL):
                 # GlobalPointer heads for span-based NER (v4)
                 # Use config from checkpoint metadata if available
@@ -1118,7 +1144,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 if Capability.EMBEDDING.value in self.heads
                 else None
             )
-            if isinstance(embedding_head, EmbeddingHead):
+            if isinstance(embedding_head, (EmbeddingHead, AgreementGatedHeadV2)):
+                constructor_params = get_embedding_head_constructor_params(embedding_head)
                 embedding_metadata = {
                     "head_info": {
                         Capability.EMBEDDING.value: {
@@ -1128,6 +1155,10 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                             "hidden_size": embedding_head.hidden_size,
                             "normalize": embedding_head.normalize,
                         }
+                    },
+                    "bakeoff": {
+                        "head_type": constructor_params.get("head_type", embedding_head.pooling),
+                        "head_constructor_params": constructor_params,
                     },
                     "trained_head": Capability.EMBEDDING.value,
                 }

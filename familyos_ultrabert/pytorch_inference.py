@@ -30,6 +30,8 @@ from .labels import CAPABILITY_TO_LABELS, CAPABILITY_TO_GP_LABELS, Capability, L
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_EMBEDDING_MODE = "document"
+
 
 def _load_tokenizer(model_path: Union[str, Path]):
     """Load tokenizer with fallback to tokenizer.json for packaged checkpoints."""
@@ -642,7 +644,11 @@ class PyTorchInferenceEngine:
         return hidden_states, attention_mask, tokens, offset_mapping, False
 
     def _run_heads(
-        self, hidden_states: torch.Tensor, attention_mask: torch.Tensor, capabilities: List[str]
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor,
+        capabilities: List[str],
+        embedding_mode: str = DEFAULT_EMBEDDING_MODE,
     ) -> Dict[str, torch.Tensor]:
         """Run heads, extracting logits properly."""
         results = {}
@@ -652,7 +658,23 @@ class PyTorchInferenceEngine:
                 if cap not in self.heads:
                     continue
                 head = self.heads[cap]
-                out = head(hidden_states, attention_mask=attention_mask)
+
+                if cap == Capability.EMBEDDING.value:
+                    if embedding_mode not in {"query", "document"}:
+                        raise ValueError(
+                            "embedding_mode must be 'query' or 'document'"
+                        )
+
+                    if getattr(head, "pooling", None) == "agreement_gated_v2":
+                        out = head(
+                            hidden_states,
+                            attention_mask=attention_mask,
+                            mode=embedding_mode,
+                        )
+                    else:
+                        out = head(hidden_states, attention_mask=attention_mask)
+                else:
+                    out = head(hidden_states, attention_mask=attention_mask)
 
                 # Extract logits from dict output
                 if isinstance(out, dict):
@@ -668,8 +690,17 @@ class PyTorchInferenceEngine:
         text: str,
         capabilities: Optional[List[str]] = None,
         use_cache: bool = True,
+        embedding_mode: str = DEFAULT_EMBEDDING_MODE,
     ) -> AnalysisResult:
-        """Analyze text with multiple capabilities in a single pass."""
+        """Analyze text with multiple capabilities in a single pass.
+
+        Args:
+            text: Input text to analyze.
+            capabilities: Capabilities to execute. None runs all available capabilities.
+            use_cache: Whether to reuse cached encoder outputs.
+            embedding_mode: Internal routing mode for retrieval embedding heads.
+                Defaults to "document" to preserve current behavior.
+        """
         start_time = time.perf_counter()
 
         # Resolve capabilities
@@ -690,7 +721,12 @@ class PyTorchInferenceEngine:
 
         # Run heads
         heads_start = time.perf_counter()
-        head_outputs = self._run_heads(hidden_states, attention_mask, capabilities)
+        head_outputs = self._run_heads(
+            hidden_states,
+            attention_mask,
+            capabilities,
+            embedding_mode=embedding_mode,
+        )
         heads_ms = (time.perf_counter() - heads_start) * 1000
 
         # Post-process

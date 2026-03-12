@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 import sys
 from typing import Any
@@ -23,6 +24,15 @@ if str(SRC_ROOT) not in sys.path:
 from modeling_studio.models.modernbert_multitask import ModernBertMultiTaskModel
 
 
+SELECTION_WEIGHTS: dict[str, float] = {
+    "recall_at_1": 0.40,
+    "recall_at_5": 0.20,
+    "ndcg_at_10": 0.20,
+    "mrr": 0.10,
+    "triplet_accuracy": 0.10,
+}
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     """Load a JSONL file into memory."""
     records: list[dict[str, Any]] = []
@@ -33,6 +43,70 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
                 continue
             records.append(json.loads(line))
     return records
+
+
+def reciprocal_rank(rank: int) -> float:
+    """Return reciprocal rank for a 1-indexed rank."""
+    return 0.0 if rank <= 0 else 1.0 / float(rank)
+
+
+def ndcg_at_k(rank: int, k: int) -> float:
+    """Return nDCG@k for a single relevant document at the given rank."""
+    if rank <= 0 or rank > k:
+        return 0.0
+    return 1.0 / math.log2(float(rank) + 1.0)
+
+
+def summarize_rank_metrics(ranks: list[int], k_values: tuple[int, ...] = (1, 5, 10)) -> dict[str, Any]:
+    """Summarize retrieval metrics for a list of 1-indexed ranks."""
+    if not ranks:
+        return {
+            "n_queries": 0,
+            "recall@1": 0.0,
+            "recall@5": 0.0,
+            "recall@10": 0.0,
+            "mrr": 0.0,
+            "ndcg@10": 0.0,
+            "median_rank": None,
+            "mean_rank": None,
+            "worst_rank": None,
+        }
+
+    sorted_ranks = sorted(ranks)
+    n_queries = len(ranks)
+    summary: dict[str, Any] = {
+        "n_queries": n_queries,
+        "mrr": sum(reciprocal_rank(rank) for rank in ranks) / n_queries,
+        "ndcg@10": sum(ndcg_at_k(rank, 10) for rank in ranks) / n_queries,
+        "median_rank": sorted_ranks[n_queries // 2] if n_queries % 2 == 1 else (sorted_ranks[(n_queries // 2) - 1] + sorted_ranks[n_queries // 2]) / 2.0,
+        "mean_rank": sum(ranks) / n_queries,
+        "worst_rank": max(ranks),
+    }
+
+    for k in k_values:
+        summary[f"recall@{k}"] = sum(rank <= k for rank in ranks) / n_queries
+
+    return summary
+
+
+def compute_selection_score(retrieval: dict[str, Any], triplets: dict[str, Any]) -> dict[str, Any]:
+    """Compute a retrieval-first combined selection score."""
+    metric_values = {
+        "recall_at_1": float(retrieval.get("recall@1", 0.0)),
+        "recall_at_5": float(retrieval.get("recall@5", 0.0)),
+        "ndcg_at_10": float(retrieval.get("ndcg@10", 0.0)),
+        "mrr": float(retrieval.get("mrr", 0.0)),
+        "triplet_accuracy": float(triplets.get("accuracy", 0.0)),
+    }
+    weighted_components = {
+        name: metric_values[name] * weight for name, weight in SELECTION_WEIGHTS.items()
+    }
+    return {
+        "score": sum(weighted_components.values()),
+        "weights": SELECTION_WEIGHTS,
+        "metrics": metric_values,
+        "components": weighted_components,
+    }
 
 
 def cap_records_balanced(records: list[dict[str, Any]], max_records: int) -> list[dict[str, Any]]:
@@ -157,10 +231,20 @@ def evaluate_pair_records(
     device: torch.device,
     batch_size: int,
     max_length: int,
+    audit_top_k: int,
+    max_failure_examples: int,
+    persist_topk_audit: bool,
 ) -> dict[str, Any]:
     """Evaluate retrieval pairs with a shared candidate pool."""
     if not records:
-        return {"n_queries": 0, "recall@1": 0.0, "recall@5": 0.0, "recall@10": 0.0, "mrr": 0.0}
+        return {
+            "aggregate": summarize_rank_metrics([]),
+            "by_slice": {},
+            "by_difficulty": {},
+            "candidate_docs": 0,
+            "failure_examples": [],
+            "query_audit": [],
+        }
 
     documents: list[str] = []
     document_index: dict[str, int] = {}
@@ -195,24 +279,84 @@ def evaluate_pair_records(
 
     similarity = query_embeddings @ document_embeddings.T
     ranks: list[int] = []
+    slice_buckets: dict[str, list[int]] = {}
+    difficulty_buckets: dict[str, list[int]] = {}
+    failure_examples: list[dict[str, Any]] = []
+    query_audit: list[dict[str, Any]] = []
+
     for row_index, gold_index in enumerate(gold_indices):
         order = torch.argsort(similarity[row_index], descending=True)
         rank = int((order == gold_index).nonzero(as_tuple=False)[0].item()) + 1
         ranks.append(rank)
 
-    n_queries = len(ranks)
-    recall_at_1 = sum(rank <= 1 for rank in ranks) / n_queries
-    recall_at_5 = sum(rank <= 5 for rank in ranks) / n_queries
-    recall_at_10 = sum(rank <= 10 for rank in ranks) / n_queries
-    mrr = sum(1.0 / rank for rank in ranks) / n_queries
+        record = records[row_index]
+        slice_name = str(record.get("slice", "unknown"))
+        difficulty = str(record.get("difficulty", "unknown"))
+        slice_buckets.setdefault(slice_name, []).append(row_index)
+        difficulty_buckets.setdefault(difficulty, []).append(row_index)
+
+        top_indices = order[: max(1, audit_top_k)].detach().cpu().tolist()
+        top_docs = [
+            {
+                "rank": idx + 1,
+                "doc_index": int(doc_index),
+                "text": documents[doc_index],
+                "score": float(similarity[row_index, doc_index].item()),
+                "is_gold": bool(doc_index == gold_index),
+            }
+            for idx, doc_index in enumerate(top_indices)
+        ]
+        gold_score = float(similarity[row_index, gold_index].item())
+        top1_score = float(similarity[row_index, top_indices[0]].item()) if top_indices else gold_score
+
+        if persist_topk_audit:
+            query_audit.append(
+                {
+                    "benchmark_id": record.get("benchmark_id"),
+                    "query": record.get("query"),
+                    "slice": slice_name,
+                    "difficulty": difficulty,
+                    "gold_text": documents[gold_index],
+                    "gold_rank": rank,
+                    "gold_score": gold_score,
+                    "top_k": top_docs,
+                }
+            )
+
+        if rank > 1:
+            failure_examples.append(
+                {
+                    "benchmark_id": record.get("benchmark_id"),
+                    "query": record.get("query"),
+                    "slice": slice_name,
+                    "difficulty": difficulty,
+                    "gold_rank": rank,
+                    "gold_text": documents[gold_index],
+                    "gold_score": gold_score,
+                    "top1_text": documents[top_indices[0]] if top_indices else documents[gold_index],
+                    "top1_score": top1_score,
+                    "score_gap_vs_top1": gold_score - top1_score,
+                    "top_k": top_docs,
+                }
+            )
+
+    by_slice = {
+        slice_name: summarize_rank_metrics([ranks[index] for index in indices])
+        for slice_name, indices in sorted(slice_buckets.items())
+    }
+    by_difficulty = {
+        difficulty: summarize_rank_metrics([ranks[index] for index in indices])
+        for difficulty, indices in sorted(difficulty_buckets.items())
+    }
+    failure_examples.sort(key=lambda item: (-int(item["gold_rank"]), item["score_gap_vs_top1"]))
 
     return {
-        "n_queries": n_queries,
+        "aggregate": summarize_rank_metrics(ranks),
         "candidate_docs": len(documents),
-        "recall@1": recall_at_1,
-        "recall@5": recall_at_5,
-        "recall@10": recall_at_10,
-        "mrr": mrr,
+        "by_slice": by_slice,
+        "by_difficulty": by_difficulty,
+        "failure_examples": failure_examples[: max(0, max_failure_examples)],
+        "query_audit": query_audit if persist_topk_audit else [],
     }
 
 
@@ -293,19 +437,54 @@ def evaluate_split(
     device: torch.device,
     batch_size: int,
     max_length: int,
+    audit_top_k: int,
+    max_failure_examples: int,
+    persist_topk_audit: bool,
 ) -> dict[str, Any]:
     """Evaluate a full benchmark split."""
     pair_records = [record for record in records if record["task_type"] == "pair"]
     triplet_records = [record for record in records if record["task_type"] == "triplet"]
-    retrieval = evaluate_pair_records(model, tokenizer, pair_records, device, batch_size, max_length)
+    retrieval = evaluate_pair_records(
+        model,
+        tokenizer,
+        pair_records,
+        device,
+        batch_size,
+        max_length,
+        audit_top_k,
+        max_failure_examples,
+        persist_topk_audit,
+    )
     triplets = evaluate_triplet_records(model, tokenizer, triplet_records, device, batch_size, max_length)
+    selection = compute_selection_score(retrieval["aggregate"], triplets["aggregate"])
     return {
         "total_records": len(records),
         "pair_records": len(pair_records),
         "triplet_records": len(triplet_records),
         "retrieval": retrieval,
         "triplets": triplets,
+        "selection": selection,
     }
+
+
+def print_split_summary_table(checkpoint_label: str, checkpoint_result: dict[str, Any]) -> None:
+    """Print a compact summary table for all evaluated splits."""
+    print(f"\nSummary for {checkpoint_label}")
+    print("-" * 108)
+    print(
+        f"{'Split':<10} {'R@1':>8} {'R@5':>8} {'nDCG@10':>10} {'MRR':>8} {'TripAcc':>10} {'Margin':>10} {'Select':>10}"
+    )
+    print("-" * 108)
+    for split_name, split_result in checkpoint_result.items():
+        retrieval = split_result["retrieval"]["aggregate"]
+        triplets = split_result["triplets"]["aggregate"]
+        selection = split_result["selection"]["score"]
+        print(
+            f"{split_name:<10} {retrieval['recall@1']:>8.4f} {retrieval['recall@5']:>8.4f} "
+            f"{retrieval['ndcg@10']:>10.4f} {retrieval['mrr']:>8.4f} {triplets['accuracy']:>10.4f} "
+            f"{triplets['margin']:>10.4f} {selection:>10.4f}"
+        )
+    print("-" * 108)
 
 
 def parse_checkpoint_arg(value: str) -> tuple[str, Path]:
@@ -359,6 +538,23 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional cap for fast smoke tests.",
     )
+    parser.add_argument(
+        "--audit-top-k",
+        type=int,
+        default=10,
+        help="How many retrieved docs to keep in failure/top-k audit output.",
+    )
+    parser.add_argument(
+        "--max-failure-examples",
+        type=int,
+        default=20,
+        help="Maximum number of worst failure examples to persist per split.",
+    )
+    parser.add_argument(
+        "--persist-topk-audit",
+        action="store_true",
+        help="Persist top-k retrieval audit rows for every pair query, not just misses.",
+    )
     return parser.parse_args()
 
 
@@ -378,6 +574,10 @@ def main() -> None:
     results: dict[str, Any] = {
         "benchmark_dir": str(args.benchmark_dir),
         "device": str(device),
+        "selection_weights": SELECTION_WEIGHTS,
+        "audit_top_k": int(args.audit_top_k),
+        "max_failure_examples": int(args.max_failure_examples),
+        "persist_topk_audit": bool(args.persist_topk_audit),
         "checkpoints": {},
     }
 
@@ -400,21 +600,26 @@ def main() -> None:
                 device=device,
                 batch_size=args.batch_size,
                 max_length=args.max_length,
+                audit_top_k=max(1, int(args.audit_top_k)),
+                max_failure_examples=max(0, int(args.max_failure_examples)),
+                persist_topk_audit=bool(args.persist_topk_audit),
             )
             checkpoint_result[split_name] = split_result
 
-            retrieval = split_result["retrieval"]
+            retrieval = split_result["retrieval"]["aggregate"]
             triplets = split_result["triplets"]["aggregate"]
+            selection = split_result["selection"]["score"]
             print(
                 f"  {split_name:<7} | R@1={retrieval['recall@1']:.4f} "
-                f"R@5={retrieval['recall@5']:.4f} MRR={retrieval['mrr']:.4f} "
-                f"| triplet_acc={triplets['accuracy']:.4f} margin={triplets['margin']:.4f}"
+                f"R@5={retrieval['recall@5']:.4f} nDCG@10={retrieval['ndcg@10']:.4f} MRR={retrieval['mrr']:.4f} "
+                f"| triplet_acc={triplets['accuracy']:.4f} margin={triplets['margin']:.4f} selection={selection:.4f}"
             )
 
         results["checkpoints"][label] = {
             "path": str(checkpoint_path),
             "results": checkpoint_result,
         }
+        print_split_summary_table(label, checkpoint_result)
 
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)

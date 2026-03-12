@@ -8,11 +8,14 @@
     "embedding",
     "temporal",
     "ner_family",
+    "ingress",
     "ingress_v2",
     "safety_familyos",
     "relation",
+    "intent",
     "intent_v2"
   ],
+  "decoder_type": null,
   "epic_5_0": {
     "shared_pooler": null,
     "use_adapters": false,

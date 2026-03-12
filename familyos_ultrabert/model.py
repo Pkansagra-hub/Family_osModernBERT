@@ -319,6 +319,7 @@ class UltraBERT:
         self,
         text: str,
         capabilities: Optional[List[str]] = None,
+        embedding_mode: Literal["query", "document"] = "document",
     ) -> AnalysisOutput:
         """
         Analyze text with one or more capabilities.
@@ -326,6 +327,8 @@ class UltraBERT:
         Args:
             text: Input text to analyze
             capabilities: Specific capabilities to run. If None, runs all.
+            embedding_mode: Internal routing mode for retrieval embedding heads.
+                Defaults to "document" to preserve existing behavior.
 
         Returns:
             AnalysisOutput with results for each capability
@@ -349,7 +352,11 @@ class UltraBERT:
         """
         # Run inference
         if self._backend == "pytorch":
-            result = self._engine.analyze(text, capabilities)
+            result = self._engine.analyze(
+                text,
+                capabilities,
+                embedding_mode=embedding_mode,
+            )
         else:
             result = self._engine.analyze(text, capabilities)
 
@@ -396,6 +403,24 @@ class UltraBERT:
             768
         """
         result = self.analyze(text, capabilities=["embedding"])
+        return result["embedding"]["embedding"]
+
+    def get_query_embedding(self, text: str) -> List[float]:
+        """Get a query-mode embedding for asymmetric retrieval."""
+        result = self.analyze(
+            text,
+            capabilities=["embedding"],
+            embedding_mode="query",
+        )
+        return result["embedding"]["embedding"]
+
+    def get_document_embedding(self, text: str) -> List[float]:
+        """Get a document-mode embedding for asymmetric retrieval."""
+        result = self.analyze(
+            text,
+            capabilities=["embedding"],
+            embedding_mode="document",
+        )
         return result["embedding"]["embedding"]
 
     def get_sentiment(self, text: str) -> Dict[str, Any]:

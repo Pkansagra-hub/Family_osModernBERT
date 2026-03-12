@@ -109,9 +109,27 @@ def _best_effort_model_hash(client: Any) -> Dict[str, Any]:
         return {"sha256": None, "files": []}
 
     backend = str(getattr(client, "backend", "unknown"))
+    client_model_path = getattr(client, "_model_path", None)
     files: List[Path] = []
 
-    if backend == "onnx":
+    if client_model_path:
+        root = Path(str(client_model_path))
+        if backend == "onnx":
+            files = sorted(root.glob("*.onnx"))
+            if not files:
+                files = sorted((root / "onnx").glob("*.onnx")) if (root / "onnx").exists() else []
+        elif backend == "pytorch":
+            candidates = [
+                root / "model.safetensors",
+                root / "pytorch_model.bin",
+                root / "config.json",
+                root / "tokenizer.json",
+                root / "tokenizer_config.json",
+                root / "embedding_metadata.json",
+                root / "capabilities.json",
+            ]
+            files = [p for p in candidates if p.exists()]
+    elif backend == "onnx":
         root = Path(str(DEFAULT_ONNX_PATH))
         if root.exists():
             files = sorted(root.glob("*.onnx"))
@@ -150,12 +168,14 @@ class BenchmarkRunner:
         self,
         *,
         suites: Optional[List[str]] = None,
+        model_path: Optional[str] = None,
         backend: str = "auto",
         device: str = "auto",
         warmup_rounds: int = 3,
         verbose: bool = True,
     ):
         self._suite_filter = suites
+        self._model_path = model_path
         self._backend = backend
         self._device = device
         self._warmup_rounds = warmup_rounds
@@ -170,6 +190,7 @@ class BenchmarkRunner:
         from familyos_ultrabert import Client
 
         return Client(
+            model_path=self._model_path,
             backend=self._backend,
             device=self._device,
             warmup=True,
@@ -296,6 +317,7 @@ class BenchmarkRunner:
             "device": str(active_device) if active_device is not None else "unknown",
             "client_stats": getattr(client, "stats", None),
             "runner": {
+                "model_path": self._model_path,
                 "backend": self._backend,
                 "warmup_rounds": self._warmup_rounds,
                 "suite_filter": self._suite_filter,

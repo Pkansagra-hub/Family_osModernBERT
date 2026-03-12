@@ -17,7 +17,6 @@
   "embedding_dropout": 0.0,
   "eos_token_id": null,
   "global_attn_every_n_layers": 3,
-  "global_rope_theta": 160000.0,
   "gradient_checkpointing": false,
   "hidden_activation": "gelu",
   "hidden_size": 768,
@@ -25,8 +24,31 @@
   "initializer_range": 0.02,
   "intermediate_size": 1152,
   "layer_norm_eps": 1e-05,
+  "layer_types": [
+    "full_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "full_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "full_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "full_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "full_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "full_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "full_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "full_attention"
+  ],
   "local_attention": 128,
-  "local_rope_theta": 10000.0,
   "max_position_embeddings": 8192,
   "mlp_bias": false,
   "mlp_dropout": 0.0,
@@ -38,9 +60,20 @@
   "pad_token_id": 50283,
   "position_embedding_type": "absolute",
   "repad_logits_with_grad": false,
+  "rope_parameters": {
+    "full_attention": {
+      "rope_theta": 160000.0,
+      "rope_type": "default"
+    },
+    "sliding_attention": {
+      "rope_theta": 10000.0,
+      "rope_type": "default"
+    }
+  },
   "sep_token_id": 50282,
   "sparse_pred_ignore_index": -100,
   "sparse_prediction": false,
-  "transformers_version": "4.57.6",
+  "tie_word_embeddings": true,
+  "transformers_version": "5.0.0",
   "vocab_size": 50368
 }

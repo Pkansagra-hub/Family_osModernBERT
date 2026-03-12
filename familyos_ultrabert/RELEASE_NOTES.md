@@ -1,3 +1,37 @@
+# FamilyOS UltraBERT v4.0.5 Release
+
+## AgreementGatedHeadV2 Retrieval Release
+
+This release promotes the `distil_stage_b_bestema` retrieval model as the hosted `encoder/v2/fp32` snapshot and makes the `AgreementGatedHeadV2` embedding path fully package-native.
+
+### Added
+
+- **Package-native `AgreementGatedHeadV2`**: the release package now reconstructs the retrieval head directly from package code instead of reaching back into the training source tree.
+- **Asymmetric retrieval helpers**: added `Client.get_query_embedding(...)`, `Client.get_document_embedding(...)`, `UltraBERT.get_query_embedding(...)`, and `UltraBERT.get_document_embedding(...)`.
+- **Embedding metadata serialization**: checkpoints now persist constructor metadata needed to rebuild `AgreementGatedHeadV2` deterministically.
+
+### Changed
+
+- **Hosted encoder snapshot**: `encoder/v2/fp32/` now includes `embedding_metadata.json` as a required runtime artifact.
+- **Internal embedding routing**: the PyTorch runtime now routes `query` and `document` embedding modes for `AgreementGatedHeadV2` while keeping existing `get_embedding(...)` behavior unchanged.
+- **Release upload tooling**: Hugging Face upload defaults now target the `v2` encoder layout and publish only runtime files required for the hosted snapshot.
+
+### Validation
+
+- Verified package loading from the staged PyTorch release weights with `AgreementGatedHeadV2` active.
+- Verified `Client` and `UltraBERT` query/document embedding helpers return normalized 768-dimensional vectors.
+- Benchmarked the release candidate on the FamilyOS retrieval benchmark:
+  - Dev: `R@1=0.8800`, `R@5=0.9933`, `nDCG@10=0.9492`, `MRR=0.9319`, selection `0.9134`
+  - Holdout: `R@1=0.8833`, `R@5=0.9933`, `nDCG@10=0.9499`, `MRR=0.9329`, selection `0.9170`
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v4.0.4 Release
 
 ## Stale Cache Auto-Refresh Fix
@@ -72,6 +106,7 @@ Multi-label Sigmoid
 ```
 
 **Benefits over simple classifiers:**
+
 - **Future-proof**: Add new labels by just adding embeddings (no architecture change)
 - **Zero-shot capable**: Initialize new labels from text descriptions
 - **Multi-label**: Natural for FamilyOS where utterances have multiple intents/domains
@@ -80,6 +115,7 @@ Multi-label Sigmoid
 ### Training Infrastructure
 
 Built on proven GlobalPointer training flow:
+
 - **Source checkpoint**: checkpoint-8000 (with trained GlobalPointer NER)
 - **Frozen components**: Encoder + all other heads
 - **Training data**: 304K intent records, 380K ingress records (balanced)
@@ -173,10 +209,12 @@ New head architecture in `models/heads.py`:
 ### Label Schemas
 
 **Intent Labels (8):**
+
 - log_memory, query_memory, set_reminder, express_feeling
 - seek_advice, share_news, reflect, other
 
 **Ingress Labels (12):**
+
 - DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK
 - META, MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE
 
@@ -230,7 +268,6 @@ pip install --upgrade familyos-ultrabert
 - **PyTorch**: >=2.0.0
 - **Transformers**: >=4.30.0
 - **HuggingFace Hub**: >=0.20.0
-
 
 # FamilyOS UltraBERT v3.0.1
 

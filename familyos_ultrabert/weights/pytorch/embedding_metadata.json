@@ -1,0 +1,82 @@
+{
+  "timestamp": "2026-03-11T21:07:32.251345",
+  "training_type": "embedding_heads_bakeoff",
+  "bakeoff": {
+    "head_type": "agreement_gated_v2",
+    "head_class": "AgreementGatedHeadV2",
+    "head_params": {
+      "output_dim": null,
+      "normalize": true,
+      "num_latents": 4,
+      "num_attn_heads": 4,
+      "gate_hidden": 128,
+      "gate_rank": 4,
+      "use_mode_prompts": true,
+      "use_confidence_head": true,
+      "dropout": 0.1
+    },
+    "head_constructor_params": {
+      "hidden_size": 768,
+      "output_dim": 768,
+      "normalize": true,
+      "head_type": "agreement_gated_v2",
+      "num_latents": 4,
+      "num_attn_heads": 4,
+      "gate_hidden": 128,
+      "gate_rank": 4,
+      "use_mode_prompts": true,
+      "use_confidence_head": true,
+      "dropout": 0.1
+    }
+  },
+  "head_info": {
+    "ner_general": {
+      "class": "GlobalPointerNERHead"
+    },
+    "sentiment": {
+      "class": "SequenceClassificationHead"
+    },
+    "emotions": {
+      "class": "HierarchicalEmotionHead"
+    },
+    "safety_generic": {
+      "class": "SequenceClassificationHead"
+    },
+    "nli": {
+      "class": "NLIHead"
+    },
+    "embedding": {
+      "class": "AgreementGatedHeadV2",
+      "head_type": "agreement_gated_v2",
+      "pooling": "agreement_gated_v2",
+      "output_dim": 768,
+      "hidden_size": 768,
+      "normalize": true
+    },
+    "temporal": {
+      "class": "GlobalPointerNERHead"
+    },
+    "ner_family": {
+      "class": "GlobalPointerNERHead"
+    },
+    "ingress": {
+      "class": "SequenceClassificationHead"
+    },
+    "ingress_v2": {
+      "class": "IngressHeadV2"
+    },
+    "safety_familyos": {
+      "class": "SafetyHead"
+    },
+    "relation": {
+      "class": "RelationHead"
+    },
+    "intent": {
+      "class": "IntentHead"
+    },
+    "intent_v2": {
+      "class": "IntentHeadV2"
+    }
+  },
+  "trained_head": "embedding"
+}

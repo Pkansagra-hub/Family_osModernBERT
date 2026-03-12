@@ -353,6 +353,36 @@ class Client:
         result = self.analyze(text, capabilities=["embedding"])
         return result.embedding
 
+    def get_query_embedding(self, text: str) -> List[float]:
+        """Get a query-mode embedding vector for asymmetric retrieval."""
+        self._ensure_ready()
+
+        normalized_text = _normalize_text(text)
+        start = time.perf_counter()
+        raw_result = self._model.analyze(
+            normalized_text,
+            capabilities=["embedding"],
+            embedding_mode="query",
+        )
+        latency = (time.perf_counter() - start) * 1000
+        self._stats.record(latency)
+        return ClientResult(raw_result, latency).embedding
+
+    def get_document_embedding(self, text: str) -> List[float]:
+        """Get a document-mode embedding vector for asymmetric retrieval."""
+        self._ensure_ready()
+
+        normalized_text = _normalize_text(text)
+        start = time.perf_counter()
+        raw_result = self._model.analyze(
+            normalized_text,
+            capabilities=["embedding"],
+            embedding_mode="document",
+        )
+        latency = (time.perf_counter() - start) * 1000
+        self._stats.record(latency)
+        return ClientResult(raw_result, latency).embedding
+
     def is_safe(self, text: str) -> bool:
         """Check if text is safe (GREEN). Returns True/False."""
         return self.get_safety(text) == "GREEN"

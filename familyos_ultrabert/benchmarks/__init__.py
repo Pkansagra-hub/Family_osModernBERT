@@ -61,6 +61,7 @@ _BENCHMARK_PROFILES: dict[str, List[str]] = {
 
 def run_all(
     suites: Optional[List[str]] = None,
+    model_path: Optional[str] = None,
     backend: str = "auto",
     warmup_rounds: int = 3,
     verbose: bool = True,
@@ -78,6 +79,7 @@ def run_all(
     """
     runner = BenchmarkRunner(
         suites=suites,
+        model_path=model_path,
         backend=backend,
         warmup_rounds=warmup_rounds,
         verbose=verbose,
@@ -144,6 +146,11 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
     )
     parser.add_argument("--suite", type=str, help="Comma-separated list of suites to run")
     parser.add_argument("--quick", action="store_true", help="Run quick smoke test only")
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        help="Path to a local checkpoint/model directory to benchmark",
+    )
     parser.add_argument(
         "--backend",
         choices=["auto", "pytorch", "onnx"],
@@ -212,6 +219,7 @@ def cli(argv: Optional[Sequence[str]] = None) -> int:
 
     runner = BenchmarkRunner(
         suites=suites,
+        model_path=args.model_path,
         backend=str(args.backend),
         device=str(args.device),
         verbose=bool(args.verbose),
