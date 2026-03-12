@@ -117,7 +117,7 @@ def test_release_model_save_pretrained_writes_embedding_metadata(tmp_path) -> No
 
 
 def test_download_encoder_refreshes_stale_v2_fp32_cache(tmp_path, monkeypatch) -> None:
-    """v2/fp32 caches missing embedding metadata should be refreshed automatically."""
+    """v2/fp32 caches with legacy embedding metadata should be refreshed automatically."""
     weights_manager = _load_release_weights_manager()
     monkeypatch.setenv("FAMILYOS_CACHE_DIR", str(tmp_path))
 
@@ -125,6 +125,23 @@ def test_download_encoder_refreshes_stale_v2_fp32_cache(tmp_path, monkeypatch) -
     cache_path.mkdir(parents=True)
     for name in ["capabilities.json", "config.json", "model.safetensors", "tokenizer.json"]:
         (cache_path / name).write_text("stub", encoding="utf-8")
+    (cache_path / "embedding_metadata.json").write_text(
+        json.dumps(
+            {
+                "head_info": {
+                    "embedding": {
+                        "class": "EmbeddingHead",
+                        "pooling": "attentive",
+                        "output_dim": 768,
+                        "hidden_size": 768,
+                        "normalize": True,
+                    }
+                },
+                "trained_head": "embedding",
+            }
+        ),
+        encoding="utf-8",
+    )
 
     assert weights_manager.is_cached("encoder", "v2", "fp32") is False
 
@@ -137,9 +154,14 @@ def test_download_encoder_refreshes_stale_v2_fp32_cache(tmp_path, monkeypatch) -
         (cache_path / "embedding_metadata.json").write_text(
             json.dumps(
                 {
+                    "bakeoff": {
+                        "head_type": "agreement_gated_v2",
+                    },
                     "head_info": {
                         "embedding": {
-                            "pooling": "attentive",
+                            "class": "AgreementGatedHeadV2",
+                            "head_type": "agreement_gated_v2",
+                            "pooling": "agreement_gated_v2",
                             "output_dim": 768,
                             "normalize": True,
                         }

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "familyos-ultrabert"
-version = "4.0.6"
+version = "4.0.7"
 description = "FamilyOS UltraBERT v4 - Multi-task NLP with GlobalPointer NER"
 readme = "README.md"
 license = "LicenseRef-Proprietary"

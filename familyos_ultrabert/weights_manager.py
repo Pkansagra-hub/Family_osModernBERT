@@ -26,6 +26,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
@@ -42,6 +43,9 @@ DEFAULT_CACHE_DIR = Path.home() / ".cache" / "familyos_ultrabert"
 
 # Quantization options
 QuantizationType = Literal["fp32", "fp16", "int8"]
+
+EXPECTED_V2_FP32_EMBEDDING_CLASS = "AgreementGatedHeadV2"
+EXPECTED_V2_FP32_EMBEDDING_HEAD_TYPE = "agreement_gated_v2"
 
 
 def _required_encoder_files(version: str, quantization: QuantizationType) -> set[str]:
@@ -61,6 +65,42 @@ def _required_encoder_files(version: str, quantization: QuantizationType) -> set
     return required
 
 
+def _has_expected_v2_fp32_embedding_metadata(cache_path: Path) -> bool:
+    """Return True when v2/fp32 embedding metadata matches the released retrieval head."""
+    metadata_path = cache_path / "embedding_metadata.json"
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("Failed to read embedding metadata at %s: %s", metadata_path, exc)
+        return False
+
+    embedding_info = metadata.get("head_info", {}).get("embedding", {})
+    embedding_class = embedding_info.get("class")
+    embedding_head_type = metadata.get("bakeoff", {}).get("head_type") or embedding_info.get(
+        "head_type"
+    )
+
+    if embedding_class != EXPECTED_V2_FP32_EMBEDDING_CLASS:
+        logger.warning(
+            "Encoder cache at %s is stale; embedding class %s does not match expected %s",
+            cache_path,
+            embedding_class,
+            EXPECTED_V2_FP32_EMBEDDING_CLASS,
+        )
+        return False
+
+    if embedding_head_type != EXPECTED_V2_FP32_EMBEDDING_HEAD_TYPE:
+        logger.warning(
+            "Encoder cache at %s is stale; embedding head type %s does not match expected %s",
+            cache_path,
+            embedding_head_type,
+            EXPECTED_V2_FP32_EMBEDDING_HEAD_TYPE,
+        )
+        return False
+
+    return True
+
+
 def _is_complete_encoder_cache(cache_path: Path, version: str, quantization: QuantizationType) -> bool:
     """Return True when the cache directory contains the required encoder files."""
     if not cache_path.exists() or not cache_path.is_dir():
@@ -76,6 +116,10 @@ def _is_complete_encoder_cache(cache_path: Path, version: str, quantization: Qua
             ", ".join(missing_files),
         )
         return False
+
+    if version == "v2" and quantization == "fp32":
+        if not _has_expected_v2_fp32_embedding_metadata(cache_path):
+            return False
 
     return True
 

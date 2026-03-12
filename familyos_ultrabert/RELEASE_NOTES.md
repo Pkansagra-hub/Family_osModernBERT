@@ -1,3 +1,30 @@
+# FamilyOS UltraBERT v4.0.7 Release
+
+## Stale v2 Cache Refresh Hotfix
+
+This hotfix fixes a follow-up issue where some users still loaded an older cached `encoder/v2/fp32` snapshot with `EmbeddingHead(attentive)` metadata even though the hosted Hugging Face v2 snapshot had already been updated to `AgreementGatedHeadV2`.
+
+### Fixed
+
+- **Semantic cache validation**: `v2/fp32` encoder caches are now validated against the expected retrieval head metadata, not just file presence.
+- **Legacy attentive cache refresh**: cached `embedding_metadata.json` files that still describe `EmbeddingHead` are now treated as stale and automatically refreshed from Hugging Face.
+- **Safer v2 release loading**: users with old local caches now recover automatically to the hosted `AgreementGatedHeadV2` release snapshot without manual cache deletion.
+
+### Validation
+
+- Reproduced a stale local cache at `~/.cache/familyos_ultrabert/encoder/v2/fp32` containing `EmbeddingHead(attentive)` metadata.
+- Verified the patched validator marks that cache as stale and forces a refresh from `Pkansagra/ultrabert-weights`.
+- Verified a refreshed PyTorch load instantiates `AgreementGatedHeadV2` for the embedding head.
+- Added and passed a regression test covering stale v2 cache refresh behavior.
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v4.0.6 Release
 
 ## ONNX Runtime Hotfix
