@@ -799,10 +799,91 @@ python scripts/train_stage_a.py \
 
 ## 🧪 Embedding Head Training Recipe
 
-The embedding release was built with the bake-off and Stage B specialization flow implemented in:
+The embedding release was built with a teacher-distilled bake-off run followed by Stage B specialization, implemented in:
 
 - `scripts/training/train_embedding_heads_bakeoff.py`
 - `configs/training/embedding_heads_bakeoff.yaml`
+
+### End-to-end training flow
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                    FamilyOS Retrieval Training Recipe (Release Lineage)             │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+  Base checkpoint
+  outputs/globalpointer-unified-v1/checkpoint-8000
+            |
+            |  freeze encoder + freeze 13 non-embedding heads
+            v
+  shared ModernBERT backbone + candidate embedding head slot
+            |
+            +--------------------------------------------------------------+
+            |                                                              |
+            | Stage A bake-off (matched head comparison)                   |
+            | - mean_baseline                                              |
+            | - residual_mlp_mean                                          |
+            | - latent_residual                                            |
+            | - agreement_gated                                            |
+            | - multi_pool_low_rank                                        |
+            | - anisotropy_corrected                                       |
+            | - agreement_gated_v2                                         |
+            |                                                              |
+            | Data: silver_synthetic + hard_negatives                      |
+            | Loss: contrastive / InfoNCE + hard negatives + in-batch negs |
+            +--------------------------------------------------------------+
+            |
+            | winner architecture / student checkpoint
+            v
+  runtime.student_checkpoint
+            |
+            |
+            |------------------------ Teacher branch -----------------------|
+            |                                                              |
+            v                                                              v
+  build_teacher_cache                                               Qwen/Qwen3-Embedding-4B
+  --build_teacher_cache                                             teacher encoder
+  outputs/teacher-cache/qwen4b_distill_run                          2560-d embeddings
+            |                                                              |
+            +-------------------------- cached teacher vectors ------------+
+                                               |
+                                               v
+                                  Distillation run (--distill)
+                                  outputs/embedding-bakeoff/qwen4b_distill_run/distill
+                                               |
+                      +------------------------+------------------------+
+                      |                                                 |
+                      | Phase 1: projection warmup                      |
+                      | - projection: 2560 -> 768                       |
+                      | - embedding head frozen                         |
+                      | - 3 epochs                                      |
+                      | - LR 5e-4                                       |
+                      |                                                 |
+                      | Phase 2: distilled retrieval training           |
+                      | - head: agreement_gated_v2                      |
+                      | - teacher vector loss                           |
+                      | - teacher ranking loss                          |
+                      | - contrastive student loss                      |
+                      | - selection metric: query_doc_recall@5          |
+                      +------------------------+------------------------+
+                                               |
+                                               v
+                          distilled checkpoint: .../qwen4b_distill_run/distill/best
+                                               |
+                                               v
+                                   Stage B domain adaptation
+                                   --stage_b <distilled checkpoint>
+                                               |
+                Data profile: stage_b_v2 = hard_negatives + wrong_person +
+                                         wrong_time + safety_emotion + query_doc
+                                               |
+                Keep trained AgreementGatedHeadV2 weights, apply retrieval-focused
+                slice weighting, query/document routing, and auxiliary regularization
+                                               |
+                                               v
+                               final release candidate: distil_stage_b_bestema
+                               published as encoder/v2/fp32/
+```
 
 ### What the trainer actually does
 
@@ -927,10 +1008,39 @@ Stage B routing and auxiliary recipe:
 - temporal entropy weight: `0.02`
 - safety entropy weight: `0.02`
 
-Teacher and distillation scaffolding are present in the trainer for future runs, but the base config keeps them disabled by default:
+### Distillation that actually went into the release run
 
-- `teacher.enabled: false`
-- `distillation.enabled: false`
+The released retrieval line was not just a plain bake-off plus Stage B pass. It used an actual distillation run with teacher-cache support enabled and then promoted the distilled checkpoint into Stage B.
+
+Distillation run details reflected in the training logs you provided:
+
+- teacher model: `Qwen/Qwen3-Embedding-4B`
+- teacher enabled: `true`
+- distillation enabled: `true`
+- teacher device: `cuda`
+- teacher dtype: `bfloat16`
+- attention implementation: `sdpa`
+- teacher batch size: `1024`
+- teacher cache dir: `/content/Modeling_studio/outputs/teacher-cache/qwen4b_distill_run`
+- distill output base: `/content/Modeling_studio/outputs/embedding-bakeoff/qwen4b_distill_run`
+- teacher projection enabled: `2560 -> 768`
+
+The distillation run also used a two-phase schedule:
+
+- Phase 1: projection warmup
+  - epochs: `3`
+  - LR: `0.0005`
+  - embedding head frozen while projection aligned teacher space to student space
+- Phase 2: distilled head training
+  - head: `agreement_gated_v2`
+  - selection metric: `query_doc_recall_at_5`
+
+After that distilled run, Stage B domain adaptation loaded the distilled checkpoint and preserved the trained `AgreementGatedHeadV2` weights:
+
+- Stage B bakeoff checkpoint: `/content/Modeling_studio/outputs/embedding-bakeoff/qwen4b_distill_run/distill/best`
+- Stage B then applied the retrieval-focused `stage_b_v2` profile shown above
+
+For clarity, the base YAML template may still show disabled defaults unless overridden, but the actual release lineage used the distillation path above.
 
 ### Commands
 

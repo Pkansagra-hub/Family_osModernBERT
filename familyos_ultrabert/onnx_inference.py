@@ -14,6 +14,7 @@ Use ONNX for single-capability inference or CPU-only deployment.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass
@@ -86,7 +87,9 @@ DEFAULT_THRESHOLDS = {
     "ner_family": -0.7,  # F1=0.812 (P=0.922, R=0.726)
     "temporal": -1.9,  # F1=0.639 (P=0.651, R=0.627)
     # V2 Label-Description Embedding heads (probability thresholds)
+    "intent": 0.5,
     "intent_v2": 0.5,  # Multi-label intent classification
+    "ingress": 0.5,
     "ingress_v2": 0.5,  # Multi-label domain classification
 }
 
@@ -260,16 +263,24 @@ def _postprocess_label_description_ingress(
 
     Returns:
         Dict with:
+            - primary: Highest-scoring domain (always returned)
+            - confidence: Probability of primary domain
+        Dict with:
             - domains: List of domains above threshold
             - scores: Dict of domain -> probability
     """
     probs = _sigmoid(logits[0])
     scores = {schema.id2label[i]: round(float(p), 4) for i, p in enumerate(probs)}
 
+    primary_idx = int(np.argmax(probs))
+    primary = schema.id2label[primary_idx]
+
     # Domains = all labels above threshold
     domains = [schema.id2label[i] for i, p in enumerate(probs) if p >= threshold]
 
     return {
+        "primary": primary,
+        "confidence": round(float(probs[primary_idx]), 4),
         "domains": domains,
         "scores": scores,
     }
@@ -403,11 +414,11 @@ def postprocess(
         return _postprocess_safety(logits, schema)
     elif capability in ["emotions", "safety_generic", "relation"]:
         return _postprocess_sequence_multi(logits, schema)
-    elif capability == "intent_v2":
+    elif capability in ["intent", "intent_v2"]:
         # V2 Label-Description Embedding: multi-label intent
         thresh = threshold if threshold is not None else DEFAULT_THRESHOLDS.get(capability, 0.5)
         return _postprocess_label_description_intent(logits, schema, threshold=thresh)
-    elif capability == "ingress_v2":
+    elif capability in ["ingress", "ingress_v2"]:
         # V2 Label-Description Embedding: multi-label ingress
         thresh = threshold if threshold is not None else DEFAULT_THRESHOLDS.get(capability, 0.5)
         return _postprocess_label_description_ingress(logits, schema, threshold=thresh)
@@ -589,7 +600,17 @@ class ONNXInferenceEngine:
                 continue
 
             cap_start = time.perf_counter()
-            outputs = self.sessions[cap].run(None, ort_inputs)
+            session = self.sessions[cap]
+            session_input_names = {model_input.name for model_input in session.get_inputs()}
+            cap_inputs = {}
+            for name, value in ort_inputs.items():
+                if name not in session_input_names:
+                    continue
+                if np.issubdtype(value.dtype, np.integer) and value.dtype != np.int64:
+                    cap_inputs[name] = value.astype(np.int64)
+                else:
+                    cap_inputs[name] = value
+            outputs = session.run(None, cap_inputs)
             logits = outputs[0]
 
             output = postprocess(

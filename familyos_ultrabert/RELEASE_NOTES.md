@@ -1,3 +1,31 @@
+# FamilyOS UltraBERT v4.0.6 Release
+
+## ONNX Runtime Hotfix
+
+This hotfix fixes release-time ONNX inference issues that could break the default auto-selected backend in installed environments.
+
+### Fixed
+
+- **Tokenizer fallback loading**: fixed the packaged tokenizer fallback path by importing `json` before reading `tokenizer_config.json`.
+- **Session input filtering**: ONNX inference now passes only the inputs each exported session actually declares, avoiding failures on models that do not accept `token_type_ids`.
+- **Input dtype compatibility**: integer tokenizer inputs are now cast to `int64` for ONNX Runtime compatibility with exported graph signatures.
+- **Intent/ingress ONNX decoding**: ONNX `intent` and `ingress` heads now use the label-description postprocessors for their shipped capability names and return structured `primary` predictions instead of falling back to `unknown`.
+
+### Validation
+
+- Verified the default `Client()` auto-backend path no longer crashes during ONNX model warmup.
+- Verified default `Client()` ONNX inference returns structured `intent` and `ingress` predictions.
+- Verified hard-query inference runs complete end-to-end after the ONNX compatibility fixes.
+- Verified the PyTorch production backend still returns full structured outputs on the same hard-query batch.
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v4.0.5 Release
 
 ## AgreementGatedHeadV2 Retrieval Release

@@ -168,7 +168,7 @@ class Client:
         >>> print(result.safety)     # "GREEN"
     """
 
-    VERSION = "4.0.0"
+    VERSION = __version__
 
     def __init__(
         self,
