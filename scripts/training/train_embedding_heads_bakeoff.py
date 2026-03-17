@@ -7326,6 +7326,15 @@ def run_mgrh_training(
     else:
         raise ValueError(f"Unknown MGRH stage: {stage}")
 
+    # Guard: empty dataset means data files are missing
+    if len(train_dataset) == 0:
+        raise RuntimeError(
+            f"MGRH Stage {stage.upper()}: training dataset is empty (0 samples). "
+            f"Data files are likely missing. For Stage A, run: "
+            f"python scripts/data/stage_nli_data.py  "
+            f"to download and stage NLI datasets."
+        )
+
     # DataLoaders
     effective_workers = 0 if platform.system() == "Windows" else 2
     train_loader = DataLoader(
