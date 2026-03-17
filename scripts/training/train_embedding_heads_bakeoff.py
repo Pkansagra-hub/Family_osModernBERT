@@ -6470,31 +6470,48 @@ def mgrh_train_step_stage_c(
             )
             scores2 = output2["relevance_logits_raw"].squeeze(-1)
 
-        # Compute listwise ranking loss per query group
+        # Compute listwise ranking loss per query group.
+        # Groups with size >= 2 use LambdaRank + pairwise margin.
+        # Groups with size == 1 (e.g. query_doc positive pairs) use BCE
+        # so they still contribute gradient instead of returning 0.0.
         total_ranking_loss = torch.tensor(0.0, device=device)
+        total_singleton_bce = torch.tensor(0.0, device=device)
         offset = 0
-        num_groups = 0
+        num_ranking_groups = 0
+        num_singleton_groups = 0
 
         for gsize in group_sizes:
             group_scores1 = scores1[offset:offset + gsize]
             group_grades = grades[offset:offset + gsize]
 
-            if r_drop_enabled:
-                group_scores2 = scores2[offset:offset + gsize]
-                # Average task loss over both passes
-                task_loss = (ranking_loss_fn(group_scores1, group_grades) +
-                             ranking_loss_fn(group_scores2, group_grades)) / 2
+            if gsize < 2:
+                # Singleton group (query_doc pair) — BCE fallback
+                grade_norm = group_grades.float() / 3.0  # normalize 0-3 → 0-1
+                total_singleton_bce = total_singleton_bce + F.binary_cross_entropy_with_logits(
+                    group_scores1, grade_norm,
+                )
+                num_singleton_groups += 1
             else:
-                task_loss = ranking_loss_fn(group_scores1, group_grades)
+                if r_drop_enabled:
+                    group_scores2 = scores2[offset:offset + gsize]
+                    # Average task loss over both passes
+                    task_loss = (ranking_loss_fn(group_scores1, group_grades) +
+                                 ranking_loss_fn(group_scores2, group_grades)) / 2
+                else:
+                    task_loss = ranking_loss_fn(group_scores1, group_grades)
 
-            total_ranking_loss = total_ranking_loss + task_loss
+                total_ranking_loss = total_ranking_loss + task_loss
+                num_ranking_groups += 1
+
             offset += gsize
-            num_groups += 1
 
-        if num_groups > 0:
-            total_ranking_loss = total_ranking_loss / num_groups
+        if num_ranking_groups > 0:
+            total_ranking_loss = total_ranking_loss / num_ranking_groups
+        if num_singleton_groups > 0:
+            total_singleton_bce = total_singleton_bce / num_singleton_groups
 
-        loss = total_ranking_loss
+        # Combine: ranking loss + 0.2 * singleton BCE
+        loss = total_ranking_loss + 0.2 * total_singleton_bce
 
         # R-Drop KL divergence penalty — within each query group
         kl_loss = torch.tensor(0.0, device=device)
@@ -6505,6 +6522,10 @@ def mgrh_train_step_stage_c(
             offset_kl = 0
             num_kl_groups = 0
             for gsize in group_sizes:
+                if gsize < 2:
+                    # Softmax on size-1 is always [1.0] — KL=0, skip
+                    offset_kl += gsize
+                    continue
                 g1 = scores1[offset_kl:offset_kl + gsize]
                 g2 = scores2[offset_kl:offset_kl + gsize]
                 p1 = F.log_softmax(g1, dim=-1)
@@ -6524,6 +6545,7 @@ def mgrh_train_step_stage_c(
     return {
         "total_loss": loss,
         "ranking_loss": total_ranking_loss,
+        "singleton_bce_loss": total_singleton_bce,
         "kl_loss": kl_loss,
     }
 
