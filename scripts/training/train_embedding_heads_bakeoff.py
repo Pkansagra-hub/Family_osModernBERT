@@ -7345,6 +7345,15 @@ def run_mgrh_training(
         sources = stage_config.get("sources", [])
         full_dataset = RelevanceListwiseDataset(sources, data_root, max_samples)
 
+        # Separate non-listwise sources (e.g. query_doc positive_pair)
+        # so they can be merged into splits that only contain listwise data.
+        extra_sources = [s for s in sources if s.get("format") != "listwise"]
+        extra_samples: list[dict] = []
+        if extra_sources:
+            extra_ds = RelevanceListwiseDataset(extra_sources, data_root, max_samples)
+            extra_samples = extra_ds.samples
+            logger.info(f"  Extra sources (non-listwise): {len(extra_samples):,} samples")
+
         # Use pre-split data if available, otherwise split 80/10/10
         splits_dir = Path(resolve_workspace_path("data/familyos/nli/splits/stage_c"))
         if (splits_dir / "train.jsonl").exists():
@@ -7353,6 +7362,11 @@ def run_mgrh_training(
                 [{"path": "train.jsonl", "format": "listwise", "weight": 1.0}],
                 splits_dir, max_samples,
             )
+            # Merge extra sources (query_doc pairs) into train split
+            if extra_samples:
+                train_dataset.samples.extend(extra_samples)
+                random.shuffle(train_dataset.samples)
+                logger.info(f"  Merged {len(extra_samples):,} extra samples -> {len(train_dataset):,} total train")
             val_dataset = RelevanceListwiseDataset(
                 [{"path": "dev.jsonl", "format": "listwise", "weight": 1.0}],
                 splits_dir, None,
@@ -7408,7 +7422,9 @@ def run_mgrh_training(
     # Steps
     if max_steps:
         num_training_steps = max_steps
-        num_epochs = 1  # Bridge uses steps, not epochs
+        # Need enough epochs to actually reach max_steps
+        steps_per_epoch = len(train_loader)
+        num_epochs = max(1, (max_steps + steps_per_epoch - 1) // steps_per_epoch)
     else:
         gradient_accumulation_steps = int(stage_config.get("gradient_accumulation_steps", 1))
         num_training_steps = len(train_loader) * num_epochs // gradient_accumulation_steps
@@ -7597,6 +7613,51 @@ def run_mgrh_training(
         avg_epoch_loss = epoch_loss / max(epoch_steps, 1)
         history["train_loss"].append(avg_epoch_loss)
         logger.info(f"  Epoch {epoch + 1} avg loss: {avg_epoch_loss:.4f}")
+
+        # Epoch-end evaluation for stages with few steps per epoch
+        # (e.g. Stage C with 4 steps/epoch never hits eval_steps=200)
+        if epoch_steps > 0 and global_step % eval_steps != 0 and epoch_steps < eval_steps:
+            if stage == "a":
+                metrics = evaluate_mgrh_nli(model, mgrh_head, val_loader, device, max_batches=50, use_amp=use_bf16, amp_dtype=amp_dtype)
+                score = metrics.get("nli_accuracy", 0.0)
+                logger.info(f"  [EVAL epoch-end] step={global_step} nli_accuracy={score:.4f} nli_loss={metrics.get('nli_loss', 0):.4f}")
+            elif stage == "b":
+                eval_head = ema_model.module if use_ema and ema_model is not None else mgrh_head
+                metrics = evaluate_mgrh_pairwise(model, eval_head, val_loader, device, max_batches=50, use_amp=use_bf16, amp_dtype=amp_dtype)
+                score = metrics.get("pairwise_accuracy", 0.0)
+                logger.info(
+                    f"  [EVAL epoch-end] step={global_step} pair_acc={metrics.get('pairwise_accuracy', 0):.4f} "
+                    f"avg_margin={metrics.get('avg_margin', 0):.4f} eval_loss={metrics.get('eval_loss', 0):.4f}"
+                )
+            else:
+                eval_head = ema_model.module if use_ema and ema_model is not None else mgrh_head
+                metrics = evaluate_mgrh(model, eval_head, val_loader, device, ranking_loss_fn, max_batches=50, use_amp=use_bf16, amp_dtype=amp_dtype)
+                score = metrics.get(selection_metric, 0.0)
+                logger.info(
+                    f"  [EVAL epoch-end] step={global_step} spearman={metrics.get('spearman_correlation', 0):.4f} "
+                    f"auc_roc={metrics.get('auc_roc', 0):.4f} ndcg@10={metrics.get('ndcg_at_10', 0):.4f}"
+                )
+
+            history["eval_metrics"].append({"step": global_step, **metrics})
+
+            if score > best_score:
+                best_score = score
+                no_improve_count = 0
+                best_dir = stage_output / "best"
+                best_dir.mkdir(parents=True, exist_ok=True)
+                head_to_save = ema_model.module if use_ema and ema_model is not None else mgrh_head
+                torch.save(head_to_save.state_dict(), best_dir / "mgrh_head.pt")
+                torch.save(pair_encoder.state_dict(), best_dir / "pair_encoder.pt")
+                with open(best_dir / "mgrh_metrics.json", "w") as f:
+                    json.dump(metrics, f, indent=2)
+                logger.info(f"  New best {selection_metric}={score:.4f} -> {best_dir}")
+            else:
+                no_improve_count += 1
+                if no_improve_count >= early_stopping_patience:
+                    logger.info(f"  Early stopping: no improvement for {no_improve_count} evals")
+                    break
+
+            mgrh_head.train()
 
         if max_steps and global_step >= max_steps:
             break
