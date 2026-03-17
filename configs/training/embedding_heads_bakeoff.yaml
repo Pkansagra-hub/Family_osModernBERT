@@ -244,7 +244,7 @@ mgrh_training:
       epochs: 5
       lr_head: 2.0e-4
       lr_pair_encoder: 1.0e-4
-      batch_size: 256
+      batch_size: 128
       max_length: 256
 
     stage_b:
@@ -256,7 +256,7 @@ mgrh_training:
           weight: 0.6
         - path: mined_v2/wrong_time
           weight: 0.8
-          hard_negative_weight: 2.0
+          hard_negative_weight: 4.0
         - path: mined_v2/wrong_person
           weight: 0.8
           hard_negative_weight: 2.0
@@ -287,7 +287,7 @@ mgrh_training:
       max_steps: 500                  # fixed step count, not epoch-based
       lr_head: 5.0e-5                 # half of Stage B LR
       lr_pair_encoder: 2.5e-5
-      batch_size: 128
+      batch_size: 32
       max_length: 512
 
     stage_c:
@@ -317,7 +317,7 @@ mgrh_training:
       epochs: 15              # increased from 10 — augmented v2 data has 3x episodes
       lr_head: 1.0e-4
       lr_pair_encoder: 5.0e-5
-      batch_size: 128
+      batch_size: 64
       max_length: 512
       calibration:             # post-training score calibration
         enabled: true
