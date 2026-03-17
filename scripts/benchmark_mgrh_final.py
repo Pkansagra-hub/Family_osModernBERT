@@ -230,25 +230,27 @@ def get_embedding(model, hidden_states, attention_mask):
 
 
 def tokenize_pair(tokenizer, text_a: str, text_b: str, max_length: int):
-    """Tokenize a joint pair and individual texts."""
+    """Tokenize a joint pair and individual texts.
+
+    Matches production pytorch_inference.py:
+      - Joint: truncation + no explicit padding for single pairs
+      - Separate: truncation + no explicit padding for single pairs
+    """
     joint = tokenizer(
         text_a, text_b,
         max_length=max_length,
-        padding="max_length",
         truncation=True,
         return_tensors="pt",
     )
     enc_a = tokenizer(
         text_a,
         max_length=max_length,
-        padding="max_length",
         truncation=True,
         return_tensors="pt",
     )
     enc_b = tokenizer(
         text_b,
         max_length=max_length,
-        padding="max_length",
         truncation=True,
         return_tensors="pt",
     )
@@ -269,8 +271,9 @@ def score_pair(
     doc: str,
     device: torch.device,
     max_length: int = 512,
+    calibration_T: float = 1.0,
 ) -> float:
-    """Score a (query, doc) pair, returns sigmoid relevance score."""
+    """Score a (query, doc) pair, returns temperature-calibrated sigmoid score."""
     joint, enc_q, enc_d = tokenize_pair(tokenizer, query, doc, max_length)
 
     joint_hidden = encode(model, joint["input_ids"], joint["attention_mask"], device)
@@ -293,7 +296,8 @@ def score_pair(
         doc_embed=d_embed,
         stage="c",
     )
-    return output["logits"].squeeze().item()
+    raw_logit = output["relevance_logits_raw"].squeeze()
+    return torch.sigmoid(raw_logit / calibration_T).item()
 
 
 # ---------------------------------------------------------------------------
@@ -311,10 +315,10 @@ def cosine_score(
     max_length: int = 512,
 ) -> float:
     """Cosine-similarity baseline using the frozen embedding head."""
-    enc_q = tokenizer(query, max_length=max_length, padding="max_length",
-                       truncation=True, return_tensors="pt")
-    enc_d = tokenizer(doc, max_length=max_length, padding="max_length",
-                       truncation=True, return_tensors="pt")
+    enc_q = tokenizer(query, max_length=max_length, truncation=True,
+                       return_tensors="pt")
+    enc_d = tokenizer(doc, max_length=max_length, truncation=True,
+                       return_tensors="pt")
     q_hidden = encode(model, enc_q["input_ids"], enc_q["attention_mask"], device)
     d_hidden = encode(model, enc_d["input_ids"], enc_d["attention_mask"], device)
     q_embed = get_embedding(model, q_hidden, enc_q["attention_mask"].to(device))
@@ -338,19 +342,23 @@ def score_pairs_batch(
     device: torch.device,
     max_length: int = 512,
     batch_size: int = 16,
+    calibration_T: float = 1.0,
 ) -> list[float]:
     """Score (query, doc) pairs in batches through MGRH.
 
-    Critical: batch_size > 1 ensures MaxSim z-normalization activates
-    (the model was trained with batched z-normalization; batch_size=1
-    skips it entirely, causing a ~20pp accuracy drop).
+    Matches the production inference path in pytorch_inference.py:
+      - Joint: padding=True, max_length
+      - Separate query/doc: padding=True, max_length (production uses 512)
+      - Score = sigmoid(raw_logits / calibration_T), NOT output["logits"]
+      - batch_size > 1 ensures MaxSim z-normalization activates
 
     Args:
         pairs: List of (query, doc) tuples.
         batch_size: Pairs per batch. Must be > 1 for correct MaxSim behavior.
+        calibration_T: Temperature from checkpoint (sharpens sigmoid).
 
     Returns:
-        List of float relevance scores (sigmoid-activated).
+        List of float relevance scores (temperature-calibrated, sigmoid-activated).
     """
     all_scores: list[float] = []
     use_amp = device.type == "cuda"
@@ -362,17 +370,17 @@ def score_pairs_batch(
 
         joint = tokenizer(
             queries, docs,
-            max_length=max_length, padding="max_length",
+            max_length=max_length, padding=True,
             truncation=True, return_tensors="pt",
         )
         enc_q = tokenizer(
             queries,
-            max_length=max_length, padding="max_length",
+            max_length=max_length, padding=True,
             truncation=True, return_tensors="pt",
         )
         enc_d = tokenizer(
             docs,
-            max_length=max_length, padding="max_length",
+            max_length=max_length, padding=True,
             truncation=True, return_tensors="pt",
         )
 
@@ -403,7 +411,9 @@ def score_pairs_batch(
                 stage="c",
             )
 
-        scores = output["logits"].squeeze(-1).float().cpu()
+        # Match production: sigmoid(raw / T), NOT output["logits"]
+        raw_logits = output["relevance_logits_raw"].squeeze(-1).float()
+        scores = torch.sigmoid(raw_logits / calibration_T).cpu()
         if scores.dim() == 0:
             all_scores.append(scores.item())
         else:
@@ -431,11 +441,11 @@ def cosine_scores_batch(
         docs = [p[1] for p in chunk]
 
         enc_q = tokenizer(
-            queries, max_length=max_length, padding="max_length",
+            queries, max_length=max_length, padding=True,
             truncation=True, return_tensors="pt",
         )
         enc_d = tokenizer(
-            docs, max_length=max_length, padding="max_length",
+            docs, max_length=max_length, padding=True,
             truncation=True, return_tensors="pt",
         )
 
@@ -465,22 +475,35 @@ def cosine_scores_batch(
 
 
 def compute_spearman(scores: list[float], grades: list[float]) -> float:
-    """Spearman rank correlation."""
+    """Spearman rank correlation (Pearson on ranks, with tie averaging)."""
     n = len(scores)
     if n < 2:
         return 0.0
 
-    def _rank(vals):
-        indexed = sorted(enumerate(vals), key=lambda x: x[1])
+    def _rank_with_ties(vals: list[float]) -> list[float]:
+        order = sorted(range(n), key=lambda i: vals[i])
         ranks = [0.0] * n
-        for rank_pos, (orig_idx, _) in enumerate(indexed):
-            ranks[orig_idx] = rank_pos + 1.0
+        i = 0
+        while i < n:
+            j = i
+            while j < n - 1 and vals[order[j + 1]] == vals[order[j]]:
+                j += 1
+            avg_rank = (i + j) / 2.0 + 1.0
+            for k in range(i, j + 1):
+                ranks[order[k]] = avg_rank
+            i = j + 1
         return ranks
 
-    r_scores = _rank(scores)
-    r_grades = _rank(grades)
-    d_sq = sum((a - b) ** 2 for a, b in zip(r_scores, r_grades))
-    return 1.0 - 6.0 * d_sq / (n * (n ** 2 - 1) + 1e-8)
+    rx = _rank_with_ties(scores)
+    ry = _rank_with_ties(grades)
+    mean_rx = sum(rx) / n
+    mean_ry = sum(ry) / n
+    cov = sum((a - mean_rx) * (b - mean_ry) for a, b in zip(rx, ry))
+    std_x = sum((a - mean_rx) ** 2 for a in rx) ** 0.5
+    std_y = sum((b - mean_ry) ** 2 for b in ry) ** 0.5
+    if std_x < 1e-10 or std_y < 1e-10:
+        return 0.0
+    return cov / (std_x * std_y)
 
 
 def compute_auc_roc(scores: list[float], binary_labels: list[int]) -> float:
@@ -581,6 +604,7 @@ def benchmark_listwise(
     model, mgrh_head, tokenizer, data: list[dict],
     device: torch.device, max_length: int, dataset_name: str,
     batch_size: int = 16,
+    calibration_T: float = 1.0,
 ) -> dict:
     """Run listwise ranking metrics on {query, episodes} data.
 
@@ -588,6 +612,43 @@ def benchmark_listwise(
     """
     logger.info(f"  [{dataset_name}] {len(data)} query groups...")
 
+    # --- Phase 1: Collect ALL (query, episode) pairs across ALL groups ---
+    # Scoring all pairs in one pass ensures MaxSim z-normalization
+    # operates across diverse queries (matching training behavior)
+    # instead of within a single query's episodes (batch of 2-6).
+    all_pairs: list[tuple[str, str]] = []
+    group_slices: list[tuple[int, int]] = []  # (start, end) per group
+    valid_items: list[dict] = []
+
+    for item in data:
+        query = item["query"]
+        episodes = item.get("episodes", [])
+        if len(episodes) < 2:
+            continue
+        start = len(all_pairs)
+        for ep in episodes:
+            all_pairs.append((query, ep["text"]))
+        group_slices.append((start, len(all_pairs)))
+        valid_items.append(item)
+
+    if not all_pairs:
+        logger.warning(f"    No valid groups in {dataset_name}")
+        return {"dataset": dataset_name, "num_groups": 0, "num_pairs": 0,
+                "mgrh": {}, "biencoder_baseline": {}, "lift_over_biencoder": {},
+                "calibration": {}, "grade_distribution": {}, "grade_3_vs_0_separation": None}
+
+    logger.info(f"    Scoring {len(all_pairs)} total pairs in batches of {batch_size}...")
+
+    # --- Phase 2: Score ALL pairs at once (cross-query batches) ---
+    all_mgrh_flat = score_pairs_batch(
+        model, mgrh_head, tokenizer, all_pairs, device, max_length, batch_size,
+        calibration_T=calibration_T,
+    )
+    all_bienc_flat = cosine_scores_batch(
+        model, tokenizer, all_pairs, device, max_length, batch_size,
+    )
+
+    # --- Phase 3: Slice back by query group, compute per-group metrics ---
     all_scores = []
     all_grades = []
     all_mgrh_scores_by_grade = defaultdict(list)
@@ -597,20 +658,10 @@ def benchmark_listwise(
     group_bienc_spearman = []
     group_bienc_ndcg = []
 
-    for qi, item in enumerate(data):
-        query = item["query"]
+    for gi, ((start, end), item) in enumerate(zip(group_slices, valid_items)):
+        g_scores = all_mgrh_flat[start:end]
+        g_bienc = all_bienc_flat[start:end]
         episodes = item.get("episodes", [])
-        if len(episodes) < 2:
-            continue
-
-        # Batch all (query, episode) pairs for this group
-        pairs = [(query, ep["text"]) for ep in episodes]
-        g_scores = score_pairs_batch(
-            model, mgrh_head, tokenizer, pairs, device, max_length, batch_size,
-        )
-        g_bienc = cosine_scores_batch(
-            model, tokenizer, pairs, device, max_length, batch_size,
-        )
         g_grades = [float(ep["grade"]) for ep in episodes]
 
         for idx, ep in enumerate(episodes):
@@ -626,8 +677,8 @@ def benchmark_listwise(
         group_bienc_spearman.append(compute_spearman(g_bienc, g_grades))
         group_bienc_ndcg.append(compute_ndcg_at_k(g_bienc, g_grades, k=10))
 
-        if (qi + 1) % 100 == 0:
-            logger.info(f"    Processed {qi + 1}/{len(data)} groups")
+        if (gi + 1) % 100 == 0:
+            logger.info(f"    Processed {gi + 1}/{len(valid_items)} groups")
 
     # Global metrics
     binary_labels = [1 if g > 0 else 0 for g in all_grades]
@@ -702,6 +753,7 @@ def benchmark_pairwise(
     max_length: int,
     dataset_name: str,
     batch_size: int = 16,
+    calibration_T: float = 1.0,
 ) -> dict:
     """Run pairwise accuracy on triplet data (anchor, positive, negative).
 
@@ -717,6 +769,7 @@ def benchmark_pairwise(
     logger.info(f"    Scoring {len(all_pairs)} pairs in batches of {batch_size}...")
     all_mgrh = score_pairs_batch(
         model, mgrh_head, tokenizer, all_pairs, device, max_length, batch_size,
+        calibration_T=calibration_T,
     )
     pos_scores = all_mgrh[: len(pos_pairs)]
     neg_scores = all_mgrh[len(pos_pairs) :]
@@ -801,9 +854,11 @@ def main() -> None:
     parser.add_argument("--checkpoint", default="outputs/final-nli", help="Path to merged checkpoint")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--max-length", type=int, default=512)
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--triplet-cap", type=int, default=3000, help="Max triplets per pairwise dataset")
     parser.add_argument("--output", default="outputs/benchmark_mgrh_final.json")
+    parser.add_argument("--quick", type=int, default=0, metavar="N",
+                        help="Smoke-test mode: limit to N groups/triplets per dataset (0 = full run)")
     args = parser.parse_args()
 
     device = torch.device(args.device)
@@ -813,6 +868,8 @@ def main() -> None:
 
     logger.info(f"Device: {device}")
     logger.info(f"Checkpoint: {checkpoint_path}")
+    if args.quick:
+        logger.info(f"QUICK MODE: {args.quick} groups/triplets per dataset")
 
     t0 = time.time()
     model, mgrh_head, tokenizer, calibration_T = load_final_checkpoint(checkpoint_path, device)
@@ -844,11 +901,13 @@ def main() -> None:
     logger.info("=" * 70)
     logger.info("BENCHMARK 1: Listwise Ranking — Human Benchmark (798 groups)")
     logger.info("=" * 70)
-    human_data = load_listwise_data(REPO_ROOT / "data/familyos/nli/relevance/human_benchmark_listwise.jsonl")
+    human_data = load_listwise_data(REPO_ROOT / "data/familyos/nli/relevance/human_benchmark_listwise_v2.jsonl")
+    if args.quick:
+        human_data = human_data[:args.quick]
     if human_data:
         results["benchmarks"]["human_benchmark_listwise"] = benchmark_listwise(
             model, mgrh_head, tokenizer, human_data, device, args.max_length, "human_benchmark_listwise",
-            batch_size=args.batch_size,
+            batch_size=args.batch_size, calibration_T=calibration_T,
         )
 
     # ===================================================================
@@ -858,10 +917,12 @@ def main() -> None:
     logger.info("BENCHMARK 2: Listwise Ranking — Holdout (79 groups)")
     logger.info("=" * 70)
     holdout_data = load_listwise_data(REPO_ROOT / "data/familyos/nli/splits/stage_c/holdout.jsonl")
+    if args.quick:
+        holdout_data = holdout_data[:args.quick]
     if holdout_data:
         results["benchmarks"]["holdout_listwise"] = benchmark_listwise(
             model, mgrh_head, tokenizer, holdout_data, device, args.max_length, "holdout_listwise",
-            batch_size=args.batch_size,
+            batch_size=args.batch_size, calibration_T=calibration_T,
         )
 
     # ===================================================================
@@ -871,10 +932,12 @@ def main() -> None:
     logger.info("BENCHMARK 3: Listwise Ranking — Dev (79 groups)")
     logger.info("=" * 70)
     dev_data = load_listwise_data(REPO_ROOT / "data/familyos/nli/splits/stage_c/dev.jsonl")
+    if args.quick:
+        dev_data = dev_data[:args.quick]
     if dev_data:
         results["benchmarks"]["dev_listwise"] = benchmark_listwise(
             model, mgrh_head, tokenizer, dev_data, device, args.max_length, "dev_listwise",
-            batch_size=args.batch_size,
+            batch_size=args.batch_size, calibration_T=calibration_T,
         )
 
     # ===================================================================
@@ -885,12 +948,12 @@ def main() -> None:
     logger.info("=" * 70)
     hard_neg_data = load_triplet_data(
         str(REPO_ROOT / "data/familyos/embeddings/hard_negatives/triplets_*.jsonl"),
-        max_samples=args.triplet_cap,
+        max_samples=args.quick if args.quick else args.triplet_cap,
     )
     if hard_neg_data:
         results["benchmarks"]["hard_negatives_pairwise"] = benchmark_pairwise(
             model, mgrh_head, tokenizer, hard_neg_data, device, args.max_length, "hard_negatives",
-            batch_size=args.batch_size,
+            batch_size=args.batch_size, calibration_T=calibration_T,
         )
 
     # ===================================================================
@@ -901,12 +964,12 @@ def main() -> None:
     logger.info("=" * 70)
     wrong_person_data = load_triplet_data(
         str(REPO_ROOT / "data/familyos/embeddings/mined_v2/wrong_person/wrong_person_*.jsonl"),
-        max_samples=args.triplet_cap,
+        max_samples=args.quick if args.quick else args.triplet_cap,
     )
     if wrong_person_data:
         results["benchmarks"]["wrong_person_pairwise"] = benchmark_pairwise(
             model, mgrh_head, tokenizer, wrong_person_data, device, args.max_length, "wrong_person",
-            batch_size=args.batch_size,
+            batch_size=args.batch_size, calibration_T=calibration_T,
         )
 
     # ===================================================================
@@ -917,12 +980,12 @@ def main() -> None:
     logger.info("=" * 70)
     wrong_time_data = load_triplet_data(
         str(REPO_ROOT / "data/familyos/embeddings/mined_v2/wrong_time/wrong_time_*.jsonl"),
-        max_samples=args.triplet_cap,
+        max_samples=args.quick if args.quick else args.triplet_cap,
     )
     if wrong_time_data:
         results["benchmarks"]["wrong_time_pairwise"] = benchmark_pairwise(
             model, mgrh_head, tokenizer, wrong_time_data, device, args.max_length, "wrong_time",
-            batch_size=args.batch_size,
+            batch_size=args.batch_size, calibration_T=calibration_T,
         )
 
     # ===================================================================
@@ -935,13 +998,14 @@ def main() -> None:
     logger.info("=" * 70)
     query_doc_data = load_triplet_data(
         str(REPO_ROOT / "data/familyos/embeddings/mined_v2/query_doc/query_doc_*.jsonl"),
-        max_samples=args.triplet_cap,
+        max_samples=args.quick if args.quick else args.triplet_cap,
     )
     if query_doc_data and "query" in query_doc_data[0] and "document" in query_doc_data[0]:
         logger.info(f"  [query_doc] {len(query_doc_data)} pairs...")
         qd_pairs = [(item["query"], item["document"]) for item in query_doc_data]
         scores_list = score_pairs_batch(
             model, mgrh_head, tokenizer, qd_pairs, device, args.max_length, args.batch_size,
+            calibration_T=calibration_T,
         )
         logger.info(f"    Scored {len(scores_list)} query-doc pairs")
         mean_s = sum(scores_list) / len(scores_list) if scores_list else 0.0
@@ -986,16 +1050,18 @@ def main() -> None:
     print()
 
     # Listwise results table
+    if args.quick:
+        print(f"  ** QUICK MODE: {args.quick} groups/triplets per dataset **")
+        print()
     print("-" * 80)
-    print(f"{'Dataset':<30} {'Spearman':>10} {'AUC-ROC':>10} {'nDCG@10':>10} {'BiEnc Sp':>10} {'Lift Sp':>10}")
+    print(f"{'Dataset':<30} {'GrpSpear':>10} {'GlblSp':>10} {'AUC-ROC':>10} {'nDCG@10':>10} {'BiEnc Sp':>10}")
     print("-" * 80)
     for key in ["human_benchmark_listwise", "holdout_listwise", "dev_listwise"]:
         bm = results["benchmarks"].get(key)
         if bm:
             m = bm["mgrh"]
             b = bm["biencoder_baseline"]
-            l = bm["lift_over_biencoder"]
-            print(f"{bm['dataset']:<30} {m['avg_group_spearman']:>10.4f} {m['auc_roc_binary']:>10.4f} {m['avg_ndcg_at_10']:>10.4f} {b['avg_group_spearman']:>10.4f} {l['spearman_delta']:>+10.4f}")
+            print(f"{bm['dataset']:<30} {m['avg_group_spearman']:>10.4f} {m['global_spearman']:>10.4f} {m['auc_roc_binary']:>10.4f} {m['avg_ndcg_at_10']:>10.4f} {b['avg_group_spearman']:>10.4f}")
     print()
 
     # Pairwise results table

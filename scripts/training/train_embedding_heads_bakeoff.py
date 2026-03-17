@@ -5664,14 +5664,15 @@ class NLICollator:
             max_length=self.max_length, return_tensors="pt",
         )
 
-        # Separate encoding for pair encoder signals
+        # Separate encoding for pair encoder signals — use full max_length
+        # to match production rerank() which uses max_length=512 for separate
         text_a_enc = self.tokenizer(
             premises, padding=True, truncation=True,
-            max_length=self.max_length // 2, return_tensors="pt",
+            max_length=self.max_length, return_tensors="pt",
         )
         text_b_enc = self.tokenizer(
             hypotheses, padding=True, truncation=True,
-            max_length=self.max_length // 2, return_tensors="pt",
+            max_length=self.max_length, return_tensors="pt",
         )
 
         return {
@@ -5686,6 +5687,87 @@ class NLICollator:
 
 
 # --- Issue 4.2: Relevance Listwise Dataset + Collator for Stage B/C ---
+
+
+def _oversample_rare_grades(
+    samples: list[dict[str, Any]],
+    target_grades: list[int],
+    target_min_fraction: float = 0.08,
+) -> list[dict[str, Any]]:
+    """Oversample listwise groups containing rare grades.
+
+    Identifies query groups whose episodes include any of ``target_grades``
+    and duplicates them until those grades reach at least
+    ``target_min_fraction`` of total episodes.
+
+    Args:
+        samples: List of record dicts (listwise format).
+        target_grades: Grade values to oversample (e.g. [2]).
+        target_min_fraction: Desired minimum fraction of target-grade
+            episodes in the final dataset (0.08 = 8%).
+
+    Returns:
+        Augmented sample list (original + duplicates).
+    """
+    target_set = set(target_grades)
+
+    # Separate groups containing target grades from the rest
+    groups_with_target: list[dict[str, Any]] = []
+    total_episodes = 0
+    target_episodes = 0
+
+    for sample in samples:
+        episodes = sample.get("episodes", [])
+        if not episodes:
+            total_episodes += 1  # positive_pair format counts as 1
+            continue
+        total_episodes += len(episodes)
+        grades_in_group = {int(ep.get("grade", 0)) for ep in episodes}
+        if grades_in_group & target_set:
+            groups_with_target.append(sample)
+            target_episodes += sum(
+                1 for ep in episodes if int(ep.get("grade", 0)) in target_set
+            )
+
+    if not groups_with_target or target_episodes == 0:
+        logger.info(f"  Grade oversample: no groups with grades {target_grades} found")
+        return samples
+
+    current_fraction = target_episodes / max(total_episodes, 1)
+    if current_fraction >= target_min_fraction:
+        logger.info(
+            f"  Grade oversample: grades {target_grades} already at "
+            f"{current_fraction:.1%} >= {target_min_fraction:.1%}, skipping"
+        )
+        return samples
+
+    # Calculate how many copies needed
+    # After N copies: target_eps * N / (total_eps + target_group_eps * (N-1)) >= frac
+    target_group_eps = sum(len(g.get("episodes", [1])) for g in groups_with_target)
+    # Solve: target_eps * N >= frac * (total_eps + target_group_eps * (N - 1))
+    # target_eps * N >= frac * total_eps + frac * target_group_eps * N - frac * target_group_eps
+    # N * (target_eps - frac * target_group_eps) >= frac * total_eps - frac * target_group_eps
+    # N >= frac * (total_eps - target_group_eps) / (target_eps - frac * target_group_eps)
+    denom = target_episodes - target_min_fraction * target_group_eps
+    if denom <= 0:
+        n_copies = 20  # cap at 20x if math degenerates
+    else:
+        n_copies = int(
+            (target_min_fraction * (total_episodes - target_group_eps)) / denom
+        ) + 1
+    n_copies = max(2, min(n_copies, 20))  # clamp between 2x and 20x
+
+    extra = groups_with_target * (n_copies - 1)  # -1 because originals already in samples
+    result = samples + extra
+
+    new_target_eps = target_episodes * n_copies
+    new_total_eps = total_episodes + target_group_eps * (n_copies - 1)
+    logger.info(
+        f"  Grade oversample: duplicated {len(groups_with_target)} groups "
+        f"{n_copies}x for grades {target_grades} "
+        f"({current_fraction:.1%} -> {new_target_eps / new_total_eps:.1%})"
+    )
+    return result
 
 
 class RelevanceListwiseDataset(Dataset):
@@ -5711,6 +5793,7 @@ class RelevanceListwiseDataset(Dataset):
             path = data_root / src["path"]
             fmt = src.get("format", "listwise")
             weight = float(src.get("weight", 1.0))
+            max_groups = src.get("max_groups", None)
 
             if path.is_dir():
                 files = sorted(path.glob("*.jsonl"))
@@ -5720,7 +5803,7 @@ class RelevanceListwiseDataset(Dataset):
                 logger.warning(f"  Relevance source missing: {path}")
                 continue
 
-            count = 0
+            source_records: list[dict[str, Any]] = []
             for fpath in files:
                 if fpath.name in ("hash_index.jsonl", "manifest.json"):
                     continue
@@ -5736,9 +5819,23 @@ class RelevanceListwiseDataset(Dataset):
                         record["_format"] = fmt
                         record["_weight"] = weight
                         record["_source"] = src.get("name", fpath.stem)
-                        self.samples.append(record)
-                        count += 1
-            logger.info(f"  Relevance source {path.name}: {count:,} records (format={fmt}, weight={weight})")
+                        source_records.append(record)
+
+            # Cap source to max_groups if configured (prevents large sources
+            # from drowning smaller, higher-quality ones).
+            if max_groups and len(source_records) > max_groups:
+                random.shuffle(source_records)
+                source_records = source_records[:max_groups]
+                logger.info(
+                    f"  Relevance source {path.name}: capped to {max_groups:,} groups "
+                    f"(from {len(source_records):,} total)"
+                )
+
+            self.samples.extend(source_records)
+            logger.info(
+                f"  Relevance source {path.name}: {len(source_records):,} records "
+                f"(format={fmt}, weight={weight})"
+            )
 
         if max_samples and len(self.samples) > max_samples:
             random.shuffle(self.samples)
@@ -5855,18 +5952,18 @@ class RelevancePairwiseCollator:
             max_length=self.max_length, return_tensors="pt",
         )
 
-        # Separate encoding for pair encoder
+        # Separate encoding for pair encoder — full max_length to match production
         anchor_enc = self.tokenizer(
             anchors, padding=True, truncation=True,
-            max_length=self.max_length // 2, return_tensors="pt",
+            max_length=self.max_length, return_tensors="pt",
         )
         positive_enc = self.tokenizer(
             positives, padding=True, truncation=True,
-            max_length=self.max_length // 2, return_tensors="pt",
+            max_length=self.max_length, return_tensors="pt",
         )
         negative_enc = self.tokenizer(
             negatives, padding=True, truncation=True,
-            max_length=self.max_length // 2, return_tensors="pt",
+            max_length=self.max_length, return_tensors="pt",
         )
 
         return {
@@ -5937,14 +6034,15 @@ class RelevanceListwiseCollator:
             max_length=self.max_length, return_tensors="pt",
         )
 
-        # Separate for pair encoder
+        # Separate for pair encoder — use full max_length to match production
+        # rerank() which also uses max_length=512 for separate Q/D encodings.
         query_enc = self.tokenizer(
             all_queries, padding=True, truncation=True,
-            max_length=self.max_length // 2, return_tensors="pt",
+            max_length=self.max_length, return_tensors="pt",
         )
         episode_enc = self.tokenizer(
             all_episodes, padding=True, truncation=True,
-            max_length=self.max_length // 2, return_tensors="pt",
+            max_length=self.max_length, return_tensors="pt",
         )
 
         return {
@@ -6739,7 +6837,7 @@ def evaluate_mgrh(
     if not all_scores:
         return {"spearman_correlation": 0.0, "auc_roc": 0.5, "ndcg_at_10": 0.0, "eval_loss": 0.0}
 
-    # Spearman correlation
+    # Per-group Spearman correlation (not global — global inflates by between-query variance)
     scores_t = torch.tensor(all_scores)
     grades_t = torch.tensor(all_grades)
 
@@ -6750,11 +6848,26 @@ def evaluate_mgrh(
         ranks[sorted_indices] = torch.arange(1, len(x) + 1, dtype=x.dtype)
         return ranks
 
-    score_ranks = _rank(scores_t)
-    grade_ranks = _rank(grades_t)
-    n = len(scores_t)
-    d = score_ranks - grade_ranks
-    spearman = 1.0 - (6.0 * (d ** 2).sum().item()) / (n * (n ** 2 - 1) + 1e-8)
+    spearman_values: list[float] = []
+    offset_sp = 0
+    for gsize in all_group_sizes:
+        if gsize < 2:
+            offset_sp += gsize
+            continue
+        g_scores = scores_t[offset_sp:offset_sp + gsize]
+        g_grades = grades_t[offset_sp:offset_sp + gsize]
+        # Skip groups where all grades are identical (Spearman undefined)
+        if g_grades.std() < 1e-6:
+            offset_sp += gsize
+            continue
+        sr = _rank(g_scores)
+        gr = _rank(g_grades)
+        n_g = gsize
+        d_g = sr - gr
+        sp = 1.0 - (6.0 * (d_g ** 2).sum().item()) / (n_g * (n_g ** 2 - 1) + 1e-8)
+        spearman_values.append(sp)
+        offset_sp += gsize
+    spearman = sum(spearman_values) / len(spearman_values) if spearman_values else 0.0
 
     # AUC-ROC (binary: grade > 0 = relevant)
     binary_labels = (grades_t > 0).float()
@@ -7081,6 +7194,73 @@ def refresh_hard_negatives_ance(
 # --- Issue 4.9: Post-Training Score Calibration ---
 
 
+@torch.no_grad()
+def compute_maxsim_population_stats(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    loader: DataLoader,
+    device: torch.device,
+    max_batches: int = 100,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> tuple[float, float]:
+    """Compute MaxSim population mean/std for stable z-norm at inference.
+
+    Without population stats, single-pair inference skips z-norm entirely
+    (batch_size=1 falls through the if-clause in compute_maxsim), creating
+    a massive train/serve skew. This function computes the stats on the
+    training/validation data so they can be stored in the checkpoint and
+    used at inference time for consistent normalization.
+
+    Args:
+        model: Multi-task model.
+        mgrh_head: Trained MGRH head.
+        loader: DataLoader (RelevanceListwiseCollator output).
+        device: Torch device.
+        max_batches: Maximum batches to sample.
+
+    Returns:
+        Tuple of (population_mean, population_std).
+    """
+    mgrh_head.eval()
+    model.eval()
+
+    all_maxsim: list[float] = []
+
+    for batch_idx, batch in enumerate(loader):
+        if batch_idx >= max_batches:
+            break
+        if batch.get("empty", False):
+            continue
+
+        query_hidden = mgrh_encode_batch(model, batch["query_input_ids"], batch["query_attention_mask"], device, use_amp, amp_dtype)
+        episode_hidden = mgrh_encode_batch(model, batch["episode_input_ids"], batch["episode_attention_mask"], device, use_amp, amp_dtype)
+        query_mask = batch["query_attention_mask"].to(device)
+        episode_mask = batch["episode_attention_mask"].to(device)
+
+        # Raw MaxSim (no z-norm) to collect population distribution
+        sim_matrix = torch.bmm(query_hidden, episode_hidden.transpose(1, 2))
+        if episode_mask is not None:
+            sim_matrix = sim_matrix.masked_fill(~episode_mask.unsqueeze(1).bool(), -1e9)
+        maxsim_per_token = sim_matrix.max(dim=-1).values
+        if query_mask is not None:
+            mask_float = query_mask.float()
+            maxsim = (maxsim_per_token * mask_float).sum(1) / mask_float.sum(1).clamp(min=1)
+        else:
+            maxsim = maxsim_per_token.mean(1)
+        all_maxsim.extend(maxsim.cpu().tolist())
+
+    if not all_maxsim:
+        logger.warning("  MaxSim population stats: no data")
+        return 0.0, 1.0
+
+    t = torch.tensor(all_maxsim)
+    pop_mean = t.mean().item()
+    pop_std = t.std().item()
+    logger.info(f"  MaxSim population stats: mean={pop_mean:.6f}, std={pop_std:.6f} (n={len(all_maxsim)})")
+    return pop_mean, pop_std
+
+
 def calibrate_mgrh_scores(
     model: ModernBertMultiTaskModel,
     mgrh_head: MultiGranularityRelevanceHead,
@@ -7378,6 +7558,19 @@ def run_mgrh_training(
             val_dataset.samples = full_dataset.samples[-val_size:]
             train_dataset.samples = full_dataset.samples[:-val_size]
 
+        # Oversample groups containing rare grades (e.g. Grade 2 = 1.5%)
+        # to prevent the model from ignoring fine-grained distinctions.
+        grade_oversample_cfg = stage_config.get("grade_oversample", {})
+        if grade_oversample_cfg.get("enabled", False):
+            train_dataset.samples = _oversample_rare_grades(
+                train_dataset.samples,
+                target_grades=grade_oversample_cfg.get("target_grades", [2]),
+                target_min_fraction=float(
+                    grade_oversample_cfg.get("target_min_fraction", 0.08)
+                ),
+            )
+            random.shuffle(train_dataset.samples)
+
         collator = RelevanceListwiseCollator(tokenizer, max_length)
         logger.info(f"  Train: {len(train_dataset):,}, Val: {len(val_dataset):,}")
     else:
@@ -7673,6 +7866,21 @@ def run_mgrh_training(
 
     # Post-training calibration (Issue 4.9, Stage C only)
     if stage == "c":
+        # Compute and store MaxSim population stats for stable inference z-norm
+        log_section("MGRH: MAXSIM POPULATION STATS")
+        pop_mean, pop_std = compute_maxsim_population_stats(
+            model, head_to_save, val_loader, device,
+            max_batches=200, use_amp=use_bf16, amp_dtype=amp_dtype,
+        )
+        head_to_save._maxsim_pop_mean = pop_mean
+        head_to_save._maxsim_pop_std = pop_std
+        # Re-save with population stats attached
+        torch.save(head_to_save.state_dict(), final_dir / "mgrh_head.pt")
+        # Also save as JSON for production loading
+        maxsim_meta = {"maxsim_pop_mean": pop_mean, "maxsim_pop_std": pop_std}
+        with open(final_dir / "maxsim_stats.json", "w") as f:
+            json.dump(maxsim_meta, f, indent=2)
+
         calibration_config = stage_config.get("calibration", {})
         if calibration_config.get("enabled", False):
             log_section("MGRH: POST-TRAINING CALIBRATION")
@@ -7705,6 +7913,14 @@ def run_mgrh_training(
         "global_steps": global_step,
         "timestamp": datetime.now().isoformat(),
     }
+    # Include calibration info for production loading (mgrh_metadata.json)
+    if stage == "c":
+        cal_meta: dict[str, Any] = {}
+        if "temperature" in dir():
+            cal_meta["temperature"] = temperature
+        cal_meta["maxsim_population_mean"] = pop_mean
+        cal_meta["maxsim_population_std"] = pop_std
+        meta["calibration"] = cal_meta
     with open(stage_output / "mgrh_metadata.json", "w") as f:
         json.dump(meta, f, indent=2)
 

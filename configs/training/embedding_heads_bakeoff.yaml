@@ -244,7 +244,7 @@ mgrh_training:
       epochs: 5
       lr_head: 2.0e-4
       lr_pair_encoder: 1.0e-4
-      batch_size: 512
+      batch_size: 128
       max_length: 512
 
     stage_b:
@@ -299,7 +299,12 @@ mgrh_training:
           weight: 1.0
         - path: nli/relevance/query_doc_listwise.jsonl
           format: listwise
-          weight: 1.0          # baked into train.jsonl split (10,019 episodes); weight honoured via pre-split merge
+          weight: 0.3             # reduced from 1.0 — binary-ish grades drown graded signal
+          max_groups: 800         # cap to match human benchmark volume (was 10,019)
+      grade_oversample:           # Grade 2 has only 72 samples (1.5%) — model can't learn it
+        enabled: true
+        target_grades: [2]        # oversample groups containing Grade 2 episodes
+        target_min_fraction: 0.08 # bring Grade 2 from 1.5% to ~8% of episodes
       loss:
         type: combined_ranking
         lambda_rank_weight: 1.0

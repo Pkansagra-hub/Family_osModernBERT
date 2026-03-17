@@ -97,10 +97,15 @@ class LambdaRankLoss(nn.Module):
         gj = gains.unsqueeze(0).expand(n, n)
         relevant_pairs = (gi > gj).float()
 
-        # |delta-nDCG| weighting
-        ranks = torch.arange(1, n + 1, device=scores.device, dtype=torch.float)
-        discount_i = (1.0 / torch.log2(ranks + 1)).unsqueeze(1).expand(n, n)
-        discount_j = (1.0 / torch.log2(ranks + 1)).unsqueeze(0).expand(n, n)
+        # |delta-nDCG| weighting — use SCORE-SORTED ranks (not fixed positions)
+        # so the lambda weights reflect the actual nDCG impact of swapping
+        # two documents at their current predicted positions.
+        sorted_indices = scores.argsort(descending=True)
+        ranks = torch.empty(n, device=scores.device, dtype=torch.float)
+        ranks[sorted_indices] = torch.arange(1, n + 1, device=scores.device, dtype=torch.float)
+        discount = 1.0 / torch.log2(ranks + 1)
+        discount_i = discount.unsqueeze(1).expand(n, n)
+        discount_j = discount.unsqueeze(0).expand(n, n)
         delta_ndcg = torch.abs(discount_i - discount_j) * torch.abs(gi - gj)
         delta_ndcg = delta_ndcg / ideal_dcg
 
