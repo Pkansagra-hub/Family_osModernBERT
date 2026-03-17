@@ -299,7 +299,7 @@ mgrh_training:
           weight: 1.0
         - path: nli/relevance/query_doc_listwise.jsonl
           format: listwise
-          weight: 0.4          # 10,019 converted pairs; down-weighted vs 798-sample human benchmark
+          weight: 1.0          # baked into train.jsonl split (10,019 episodes); weight honoured via pre-split merge
       loss:
         type: combined_ranking
         lambda_rank_weight: 1.0
