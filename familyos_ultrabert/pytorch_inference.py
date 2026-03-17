@@ -496,6 +496,11 @@ def postprocess(
         return _postprocess_token_classification(logits, tokens, schema)
     elif capability == "embedding":
         return _postprocess_embedding(logits)
+    elif capability == "relevance":
+        # MGRH outputs are handled separately via score_relevance / rerank
+        # If called through standard pipeline, return the raw score
+        score = logits[0].item() if logits.dim() == 2 else logits.item()
+        return {"score": round(float(score), 6)}
     elif capability == "safety_familyos":
         return _postprocess_safety(logits, schema)
     elif capability in ["emotions", "safety_generic", "relation"]:
@@ -570,6 +575,9 @@ class PyTorchInferenceEngine:
         # Custom schemas for zero-shot labels (override CAPABILITY_TO_LABELS)
         self.custom_schemas: Dict[str, LabelSchema] = {}
 
+        # MGRH calibration temperature (loaded from mgrh_metadata.json if present)
+        self.mgrh_temperature: float = 1.0
+
         # CUDA streams for parallel head execution
         self.use_cuda = device.startswith("cuda") and torch.cuda.is_available()
         if self.use_cuda:
@@ -593,7 +601,7 @@ class PyTorchInferenceEngine:
         tokenizer = _load_tokenizer(model_path)
         capabilities = list(model.heads.keys())
 
-        return cls(
+        engine = cls(
             model=model,
             tokenizer=tokenizer,
             capabilities=capabilities,
@@ -601,6 +609,28 @@ class PyTorchInferenceEngine:
             enable_cache=enable_cache,
             cache_size=cache_size,
         )
+
+        # Load MGRH calibration from metadata
+        metadata_path = Path(model_path) / "mgrh_metadata.json"
+        if metadata_path.exists():
+            with open(metadata_path, encoding="utf-8") as f:
+                meta = json.load(f)
+            cal = meta.get("calibration", {})
+            engine.mgrh_temperature = cal.get("temperature", 1.0)
+            logger.info("MGRH calibration temperature: %.4f", engine.mgrh_temperature)
+
+            # MaxSim population z-norm stats (avoids batch-size-dependent scoring)
+            pop_mean = cal.get("maxsim_population_mean")
+            pop_std = cal.get("maxsim_population_std")
+            if pop_mean is not None and pop_std is not None and "relevance" in engine.heads:
+                engine.heads["relevance"]._maxsim_pop_mean = pop_mean
+                engine.heads["relevance"]._maxsim_pop_std = pop_std
+                logger.info(
+                    "MGRH MaxSim population z-norm: mean=%.2f std=%.2f",
+                    pop_mean, pop_std,
+                )
+
+        return engine
 
     def _encode(self, text: str, use_cache: bool = True) -> tuple:
         """Encode text to hidden states.
@@ -656,6 +686,9 @@ class PyTorchInferenceEngine:
         with torch.no_grad():
             for cap in capabilities:
                 if cap not in self.heads:
+                    continue
+                # MGRH requires paired input; skip in standard single-text pipeline
+                if cap == Capability.RELEVANCE.value:
                     continue
                 head = self.heads[cap]
 
@@ -768,3 +801,208 @@ class PyTorchInferenceEngine:
     def cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         return self.cache.stats() if self.cache else {"enabled": False}
+
+    # -----------------------------------------------------------------
+    # MGRH Relevance Scoring
+    # -----------------------------------------------------------------
+
+    @torch.no_grad()
+    def _encode_text(self, text: str) -> tuple:
+        """Encode a single text and return (hidden_states, attention_mask)."""
+        inputs = self.tokenizer(
+            text,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt",
+        )
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        outputs = self.encoder(
+            input_ids=inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
+            return_dict=True,
+        )
+        return outputs.last_hidden_state, inputs["attention_mask"]
+
+    @torch.no_grad()
+    def _encode_pair_joint(self, query: str, doc: str) -> tuple:
+        """Encode query+doc as a joint pair and return (hidden_states, attention_mask)."""
+        inputs = self.tokenizer(
+            query,
+            doc,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt",
+        )
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        outputs = self.encoder(
+            input_ids=inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
+            return_dict=True,
+        )
+        return outputs.last_hidden_state, inputs["attention_mask"]
+
+    @torch.no_grad()
+    def _get_embedding(
+        self, hidden_states: torch.Tensor, attention_mask: torch.Tensor
+    ) -> Optional[torch.Tensor]:
+        """Get embedding from the embedding head (for MGRH Signal 3)."""
+        if "embedding" not in self.heads:
+            return None
+        head = self.heads["embedding"]
+        out = head(hidden_states, attention_mask=attention_mask)
+        if isinstance(out, dict):
+            return out.get("embedding", out.get("logits"))
+        return out
+
+    @torch.no_grad()
+    def score_relevance(self, query: str, doc: str) -> Dict[str, Any]:
+        """Score a (query, doc) pair using the MGRH head.
+
+        Requires 3 encoder passes: joint, query-only, doc-only, plus embedding.
+
+        Args:
+            query: Query text.
+            doc: Document text.
+
+        Returns:
+            Dict with 'score' (float 0-1), 'latency_ms', and raw signals.
+        """
+        if "relevance" not in self.heads:
+            raise ValueError("MGRH (relevance) head not loaded. Check checkpoint.")
+
+        start_time = time.perf_counter()
+
+        # 3 encoder passes
+        joint_hidden, joint_mask = self._encode_pair_joint(query, doc)
+        q_hidden, q_mask = self._encode_text(query)
+        d_hidden, d_mask = self._encode_text(doc)
+
+        # Embedding signals
+        q_embed = self._get_embedding(q_hidden, q_mask)
+        d_embed = self._get_embedding(d_hidden, d_mask)
+
+        # MGRH forward
+        head = self.heads["relevance"]
+        output = head(
+            hidden_states=joint_hidden,
+            attention_mask=joint_mask,
+            text_a_hidden=q_hidden,
+            text_b_hidden=d_hidden,
+            text_a_mask=q_mask,
+            text_b_mask=d_mask,
+            query_embed=q_embed,
+            doc_embed=d_embed,
+            stage="c",
+        )
+
+        # Apply calibration temperature to raw logits
+        raw_logit = output["relevance_logits_raw"].squeeze()
+        score = torch.sigmoid(raw_logit / self.mgrh_temperature).item()
+        latency_ms = (time.perf_counter() - start_time) * 1000
+
+        return {
+            "score": round(score, 6),
+            "latency_ms": round(latency_ms, 2),
+        }
+
+    @torch.no_grad()
+    def rerank(
+        self,
+        query: str,
+        documents: List[str],
+        top_k: Optional[int] = None,
+        batch_size: int = 16,
+    ) -> List[Dict[str, Any]]:
+        """Re-rank documents by MGRH relevance to query.
+
+        Uses batched scoring so MaxSim z-normalization is correct.
+
+        Args:
+            query: Query text.
+            documents: List of document texts.
+            top_k: Return only top-k results. None returns all.
+            batch_size: Documents per batch (>1 required for MaxSim z-norm).
+
+        Returns:
+            List of dicts sorted by relevance score (descending), each with
+            'index' (original position), 'score', and 'text'.
+        """
+        if "relevance" not in self.heads:
+            raise ValueError("MGRH (relevance) head not loaded. Check checkpoint.")
+
+        head = self.heads["relevance"]
+        all_scores: List[float] = []
+
+        for start in range(0, len(documents), batch_size):
+            chunk_docs = documents[start : start + batch_size]
+            queries = [query] * len(chunk_docs)
+
+            # Batched tokenization — pad to longest in batch (NOT max_length)
+            # Using padding="max_length" floods short texts with 500+ pad tokens
+            # whose hidden states leak through LayerNorm stats and corrupt scores.
+            joint = self.tokenizer(
+                queries, chunk_docs,
+                max_length=512, padding=True,
+                truncation=True, return_tensors="pt",
+            )
+            enc_q = self.tokenizer(
+                queries,
+                max_length=512, padding=True,
+                truncation=True, return_tensors="pt",
+            )
+            enc_d = self.tokenizer(
+                chunk_docs,
+                max_length=512, padding=True,
+                truncation=True, return_tensors="pt",
+            )
+
+            joint_ids = joint["input_ids"].to(self.device)
+            joint_mask = joint["attention_mask"].to(self.device)
+            q_ids = enc_q["input_ids"].to(self.device)
+            q_mask = enc_q["attention_mask"].to(self.device)
+            d_ids = enc_d["input_ids"].to(self.device)
+            d_mask = enc_d["attention_mask"].to(self.device)
+
+            # Encoder passes
+            joint_hidden = self.encoder(
+                input_ids=joint_ids, attention_mask=joint_mask, return_dict=True,
+            ).last_hidden_state
+            q_hidden = self.encoder(
+                input_ids=q_ids, attention_mask=q_mask, return_dict=True,
+            ).last_hidden_state
+            d_hidden = self.encoder(
+                input_ids=d_ids, attention_mask=d_mask, return_dict=True,
+            ).last_hidden_state
+
+            # Embeddings
+            q_embed = self._get_embedding(q_hidden, q_mask)
+            d_embed = self._get_embedding(d_hidden, d_mask)
+
+            output = head(
+                hidden_states=joint_hidden,
+                attention_mask=joint_mask,
+                text_a_hidden=q_hidden,
+                text_b_hidden=d_hidden,
+                text_a_mask=q_mask,
+                text_b_mask=d_mask,
+                query_embed=q_embed,
+                doc_embed=d_embed,
+                stage="c",
+            )
+
+            # Apply calibration temperature to raw logits
+            raw_logits = output["relevance_logits_raw"].squeeze(-1).float()
+            scores = torch.sigmoid(raw_logits / self.mgrh_temperature).cpu()
+            if scores.dim() == 0:
+                all_scores.append(scores.item())
+            else:
+                all_scores.extend(scores.tolist())
+
+        results = [
+            {"index": i, "score": round(s, 6), "text": documents[i]}
+            for i, s in enumerate(all_scores)
+        ]
+        results.sort(key=lambda x: x["score"], reverse=True)
+        if top_k is not None:
+            results = results[:top_k]
+        return results

@@ -52,6 +52,7 @@ for _mod in (
     "latency",
     "realworld_corruption",
     "regression",
+    "relevance",
     "robustness",
     "semantic_complexity",
     "safety",

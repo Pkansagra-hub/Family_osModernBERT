@@ -1014,6 +1014,8 @@ class MultiGranularityRelevanceHead(BaseHead):
         text_b_hidden: torch.Tensor,
         text_a_mask: torch.Tensor | None = None,
         text_b_mask: torch.Tensor | None = None,
+        population_mean: float | None = None,
+        population_std: float | None = None,
     ) -> torch.Tensor:
         """
         Compute ColBERT-style MaxSim token-level alignment score.
@@ -1023,11 +1025,18 @@ class MultiGranularityRelevanceHead(BaseHead):
         semantics failures (e.g. S7-1: 'eating at restaurant' vs 'cooking show
         about restaurants').
 
+        When population_mean and population_std are provided (from calibration
+        on held-out data), uses them for stable normalization regardless of
+        batch size.  Falls back to batch z-norm when population stats are
+        absent and batch_size > 1.
+
         Args:
             text_a_hidden: Query hidden states [B, q_len, H]
             text_b_hidden: Document hidden states [B, d_len, H]
             text_a_mask: Query attention mask [B, q_len]
             text_b_mask: Document attention mask [B, d_len]
+            population_mean: Pre-computed MaxSim population mean.
+            population_std: Pre-computed MaxSim population std.
 
         Returns:
             Z-score normalized MaxSim scalar [B, 1]
@@ -1051,10 +1060,11 @@ class MultiGranularityRelevanceHead(BaseHead):
         else:
             maxsim = maxsim_per_token.mean(1)
 
-        # Z-score normalize per batch to prevent magnitude mismatch
-        # with other signals (MaxSim is unbounded dot-product, others are bounded)
+        # Z-score normalize to prevent magnitude mismatch with other signals
         maxsim = maxsim.unsqueeze(-1)  # [B, 1]
-        if maxsim.size(0) > 1:
+        if population_mean is not None and population_std is not None:
+            maxsim = (maxsim - population_mean) / (population_std + 1e-8)
+        elif maxsim.size(0) > 1:
             maxsim = (maxsim - maxsim.mean()) / (maxsim.std() + 1e-8)
 
         return maxsim
@@ -1159,7 +1169,9 @@ class MultiGranularityRelevanceHead(BaseHead):
         # --- Signal 4: ColBERT MaxSim ---
         if text_a_hidden is not None and text_b_hidden is not None:
             maxsim = self.compute_maxsim(
-                text_a_hidden, text_b_hidden, text_a_mask, text_b_mask
+                text_a_hidden, text_b_hidden, text_a_mask, text_b_mask,
+                population_mean=getattr(self, "_maxsim_pop_mean", None),
+                population_std=getattr(self, "_maxsim_pop_std", None),
             )  # [B, 1]
         else:
             maxsim = torch.zeros(batch_size, self.MAXSIM_DIM, device=device)

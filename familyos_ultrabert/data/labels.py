@@ -859,6 +859,9 @@ class Capability(str, Enum):
     INTENT_V2 = "intent_v2"
     INGRESS_V2 = "ingress_v2"
 
+    # MGRH v4.1 - Multi-Granularity Relevance Head
+    RELEVANCE = "relevance"
+
     def __str__(self) -> str:
         return self.value
 

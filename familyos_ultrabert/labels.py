@@ -72,6 +72,7 @@ class Capability(str, Enum):
     SAFETY_FAMILYOS = "safety_familyos"
     RELATION = "relation"
     INTENT = "intent"  # LabelDescriptionHead (multi-label capable)
+    RELEVANCE = "relevance"  # MultiGranularityRelevanceHead (cross-encoder re-ranking)
 
     def __str__(self) -> str:
         return self.value

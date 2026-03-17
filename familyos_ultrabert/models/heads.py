@@ -4785,6 +4785,218 @@ def create_label_description_head(
 
 
 # =============================================================================
+# Multi-Granularity Relevance Head (MGRH) — v4.1
+# =============================================================================
+
+
+class MultiGranularityRelevanceHead(BaseHead):
+    """Multi-Granularity Relevance Head for cross-encoder re-ranking.
+
+    Fuses 4 complementary signals to produce a relevance score [0.0, 1.0]:
+        Signal 1 (CLS): Global coherence from [CLS] token projection
+        Signal 2 (ESIM): Token-level alignment via CrossAttentionPairEncoder
+        Signal 3 (Asymmetric): Embedding interaction from AgreementGatedHeadV2
+        Signal 4 (MaxSim): ColBERT-style per-token max similarity (no learned params)
+
+    Two-head output:
+        nli_head(256, 3) for Stage A + relevance_head(256, 1) for B+C.
+
+    Args:
+        hidden_size: Size of encoder hidden states (768 for ModernBERT-base).
+        dropout: Dropout probability for fusion MLP layers.
+        pair_encoder: CrossAttentionPairEncoder for Signal 2.
+    """
+
+    FUSION_SIGNALS = 4
+    MAXSIM_DIM = 1
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        num_labels: int = 1,
+        dropout: float = 0.1,
+        problem_type: str = "regression",
+        pair_encoder: nn.Module | None = None,
+    ):
+        super().__init__(
+            hidden_size=hidden_size,
+            num_labels=num_labels,
+            dropout=dropout,
+            problem_type=problem_type,
+        )
+
+        self.pair_encoder = pair_encoder
+        self._use_pair_encoder = pair_encoder is not None
+
+        # Signal 1: CLS token projection
+        self.cls_proj = nn.Linear(hidden_size, hidden_size)
+
+        # Signal 3: Asymmetric embedding interaction  [q, d, q*d, |q-d|] = 4H
+        self.interaction_dim = hidden_size * 4
+
+        # Fusion MLP: Signal1(H) + Signal2(H) + Signal3(4H) + Signal4(1) = 6H+1
+        fusion_input_dim = hidden_size * 6 + self.MAXSIM_DIM
+
+        self.fusion_input_ln = nn.LayerNorm(fusion_input_dim)
+        self.fusion_mlp = nn.Sequential(
+            nn.Linear(fusion_input_dim, 1024),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(1024, 256),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+
+        self.nli_head = nn.Linear(256, 3)
+        self.relevance_head = nn.Linear(256, 1)
+
+        self._init_weights()
+
+    def _init_weights(self) -> None:
+        nn.init.xavier_uniform_(self.cls_proj.weight)
+        nn.init.zeros_(self.cls_proj.bias)
+        for module in self.fusion_mlp:
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                nn.init.zeros_(module.bias)
+        nn.init.xavier_uniform_(self.nli_head.weight)
+        nn.init.zeros_(self.nli_head.bias)
+        nn.init.xavier_uniform_(self.relevance_head.weight)
+        nn.init.zeros_(self.relevance_head.bias)
+
+    @staticmethod
+    def compute_maxsim(
+        text_a_hidden: torch.Tensor,
+        text_b_hidden: torch.Tensor,
+        text_a_mask: torch.Tensor | None = None,
+        text_b_mask: torch.Tensor | None = None,
+        population_mean: float | None = None,
+        population_std: float | None = None,
+    ) -> torch.Tensor:
+        """ColBERT-style MaxSim with z-normalization.
+
+        When population_mean and population_std are provided (from calibration
+        on held-out data), uses them for stable normalization regardless of
+        batch size.  Falls back to batch z-norm (original training behaviour)
+        when population stats are absent and batch_size > 1.
+
+        Returns z-score normalized MaxSim scalar [B, 1].
+        """
+        sim_matrix = torch.bmm(text_a_hidden, text_b_hidden.transpose(1, 2))
+        if text_b_mask is not None:
+            sim_matrix = sim_matrix.masked_fill(~text_b_mask.unsqueeze(1).bool(), -1e9)
+
+        maxsim_per_token = sim_matrix.max(dim=-1).values
+
+        if text_a_mask is not None:
+            mask_float = text_a_mask.float()
+            maxsim = (maxsim_per_token * mask_float).sum(1) / mask_float.sum(1).clamp(min=1)
+        else:
+            maxsim = maxsim_per_token.mean(1)
+
+        maxsim = maxsim.unsqueeze(-1)
+
+        # Z-normalize: prefer population stats for consistency across batch sizes
+        if population_mean is not None and population_std is not None:
+            maxsim = (maxsim - population_mean) / (population_std + 1e-8)
+        elif maxsim.size(0) > 1:
+            maxsim = (maxsim - maxsim.mean()) / (maxsim.std() + 1e-8)
+
+        return maxsim
+
+    @staticmethod
+    def compute_embedding_interaction(
+        query_embed: torch.Tensor,
+        doc_embed: torch.Tensor,
+    ) -> torch.Tensor:
+        """Asymmetric embedding interaction: [q, d, q*d, |q-d|] -> [B, 4H]."""
+        return torch.cat(
+            [query_embed, doc_embed, query_embed * doc_embed, (query_embed - doc_embed).abs()],
+            dim=-1,
+        )
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+        pair_encoder: nn.Module | None = None,
+        text_a_hidden: torch.Tensor | None = None,
+        text_b_hidden: torch.Tensor | None = None,
+        text_a_mask: torch.Tensor | None = None,
+        text_b_mask: torch.Tensor | None = None,
+        query_embed: torch.Tensor | None = None,
+        doc_embed: torch.Tensor | None = None,
+        stage: str = "c",
+    ) -> dict[str, torch.Tensor]:
+        """Forward pass fusing 4 signals into a relevance score.
+
+        Returns dict with 'logits' (sigmoid [B,1]), 'relevance_logits_raw',
+        'fused_repr', and optionally 'nli_logits' (stage a) / 'loss'.
+        """
+        batch_size = hidden_states.size(0)
+        device = hidden_states.device
+
+        # Signal 1: CLS
+        h_cls = torch.tanh(self.cls_proj(hidden_states[:, 0]))
+
+        # Signal 2: Cross-attention
+        active_pe = pair_encoder or self.pair_encoder
+        if active_pe is not None and text_a_hidden is not None and text_b_hidden is not None:
+            h_cross = active_pe(text_a_hidden, text_b_hidden, text_a_mask, text_b_mask)
+        else:
+            h_cross = torch.zeros(batch_size, self.hidden_size, device=device)
+
+        # Signal 3: Embedding interaction
+        if query_embed is not None and doc_embed is not None:
+            interaction = self.compute_embedding_interaction(query_embed, doc_embed)
+        else:
+            interaction = torch.zeros(batch_size, self.interaction_dim, device=device)
+
+        # Signal 4: MaxSim
+        if text_a_hidden is not None and text_b_hidden is not None:
+            maxsim = self.compute_maxsim(
+                text_a_hidden, text_b_hidden, text_a_mask, text_b_mask,
+                population_mean=getattr(self, "_maxsim_pop_mean", None),
+                population_std=getattr(self, "_maxsim_pop_std", None),
+            )
+        else:
+            maxsim = torch.zeros(batch_size, self.MAXSIM_DIM, device=device)
+
+        # Fusion
+        fusion_input = torch.cat([h_cls, h_cross, interaction, maxsim], dim=-1)
+        fusion_input = self.fusion_input_ln(fusion_input)
+        fused_repr = self.fusion_mlp(fusion_input)
+
+        relevance_logits = self.relevance_head(fused_repr)
+        relevance_score = torch.sigmoid(relevance_logits)
+
+        output: dict[str, torch.Tensor] = {
+            "logits": relevance_score,
+            "relevance_logits_raw": relevance_logits,
+            "fused_repr": fused_repr,
+        }
+
+        if stage == "a":
+            output["nli_logits"] = self.nli_head(fused_repr)
+
+        if labels is not None:
+            if stage == "a":
+                nli_loss = F.cross_entropy(output["nli_logits"], labels.long())
+                soft_relevance = 1.0 - labels.float() * 0.5
+                aux_loss = F.binary_cross_entropy_with_logits(
+                    relevance_logits.squeeze(-1), soft_relevance,
+                )
+                output["loss"] = nli_loss + 0.1 * aux_loss
+            else:
+                output["loss"] = F.binary_cross_entropy_with_logits(
+                    relevance_logits.squeeze(-1), labels.float(),
+                )
+
+        return output
+
+
+# =============================================================================
 # Exports
 # =============================================================================
 
@@ -4810,4 +5022,6 @@ __all__ = [
     "IntentHeadV2",  # SOTA multi-label intent
     "IngressHeadV2",  # SOTA multi-label ingress
     "create_label_description_head",  # Factory function
+    # MGRH — Multi-Granularity Relevance Head (v4.1)
+    "MultiGranularityRelevanceHead",
 ]

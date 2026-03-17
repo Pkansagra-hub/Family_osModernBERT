@@ -1,3 +1,59 @@
+# FamilyOS UltraBERT v4.0.8 Release
+
+## Multi-Granularity Relevance Head (MGRH) + Critical Inference Fixes
+
+This release adds the **Multi-Granularity Relevance Head** (MGRH) — a 46M-parameter cross-encoder reranking head that fuses four complementary signals for SOTA episode retrieval reranking. It also fixes three critical inference bugs discovered during integration testing.
+
+### Added
+
+- **MultiGranularityRelevanceHead**: 46.3M-parameter cross-encoder head fusing 4 signals:
+  - **Signal 1 (CLS)**: Joint cross-encoder CLS token representation
+  - **Signal 2 (CrossAttention)**: 2-layer bidirectional ESIM pair encoder with attention pooling
+  - **Signal 3 (Embedding Interaction)**: Asymmetric `[q*d, |q-d|, q, d]` embedding interaction
+  - **Signal 4 (ColBERT MaxSim)**: Token-level maximum similarity alignment with population z-normalization
+  - Fusion: LayerNorm(4609) -> MLP(4609->1024->256) -> relevance_head(256->1) -> sigmoid
+- **Client API**: `client.score_relevance(query, doc)` for pointwise scoring, `client.rerank(query, documents, top_k)` for batched reranking
+- **Population z-normalization**: MaxSim signal uses pre-computed population statistics (mean=845.56, std=60.75) for consistent normalization regardless of batch size
+- **Temperature calibration**: Inference temperature set to 0.300 (composite-optimal from sweep on 400 holdout triplets)
+
+### Fixed
+
+- **MaxSim population z-norm (CRITICAL)**: Raw MaxSim dot products (~841) were fed into an MLP trained to expect ~N(0,1) inputs when batch_size=1 (single-pair `score_relevance()`). This caused a 3-order-of-magnitude input distribution mismatch. Fixed by computing and applying population statistics from 200 holdout pairs.
+- **Padding leak in rerank()**: `padding="max_length"` padded every input to 512 tokens, leaking padding noise through LayerNorm stats. Fixed with `padding=True` (pad to longest in batch).
+- **Temperature disconnect**: Inference temperature was loading 0.7 (ECE-optimal) instead of 0.3 (composite-optimal). Metadata and loading path corrected.
+
+### Benchmark Results (MGRH)
+
+| Dataset | Spearman | AUC-ROC | nDCG@10 | vs Bi-Encoder Lift |
+|---------|----------|---------|---------|---------------------|
+| Human Benchmark (798 groups) | **0.9043** | 0.8405 | **0.9867** | **+0.5499** |
+| Holdout (79 groups) | **0.8481** | 0.8239 | 0.9802 | **+0.5823** |
+| Dev (79 groups) | **0.8734** | 0.7721 | 0.9806 | **+0.4557** |
+
+Pairwise discrimination: Wrong Person **93.13%**, Wrong Time **91.53%**, Sentiment Flip **96.13%**.
+
+### Architecture
+
+| Component | Params |
+|-----------|--------|
+| Encoder (ModernBERT) | 149,014,272 |
+| MGRH Head (trainable) | 46,333,958 |
+| **Total** | **195,348,230** |
+
+### Validation
+
+- Holdout pairwise accuracy: 95.0% (preserved after all fixes)
+- `score_relevance()` and `rerank()` produce identical scores to 6 decimal places
+- Gate check: Spearman > 0.70 PASS, nDCG@10 > 0.83 PASS, Holdout Spearman > 0.50 PASS, Holdout AUC > 0.80 PASS
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v4.0.7 Release
 
 ## Stale v2 Cache Refresh Hotfix

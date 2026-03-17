@@ -1,0 +1,198 @@
+%%{init: {"theme": "dark", "themeVariables": {
+  "primaryColor":      "#0984e3",
+  "primaryTextColor":  "#ffffff",
+  "primaryBorderColor":"#2d3436",
+  "lineColor":         "#636e72",
+  "secondaryColor":    "#6c5ce7",
+  "tertiaryColor":     "#1e272e"
+}}}%%
+flowchart TB
+    %% ── Styles ──────────────────────────────────────────────────────────────────
+    classDef inputNode  fill:#1e272e,stroke:#636e72,color:#dfe6e9
+    classDef encNode    fill:#0984e3,stroke:#2d3436,color:#ffffff,font-weight:bold
+    classDef nerNode    fill:#6c5ce7,stroke:#2d3436,color:#ffffff
+    classDef clsNode    fill:#00b894,stroke:#2d3436,color:#ffffff
+    classDef specNode   fill:#00cec9,stroke:#2d3436,color:#1e272e
+    classDef embNode    fill:#e84393,stroke:#2d3436,color:#ffffff
+    classDef mgrhNode   fill:#e17055,stroke:#2d3436,color:#ffffff,font-weight:bold
+    classDef sigNode    fill:#fdcb6e,stroke:#e17055,color:#2d3436
+    classDef fusNode    fill:#d63031,stroke:#2d3436,color:#ffffff
+    classDef layNode    fill:#2d3436,stroke:#636e72,color:#dfe6e9
+    classDef outNode    fill:#1e272e,stroke:#00b894,color:#00b894
+
+    %% ── Input ───────────────────────────────────────────────────────────────────
+    SRC(["Input Text  max_len = 512 tokens"]):::inputNode
+
+    %% ── Encoder ─────────────────────────────────────────────────────────────────
+    subgraph ENC["  ModernBERT-base Encoder  149,014,272 params  "]
+        direction TB
+        EL["22 x TransformerLayer\nFlash-Attn 2  12 heads / layer\nhidden = 768  SDPA fallback  RoPE"]:::encNode
+        EC["CLS token  h0  R^768"]:::encNode
+        ES["Sequence tokens  h1..hn  R^(L x 768)"]:::encNode
+        EL --> EC & ES
+    end
+
+    SRC --> EL
+
+    %% ── NER / Span Extraction ────────────────────────────────────────────────────
+    subgraph NGEN["  ner_general  GlobalPointerNERHead  0.79M  "]
+        NGQ["q_proj  Linear(768, 512)"]:::nerNode
+        NGK["k_proj  Linear(768, 512)"]:::nerNode
+        NGR["RoPE encoding  4 labels  head_dim=64\nreshape -> (B, 4, L, 64)"]:::nerNode
+        NGE["einsum(q, k) / sqrt(64)  ->  (B, 4, L, L)"]:::nerNode
+        NGM(["upper-tri mask  ->  span logits\nGlobalPointerLoss  sigmoid > thr  NMS"]):::outNode
+        NGQ & NGK --> NGR --> NGE --> NGM
+    end
+
+    subgraph NFAM["  ner_family  GlobalPointerNERHead  1.97M  "]
+        NFQ["q_proj  Linear(768, 1280)"]:::nerNode
+        NFK["k_proj  Linear(768, 1280)"]:::nerNode
+        NFR["RoPE encoding  10 labels  head_dim=64\nreshape -> (B, 10, L, 64)"]:::nerNode
+        NFE["einsum(q, k) / sqrt(64)  ->  (B, 10, L, L)"]:::nerNode
+        NFM(["upper-tri mask  ->  span logits\nGlobalPointerLoss  sigmoid > thr  NMS"]):::outNode
+        NFQ & NFK --> NFR --> NFE --> NFM
+    end
+
+    subgraph NTMP["  temporal  GlobalPointerNERHead  2.56M  "]
+        NTQ["q_proj  Linear(768, 1664)"]:::nerNode
+        NTK["k_proj  Linear(768, 1664)"]:::nerNode
+        NTR["RoPE encoding  13 labels  head_dim=64\nreshape -> (B, 13, L, 64)"]:::nerNode
+        NTE["einsum(q, k) / sqrt(64)  ->  (B, 13, L, L)"]:::nerNode
+        NTM(["upper-tri mask  ->  span logits\n6 temporal types  BIO decode"]):::outNode
+        NTQ & NTK --> NTR --> NTE --> NTM
+    end
+
+    %% ── Sequence Classification ──────────────────────────────────────────────────
+    subgraph HSEN["  sentiment  SequenceClassificationHead  0.59M  "]
+        SNDR["Dropout(0.1)"]:::layNode
+        SNDN["dense  Linear(768, 768)  Tanh"]:::clsNode
+        SNDR2["Dropout(0.1)"]:::layNode
+        SNCF["classifier  Linear(768, K)"]:::clsNode
+        SNOUT(["Sentiment logits"]):::outNode
+        SNDR --> SNDN --> SNDR2 --> SNCF --> SNOUT
+    end
+
+    subgraph HNLI["  nli  NLIHead  3 labels  0.59M  "]
+        NLDR["Dropout(0.1)"]:::layNode
+        NLDN["dense  Linear(768, 768)  Tanh"]:::clsNode
+        NLDR2["Dropout(0.1)"]:::layNode
+        NLCF["classifier  Linear(768, 3)"]:::clsNode
+        NLOUT(["E / N / C logits  CE loss"]):::outNode
+        NLDR --> NLDN --> NLDR2 --> NLCF --> NLOUT
+    end
+
+    subgraph HING["  ingress  SequenceClassificationHead  0.59M  "]
+        IGDR["Dropout(0.1)"]:::layNode
+        IGDN["dense  Linear(768, 768)  Tanh"]:::clsNode
+        IGDR2["Dropout(0.1)"]:::layNode
+        IGCF["classifier  Linear(768, K)"]:::clsNode
+        IGOUT(["Ingress class logits"]):::outNode
+        IGDR --> IGDN --> IGDR2 --> IGCF --> IGOUT
+    end
+
+    subgraph HINT["  intent  IntentHead  8 intents  0.59M  "]
+        ITDR["Dropout(0.1)"]:::layNode
+        ITDN["dense  Linear(768, 768)  Tanh"]:::clsNode
+        ITDR2["Dropout(0.1)"]:::layNode
+        ITCF["classifier  Linear(768, 8)"]:::clsNode
+        ITOUT(["Softmax  +  confidence >= 0.5 threshold"]):::outNode
+        ITDR --> ITDN --> ITDR2 --> ITCF --> ITOUT
+    end
+
+    %% ── Specialized Heads ────────────────────────────────────────────────────────
+    subgraph HEMO["  emotions  HierarchicalEmotionHead  0.94M  "]
+        EMDR["Dropout(0.1)"]:::layNode
+        EMDN["shared_dense  Linear(768, 768)  GELU"]:::specNode
+        EMCF["emotion_classifier  Linear(768, 44)\nmulti-label sigmoid  44 emotions"]:::specNode
+        EMIR["intensity_regressor\nLinear(768, 384)  GELU  Dropout\nLinear(384, 44)  Sigmoid"]:::specNode
+        EMOUT(["44 multi-label logits  +  per-emotion intensity [0, 1]"]):::outNode
+        EMDR --> EMDN --> EMCF & EMIR --> EMOUT
+    end
+
+    subgraph HSFG["  safety_generic  SequenceClassificationHead  0.60M  "]
+        SGDR["Dropout(0.1)"]:::layNode
+        SGDN["dense  Linear(768, 768)  Tanh"]:::specNode
+        SGDR2["Dropout(0.1)"]:::layNode
+        SGCF["classifier  Linear(768, 8)  multi-label"]:::specNode
+        SGOUT(["ASL Loss  gamma_neg=4  gamma_pos=1  clip=0.05"]):::outNode
+        SGDR --> SGDN --> SGDR2 --> SGCF --> SGOUT
+    end
+
+    subgraph HSFF["  safety_familyos  SafetyHead  0.89M  "]
+        SFDN["dense  Linear(768, 768)  Tanh"]:::specNode
+        SFBC["band_classifier  Linear(768, 4)\ntemp-scaled  GREEN / AMBER / RED / CRISIS"]:::specNode
+        SFSC["subcategory_classifier\nLinear(768, 384)  GELU  Dropout  Linear(384, 13)"]:::specNode
+        SFMK["hierarchical band-to-subcat mask\n13 gated subcategory logits"]:::specNode
+        SFOUT(["0.6 x band_CE  +  0.4 x subcat_CE"]):::outNode
+        SFDN --> SFBC & SFSC --> SFMK --> SFOUT
+    end
+
+    subgraph HREL["  relation  RelationHead  1.18M  "]
+        RLEXT["extract entity start-token reps  e1, e2\nvia span indices  ->  each R^768"]:::layNode
+        RLCAT["cat([e1, e2])  ->  R^1536"]:::layNode
+        RLPD["entity_pair_dense  Linear(1536, 768)  Tanh\n+ Dropout(0.1)"]:::specNode
+        RLCF["classifier  Linear(768, 15)"]:::specNode
+        RLOUT(["15 family relation type logits"]):::outNode
+        RLEXT --> RLCAT --> RLPD --> RLCF --> RLOUT
+    end
+
+    %% ── Embedding Head ───────────────────────────────────────────────────────────
+    subgraph HEMB["  embedding  AgreementGatedHeadV2  ~10M  "]
+        direction TB
+        EMBMP["mean_pool  sequence mean  ->  R^768"]:::embNode
+        EMBLQ["latent_queries  Parameter(1, 4, 768)\n4 learned query vectors"]:::embNode
+        EMBCA["cross_attn  MHA(H=768, 4-heads, batch_first)\nQ = latent_queries  KV = full sequence h1..hn\ncross_attn_norm  LayerNorm(768)"]:::embNode
+        EMBFF["latent_ffn  Linear(768, 1536)  GELU  Dropout  Linear(1536, 768)\nffn_norm  LayerNorm(768)"]:::embNode
+        EMBBL["blend  sigmoid(alpha) x attn_pooled  +  (1 - sigmoid(alpha)) x mean_pooled\nalpha = Parameter(1)  learned blend weight"]:::embNode
+        EMBLN["LayerNorm(768)"]:::embNode
+        EMBSG["SwiGLU projection\ngate_proj  Linear(768, 768, bias=False)\nup_proj    Linear(768, 768, bias=False)\ndown_proj  Linear(768, 768, bias=False)"]:::embNode
+        EMBNORM(["L2 normalize  ->  R^768"]):::outNode
+        EMBLQ --> EMBCA
+        EMBCA --> EMBFF --> EMBBL
+        EMBMP --> EMBBL
+        EMBBL --> EMBLN --> EMBSG --> EMBNORM
+    end
+
+    %% ── MGRH ─────────────────────────────────────────────────────────────────────
+    subgraph HMGRH["  MultiGranularityRelevanceHead  46,333,958 params  "]
+        direction TB
+
+        subgraph HCAPE["  CrossAttentionPairEncoder  40,750,080 params  "]
+            direction TB
+            CAPEQ["Query hidden states\nh_q  R^(Lq x 768)"]:::sigNode
+            CAPED["Doc hidden states\nh_d  R^(Ld x 768)"]:::sigNode
+            CAPEL1["BidirCrossAttnBlock 1\nA->B  CrossAttn(768, 8-heads)  pre-norm  +  FFN(768, 3072)\nB->A  CrossAttn(768, 8-heads)  pre-norm  +  FFN(768, 3072)\n14.18M params  head_dim = 96"]:::mgrhNode
+            CAPEL2["BidirCrossAttnBlock 2\nA->B  CrossAttn(768, 8-heads)  pre-norm  +  FFN(768, 3072)\nB->A  CrossAttn(768, 8-heads)  pre-norm  +  FFN(768, 3072)\n14.18M params  head_dim = 96"]:::mgrhNode
+            CAPEPA["AttentionPooling_q\nlearnable Q  R^768\nkey  Linear(768,768)  value  Linear(768,768)\nout_proj  Linear(768,768)  ->  R^768  (1.77M)"]:::mgrhNode
+            CAPEPB["AttentionPooling_d\nlearnable Q  R^768\nkey  Linear(768,768)  value  Linear(768,768)\nout_proj  Linear(768,768)  ->  R^768  (1.77M)"]:::mgrhNode
+            CAPECB["combination_layer\nLinear(1536, 768) + Linear(768, 768)  (1.77M)\nentity_comb  Linear(3072,1536) + Linear(1536,1536)  (7.08M)\n->  R^768"]:::mgrhNode
+            CAPEQ & CAPED --> CAPEL1 --> CAPEL2 --> CAPEPA & CAPEPB --> CAPECB
+        end
+
+        MGS1["S1  CLS Signal\ncls_proj  Linear(768, 768)  Tanh\n->  R^768  (0.59M)"]:::sigNode
+        MGS2["S2  ESIM Signal\nCrossAttentionPairEncoder pooled output\n->  R^768  (no extra params)"]:::sigNode
+        MGS3["S3  Asymmetric Interaction\nq, d from embedding head  [q,  d,  q*d,  |q-d|]\n->  R^3072  (no learned params)"]:::sigNode
+        MGS4["S4  MaxSim  ColBERT-style\nbmm cosine sim  max per query token  mean  z-score\n->  R^1  (no learned params)"]:::sigNode
+
+        CAPECB --> MGS2
+
+        MGCAT["Concatenate  [ S1  ||  S2  ||  S3  ||  S4 ]\n->  R^4609  =  6 x 768 + 1"]:::fusNode
+        MGMLP["Fusion MLP  4.98M params\nfusion_input_ln  LayerNorm(4609)\nLinear(4609 -> 1024)  GELU  Dropout\nLinear(1024 -> 256)   GELU  Dropout\nfused_repr  R^256"]:::fusNode
+        MGROUT(["relevance_head  Linear(256->1)  Sigmoid\nscore in [0, 1]  calibration T = 1.1309\nnDCG@10 = 0.8901"]):::outNode
+        MGNOUT(["nli_head  Stage-A auxiliary\nLinear(256->3)  CE + 0.1 x BCE"]):::outNode
+
+        MGS1 & MGS2 & MGS3 & MGS4 --> MGCAT --> MGMLP --> MGROUT & MGNOUT
+    end
+
+    %% ── Encoder connections ──────────────────────────────────────────────────────
+    ES --> NGQ & NGK
+    ES --> NFQ & NFK
+    ES --> NTQ & NTK
+    ES --> RLEXT
+    ES --> EMBMP & EMBCA
+    ES --> CAPEQ & CAPED
+    EC --> SNDR & NLDR & IGDR & ITDR
+    EC --> EMDR & SGDR & SFDN
+    EC --> MGS1
+    EMBNORM -.->|"q / d repr  R^768"| MGS3
+    EMBNORM -.->|"token-level embeddings"| MGS4

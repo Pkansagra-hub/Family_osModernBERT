@@ -79,6 +79,7 @@ from familyos_ultrabert.models.heads import (  # noqa: E402
     IntentHead,
     IntentHeadV2,  # V2 Label-Description Embedding
     IngressHeadV2,  # V2 Label-Description Embedding
+    MultiGranularityRelevanceHead,  # MGRH v4.1
     NLIHead,
     RelationHead,
     SafetyHead,  # type: ignore  # noqa: F401
@@ -159,6 +160,7 @@ CAPABILITY_TO_HEAD_TYPE: dict[Capability, type[nn.Module]] = {
     Capability.NLI: NLIHead,
     Capability.RELATION: RelationHead,  # NEW
     Capability.EMBEDDING: EmbeddingHead,
+    Capability.RELEVANCE: MultiGranularityRelevanceHead,  # MGRH v4.1
 }
 
 SUPPORTED_EMBEDDING_HEAD_TYPES = {
@@ -552,6 +554,16 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     dropout=self.head_dropout,
                     multi_label=True,  # K1 requirement: multi-label classification
                 )
+            elif capability == Capability.RELEVANCE:
+                # MGRH v4.1: Multi-Granularity Relevance Head
+                # Pass the model-level pair_encoder so weights are shared
+                head = head_cls(
+                    hidden_size=hidden_size,
+                    num_labels=1,
+                    dropout=self.head_dropout,
+                    problem_type="regression",
+                    pair_encoder=self.pair_encoder,
+                )
             else:
                 head = head_cls(
                     hidden_size=hidden_size,
@@ -683,6 +695,24 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             )
             logits = head_output.get("logits")
             loss = head_output.get("loss")
+        elif capability == Capability.RELEVANCE:
+            # MGRH v4.1: Multi-Granularity Relevance Head
+            # Requires separate hidden states and embeddings passed via kwargs
+            head_output = head(
+                sequence_output,
+                attention_mask=attention_mask,
+                labels=labels,
+                pair_encoder=self.pair_encoder,
+                text_a_hidden=kwargs.get("text_a_hidden"),
+                text_b_hidden=kwargs.get("text_b_hidden"),
+                text_a_mask=kwargs.get("text_a_mask"),
+                text_b_mask=kwargs.get("text_b_mask"),
+                query_embed=kwargs.get("query_embed"),
+                doc_embed=kwargs.get("doc_embed"),
+                stage=kwargs.get("stage", "c"),
+            )
+            logits = head_output.get("logits")
+            loss = head_output.get("loss")
         else:
             # Classification heads
             head_output = head(
@@ -780,6 +810,7 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         LEGACY_HEAD_NAMES = {
             "intent_v2": "intent",
             "ingress_v2": "ingress",
+            "mgrh": "relevance",
         }
 
         # If no capabilities.json, build from checkpoint heads
@@ -815,6 +846,9 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 elif cap_name == "ingress" and "ingress_v2" in checkpoint_heads:
                     checkpoint_cap_name = "ingress_v2"
                     logger.info("  Detected legacy ingress_v2 head, mapping to ingress")
+                elif cap_name == "relevance" and "mgrh" in checkpoint_heads:
+                    checkpoint_cap_name = "mgrh"
+                    logger.info("  Detected legacy mgrh head, mapping to relevance")
 
                 if cap_name in ALWAYS_CREATE_HEADS:
                     # Always create metadata-driven heads even if checkpoint weights are sparse.
@@ -857,6 +891,14 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             with open(embedding_metadata_file) as f:
                 checkpoint_embedding_metadata = json.load(f)
 
+        # Load MGRH metadata if available
+        mgrh_metadata_file = checkpoint_path / "mgrh_metadata.json"  # type: ignore
+        checkpoint_mgrh_metadata = None
+        if mgrh_metadata_file.exists():
+            with open(mgrh_metadata_file) as f:
+                checkpoint_mgrh_metadata = json.load(f)
+                logger.info("Loaded MGRH metadata: %s", list(checkpoint_mgrh_metadata.keys()))
+
         embedding_config = _extract_embedding_config(
             embedding_metadata=checkpoint_embedding_metadata,
             state_dict=state_dict,
@@ -873,6 +915,15 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         config = AutoConfig.from_pretrained(str(checkpoint_path), local_files_only=True)
 
         # Create model instance with Epic 5.0 parameters
+        # MGRH requires pair_encoder, so auto-enable if relevance capability is present
+        use_pair_encoder = epic_5_config.get("use_pair_encoder", False)
+        pair_encoder_num_layers = epic_5_config.get("pair_encoder_num_layers", 1)
+        if checkpoint_mgrh_metadata is not None or Capability.RELEVANCE in (capabilities or []):
+            use_pair_encoder = True
+            pair_encoder_num_layers = checkpoint_mgrh_metadata.get(
+                "pair_encoder_layers", 2
+            ) if checkpoint_mgrh_metadata else 2
+
         model = cls(
             config=config,
             capabilities=capabilities,  # type: ignore
@@ -881,8 +932,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             shared_pooler=epic_5_config.get("shared_pooler"),
             use_adapters=epic_5_config.get("use_adapters", False),
             adapter_bottleneck_size=epic_5_config.get("adapter_bottleneck_size", 64),
-            use_pair_encoder=epic_5_config.get("use_pair_encoder", False),
-            pair_encoder_num_layers=epic_5_config.get("pair_encoder_num_layers", 1),
+            use_pair_encoder=use_pair_encoder,
+            pair_encoder_num_layers=pair_encoder_num_layers,
             _globalpointer_config=globalpointer_config,  # Pass to __init__ for correct head init
             _embedding_config=embedding_config,
         )
@@ -891,6 +942,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             setattr(model, "_checkpoint_globalpointer_metadata", checkpoint_globalpointer_metadata)
         if checkpoint_embedding_metadata is not None:
             setattr(model, "_checkpoint_embedding_metadata", checkpoint_embedding_metadata)
+        if checkpoint_mgrh_metadata is not None:
+            setattr(model, "_checkpoint_mgrh_metadata", checkpoint_mgrh_metadata)
 
         # State dict already loaded above - separate by component
         encoder_state = {}
@@ -909,6 +962,8 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     renamed_key = key.replace(".intent_v2.", ".intent.")
                 elif ".ingress_v2." in key:
                     renamed_key = key.replace(".ingress_v2.", ".ingress.")
+                elif ".mgrh." in key:
+                    renamed_key = key.replace(".mgrh.", ".relevance.")
                 head_state[renamed_key] = value
             elif key.startswith("task_adapters."):
                 adapter_state[key] = value

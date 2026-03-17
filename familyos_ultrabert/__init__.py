@@ -39,11 +39,12 @@ Capabilities:
     - relation: Relationship type classification
     - nli: Natural language inference
     - embedding: 768-dim sentence embeddings
+    - relevance: Cross-encoder reranking via MGRH (46M params)
 
 License: Proprietary - All Rights Reserved
 """
 
-__version__ = "4.0.7"
+__version__ = "4.0.8"
 __author__ = "FamilyOS Team"
 
 from familyos_ultrabert.model import UltraBERT

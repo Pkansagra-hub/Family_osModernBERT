@@ -506,3 +506,39 @@ class UltraBERT:
         if hasattr(self._engine, "cache_stats"):
             return self._engine.cache_stats()
         return {"enabled": False}
+
+    def score_relevance(self, query: str, doc: str) -> Dict[str, Any]:
+        """Score (query, doc) relevance using the MGRH head.
+
+        Args:
+            query: Query text.
+            doc: Document text.
+
+        Returns:
+            Dict with 'score' (float 0-1) and 'latency_ms'.
+        """
+        if self._backend != "pytorch":
+            raise RuntimeError("score_relevance requires the PyTorch backend.")
+        return self._engine.score_relevance(query, doc)
+
+    def rerank(
+        self,
+        query: str,
+        documents: List[str],
+        top_k: Optional[int] = None,
+        batch_size: int = 16,
+    ) -> List[Dict[str, Any]]:
+        """Re-rank documents by relevance to query using the MGRH head.
+
+        Args:
+            query: Query text.
+            documents: List of document texts.
+            top_k: Return only top-k results. None returns all.
+            batch_size: Documents per batch (>1 for correct MaxSim z-norm).
+
+        Returns:
+            Sorted list of dicts with 'index', 'score', 'text'.
+        """
+        if self._backend != "pytorch":
+            raise RuntimeError("rerank requires the PyTorch backend.")
+        return self._engine.rerank(query, documents, top_k=top_k, batch_size=batch_size)

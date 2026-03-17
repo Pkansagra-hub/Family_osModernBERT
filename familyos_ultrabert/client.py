@@ -1127,6 +1127,62 @@ class Client:
         """
         self._stats = LatencyStats()
 
+    # -----------------------------------------------------------------
+    # MGRH Relevance Scoring
+    # -----------------------------------------------------------------
+
+    def score_relevance(self, query: str, doc: str) -> Dict[str, Any]:
+        """Score the relevance of a document to a query using the MGRH head.
+
+        Args:
+            query: Query text.
+            doc: Document text.
+
+        Returns:
+            Dict with 'score' (float 0-1) and 'latency_ms'.
+
+        Example:
+            >>> result = client.score_relevance(
+            ...     "Who picked up the kids?",
+            ...     "Mom picked up the kids from school."
+            ... )
+            >>> result['score']  # 0.95
+        """
+        self._ensure_ready()
+        query = _normalize_text(query)
+        doc = _normalize_text(doc)
+        return self._model.score_relevance(query, doc)
+
+    def rerank(
+        self,
+        query: str,
+        documents: List[str],
+        top_k: Optional[int] = None,
+        batch_size: int = 16,
+    ) -> List[Dict[str, Any]]:
+        """Re-rank documents by relevance to query.
+
+        Args:
+            query: Query text.
+            documents: List of document texts.
+            top_k: Return only top-k results. None returns all.
+            batch_size: Documents per batch (>1 for correct MaxSim z-norm).
+
+        Returns:
+            Sorted list of dicts with 'index', 'score', 'text'.
+
+        Example:
+            >>> ranked = client.rerank(
+            ...     "Who picked up the kids?",
+            ...     ["Mom picked up the kids.", "Dad went to work.", "It rained."],
+            ...     top_k=2,
+            ... )
+        """
+        self._ensure_ready()
+        query = _normalize_text(query)
+        documents = [_normalize_text(d) for d in documents]
+        return self._model.rerank(query, documents, top_k=top_k, batch_size=batch_size)
+
     def __repr__(self) -> str:
         status = "ready" if self._is_ready else "not loaded"
         backend = self._model.backend if self._model else "N/A"

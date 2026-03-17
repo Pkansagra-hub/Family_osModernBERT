@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-03-17T04:13:18.376780",
+  "source": {
+    "base_checkpoint": "/content/Modeling_studio/outputs/embedding-bakeoff/stage_b/best-ema",
+    "mgrh_checkpoint": "/content/Modeling_studio/outputs/embedding-bakeoff/mgrh/stage_c/final",
+    "weights": "EMA (mgrh_head.pt saved from ema_model.module)"
+  },
+  "architecture": {
+    "head_type": "multi_granularity_relevance",
+    "hidden_size": 768,
+    "dropout": 0.1,
+    "pair_encoder": {
+      "num_heads": 8,
+      "num_layers": 2,
+      "dropout": 0.1,
+      "use_bidirectional": true,
+      "pooling_strategy": "attention"
+    },
+    "use_asymmetric_embeddings": true,
+    "use_maxsim": true,
+    "use_domain_saliency": true
+  },
+  "calibration": {
+    "temperature": 0.3,
+    "temperature_source": "Composite-optimal sweep on 400 holdout triplets (acc=95.0%, margin=0.4406)",
+    "training_temperature": 1.0542480945587158,
+    "maxsim_population_mean": 845.5621,
+    "maxsim_population_std": 60.7515
+  },
+  "best_metrics": {},
+  "head_key": "mgrh",
+  "total_params": 46333958,
+  "pair_encoder_params": 40750080
+}

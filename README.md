@@ -10,8 +10,9 @@ Today's AI assistants know nothing about you. Generic LLMs give the same answer 
 
 FamilyOS is a neuroscience-inspired cognitive OS that builds persistent, evolving memory of your family — so AI can make decisions that actually matter.
 
-**UltraBERT v4 is the NLU backbone powering FamilyOS** — a 149M param multitask encoder running 12 NLP tasks in a single 
+**UltraBERT v4 is the NLU backbone powering FamilyOS** — a 149M param multitask encoder running 12 NLP tasks in a single
 20ms forward pass: safety detection, emotion recognition, family entity extraction, intent classification, and more.
+Plus a 46M-param **Multi-Granularity Relevance Head (MGRH)** for cross-encoder reranking with Spearman 0.90 and nDCG@10 0.99.
 
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -69,12 +70,13 @@ print(result.safety)    # "GREEN"
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 📊 Model Summary (v4)
+### Model Summary (v4)
 
-| Component         | Params | Pre-trained | Status        | Use Case                                 |
-|-------------------|--------|-------------|---------------|------------------------------------------|
-| **v4 Encoder**    | 149M   | ModernBERT  | ✅ Production | Classification, NER, embeddings, safety  |
-| **Full Model**    | 149M   | Yes         | ✅ Production | End-to-end family AI                     |
+| Component | Params | Pre-trained | Status | Use Case |
+|-----------|--------|-------------|--------|------------------------------------------|
+| **v4 Encoder** | 149M | ModernBERT | Production | Classification, NER, embeddings, safety |
+| **MGRH Head** | 46M | Trained | Production | Cross-encoder relevance reranking |
+| **Full Model** | 195M | Yes | Production | End-to-end family AI |
 
 ### 🎯 Key Capabilities (v4)
 
@@ -92,6 +94,7 @@ print(result.safety)    # "GREEN"
 | 10| `relation`        | Pair        | 15 types      | Encoder  |
 | 11| `intent`          | Sequence    | 8 classes     | Encoder  |
 | 12| `ingress`         | Sequence    | 12 domains    | Encoder  |
+| 13| `relevance`       | Cross-Encoder | 0.0-1.0 score | MGRH (46M) |
 
 ---
 
@@ -361,6 +364,82 @@ Release readout:
 - holdout slightly exceeds dev on `Recall@1`, `MRR`, and selection score
 - the released embedding head is optimized for FamilyOS retrieval rather than generic STS-only quality
 
+### Relevance Reranking (MGRH v4.0.8)
+
+The **Multi-Granularity Relevance Head** (MGRH) is a 46.3M-parameter cross-encoder reranking head that fuses four complementary signals:
+
+1. **CLS token** from joint cross-encoder sequence
+2. **CrossAttention** pair encoder (2-layer bidirectional ESIM with attention pooling)
+3. **Embedding interaction** (asymmetric `[q*d, |q-d|, q, d]`)
+4. **ColBERT MaxSim** (token-level alignment with population z-normalization)
+
+```python
+from familyos_ultrabert import Client
+client = Client()
+
+# Pointwise relevance scoring
+result = client.score_relevance(
+    "Who picked up the kids from school?",
+    "Mom picked up Anya and Rohan from Lincoln Elementary at 3pm."
+)
+print(result["score"])  # 0.85
+
+# Batch reranking
+ranked = client.rerank(
+    "What did we do for grandma's birthday?",
+    ["We threw a surprise party for grandma.", "Dad went to work.", "It rained all day."],
+    top_k=2,
+)
+```
+
+#### Core Ranking Performance
+
+| Dataset | Spearman | AUC-ROC | nDCG@10 | Bi-Encoder Spearman | Lift |
+|---------|----------|---------|---------|---------------------|------|
+| Human Benchmark (798 groups) | **0.9043** | 0.8405 | **0.9867** | 0.3544 | **+0.5499** |
+| Holdout (79 groups) | **0.8481** | 0.8239 | 0.9802 | 0.2658 | **+0.5823** |
+| Dev (79 groups) | **0.8734** | 0.7721 | 0.9806 | 0.4177 | **+0.4557** |
+
+#### Pairwise Discrimination
+
+| Dataset | Accuracy | Avg Margin | Bi-Encoder Acc | Samples |
+|---------|----------|------------|----------------|---------|
+| Hard Negatives (entity/temporal) | **87.77%** | 0.2400 | 93.90% | 3000 |
+| Wrong Person | **93.13%** | 0.1739 | 85.55% | 3000 |
+| Wrong Time | **91.53%** | 0.1470 | 34.60% | 3000 |
+
+#### Hard Negatives Breakdown
+
+| Slice | Accuracy | Margin | Samples |
+|-------|----------|--------|---------|
+| sentiment_flip | **96.13%** | 0.5136 | 776 |
+| temporal_shift | **88.03%** | 0.1763 | 735 |
+| entity_swap | **86.88%** | 0.1343 | 747 |
+| same_topic_different_event | **79.65%** | 0.1233 | 742 |
+
+#### Score Distribution by Relevance Grade
+
+| Grade | Description | Mean Score | Std | Count |
+|-------|-------------|------------|-----|-------|
+| 0 | irrelevant / harmful | 0.2978 | 0.1583 | 246 |
+| 1 | entity/temporal mismatch | 0.4471 | 0.1779 | 482 |
+| 2 | topically related, different event | 0.3730 | 0.2120 | 72 |
+| 3 | faithful paraphrase / match | **0.6533** | 0.1697 | 802 |
+
+Grade 3 vs 0 separation: **0.3555** | ECE: 0.3223
+
+#### Gate Check
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| Spearman | > 0.70 | **0.9043** | PASS |
+| AUC-ROC | > 0.85 | 0.8405 | FAIL |
+| nDCG@10 | > 0.83 | **0.9867** | PASS |
+| Holdout Spearman | > 0.50 | **0.8481** | PASS |
+| Holdout AUC | > 0.80 | **0.8239** | PASS |
+
+**Overall: Production-ready with calibration caveat**
+
 ### Throughput
 
 | Metric | Value |
@@ -389,6 +468,7 @@ Release readout:
 | `relation` | [REL] | Pair | no_relation, parent_of, child_of, spouse_of, sibling_of, grandparent_of, grandchild_of, aunt_uncle_of, niece_nephew_of, cousin_of, pet_of, friend_of, colleague_of, lives_at, owns | 15 relationship types |
 | `intent` | [TASK] | Sequence | log_memory, query_memory, set_reminder, express_feeling, seek_advice, share_news, reflect, other | 8 user intents |
 | `ingress` | [TASK] | Sequence | DIARY, TASK, HEALTH, FINANCE, RELATIONSHIP, WORK, META, MEMORY, PLANNING, CELEBRATION, CONCERN, GRATITUDE | 12 domain categories |
+| `relevance` | [MEM] | Cross-Encoder | 0.0-1.0 | MGRH reranking (46M params, 4-signal fusion) |
 
 ### FamilyOS Emotion Schema (44 Classes)
 

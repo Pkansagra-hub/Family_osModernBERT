@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-11T21:07:32.251345",
+  "timestamp": "2026-03-11T03:36:57.466697",
   "training_type": "embedding_heads_bakeoff",
   "bakeoff": {
     "head_type": "agreement_gated_v2",
