@@ -6561,6 +6561,7 @@ def mgrh_train_step_bridge(
             stage="c",
         )
         scores = output["logits"].squeeze(-1)
+        raw_logits = output["relevance_logits_raw"].squeeze(-1)
 
         # Pairwise margin on relevant vs irrelevant within each group
         total_margin_loss = torch.tensor(0.0, device=device)
@@ -6570,6 +6571,7 @@ def mgrh_train_step_bridge(
 
         for gsize in group_sizes:
             g_scores = scores[offset:offset + gsize]
+            g_logits = raw_logits[offset:offset + gsize]
             g_grades = grades[offset:offset + gsize]
 
             # Pairwise margin: high-grade vs low-grade
@@ -6580,10 +6582,10 @@ def mgrh_train_step_bridge(
                 s_neg = g_scores[neg_mask].unsqueeze(0)
                 total_margin_loss = total_margin_loss + F.relu(margin - (s_pos - s_neg)).mean()
 
-            # BCE with normalized grades
+            # BCE with normalized grades — use logits for AMP safety
             grade_norm = g_grades.float() / max(g_grades.max().item(), 1.0)
-            total_bce_loss = total_bce_loss + F.binary_cross_entropy(
-                g_scores.clamp(1e-6, 1.0 - 1e-6), grade_norm,
+            total_bce_loss = total_bce_loss + F.binary_cross_entropy_with_logits(
+                g_logits, grade_norm,
             )
             offset += gsize
             num_groups += 1
