@@ -79,7 +79,14 @@ from modeling_studio.models.modernbert_multitask import (
     ModernBertMultiTaskModel,
     Capability,
 )
-from modeling_studio.models.heads import EmbeddingHead, GlobalPointerNERHead, create_globalpointer_head
+from modeling_studio.models.heads import (
+    EmbeddingHead,
+    GlobalPointerNERHead,
+    MultiGranularityRelevanceHead,
+    create_globalpointer_head,
+)
+from modeling_studio.models.losses_ranking import CombinedRankingLoss, LambdaRankLoss
+from modeling_studio.models.pair_encoder import CrossAttentionPairEncoder, PairEncoderConfig
 
 # Import bake-off head registry and factory
 from modeling_studio.models.heads_embedding import (
@@ -5562,6 +5569,1998 @@ def run_distillation(
 
 
 # =============================================================================
+# MGRH Training — Multi-Granularity Relevance Head (Issues 4.1 – 4.9)
+# =============================================================================
+
+
+# --- Issue 4.1: NLI Dataset + Collator for Stage A ---
+
+
+class NLIDataset(Dataset):
+    """Dataset for premise/hypothesis/label NLI records (Stage A).
+
+    Loads JSONL files with schema:
+        {"premise": str, "hypothesis": str, "label": int}
+
+    Labels: 0=entailment, 1=neutral, 2=contradiction
+    """
+
+    def __init__(
+        self,
+        sources: list[dict[str, Any]],
+        data_root: str | Path,
+        max_samples: int | None = None,
+    ) -> None:
+        self.samples: list[dict[str, Any]] = []
+        data_root = Path(data_root)
+
+        for src in sources:
+            path = data_root / src["path"]
+            weight = float(src.get("weight", 1.0))
+            if not path.exists():
+                logger.warning(f"  NLI source missing: {path}")
+                continue
+            count = 0
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    record = json.loads(line)
+                    self.samples.append({
+                        "premise": record["premise"],
+                        "hypothesis": record["hypothesis"],
+                        "label": int(record["label"]),
+                        "weight": weight,
+                        "source": src.get("name", path.stem),
+                    })
+                    count += 1
+            logger.info(f"  NLI source {path.name}: {count:,} samples (weight={weight})")
+
+        if max_samples and len(self.samples) > max_samples:
+            random.shuffle(self.samples)
+            self.samples = self.samples[:max_samples]
+
+        random.shuffle(self.samples)
+        logger.info(f"  NLIDataset: {len(self.samples):,} total samples")
+
+    def __getitem__(self, idx: int) -> dict[str, Any]:
+        return self.samples[idx]
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+
+class NLICollator:
+    """Tokenize premise-hypothesis pairs for NLI training.
+
+    Produces both joint encoding ([CLS] premise [SEP] hypothesis [SEP])
+    and separate encoding (text_a, text_b) for the pair encoder path.
+    """
+
+    def __init__(self, tokenizer: Any, max_length: int = 256) -> None:
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __call__(self, features: list[dict]) -> dict[str, Any]:
+        premises = [f["premise"] for f in features]
+        hypotheses = [f["hypothesis"] for f in features]
+        labels = [f["label"] for f in features]
+
+        # Joint encoding: [CLS] premise [SEP] hypothesis [SEP]
+        joint_enc = self.tokenizer(
+            premises, hypotheses,
+            padding=True, truncation=True,
+            max_length=self.max_length, return_tensors="pt",
+        )
+
+        # Separate encoding for pair encoder signals
+        text_a_enc = self.tokenizer(
+            premises, padding=True, truncation=True,
+            max_length=self.max_length // 2, return_tensors="pt",
+        )
+        text_b_enc = self.tokenizer(
+            hypotheses, padding=True, truncation=True,
+            max_length=self.max_length // 2, return_tensors="pt",
+        )
+
+        return {
+            "input_ids": joint_enc["input_ids"],
+            "attention_mask": joint_enc["attention_mask"],
+            "text_a_input_ids": text_a_enc["input_ids"],
+            "text_a_attention_mask": text_a_enc["attention_mask"],
+            "text_b_input_ids": text_b_enc["input_ids"],
+            "text_b_attention_mask": text_b_enc["attention_mask"],
+            "labels": torch.tensor(labels, dtype=torch.long),
+        }
+
+
+# --- Issue 4.2: Relevance Listwise Dataset + Collator for Stage B/C ---
+
+
+class RelevanceListwiseDataset(Dataset):
+    """Dataset for listwise relevance ranking (Stage B bridge + Stage C).
+
+    Loads JSONL files with schema:
+        {"query": str, "episodes": [{"text": str, "grade": int, ...}]}
+
+    Also supports pairwise format:
+        {"anchor": str, "positive": str, "negative": str, ...}
+    """
+
+    def __init__(
+        self,
+        sources: list[dict[str, Any]],
+        data_root: str | Path,
+        max_samples: int | None = None,
+    ) -> None:
+        self.samples: list[dict[str, Any]] = []
+        data_root = Path(data_root)
+
+        for src in sources:
+            path = data_root / src["path"]
+            fmt = src.get("format", "listwise")
+            weight = float(src.get("weight", 1.0))
+
+            if path.is_dir():
+                files = sorted(path.glob("*.jsonl"))
+            elif path.exists():
+                files = [path]
+            else:
+                logger.warning(f"  Relevance source missing: {path}")
+                continue
+
+            count = 0
+            for fpath in files:
+                if fpath.name == "hash_index.jsonl":
+                    continue
+                with open(fpath, encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            record = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        record["_format"] = fmt
+                        record["_weight"] = weight
+                        record["_source"] = src.get("name", fpath.stem)
+                        self.samples.append(record)
+                        count += 1
+            logger.info(f"  Relevance source {path.name}: {count:,} records (format={fmt}, weight={weight})")
+
+        if max_samples and len(self.samples) > max_samples:
+            random.shuffle(self.samples)
+            self.samples = self.samples[:max_samples]
+
+        random.shuffle(self.samples)
+        logger.info(f"  RelevanceListwiseDataset: {len(self.samples):,} total samples")
+
+    def __getitem__(self, idx: int) -> dict[str, Any]:
+        return self.samples[idx]
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+
+class RelevancePairwiseDataset(Dataset):
+    """Dataset for pairwise hard negatives (Stage B domain adaptation).
+
+    Loads triplet records from embedding data directories.
+    Reuses the same format as EmbeddingDataset but produces pairs
+    for the MGRH pairwise margin path.
+    """
+
+    def __init__(
+        self,
+        sources: list[dict[str, Any]],
+        data_root: str | Path,
+        max_samples: int | None = None,
+    ) -> None:
+        self.samples: list[dict[str, Any]] = []
+        data_root = Path(data_root)
+
+        for src in sources:
+            path = data_root / src["path"]
+            weight = float(src.get("weight", 1.0))
+            if path.is_dir():
+                files = sorted(path.glob("*.jsonl"))
+            elif path.exists():
+                files = [path]
+            else:
+                logger.warning(f"  Pairwise source missing: {path}")
+                continue
+
+            count = 0
+            for fpath in files:
+                if fpath.name == "hash_index.jsonl":
+                    continue  # skip hash index files
+                with open(fpath, encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            record = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        record["_weight"] = weight
+                        record["_source"] = src.get("name", fpath.stem)
+                        self.samples.append(record)
+                        count += 1
+            logger.info(f"  Pairwise source {path.name}: {count:,} records (weight={weight})")
+
+        if max_samples and len(self.samples) > max_samples:
+            random.shuffle(self.samples)
+            self.samples = self.samples[:max_samples]
+
+        random.shuffle(self.samples)
+        logger.info(f"  RelevancePairwiseDataset: {len(self.samples):,} total samples")
+
+    def __getitem__(self, idx: int) -> dict[str, Any]:
+        return self.samples[idx]
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+
+class RelevancePairwiseCollator:
+    """Tokenize triplet records for MGRH pairwise margin training (Stage B).
+
+    Produces joint encoding + separate encoding for anchor/positive/negative.
+    """
+
+    def __init__(self, tokenizer: Any, max_length: int = 512) -> None:
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __call__(self, features: list[dict]) -> dict[str, Any]:
+        anchors = [f.get("anchor", f.get("query", "")) for f in features]
+        positives = [f.get("positive", f.get("document", "")) for f in features]
+        negatives = [f.get("negative", f.get("hard_negative", "")) for f in features]
+
+        # Joint: [CLS] anchor [SEP] positive [SEP]
+        pos_joint = self.tokenizer(
+            anchors, positives,
+            padding=True, truncation=True,
+            max_length=self.max_length, return_tensors="pt",
+        )
+        # Joint: [CLS] anchor [SEP] negative [SEP]
+        neg_joint = self.tokenizer(
+            anchors, negatives,
+            padding=True, truncation=True,
+            max_length=self.max_length, return_tensors="pt",
+        )
+
+        # Separate encoding for pair encoder
+        anchor_enc = self.tokenizer(
+            anchors, padding=True, truncation=True,
+            max_length=self.max_length // 2, return_tensors="pt",
+        )
+        positive_enc = self.tokenizer(
+            positives, padding=True, truncation=True,
+            max_length=self.max_length // 2, return_tensors="pt",
+        )
+        negative_enc = self.tokenizer(
+            negatives, padding=True, truncation=True,
+            max_length=self.max_length // 2, return_tensors="pt",
+        )
+
+        return {
+            "pos_input_ids": pos_joint["input_ids"],
+            "pos_attention_mask": pos_joint["attention_mask"],
+            "neg_input_ids": neg_joint["input_ids"],
+            "neg_attention_mask": neg_joint["attention_mask"],
+            "anchor_input_ids": anchor_enc["input_ids"],
+            "anchor_attention_mask": anchor_enc["attention_mask"],
+            "positive_input_ids": positive_enc["input_ids"],
+            "positive_attention_mask": positive_enc["attention_mask"],
+            "negative_input_ids": negative_enc["input_ids"],
+            "negative_attention_mask": negative_enc["attention_mask"],
+        }
+
+
+class RelevanceListwiseCollator:
+    """Tokenize listwise records for MGRH ranking training (Stage C).
+
+    For each query group, produces all (query, episode) cross-encoder pairs
+    plus separate encodings for the pair encoder path.
+    """
+
+    def __init__(self, tokenizer: Any, max_length: int = 512) -> None:
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __call__(self, features: list[dict]) -> dict[str, Any]:
+        # Each feature is a query group with episodes
+        all_queries: list[str] = []
+        all_episodes: list[str] = []
+        all_grades: list[float] = []
+        group_sizes: list[int] = []
+
+        for feat in features:
+            query = feat.get("query", "")
+            episodes = feat.get("episodes", [])
+            if not episodes:
+                continue
+            group_sizes.append(len(episodes))
+            for ep in episodes:
+                all_queries.append(query)
+                text = ep.get("text", ep.get("episode_text", ""))
+                all_episodes.append(text)
+                all_grades.append(float(ep.get("grade", 0)))
+
+        if not all_queries:
+            return {"empty": True}
+
+        # Joint: [CLS] query [SEP] episode [SEP]
+        joint_enc = self.tokenizer(
+            all_queries, all_episodes,
+            padding=True, truncation=True,
+            max_length=self.max_length, return_tensors="pt",
+        )
+
+        # Separate for pair encoder
+        query_enc = self.tokenizer(
+            all_queries, padding=True, truncation=True,
+            max_length=self.max_length // 2, return_tensors="pt",
+        )
+        episode_enc = self.tokenizer(
+            all_episodes, padding=True, truncation=True,
+            max_length=self.max_length // 2, return_tensors="pt",
+        )
+
+        return {
+            "input_ids": joint_enc["input_ids"],
+            "attention_mask": joint_enc["attention_mask"],
+            "query_input_ids": query_enc["input_ids"],
+            "query_attention_mask": query_enc["attention_mask"],
+            "episode_input_ids": episode_enc["input_ids"],
+            "episode_attention_mask": episode_enc["attention_mask"],
+            "grades": torch.tensor(all_grades, dtype=torch.float),
+            "group_sizes": group_sizes,
+        }
+
+
+# --- Issue 4.3: MGRH Model Loading Path ---
+
+
+def load_model_for_mgrh(
+    config: dict[str, Any],
+    use_flash_attention: bool = False,
+) -> tuple[ModernBertMultiTaskModel, CrossAttentionPairEncoder, MultiGranularityRelevanceHead]:
+    """Load model from EMA checkpoint, remove NLI head, add MGRH.
+
+    Process (per user spec):
+        1. Load from embedding EMA checkpoint (distil_stage_b_bestema)
+        2. Freeze encoder + ALL existing heads
+        3. Remove the NLI head (we are replacing it with MGRH)
+        4. Create fresh MGRH head + CrossAttentionPairEncoder
+        5. Only MGRH + pair_encoder are trainable
+
+    Args:
+        config: Full YAML config dict.
+        use_flash_attention: Enable Flash Attention 2.
+
+    Returns:
+        Tuple of (model, pair_encoder, mgrh_head).
+    """
+    from safetensors.torch import load_file
+    from transformers import AutoConfig
+
+    mgrh_config = config.get("mgrh_training", {})
+    head_config = mgrh_config.get("head", {})
+    freeze_config = mgrh_config.get("freeze", {})
+
+    checkpoint_path = Path(resolve_workspace_path(mgrh_config.get("base_checkpoint", "checkpoints/distil_stage_b_bestema")))
+    logger.info(f"MGRH: Loading base model from {checkpoint_path}")
+
+    # 1. Load model architecture
+    model_config = AutoConfig.from_pretrained(checkpoint_path, trust_remote_code=True)
+    if use_flash_attention:
+        model_config.attn_implementation = "flash_attention_2"
+
+    capabilities = load_checkpoint_capabilities(checkpoint_path, exclude_decoder=True)
+    model = ModernBertMultiTaskModel(config=model_config, capabilities=capabilities, freeze_encoder=False)
+    restore_checkpoint_head_architecture(model, checkpoint_path)
+    model._init_encoder()
+
+    # Recreate the embedding head from metadata so state_dict keys match
+    emb_meta_path = checkpoint_path / "embedding_metadata.json"
+    if emb_meta_path.exists():
+        with open(emb_meta_path, encoding="utf-8") as f:
+            emb_meta = json.load(f)
+        bakeoff_info = emb_meta.get("bakeoff", {})
+        emb_head_type = bakeoff_info.get("head_type", "agreement_gated_v2")
+        emb_head_params = bakeoff_info.get("head_params", {})
+        hidden_size = model.config.hidden_size
+        emb_head = create_embedding_head(
+            head_type=emb_head_type, hidden_size=hidden_size, **emb_head_params,
+        )
+        model.heads["embedding"] = emb_head
+        logger.info(f"  Embedding head: {emb_head_type}")
+
+    # Load weights
+    weights_path = checkpoint_path / "model.safetensors"
+    if weights_path.exists():
+        state_dict = load_file(str(weights_path))
+    else:
+        weights_path = checkpoint_path / "pytorch_model.bin"
+        if weights_path.exists():
+            state_dict = torch.load(weights_path, map_location="cpu", weights_only=True)
+        else:
+            raise FileNotFoundError(f"No weights found in {checkpoint_path}")
+
+    # Load encoder weights
+    encoder_state = {k.replace("encoder.", ""): v for k, v in state_dict.items() if k.startswith("encoder.")}
+    model.encoder.load_state_dict(encoder_state, strict=True)
+    logger.info(f"  Loaded encoder: {len(encoder_state)} tensors")
+
+    # Load ALL head weights
+    loaded_heads = []
+    for head_name in list(model.heads.keys()):
+        head_prefix = f"heads.{head_name}."
+        head_state = {k.replace(head_prefix, ""): v for k, v in state_dict.items() if k.startswith(head_prefix)}
+        if head_state:
+            try:
+                model.heads[head_name].load_state_dict(head_state, strict=True)
+                loaded_heads.append(head_name)
+            except Exception as e:
+                logger.warning(f"  Could not load {head_name} head: {e}")
+    logger.info(f"  Loaded heads: {', '.join(loaded_heads)}")
+
+    # 2. Remove NLI head — we are replacing it with MGRH
+    if "nli" in model.heads:
+        nli_params = sum(p.numel() for p in model.heads["nli"].parameters())
+        del model.heads["nli"]
+        logger.info(f"  Removed NLI head ({nli_params:,} params)")
+
+    # 3. Freeze encoder + ALL remaining heads
+    for param in model.encoder.parameters():
+        param.requires_grad = False
+    for head_name, head in model.heads.items():
+        for param in head.parameters():
+            param.requires_grad = False
+
+    frozen_heads = list(model.heads.keys())
+    encoder_params = sum(p.numel() for p in model.encoder.parameters())
+    logger.info(f"  Encoder: {encoder_params:,} params (FROZEN)")
+    logger.info(f"  Frozen heads: {', '.join(frozen_heads)} ({len(frozen_heads)} heads, ALL frozen)")
+
+    # 4. Create pair encoder
+    pair_enc_config = head_config.get("pair_encoder", {})
+    pair_encoder = CrossAttentionPairEncoder(
+        hidden_size=model.config.hidden_size,
+        num_heads=pair_enc_config.get("num_heads", 8),
+        num_layers=pair_enc_config.get("num_layers", 2),
+        dropout=pair_enc_config.get("dropout", 0.1),
+        use_bidirectional=True,
+        pooling_strategy="attention",
+    )
+
+    # 5. Create MGRH head
+    mgrh_head = MultiGranularityRelevanceHead(
+        hidden_size=model.config.hidden_size,
+        dropout=head_config.get("dropout", 0.1),
+        pair_encoder=pair_encoder,
+    )
+
+    # Register MGRH in the model's head dict (replaces NLI slot conceptually)
+    model.heads["mgrh"] = mgrh_head
+
+    mgrh_params = sum(p.numel() for p in mgrh_head.parameters())
+    pair_enc_params = sum(p.numel() for p in pair_encoder.parameters())
+    trainable_total = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    logger.info(f"  MGRH head: {mgrh_params:,} params (TRAINABLE, includes pair_encoder)")
+    logger.info(f"    Pair encoder: {pair_enc_params:,} params")
+    logger.info(f"    Fusion MLP + output heads: {mgrh_params - pair_enc_params:,} params")
+    logger.info(f"  Total trainable: {trainable_total:,} params")
+
+    return model, pair_encoder, mgrh_head
+
+
+# --- Issue 4.7: Domain Saliency Weighting ---
+
+
+def compute_domain_saliency(
+    model: ModernBertMultiTaskModel,
+    hidden_states: torch.Tensor,
+    attention_mask: torch.Tensor,
+) -> torch.Tensor | None:
+    """Compute domain saliency bias from frozen TemporalHead + NER heads.
+
+    Uses token-level logits from existing production heads to bias the pair
+    encoder cross-attention toward temporal and entity-bearing tokens.
+
+    Args:
+        model: The multi-task model (heads must be loaded).
+        hidden_states: Encoder output [B, L, H].
+        attention_mask: Attention mask [B, L].
+
+    Returns:
+        Saliency bias [B, L] or None if heads unavailable.
+    """
+    temporal_saliency = None
+    entity_saliency = None
+
+    # Temporal saliency from frozen TemporalHead
+    if "temporal" in model.heads:
+        with torch.no_grad():
+            try:
+                temporal_out = model.heads["temporal"](hidden_states, attention_mask=attention_mask)
+                temporal_logits = temporal_out.get("logits", temporal_out) if isinstance(temporal_out, dict) else temporal_out
+                if temporal_logits.dim() == 3:
+                    # [B, L, num_labels] -> max over labels -> softmax
+                    temporal_saliency = temporal_logits.max(dim=-1).values.softmax(dim=-1)
+                elif temporal_logits.dim() == 4:
+                    # GlobalPointer: [B, num_types, L, L] -> diagonal -> max over types
+                    diag = temporal_logits.diagonal(dim1=-2, dim2=-1)  # [B, num_types, L]
+                    temporal_saliency = diag.max(dim=1).values.softmax(dim=-1)  # [B, L]
+            except Exception:
+                pass
+
+    # Entity saliency from frozen NER head
+    if "ner_family" in model.heads:
+        with torch.no_grad():
+            try:
+                ner_out = model.heads["ner_family"](hidden_states, attention_mask=attention_mask)
+                ner_logits = ner_out.get("logits", ner_out) if isinstance(ner_out, dict) else ner_out
+                if ner_logits.dim() == 4:
+                    # GlobalPointer: [B, num_types, L, L] -> diagonal -> max over types
+                    diag = ner_logits.diagonal(dim1=-2, dim2=-1)
+                    entity_saliency = diag.max(dim=1).values.softmax(dim=-1)
+                elif ner_logits.dim() == 3:
+                    entity_saliency = ner_logits.max(dim=-1).values.softmax(dim=-1)
+            except Exception:
+                pass
+
+    if temporal_saliency is None and entity_saliency is None:
+        return None
+
+    if temporal_saliency is not None and entity_saliency is not None:
+        return 0.5 * temporal_saliency + 0.5 * entity_saliency
+    return temporal_saliency if temporal_saliency is not None else entity_saliency
+
+
+# --- Issue 4.4 + 4.4a + 4.4b: MGRH Train Steps ---
+
+
+def mgrh_encode_batch(
+    model: ModernBertMultiTaskModel,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> torch.Tensor:
+    """Encode a batch through the frozen encoder.
+
+    Returns hidden states [B, L, H].
+    """
+    input_ids = input_ids.to(device)
+    attention_mask = attention_mask.to(device)
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+    with amp_context:
+        with torch.no_grad():
+            enc_out = model.encoder(input_ids=input_ids, attention_mask=attention_mask)
+            return enc_out.last_hidden_state if hasattr(enc_out, "last_hidden_state") else (enc_out[0] if isinstance(enc_out, tuple) else enc_out)
+
+
+def mgrh_get_embeddings(
+    model: ModernBertMultiTaskModel,
+    hidden_states: torch.Tensor,
+    attention_mask: torch.Tensor,
+) -> torch.Tensor | None:
+    """Get query/doc embeddings from frozen AgreementGatedHeadV2 (Signal 3)."""
+    if "embedding" not in model.heads:
+        return None
+    with torch.no_grad():
+        out = model.heads["embedding"](hidden_states, attention_mask=attention_mask)
+        if isinstance(out, dict):
+            return out.get("embedding", out.get("logits"))
+        return out
+
+
+def mgrh_train_step_stage_a(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    batch: dict[str, Any],
+    device: torch.device,
+    contrastive_nli_config: dict[str, Any] | None = None,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> dict[str, torch.Tensor]:
+    """Stage A: General NLI pre-training with cross-entropy + auxiliary relevance.
+
+    Args:
+        model: Multi-task model (encoder + frozen heads).
+        mgrh_head: The trainable MGRH head.
+        batch: NLICollator output.
+        device: Torch device.
+        contrastive_nli_config: Config for contrastive NLI auxiliary loss.
+        use_amp: Use automatic mixed precision.
+        amp_dtype: AMP data type.
+
+    Returns:
+        Dict with loss and metrics.
+    """
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    # Encode joint [CLS] premise [SEP] hypothesis [SEP]
+    joint_hidden = mgrh_encode_batch(model, batch["input_ids"], batch["attention_mask"], device, use_amp, amp_dtype)
+
+    # Encode separate text_a (premise) and text_b (hypothesis)
+    text_a_hidden = mgrh_encode_batch(model, batch["text_a_input_ids"], batch["text_a_attention_mask"], device, use_amp, amp_dtype)
+    text_b_hidden = mgrh_encode_batch(model, batch["text_b_input_ids"], batch["text_b_attention_mask"], device, use_amp, amp_dtype)
+    text_a_mask = batch["text_a_attention_mask"].to(device)
+    text_b_mask = batch["text_b_attention_mask"].to(device)
+
+    # Get embeddings from frozen embedding head (Signal 3)
+    query_embed = mgrh_get_embeddings(model, text_a_hidden, text_a_mask)
+    doc_embed = mgrh_get_embeddings(model, text_b_hidden, text_b_mask)
+
+    labels = batch["labels"].to(device)
+
+    with amp_context:
+        output = mgrh_head(
+            hidden_states=joint_hidden,
+            attention_mask=batch["attention_mask"].to(device),
+            labels=labels,
+            text_a_hidden=text_a_hidden,
+            text_b_hidden=text_b_hidden,
+            text_a_mask=text_a_mask,
+            text_b_mask=text_b_mask,
+            query_embed=query_embed,
+            doc_embed=doc_embed,
+            stage="a",
+        )
+        loss = output["loss"]
+
+        # Optional contrastive NLI auxiliary
+        if contrastive_nli_config and contrastive_nli_config.get("enabled", False):
+            cnli_weight = float(contrastive_nli_config.get("weight", 0.1))
+            # Contrastive on fused representations: entailment pairs should be closer
+            fused = output["fused_repr"]  # [B, 256]
+            fused_norm = F.normalize(fused, p=2, dim=-1)
+            # Entailment pairs (label=0) → positive, contradiction (label=2) → negative
+            entail_mask = (labels == 0).float()
+            if entail_mask.sum() > 1:
+                sim_matrix = fused_norm @ fused_norm.T
+                entail_targets = entail_mask.unsqueeze(0) * entail_mask.unsqueeze(1)
+                cnli_loss = F.binary_cross_entropy_with_logits(
+                    sim_matrix / 0.07, entail_targets,
+                )
+                loss = loss + cnli_weight * cnli_loss
+
+    nli_acc = 0.0
+    if "nli_logits" in output:
+        with torch.no_grad():
+            preds = output["nli_logits"].argmax(dim=-1)
+            nli_acc = (preds == labels).float().mean().item()
+
+    return {
+        "total_loss": loss,
+        "nli_loss": output.get("nli_loss", loss),
+        "aux_relevance_loss": output.get("aux_relevance_loss", torch.tensor(0.0)),
+        "nli_accuracy": nli_acc,
+    }
+
+
+def mgrh_train_step_stage_b(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    batch: dict[str, Any],
+    device: torch.device,
+    margin: float = 0.2,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> dict[str, torch.Tensor]:
+    """Stage B: Domain NLI with pairwise margin loss on hard negatives.
+
+    Args:
+        model: Multi-task model.
+        mgrh_head: Trainable MGRH head.
+        batch: RelevancePairwiseCollator output.
+        device: Torch device.
+        margin: Margin for pairwise hinge loss.
+
+    Returns:
+        Dict with loss and metrics.
+    """
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    # Encode positive pair: [CLS] anchor [SEP] positive [SEP]
+    pos_hidden = mgrh_encode_batch(model, batch["pos_input_ids"], batch["pos_attention_mask"], device, use_amp, amp_dtype)
+    # Encode negative pair: [CLS] anchor [SEP] negative [SEP]
+    neg_hidden = mgrh_encode_batch(model, batch["neg_input_ids"], batch["neg_attention_mask"], device, use_amp, amp_dtype)
+
+    # Separate encodings
+    anchor_hidden = mgrh_encode_batch(model, batch["anchor_input_ids"], batch["anchor_attention_mask"], device, use_amp, amp_dtype)
+    positive_hidden = mgrh_encode_batch(model, batch["positive_input_ids"], batch["positive_attention_mask"], device, use_amp, amp_dtype)
+    negative_hidden = mgrh_encode_batch(model, batch["negative_input_ids"], batch["negative_attention_mask"], device, use_amp, amp_dtype)
+
+    anchor_mask = batch["anchor_attention_mask"].to(device)
+    positive_mask = batch["positive_attention_mask"].to(device)
+    negative_mask = batch["negative_attention_mask"].to(device)
+
+    # Embeddings from frozen head (Signal 3)
+    anchor_embed = mgrh_get_embeddings(model, anchor_hidden, anchor_mask)
+    positive_embed = mgrh_get_embeddings(model, positive_hidden, positive_mask)
+    negative_embed = mgrh_get_embeddings(model, negative_hidden, negative_mask)
+
+    with amp_context:
+        # Score positive pair
+        pos_out = mgrh_head(
+            hidden_states=pos_hidden,
+            attention_mask=batch["pos_attention_mask"].to(device),
+            text_a_hidden=anchor_hidden,
+            text_b_hidden=positive_hidden,
+            text_a_mask=anchor_mask,
+            text_b_mask=positive_mask,
+            query_embed=anchor_embed,
+            doc_embed=positive_embed,
+            stage="b",
+        )
+
+        # Score negative pair
+        neg_out = mgrh_head(
+            hidden_states=neg_hidden,
+            attention_mask=batch["neg_attention_mask"].to(device),
+            text_a_hidden=anchor_hidden,
+            text_b_hidden=negative_hidden,
+            text_a_mask=anchor_mask,
+            text_b_mask=negative_mask,
+            query_embed=anchor_embed,
+            doc_embed=negative_embed,
+            stage="b",
+        )
+
+        pos_scores = pos_out["logits"].squeeze(-1)
+        neg_scores = neg_out["logits"].squeeze(-1)
+
+        # Pairwise margin loss: positive should score higher than negative by margin
+        loss = F.relu(margin - (pos_scores - neg_scores)).mean()
+
+    with torch.no_grad():
+        accuracy = (pos_scores > neg_scores).float().mean().item()
+        avg_margin = (pos_scores - neg_scores).mean().item()
+
+    return {
+        "total_loss": loss,
+        "pairwise_accuracy": accuracy,
+        "avg_margin": avg_margin,
+    }
+
+
+def mgrh_train_step_stage_c(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    batch: dict[str, Any],
+    device: torch.device,
+    ranking_loss_fn: CombinedRankingLoss,
+    r_drop_config: dict[str, Any] | None = None,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> dict[str, torch.Tensor]:
+    """Stage C: Relevance fine-tuning with LambdaRank + R-Drop.
+
+    Processes listwise query groups. Each query has multiple episodes
+    with graded relevance labels.
+
+    Args:
+        model: Multi-task model.
+        mgrh_head: Trainable MGRH head.
+        batch: RelevanceListwiseCollator output.
+        device: Torch device.
+        ranking_loss_fn: CombinedRankingLoss instance.
+        r_drop_config: R-Drop regularization config.
+
+    Returns:
+        Dict with loss and metrics.
+    """
+    if batch.get("empty", False):
+        return {"total_loss": torch.tensor(0.0, device=device, requires_grad=True)}
+
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    # Encode all (query, episode) pairs jointly
+    joint_hidden = mgrh_encode_batch(model, batch["input_ids"], batch["attention_mask"], device, use_amp, amp_dtype)
+
+    # Separate encodings for pair encoder
+    query_hidden = mgrh_encode_batch(model, batch["query_input_ids"], batch["query_attention_mask"], device, use_amp, amp_dtype)
+    episode_hidden = mgrh_encode_batch(model, batch["episode_input_ids"], batch["episode_attention_mask"], device, use_amp, amp_dtype)
+    query_mask = batch["query_attention_mask"].to(device)
+    episode_mask = batch["episode_attention_mask"].to(device)
+
+    # Embeddings from frozen head (Signal 3)
+    query_embed = mgrh_get_embeddings(model, query_hidden, query_mask)
+    episode_embed = mgrh_get_embeddings(model, episode_hidden, episode_mask)
+
+    grades = batch["grades"].to(device)
+    group_sizes = batch["group_sizes"]
+
+    with amp_context:
+        # Forward pass 1
+        mgrh_head.train()
+        output1 = mgrh_head(
+            hidden_states=joint_hidden,
+            attention_mask=batch["attention_mask"].to(device),
+            text_a_hidden=query_hidden,
+            text_b_hidden=episode_hidden,
+            text_a_mask=query_mask,
+            text_b_mask=episode_mask,
+            query_embed=query_embed,
+            doc_embed=episode_embed,
+            stage="c",
+        )
+        scores1 = output1["logits"].squeeze(-1)
+
+        # R-Drop: second forward pass with different dropout mask (Issue 4.4a)
+        r_drop_enabled = r_drop_config and r_drop_config.get("enabled", False)
+        r_drop_alpha = float(r_drop_config.get("alpha", 1.0)) if r_drop_config else 1.0
+
+        if r_drop_enabled:
+            output2 = mgrh_head(
+                hidden_states=joint_hidden,
+                attention_mask=batch["attention_mask"].to(device),
+                text_a_hidden=query_hidden,
+                text_b_hidden=episode_hidden,
+                text_a_mask=query_mask,
+                text_b_mask=episode_mask,
+                query_embed=query_embed,
+                doc_embed=episode_embed,
+                stage="c",
+            )
+            scores2 = output2["logits"].squeeze(-1)
+
+        # Compute listwise ranking loss per query group
+        total_ranking_loss = torch.tensor(0.0, device=device)
+        offset = 0
+        num_groups = 0
+
+        for gsize in group_sizes:
+            group_scores1 = scores1[offset:offset + gsize]
+            group_grades = grades[offset:offset + gsize]
+
+            if r_drop_enabled:
+                group_scores2 = scores2[offset:offset + gsize]
+                # Average task loss over both passes
+                task_loss = (ranking_loss_fn(group_scores1, group_grades) +
+                             ranking_loss_fn(group_scores2, group_grades)) / 2
+            else:
+                task_loss = ranking_loss_fn(group_scores1, group_grades)
+
+            total_ranking_loss = total_ranking_loss + task_loss
+            offset += gsize
+            num_groups += 1
+
+        if num_groups > 0:
+            total_ranking_loss = total_ranking_loss / num_groups
+
+        loss = total_ranking_loss
+
+        # R-Drop KL divergence penalty
+        kl_loss = torch.tensor(0.0, device=device)
+        if r_drop_enabled:
+            # Symmetric KL divergence between two forward passes
+            p1 = F.log_softmax(scores1.unsqueeze(-1), dim=-1)
+            p2 = F.softmax(scores2.unsqueeze(-1), dim=-1)
+            q1 = F.softmax(scores1.unsqueeze(-1), dim=-1)
+            q2 = F.log_softmax(scores2.unsqueeze(-1), dim=-1)
+            kl_loss = (F.kl_div(p1, p2, reduction="batchmean") +
+                       F.kl_div(q2, q1, reduction="batchmean")) / 2
+            loss = loss + r_drop_alpha * kl_loss
+
+    return {
+        "total_loss": loss,
+        "ranking_loss": total_ranking_loss,
+        "kl_loss": kl_loss,
+    }
+
+
+def mgrh_train_step_bridge(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    batch: dict[str, Any],
+    device: torch.device,
+    pairwise_margin_weight: float = 0.7,
+    relevance_bce_weight: float = 0.3,
+    margin: float = 0.2,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> dict[str, torch.Tensor]:
+    """Bridge B->C: Joint pairwise margin + relevance BCE (Issue 4.4b).
+
+    Uses Stage C data but with Stage B's dominant pairwise margin signal.
+    500-step bridge prevents loss discontinuity.
+    """
+    if batch.get("empty", False):
+        return {"total_loss": torch.tensor(0.0, device=device, requires_grad=True)}
+
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    joint_hidden = mgrh_encode_batch(model, batch["input_ids"], batch["attention_mask"], device, use_amp, amp_dtype)
+    query_hidden = mgrh_encode_batch(model, batch["query_input_ids"], batch["query_attention_mask"], device, use_amp, amp_dtype)
+    episode_hidden = mgrh_encode_batch(model, batch["episode_input_ids"], batch["episode_attention_mask"], device, use_amp, amp_dtype)
+    query_mask = batch["query_attention_mask"].to(device)
+    episode_mask = batch["episode_attention_mask"].to(device)
+
+    query_embed = mgrh_get_embeddings(model, query_hidden, query_mask)
+    episode_embed = mgrh_get_embeddings(model, episode_hidden, episode_mask)
+
+    grades = batch["grades"].to(device)
+    group_sizes = batch["group_sizes"]
+
+    with amp_context:
+        output = mgrh_head(
+            hidden_states=joint_hidden,
+            attention_mask=batch["attention_mask"].to(device),
+            text_a_hidden=query_hidden,
+            text_b_hidden=episode_hidden,
+            text_a_mask=query_mask,
+            text_b_mask=episode_mask,
+            query_embed=query_embed,
+            doc_embed=episode_embed,
+            stage="c",
+        )
+        scores = output["logits"].squeeze(-1)
+
+        # Pairwise margin on relevant vs irrelevant within each group
+        total_margin_loss = torch.tensor(0.0, device=device)
+        total_bce_loss = torch.tensor(0.0, device=device)
+        offset = 0
+        num_groups = 0
+
+        for gsize in group_sizes:
+            g_scores = scores[offset:offset + gsize]
+            g_grades = grades[offset:offset + gsize]
+
+            # Pairwise margin: high-grade vs low-grade
+            pos_mask = g_grades > 1
+            neg_mask = g_grades == 0
+            if pos_mask.any() and neg_mask.any():
+                s_pos = g_scores[pos_mask].unsqueeze(1)
+                s_neg = g_scores[neg_mask].unsqueeze(0)
+                total_margin_loss = total_margin_loss + F.relu(margin - (s_pos - s_neg)).mean()
+
+            # BCE with normalized grades
+            grade_norm = g_grades.float() / max(g_grades.max().item(), 1.0)
+            total_bce_loss = total_bce_loss + F.binary_cross_entropy(
+                g_scores.clamp(1e-6, 1.0 - 1e-6), grade_norm,
+            )
+            offset += gsize
+            num_groups += 1
+
+        if num_groups > 0:
+            total_margin_loss = total_margin_loss / num_groups
+            total_bce_loss = total_bce_loss / num_groups
+
+        loss = pairwise_margin_weight * total_margin_loss + relevance_bce_weight * total_bce_loss
+
+    return {
+        "total_loss": loss,
+        "margin_loss": total_margin_loss,
+        "bce_loss": total_bce_loss,
+    }
+
+
+# --- Issue 4.5: MGRH Evaluation ---
+
+
+@torch.no_grad()
+def evaluate_mgrh(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    val_loader: DataLoader,
+    device: torch.device,
+    ranking_loss_fn: CombinedRankingLoss | None = None,
+    max_batches: int | None = None,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> dict[str, float]:
+    """Evaluate MGRH on listwise relevance data.
+
+    Computes:
+        - Spearman correlation (score vs grade)
+        - AUC-ROC (binary: grade > 0 vs grade == 0)
+        - nDCG@10 per query group
+        - Average ranking loss
+
+    Args:
+        model: Multi-task model.
+        mgrh_head: MGRH head.
+        val_loader: Validation DataLoader (RelevanceListwiseCollator).
+        device: Torch device.
+        ranking_loss_fn: Optional loss function for eval loss.
+        max_batches: Cap on eval batches.
+
+    Returns:
+        Metrics dict.
+    """
+    mgrh_head.eval()
+    model.eval()
+
+    all_scores: list[float] = []
+    all_grades: list[float] = []
+    all_group_sizes: list[int] = []
+    total_loss = 0.0
+    num_batches = 0
+
+    for batch_idx, batch in enumerate(val_loader):
+        if max_batches and batch_idx >= max_batches:
+            break
+        if batch.get("empty", False):
+            continue
+
+        joint_hidden = mgrh_encode_batch(model, batch["input_ids"], batch["attention_mask"], device, use_amp, amp_dtype)
+        query_hidden = mgrh_encode_batch(model, batch["query_input_ids"], batch["query_attention_mask"], device, use_amp, amp_dtype)
+        episode_hidden = mgrh_encode_batch(model, batch["episode_input_ids"], batch["episode_attention_mask"], device, use_amp, amp_dtype)
+        query_mask = batch["query_attention_mask"].to(device)
+        episode_mask = batch["episode_attention_mask"].to(device)
+        query_embed = mgrh_get_embeddings(model, query_hidden, query_mask)
+        episode_embed = mgrh_get_embeddings(model, episode_hidden, episode_mask)
+
+        amp_context = (
+            autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+            if device.type == "cuda"
+            else autocast("cpu", enabled=False)
+        )
+        with amp_context:
+            output = mgrh_head(
+                hidden_states=joint_hidden,
+                attention_mask=batch["attention_mask"].to(device),
+                text_a_hidden=query_hidden,
+                text_b_hidden=episode_hidden,
+                text_a_mask=query_mask,
+                text_b_mask=episode_mask,
+                query_embed=query_embed,
+                doc_embed=episode_embed,
+                stage="c",
+            )
+
+        scores = output["logits"].squeeze(-1)
+        grades = batch["grades"].to(device)
+        group_sizes = batch["group_sizes"]
+
+        # Per-group ranking loss
+        if ranking_loss_fn is not None:
+            offset = 0
+            batch_loss = 0.0
+            for gsize in group_sizes:
+                g_scores = scores[offset:offset + gsize]
+                g_grades = grades[offset:offset + gsize]
+                batch_loss += ranking_loss_fn(g_scores, g_grades).item()
+                offset += gsize
+            total_loss += batch_loss / len(group_sizes)
+
+        all_scores.extend(scores.cpu().tolist())
+        all_grades.extend(grades.cpu().tolist())
+        all_group_sizes.extend(group_sizes)
+        num_batches += 1
+
+    if not all_scores:
+        return {"spearman_correlation": 0.0, "auc_roc": 0.5, "ndcg_at_10": 0.0, "eval_loss": 0.0}
+
+    # Spearman correlation
+    scores_t = torch.tensor(all_scores)
+    grades_t = torch.tensor(all_grades)
+
+    def _rank(x: torch.Tensor) -> torch.Tensor:
+        """Compute ranks (1-based) for Spearman correlation."""
+        sorted_indices = x.argsort()
+        ranks = torch.empty_like(x)
+        ranks[sorted_indices] = torch.arange(1, len(x) + 1, dtype=x.dtype)
+        return ranks
+
+    score_ranks = _rank(scores_t)
+    grade_ranks = _rank(grades_t)
+    n = len(scores_t)
+    d = score_ranks - grade_ranks
+    spearman = 1.0 - (6.0 * (d ** 2).sum().item()) / (n * (n ** 2 - 1) + 1e-8)
+
+    # AUC-ROC (binary: grade > 0 = relevant)
+    binary_labels = (grades_t > 0).float()
+    if binary_labels.sum() > 0 and binary_labels.sum() < len(binary_labels):
+        # Simple AUC via Wilcoxon-Mann-Whitney
+        pos_scores = scores_t[binary_labels == 1]
+        neg_scores = scores_t[binary_labels == 0]
+        n_pos = len(pos_scores)
+        n_neg = len(neg_scores)
+        # Compare all pairs
+        auc = ((pos_scores.unsqueeze(1) > neg_scores.unsqueeze(0)).float().sum() +
+               0.5 * (pos_scores.unsqueeze(1) == neg_scores.unsqueeze(0)).float().sum())
+        auc_roc = auc.item() / (n_pos * n_neg + 1e-8)
+    else:
+        auc_roc = 0.5
+
+    # nDCG@10 per group
+    ndcg_values: list[float] = []
+    offset = 0
+    for gsize in all_group_sizes:
+        g_scores = scores_t[offset:offset + gsize]
+        g_grades = grades_t[offset:offset + gsize]
+
+        # Sort by predicted score
+        sorted_idx = g_scores.argsort(descending=True)
+        sorted_grades = g_grades[sorted_idx][:10]
+
+        # DCG
+        positions = torch.arange(2, len(sorted_grades) + 2, dtype=torch.float)
+        dcg = ((2.0 ** sorted_grades - 1.0) / torch.log2(positions)).sum().item()
+
+        # Ideal DCG
+        ideal_sorted = g_grades.sort(descending=True).values[:10]
+        ideal_positions = torch.arange(2, len(ideal_sorted) + 2, dtype=torch.float)
+        ideal_dcg = ((2.0 ** ideal_sorted - 1.0) / torch.log2(ideal_positions)).sum().item()
+
+        if ideal_dcg > 0:
+            ndcg_values.append(dcg / ideal_dcg)
+        offset += gsize
+
+    ndcg_at_10 = sum(ndcg_values) / len(ndcg_values) if ndcg_values else 0.0
+    eval_loss = total_loss / num_batches if num_batches > 0 else 0.0
+
+    return {
+        "spearman_correlation": spearman,
+        "auc_roc": auc_roc,
+        "ndcg_at_10": ndcg_at_10,
+        "eval_loss": eval_loss,
+        "num_samples": len(all_scores),
+        "num_groups": len(all_group_sizes),
+    }
+
+
+@torch.no_grad()
+def evaluate_mgrh_pairwise(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    val_loader: DataLoader,
+    device: torch.device,
+    margin: float = 0.2,
+    max_batches: int | None = None,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> dict[str, float]:
+    """Evaluate MGRH on pairwise data (Stage B).
+
+    Computes pairwise accuracy and avg margin on triplet data.
+
+    Args:
+        model: Multi-task model.
+        mgrh_head: MGRH head.
+        val_loader: Validation DataLoader (RelevancePairwiseCollator).
+        device: Torch device.
+        margin: Target margin for loss computation.
+        max_batches: Cap on eval batches.
+
+    Returns:
+        Metrics dict with pairwise_accuracy, avg_margin, eval_loss.
+    """
+    mgrh_head.eval()
+    model.eval()
+
+    total_correct = 0
+    total_samples = 0
+    total_margin_sum = 0.0
+    total_loss = 0.0
+    num_batches = 0
+
+    for batch_idx, batch in enumerate(val_loader):
+        if max_batches and batch_idx >= max_batches:
+            break
+
+        pos_hidden = mgrh_encode_batch(model, batch["pos_input_ids"], batch["pos_attention_mask"], device, use_amp, amp_dtype)
+        neg_hidden = mgrh_encode_batch(model, batch["neg_input_ids"], batch["neg_attention_mask"], device, use_amp, amp_dtype)
+        anchor_hidden = mgrh_encode_batch(model, batch["anchor_input_ids"], batch["anchor_attention_mask"], device, use_amp, amp_dtype)
+        positive_hidden = mgrh_encode_batch(model, batch["positive_input_ids"], batch["positive_attention_mask"], device, use_amp, amp_dtype)
+        negative_hidden = mgrh_encode_batch(model, batch["negative_input_ids"], batch["negative_attention_mask"], device, use_amp, amp_dtype)
+
+        anchor_mask = batch["anchor_attention_mask"].to(device)
+        positive_mask = batch["positive_attention_mask"].to(device)
+        negative_mask = batch["negative_attention_mask"].to(device)
+
+        anchor_embed = mgrh_get_embeddings(model, anchor_hidden, anchor_mask)
+        positive_embed = mgrh_get_embeddings(model, positive_hidden, positive_mask)
+        negative_embed = mgrh_get_embeddings(model, negative_hidden, negative_mask)
+
+        amp_context = (
+            autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+            if device.type == "cuda"
+            else autocast("cpu", enabled=False)
+        )
+        with amp_context:
+            pos_out = mgrh_head(
+                hidden_states=pos_hidden,
+                attention_mask=batch["pos_attention_mask"].to(device),
+                text_a_hidden=anchor_hidden,
+                text_b_hidden=positive_hidden,
+                text_a_mask=anchor_mask,
+                text_b_mask=positive_mask,
+                query_embed=anchor_embed,
+                doc_embed=positive_embed,
+                stage="b",
+            )
+            neg_out = mgrh_head(
+                hidden_states=neg_hidden,
+                attention_mask=batch["neg_attention_mask"].to(device),
+                text_a_hidden=anchor_hidden,
+                text_b_hidden=negative_hidden,
+                text_a_mask=anchor_mask,
+                text_b_mask=negative_mask,
+                query_embed=anchor_embed,
+                doc_embed=negative_embed,
+                stage="b",
+            )
+
+        pos_scores = pos_out["logits"].squeeze(-1)
+        neg_scores = neg_out["logits"].squeeze(-1)
+
+        total_correct += (pos_scores > neg_scores).sum().item()
+        total_samples += len(pos_scores)
+        total_margin_sum += (pos_scores - neg_scores).sum().item()
+        total_loss += F.relu(margin - (pos_scores - neg_scores)).mean().item()
+        num_batches += 1
+
+    accuracy = total_correct / total_samples if total_samples > 0 else 0.0
+    avg_margin = total_margin_sum / total_samples if total_samples > 0 else 0.0
+    eval_loss = total_loss / num_batches if num_batches > 0 else 0.0
+
+    return {
+        "spearman_correlation": accuracy,  # Use accuracy as selection metric
+        "pairwise_accuracy": accuracy,
+        "avg_margin": avg_margin,
+        "eval_loss": eval_loss,
+        "num_samples": total_samples,
+    }
+
+
+@torch.no_grad()
+def evaluate_mgrh_nli(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    val_loader: DataLoader,
+    device: torch.device,
+    max_batches: int | None = None,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> dict[str, float]:
+    """Evaluate MGRH on NLI dev set (Stage A accuracy).
+
+    Returns:
+        Metrics dict with nli_accuracy and nli_loss.
+    """
+    mgrh_head.eval()
+    model.eval()
+
+    total_correct = 0
+    total_samples = 0
+    total_loss = 0.0
+    num_batches = 0
+
+    for batch_idx, batch in enumerate(val_loader):
+        if max_batches and batch_idx >= max_batches:
+            break
+
+        joint_hidden = mgrh_encode_batch(model, batch["input_ids"], batch["attention_mask"], device, use_amp, amp_dtype)
+        text_a_hidden = mgrh_encode_batch(model, batch["text_a_input_ids"], batch["text_a_attention_mask"], device, use_amp, amp_dtype)
+        text_b_hidden = mgrh_encode_batch(model, batch["text_b_input_ids"], batch["text_b_attention_mask"], device, use_amp, amp_dtype)
+        text_a_mask = batch["text_a_attention_mask"].to(device)
+        text_b_mask = batch["text_b_attention_mask"].to(device)
+
+        query_embed = mgrh_get_embeddings(model, text_a_hidden, text_a_mask)
+        doc_embed = mgrh_get_embeddings(model, text_b_hidden, text_b_mask)
+        labels = batch["labels"].to(device)
+
+        amp_context = (
+            autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+            if device.type == "cuda"
+            else autocast("cpu", enabled=False)
+        )
+        with amp_context:
+            output = mgrh_head(
+                hidden_states=joint_hidden,
+                attention_mask=batch["attention_mask"].to(device),
+                labels=labels,
+                text_a_hidden=text_a_hidden,
+                text_b_hidden=text_b_hidden,
+                text_a_mask=text_a_mask,
+                text_b_mask=text_b_mask,
+                query_embed=query_embed,
+                doc_embed=doc_embed,
+                stage="a",
+            )
+
+        preds = output["nli_logits"].argmax(dim=-1)
+        total_correct += (preds == labels).sum().item()
+        total_samples += len(labels)
+        total_loss += output["loss"].item()
+        num_batches += 1
+
+    accuracy = total_correct / total_samples if total_samples > 0 else 0.0
+    avg_loss = total_loss / num_batches if num_batches > 0 else 0.0
+
+    return {
+        "nli_accuracy": accuracy,
+        "nli_loss": avg_loss,
+        "num_samples": total_samples,
+    }
+
+
+# --- Issue 4.8: ANCE Hard Negative Mining ---
+
+
+@torch.no_grad()
+def refresh_hard_negatives_ance(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    dataset: RelevanceListwiseDataset,
+    tokenizer: Any,
+    device: torch.device,
+    top_k: int = 20,
+    batch_size: int = 32,
+    max_length: int = 512,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> int:
+    """ANCE: Re-mine hard negatives using current model scores (Issue 4.8).
+
+    For each query group, re-scores all episodes with current MGRH weights
+    and promotes the highest-scoring irrelevant episodes as hard negatives.
+
+    Args:
+        model: Multi-task model.
+        mgrh_head: Current MGRH head weights.
+        dataset: The training dataset to refresh.
+        tokenizer: Tokenizer for encoding.
+        device: Torch device.
+        top_k: Number of top-scoring negatives to mine per query.
+
+    Returns:
+        Number of hard negatives refreshed.
+    """
+    mgrh_head.eval()
+    refreshed = 0
+
+    for i in range(len(dataset)):
+        sample = dataset.samples[i]
+        if sample.get("_format") != "listwise":
+            continue
+        episodes = sample.get("episodes", [])
+        query = sample.get("query", "")
+        if not episodes or not query:
+            continue
+
+        # Score all episodes with current model
+        episode_texts = [ep.get("text", ep.get("episode_text", "")) for ep in episodes]
+        grades = [float(ep.get("grade", 0)) for ep in episodes]
+
+        if len(episode_texts) < 2:
+            continue
+
+        # Batch encode
+        joint_enc = tokenizer(
+            [query] * len(episode_texts), episode_texts,
+            padding=True, truncation=True, max_length=max_length, return_tensors="pt",
+        )
+
+        joint_hidden = mgrh_encode_batch(
+            model, joint_enc["input_ids"], joint_enc["attention_mask"],
+            device, use_amp, amp_dtype,
+        )
+
+        amp_context = (
+            autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+            if device.type == "cuda"
+            else autocast("cpu", enabled=False)
+        )
+        with amp_context:
+            output = mgrh_head(
+                hidden_states=joint_hidden,
+                attention_mask=joint_enc["attention_mask"].to(device),
+                stage="c",
+            )
+        scores = output["logits"].squeeze(-1).cpu().tolist()
+
+        # Find highest-scoring irrelevant episodes
+        scored_negs = [
+            (scores[j], j) for j in range(len(episodes))
+            if grades[j] == 0
+        ]
+        scored_negs.sort(reverse=True)
+
+        # Mark top-k as hard negatives
+        for rank, (score, idx) in enumerate(scored_negs[:top_k]):
+            episodes[idx]["is_hard_negative"] = True
+            episodes[idx]["ance_score"] = score
+            refreshed += 1
+
+    logger.info(f"  ANCE: refreshed {refreshed:,} hard negatives")
+    return refreshed
+
+
+# --- Issue 4.9: Post-Training Score Calibration ---
+
+
+def calibrate_mgrh_scores(
+    model: ModernBertMultiTaskModel,
+    mgrh_head: MultiGranularityRelevanceHead,
+    holdout_loader: DataLoader,
+    device: torch.device,
+    use_amp: bool = True,
+    amp_dtype: torch.dtype = torch.bfloat16,
+) -> float:
+    """Temperature scaling calibration on holdout set (Issue 4.9).
+
+    Learns a single temperature parameter T such that sigmoid(logits/T)
+    produces well-calibrated probabilities.
+
+    Args:
+        model: Multi-task model.
+        mgrh_head: Trained MGRH head.
+        holdout_loader: Holdout DataLoader.
+        device: Torch device.
+
+    Returns:
+        Learned temperature value T.
+    """
+    mgrh_head.eval()
+    model.eval()
+
+    # Collect raw logits and labels from holdout
+    all_logits: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+
+    for batch in holdout_loader:
+        if batch.get("empty", False):
+            continue
+
+        joint_hidden = mgrh_encode_batch(model, batch["input_ids"], batch["attention_mask"], device, use_amp, amp_dtype)
+        query_hidden = mgrh_encode_batch(model, batch["query_input_ids"], batch["query_attention_mask"], device, use_amp, amp_dtype)
+        episode_hidden = mgrh_encode_batch(model, batch["episode_input_ids"], batch["episode_attention_mask"], device, use_amp, amp_dtype)
+        query_mask = batch["query_attention_mask"].to(device)
+        episode_mask = batch["episode_attention_mask"].to(device)
+        query_embed = mgrh_get_embeddings(model, query_hidden, query_mask)
+        episode_embed = mgrh_get_embeddings(model, episode_hidden, episode_mask)
+
+        with torch.no_grad():
+            output = mgrh_head(
+                hidden_states=joint_hidden,
+                attention_mask=batch["attention_mask"].to(device),
+                text_a_hidden=query_hidden,
+                text_b_hidden=episode_hidden,
+                text_a_mask=query_mask,
+                text_b_mask=episode_mask,
+                query_embed=query_embed,
+                doc_embed=episode_embed,
+                stage="c",
+            )
+
+        raw_logits = output["relevance_logits_raw"].squeeze(-1)
+        grades = batch["grades"].to(device)
+        # Binary labels: grade > 0 = relevant
+        binary = (grades > 0).float()
+
+        all_logits.append(raw_logits.cpu())
+        all_labels.append(binary.cpu())
+
+    if not all_logits:
+        logger.warning("  Calibration: no holdout data")
+        return 1.0
+
+    logits_cat = torch.cat(all_logits).to(device)
+    labels_cat = torch.cat(all_labels).to(device)
+
+    # Learn temperature T via LBFGS
+    T = nn.Parameter(torch.ones(1, device=device))
+    optimizer = torch.optim.LBFGS([T], lr=0.01, max_iter=50)
+
+    def calibration_loss() -> torch.Tensor:
+        optimizer.zero_grad()
+        scaled_logits = logits_cat / T
+        loss = F.binary_cross_entropy_with_logits(scaled_logits, labels_cat)
+        loss.backward()
+        return loss
+
+    optimizer.step(calibration_loss)
+    temperature = T.item()
+    logger.info(f"  Calibration temperature: {temperature:.4f}")
+    return temperature
+
+
+# --- Issue 4.6: MGRH Training Orchestrator + CLI ---
+
+
+def run_mgrh_training(
+    config: dict[str, Any],
+    stage: str,
+    output_dir: Path | None = None,
+    debug: bool = False,
+    max_samples: int | None = None,
+    skip_bridge: bool = False,
+) -> dict[str, Any]:
+    """Run MGRH training for a specific stage.
+
+    Orchestrates the complete MGRH training pipeline:
+        --mgrh_stage a: General NLI pre-training
+        --mgrh_stage b: Domain NLI with pairwise margin
+        --mgrh_stage bridge: B->C bridge (500 steps)
+        --mgrh_stage c: Relevance fine-tuning (includes bridge if not skipped)
+        --mgrh_stage all: Run a -> b -> bridge -> c sequentially
+
+    Args:
+        config: Full YAML config dict.
+        stage: Stage to run ('a', 'b', 'bridge', 'c', 'all').
+        output_dir: Output directory override.
+        debug: Debug mode.
+        max_samples: Limit samples.
+        skip_bridge: Skip bridge before Stage C.
+
+    Returns:
+        Training history dict.
+    """
+    mgrh_config = config.get("mgrh_training", {})
+    stages_config = mgrh_config.get("stages", {})
+    eval_config = mgrh_config.get("evaluation", {})
+    head_config = mgrh_config.get("head", {})
+
+    output_base = Path(output_dir or config.get("output", {}).get("dir", "outputs/mgrh"))
+    output_base.mkdir(parents=True, exist_ok=True)
+
+    training_base = config.get("training", {})
+    use_bf16 = training_base.get("bf16", False)
+    use_flash_attention = training_base.get("flash_attention", False)
+    seed = training_base.get("seed", 42)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        gpu_name = torch.cuda.get_device_name(0)
+        logger.info(f"Device: {gpu_name}")
+        if training_base.get("tf32", False) and "A100" in gpu_name:
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+
+    amp_dtype = torch.bfloat16 if use_bf16 else torch.float16
+
+    if stage == "all":
+        # Sequential: a -> b -> bridge -> c
+        history = {}
+        for s in ["a", "b", "bridge", "c"]:
+            if s == "bridge" and skip_bridge:
+                logger.info("Skipping bridge (--skip_bridge)")
+                continue
+            logger.info(f"\n{'#' * 70}")
+            logger.info(f"# MGRH STAGE: {s.upper()}")
+            logger.info(f"{'#' * 70}")
+            h = run_mgrh_training(
+                config=config, stage=s, output_dir=output_dir,
+                debug=debug, max_samples=max_samples, skip_bridge=skip_bridge,
+            )
+            history[s] = h
+        return history
+
+    # --- Load model ---
+    log_section(f"MGRH STAGE {stage.upper()}: MODEL")
+
+    # For stages b/bridge/c, try to load from previous stage checkpoint
+    prev_stage_map = {"b": "a", "bridge": "b", "c": "bridge"}
+    prev_stage = prev_stage_map.get(stage)
+    prev_checkpoint = None
+    if prev_stage:
+        prev_dir = output_base / f"stage_{prev_stage}" / "best"
+        if prev_dir.exists() and (prev_dir / "mgrh_head.pt").exists():
+            prev_checkpoint = prev_dir
+            logger.info(f"  Loading from previous stage: {prev_checkpoint}")
+
+    model, pair_encoder, mgrh_head = load_model_for_mgrh(config, use_flash_attention)
+
+    # Load previous stage head weights if available
+    if prev_checkpoint is not None:
+        head_state = torch.load(prev_checkpoint / "mgrh_head.pt", map_location="cpu", weights_only=True)
+        mgrh_head.load_state_dict(head_state, strict=True)
+        logger.info(f"  Loaded MGRH head from {prev_checkpoint / 'mgrh_head.pt'}")
+
+    model = model.to(device)
+
+    tokenizer = load_checkpoint_tokenizer(
+        resolve_workspace_path(mgrh_config.get("base_checkpoint", "checkpoints/distil_stage_b_bestema"))
+    )
+
+    # --- Stage-specific training ---
+    stage_config = stages_config.get(f"stage_{stage}", stages_config.get(stage, {}))
+    if stage in ("bridge", "bridge_bc"):
+        stage_config = stages_config.get("bridge_bc", stages_config.get("bridge", {}))
+
+    stage_output = output_base / f"stage_{stage}"
+    stage_output.mkdir(parents=True, exist_ok=True)
+
+    learning_rate = float(stage_config.get("lr", stage_config.get("lr_head", 2e-4)))
+    batch_size = int(stage_config.get("batch_size", 64))
+    max_length = int(stage_config.get("max_length", 256))
+    num_epochs = int(stage_config.get("epochs", 5))
+    max_steps = stage_config.get("max_steps")  # For bridge
+
+    eval_steps = int(eval_config.get("eval_steps", 200))
+    save_steps = int(eval_config.get("save_steps", 200))
+    ema_config = eval_config.get("ema", {})
+    use_ema = ema_config.get("enabled", True)
+    ema_decay = float(ema_config.get("decay", 0.995))
+    es_config = eval_config.get("early_stopping", {})
+    early_stopping_patience = int(es_config.get("patience", 5)) if es_config.get("enabled", True) else 100000
+
+    if debug:
+        max_samples = max_samples or 200
+        eval_steps = 20
+        save_steps = 20
+        num_epochs = min(num_epochs, 2)
+
+    # --- Build dataset and collator ---
+    log_section(f"MGRH STAGE {stage.upper()}: DATA")
+
+    if stage == "a":
+        data_root = resolve_workspace_path(stage_config.get("data_root", "data/familyos/nli/general"))
+        sources = stage_config.get("sources", [])
+        train_dataset = NLIDataset(sources, data_root, max_samples)
+
+        # Split off 10% for validation
+        val_size = max(int(len(train_dataset) * 0.1), 100)
+        train_size = len(train_dataset) - val_size
+        train_samples = train_dataset.samples[:train_size]
+        val_samples = train_dataset.samples[train_size:]
+        train_dataset.samples = train_samples
+        val_dataset = NLIDataset.__new__(NLIDataset)
+        val_dataset.samples = val_samples
+
+        collator = NLICollator(tokenizer, max_length)
+        logger.info(f"  Train: {len(train_dataset):,}, Val: {len(val_dataset):,}")
+
+    elif stage == "b":
+        data_root = resolve_workspace_path(stage_config.get("data_root", "data/familyos/embeddings"))
+        sources = stage_config.get("sources", [])
+        train_dataset = RelevancePairwiseDataset(sources, data_root, max_samples)
+
+        val_size = max(int(len(train_dataset) * 0.1), 100)
+        train_samples = train_dataset.samples[:len(train_dataset) - val_size]
+        val_samples = train_dataset.samples[len(train_dataset) - val_size:]
+        train_dataset.samples = train_samples
+        val_dataset = RelevancePairwiseDataset.__new__(RelevancePairwiseDataset)
+        val_dataset.samples = val_samples
+
+        collator = RelevancePairwiseCollator(tokenizer, max_length)
+        logger.info(f"  Train: {len(train_dataset):,}, Val: {len(val_dataset):,}")
+
+    elif stage in ("bridge", "bridge_bc"):
+        data_root = resolve_workspace_path(stage_config.get("data_root", "data/familyos/nli/relevance"))
+        sources = stage_config.get("sources", [])
+        train_dataset = RelevanceListwiseDataset(sources, data_root, max_samples)
+        val_dataset = train_dataset  # Bridge uses same data for both
+        collator = RelevanceListwiseCollator(tokenizer, max_length)
+        logger.info(f"  Bridge data: {len(train_dataset):,} samples")
+
+    elif stage == "c":
+        data_root = resolve_workspace_path(stage_config.get("data_root", "data/familyos"))
+        sources = stage_config.get("sources", [])
+        full_dataset = RelevanceListwiseDataset(sources, data_root, max_samples)
+
+        # Use pre-split data if available, otherwise split 80/10/10
+        splits_dir = Path(resolve_workspace_path("data/familyos/nli/splits/stage_c"))
+        if (splits_dir / "train.jsonl").exists():
+            logger.info(f"  Using pre-split data from {splits_dir}")
+            train_dataset = RelevanceListwiseDataset(
+                [{"path": "train.jsonl", "format": "listwise", "weight": 1.0}],
+                splits_dir, max_samples,
+            )
+            val_dataset = RelevanceListwiseDataset(
+                [{"path": "dev.jsonl", "format": "listwise", "weight": 1.0}],
+                splits_dir, None,
+            )
+        else:
+            val_size = max(int(len(full_dataset) * 0.1), 50)
+            train_dataset = full_dataset
+            val_dataset = RelevanceListwiseDataset.__new__(RelevanceListwiseDataset)
+            val_dataset.samples = full_dataset.samples[-val_size:]
+            train_dataset.samples = full_dataset.samples[:-val_size]
+
+        collator = RelevanceListwiseCollator(tokenizer, max_length)
+        logger.info(f"  Train: {len(train_dataset):,}, Val: {len(val_dataset):,}")
+    else:
+        raise ValueError(f"Unknown MGRH stage: {stage}")
+
+    # DataLoaders
+    effective_workers = 0 if platform.system() == "Windows" else 2
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collator,
+        num_workers=effective_workers, pin_memory=True,
+        drop_last=len(train_dataset) >= batch_size,
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collator,
+        num_workers=effective_workers, pin_memory=True,
+    )
+
+    # --- Optimizer ---
+    log_section(f"MGRH STAGE {stage.upper()}: TRAINING")
+
+    # Differential LR for pair encoder vs other MGRH params
+    lr_pair_encoder = float(stage_config.get("lr_pair_encoder", learning_rate / 2))
+    pair_encoder_params = list(pair_encoder.parameters())
+    other_mgrh_params = [p for n, p in mgrh_head.named_parameters()
+                         if p.requires_grad and not n.startswith("pair_encoder.")]
+
+    param_groups = [
+        {"params": other_mgrh_params, "lr": learning_rate, "weight_decay": 0.01},
+        {"params": pair_encoder_params, "lr": lr_pair_encoder, "weight_decay": 0.01},
+    ]
+    optimizer = torch.optim.AdamW(param_groups, betas=(0.9, 0.999), eps=1e-8)
+
+    # Steps
+    if max_steps:
+        num_training_steps = max_steps
+        num_epochs = 1  # Bridge uses steps, not epochs
+    else:
+        gradient_accumulation_steps = int(stage_config.get("gradient_accumulation_steps", 1))
+        num_training_steps = len(train_loader) * num_epochs // gradient_accumulation_steps
+
+    warmup_steps = max(10, int(num_training_steps * 0.05))
+    scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=num_training_steps)
+
+    # EMA
+    ema_model = None
+    if use_ema:
+        ema_model = AveragedModel(mgrh_head, avg_fn=lambda avg, model, num: ema_decay * avg + (1 - ema_decay) * model)
+
+    # Loss
+    loss_config = stage_config.get("loss", {})
+    ranking_loss_fn = None
+    if stage == "c":
+        ranking_loss_fn = CombinedRankingLoss(
+            margin=float(loss_config.get("margin", 0.2)),
+            alpha=float(loss_config.get("pairwise_margin_weight", 0.3)),
+            ndcg_at=int(loss_config.get("ndcg_at", 10)),
+        )
+
+    # ANCE config
+    ance_config = stage_config.get("ance", {})
+    ance_enabled = ance_config.get("enabled", False) and stage == "c"
+    ance_refresh_every = int(ance_config.get("refresh_every_n_epochs", 3))
+
+    # R-Drop config
+    r_drop_config = loss_config.get("r_drop") if stage == "c" else None
+
+    # Contrastive NLI config (Stage A)
+    contrastive_nli_config = loss_config.get("contrastive_nli") if stage == "a" else None
+
+    # Bridge config
+    bridge_loss_config = loss_config if stage in ("bridge", "bridge_bc") else None
+
+    use_scaler = use_bf16 is False and device.type == "cuda"
+    scaler = GradScaler("cuda", enabled=use_scaler)
+
+    logger.info(f"  LR head: {learning_rate}, LR pair_encoder: {lr_pair_encoder}")
+    logger.info(f"  Epochs: {num_epochs}, Steps: {num_training_steps}, Warmup: {warmup_steps}")
+    logger.info(f"  Batch size: {batch_size}, Max length: {max_length}")
+    logger.info(f"  EMA: {use_ema} (decay={ema_decay}), Early stopping: {early_stopping_patience}")
+    if ance_enabled:
+        logger.info(f"  ANCE: enabled (refresh every {ance_refresh_every} epochs)")
+    if r_drop_config and r_drop_config.get("enabled"):
+        logger.info(f"  R-Drop: enabled (alpha={r_drop_config.get('alpha', 1.0)})")
+
+    # --- Training loop ---
+    history: dict[str, list] = {"train_loss": [], "eval_metrics": []}
+    global_step = 0
+    best_score = float("-inf")
+    no_improve_count = 0
+    selection_metric = eval_config.get("selection_metric", "spearman_correlation")
+
+    for epoch in range(num_epochs):
+        logger.info(f"\n--- Epoch {epoch + 1}/{num_epochs} ---")
+        mgrh_head.train()
+        epoch_loss = 0.0
+        epoch_steps = 0
+
+        # ANCE refresh (Issue 4.8)
+        if ance_enabled and epoch > 0 and epoch % ance_refresh_every == 0:
+            if isinstance(train_dataset, RelevanceListwiseDataset):
+                refresh_hard_negatives_ance(
+                    model, mgrh_head, train_dataset, tokenizer, device,
+                    top_k=int(ance_config.get("mine_top_k", 20)),
+                    batch_size=batch_size, max_length=max_length,
+                    use_amp=use_bf16, amp_dtype=amp_dtype,
+                )
+
+        for batch_idx, batch in enumerate(tqdm(train_loader, desc=f"Stage {stage} epoch {epoch+1}")):
+            if max_steps and global_step >= max_steps:
+                break
+
+            # Route to correct train step
+            if stage == "a":
+                result = mgrh_train_step_stage_a(
+                    model, mgrh_head, batch, device,
+                    contrastive_nli_config=contrastive_nli_config,
+                    use_amp=use_bf16, amp_dtype=amp_dtype,
+                )
+            elif stage == "b":
+                margin = float(loss_config.get("margin", 0.2))
+                result = mgrh_train_step_stage_b(
+                    model, mgrh_head, batch, device,
+                    margin=margin, use_amp=use_bf16, amp_dtype=amp_dtype,
+                )
+            elif stage in ("bridge", "bridge_bc"):
+                result = mgrh_train_step_bridge(
+                    model, mgrh_head, batch, device,
+                    pairwise_margin_weight=float(loss_config.get("pairwise_margin_weight", 0.7)),
+                    relevance_bce_weight=float(loss_config.get("relevance_bce_weight", 0.3)),
+                    margin=float(loss_config.get("margin", 0.2)),
+                    use_amp=use_bf16, amp_dtype=amp_dtype,
+                )
+            elif stage == "c":
+                result = mgrh_train_step_stage_c(
+                    model, mgrh_head, batch, device,
+                    ranking_loss_fn=ranking_loss_fn,
+                    r_drop_config=r_drop_config,
+                    use_amp=use_bf16, amp_dtype=amp_dtype,
+                )
+            else:
+                raise ValueError(f"Unknown stage: {stage}")
+
+            loss = result["total_loss"]
+
+            if use_scaler:
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(mgrh_head.parameters(), 1.0)
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                nn.utils.clip_grad_norm_(mgrh_head.parameters(), 1.0)
+                optimizer.step()
+
+            optimizer.zero_grad()
+            scheduler.step()
+
+            if use_ema and ema_model is not None:
+                ema_model.update_parameters(mgrh_head)
+
+            epoch_loss += loss.item()
+            epoch_steps += 1
+            global_step += 1
+
+            # Logging
+            if global_step % 50 == 0:
+                avg_loss = epoch_loss / epoch_steps
+                lr_current = scheduler.get_last_lr()[0]
+                log_msg = f"  step={global_step} loss={loss.item():.4f} avg_loss={avg_loss:.4f} lr={lr_current:.2e}"
+                if "nli_accuracy" in result:
+                    log_msg += f" nli_acc={result['nli_accuracy']:.4f}"
+                if "pairwise_accuracy" in result:
+                    log_msg += f" pair_acc={result['pairwise_accuracy']:.4f}"
+                logger.info(log_msg)
+
+            # Evaluation
+            if global_step % eval_steps == 0:
+                if stage == "a":
+                    metrics = evaluate_mgrh_nli(model, mgrh_head, val_loader, device, max_batches=50, use_amp=use_bf16, amp_dtype=amp_dtype)
+                    score = metrics.get("nli_accuracy", 0.0)
+                    logger.info(f"  [EVAL] step={global_step} nli_accuracy={score:.4f} nli_loss={metrics.get('nli_loss', 0):.4f}")
+                elif stage == "b":
+                    eval_head = ema_model.module if use_ema and ema_model is not None else mgrh_head
+                    metrics = evaluate_mgrh_pairwise(model, eval_head, val_loader, device, max_batches=50, use_amp=use_bf16, amp_dtype=amp_dtype)
+                    score = metrics.get("pairwise_accuracy", 0.0)
+                    logger.info(
+                        f"  [EVAL] step={global_step} pair_acc={metrics.get('pairwise_accuracy', 0):.4f} "
+                        f"avg_margin={metrics.get('avg_margin', 0):.4f} eval_loss={metrics.get('eval_loss', 0):.4f}"
+                    )
+                else:
+                    eval_head = ema_model.module if use_ema and ema_model is not None else mgrh_head
+                    metrics = evaluate_mgrh(model, eval_head, val_loader, device, ranking_loss_fn, max_batches=50, use_amp=use_bf16, amp_dtype=amp_dtype)
+                    score = metrics.get(selection_metric, 0.0)
+                    logger.info(
+                        f"  [EVAL] step={global_step} spearman={metrics.get('spearman_correlation', 0):.4f} "
+                        f"auc_roc={metrics.get('auc_roc', 0):.4f} ndcg@10={metrics.get('ndcg_at_10', 0):.4f}"
+                    )
+
+                history["eval_metrics"].append({"step": global_step, **metrics})
+
+                if score > best_score:
+                    best_score = score
+                    no_improve_count = 0
+                    # Save best
+                    best_dir = stage_output / "best"
+                    best_dir.mkdir(parents=True, exist_ok=True)
+                    head_to_save = ema_model.module if use_ema and ema_model is not None else mgrh_head
+                    torch.save(head_to_save.state_dict(), best_dir / "mgrh_head.pt")
+                    torch.save(pair_encoder.state_dict(), best_dir / "pair_encoder.pt")
+                    with open(best_dir / "mgrh_metrics.json", "w") as f:
+                        json.dump(metrics, f, indent=2)
+                    logger.info(f"  New best {selection_metric}={score:.4f} -> {best_dir}")
+                else:
+                    no_improve_count += 1
+                    if no_improve_count >= early_stopping_patience:
+                        logger.info(f"  Early stopping: no improvement for {no_improve_count} evals")
+                        break
+
+                mgrh_head.train()
+
+        avg_epoch_loss = epoch_loss / max(epoch_steps, 1)
+        history["train_loss"].append(avg_epoch_loss)
+        logger.info(f"  Epoch {epoch + 1} avg loss: {avg_epoch_loss:.4f}")
+
+        if max_steps and global_step >= max_steps:
+            break
+        if no_improve_count >= early_stopping_patience:
+            break
+
+    # Save final checkpoint
+    final_dir = stage_output / "final"
+    final_dir.mkdir(parents=True, exist_ok=True)
+    head_to_save = ema_model.module if use_ema and ema_model is not None else mgrh_head
+    torch.save(head_to_save.state_dict(), final_dir / "mgrh_head.pt")
+    torch.save(pair_encoder.state_dict(), final_dir / "pair_encoder.pt")
+
+    # Post-training calibration (Issue 4.9, Stage C only)
+    if stage == "c":
+        calibration_config = stage_config.get("calibration", {})
+        if calibration_config.get("enabled", False):
+            log_section("MGRH: POST-TRAINING CALIBRATION")
+            # Load holdout split if available
+            holdout_path = Path(resolve_workspace_path("data/familyos/nli/splits/stage_c/holdout.jsonl"))
+            if holdout_path.exists():
+                holdout_dataset = RelevanceListwiseDataset(
+                    [{"path": "holdout.jsonl", "format": "listwise", "weight": 1.0}],
+                    holdout_path.parent, None,
+                )
+                holdout_loader = DataLoader(
+                    holdout_dataset, batch_size=batch_size, shuffle=False,
+                    collate_fn=RelevanceListwiseCollator(tokenizer, max_length),
+                )
+                temperature = calibrate_mgrh_scores(
+                    model, head_to_save, holdout_loader, device,
+                    use_amp=use_bf16, amp_dtype=amp_dtype,
+                )
+                torch.save({"temperature": temperature}, final_dir / "calibration.pt")
+                logger.info(f"  Calibration saved: T={temperature:.4f}")
+            else:
+                logger.warning(f"  No holdout split at {holdout_path}; skipping calibration")
+
+    # Save metadata
+    meta = {
+        "stage": stage,
+        "base_checkpoint": mgrh_config.get("base_checkpoint"),
+        "best_score": best_score,
+        "selection_metric": selection_metric,
+        "global_steps": global_step,
+        "timestamp": datetime.now().isoformat(),
+    }
+    with open(stage_output / "mgrh_metadata.json", "w") as f:
+        json.dump(meta, f, indent=2)
+
+    with open(stage_output / "training_history.json", "w") as f:
+        json.dump(history, f, indent=2)
+
+    logger.info(f"MGRH Stage {stage.upper()} complete -> {stage_output}")
+    return history
+
+
+# =============================================================================
 # Main
 # =============================================================================
 
@@ -5579,6 +7578,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--stage_b", type=str, default=None,
                         help="Stage B: path to bakeoff winner checkpoint (e.g. outputs/embedding-bakeoff/agreement_gated_v2/best). "
                              "Loads trained head weights and continues training with all data slices.")
+    parser.add_argument("--mgrh_train", action="store_true",
+                        help="MGRH training mode: train Multi-Granularity Relevance Head")
+    parser.add_argument("--mgrh_stage", type=str, default="all",
+                        choices=["a", "b", "bridge", "c", "all"],
+                        help="MGRH stage: a=NLI pretrain, b=domain pairwise, bridge=B->C, c=relevance, all=sequential")
+    parser.add_argument("--skip_bridge", action="store_true",
+                        help="Skip bridge stage when running --mgrh_stage all")
     parser.add_argument("--debug", action="store_true", help="Debug mode (small dataset)")
     parser.add_argument("--max_samples", type=int, default=None, help="Max total samples")
     return parser.parse_args()
@@ -5616,6 +7622,23 @@ def main() -> None:
             output_dir=distill_output,
             debug=args.debug,
             max_samples=args.max_samples,
+        )
+
+    elif args.mgrh_train:
+        logger.info("")
+        logger.info("#" * 70)
+        logger.info(f"# RUN MODE: MGRH TRAINING (--mgrh_train --mgrh_stage {args.mgrh_stage})")
+        logger.info("# Multi-Granularity Relevance Head: freeze all, train NLI/relevance")
+        logger.info("#" * 70)
+        mgrh_output = output_base / "mgrh"
+        mgrh_output.mkdir(parents=True, exist_ok=True)
+        run_mgrh_training(
+            config=config,
+            stage=args.mgrh_stage,
+            output_dir=mgrh_output,
+            debug=args.debug,
+            max_samples=args.max_samples,
+            skip_bridge=args.skip_bridge,
         )
 
     elif args.stage_b:

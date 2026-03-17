@@ -1,0 +1,21 @@
+{
+  "description": "Train/dev/holdout splits for MGRH training",
+  "ratios": {
+    "train": 0.8,
+    "dev": 0.1,
+    "holdout": 0.1
+  },
+  "seed": 42,
+  "splits": {
+    "stage_c": {
+      "train": 640,
+      "dev": 79,
+      "holdout": 79
+    }
+  },
+  "notes": [
+    "Stage A: stratified by source dataset, shuffled",
+    "Stage B: uses existing embedding splits (not re-split here)",
+    "Stage C: split by query group (not by episode) to prevent leakage"
+  ]
+}

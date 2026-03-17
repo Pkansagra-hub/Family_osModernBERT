@@ -70,6 +70,7 @@ from modeling_studio.models.heads import (
     GlobalPointerNERHead,  # NEW - v2 SOTA span-based NER
     create_globalpointer_head,  # Factory function
     IntentHead,
+    MultiGranularityRelevanceHead,  # MGRH — SOTA cross-encoder re-ranking
     NLIHead,
     RelationHead,
     SafetyHead,
@@ -82,6 +83,12 @@ from modeling_studio.models.modernbert_multitask import (
     ModernBertMultiTaskModel,
     MultiTaskOutput,
     get_problem_type,
+)
+
+# Import ranking losses (MGRH — Milestone 1)
+from modeling_studio.models.losses_ranking import (
+    CombinedRankingLoss,
+    LambdaRankLoss,
 )
 
 # Import MoE components (Milestone 10)
@@ -137,6 +144,7 @@ __all__ = [
     "create_globalpointer_head",  # Factory function
     "EmbeddingHead",
     "NLIHead",
+    "MultiGranularityRelevanceHead",  # MGRH — SOTA cross-encoder re-ranking
     "SafetyHead",
     "RelationHead",  # NEW
     "IntentHead",  # NEW
@@ -171,6 +179,9 @@ __all__ = [
     "AttentionPooling",
     "ConcatPairEncoder",
     "create_pair_encoder",
+    # Ranking losses (MGRH — Milestone 1)
+    "LambdaRankLoss",
+    "CombinedRankingLoss",
     # Adapters (Epic 5.0)
     "AdapterConfig",
     "TaskGroupConfig",

@@ -1,0 +1,30 @@
+{
+  "stage": "B",
+  "description": "Domain NLI data for MGRH Stage B (symlinks to embeddings data)",
+  "sources": {
+    "hard_negatives": {
+      "target": "D:\\Modeling_studio\\data\\familyos\\embeddings\\hard_negatives",
+      "types": [
+        "entity_swap",
+        "temporal_shift",
+        "same_topic_different_event",
+        "causality_flip"
+      ]
+    },
+    "mined_v2_query_doc": {
+      "target": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\query_doc",
+      "types": "all"
+    },
+    "mined_v2_wrong_time": {
+      "target": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\wrong_time",
+      "types": "all"
+    },
+    "mined_v2_wrong_person": {
+      "target": "D:\\Modeling_studio\\data\\familyos\\embeddings\\mined_v2\\wrong_person",
+      "types": "all"
+    }
+  },
+  "excluded": [
+    "silver_synthetic (too easy for cross-encoder training)"
+  ]
+}

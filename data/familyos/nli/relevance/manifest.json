@@ -1,0 +1,32 @@
+{
+  "stage": "C",
+  "description": "Human benchmark listwise data for MGRH Stage C (LambdaRank)",
+  "format": "listwise_jsonl",
+  "schema": {
+    "query": "str",
+    "episodes": [
+      {
+        "text": "str",
+        "grade": "int(0-3)",
+        "source_type": "str"
+      }
+    ]
+  },
+  "grade_map": {
+    "3": "positive (gold relevant)",
+    "2": "same-topic mild divergence",
+    "1": "entity/temporal shift (related but wrong)",
+    "0": "unrelated / hard negative"
+  },
+  "stats": {
+    "query_groups": 798,
+    "total_episodes": 1602,
+    "grade_distribution": {
+      "0": 246,
+      "1": 482,
+      "2": 72,
+      "3": 802
+    }
+  },
+  "source": "D:\\Modeling_studio\\data\\familyos\\benchmarks\\retrieval_golden_v1"
+}

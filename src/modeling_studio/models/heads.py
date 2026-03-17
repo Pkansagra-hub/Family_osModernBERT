@@ -912,6 +912,319 @@ class NLIHead(SequenceClassificationHead):
 
 
 # =============================================================================
+# Multi-Granularity Relevance Head (MGRH) — SOTA NLI Re-Ranking
+# =============================================================================
+
+
+class MultiGranularityRelevanceHead(BaseHead):
+    """
+    Multi-Granularity Relevance Head for cross-encoder re-ranking.
+
+    Fuses 4 complementary signals to produce a relevance score [0.0, 1.0]:
+        - Signal 1 (CLS): Global coherence from [CLS] token projection
+        - Signal 2 (ESIM): Token-level alignment via CrossAttentionPairEncoder
+        - Signal 3 (Asymmetric): Embedding interaction from AgreementGatedHeadV2
+        - Signal 4 (MaxSim): ColBERT-style per-token max similarity (no learned params)
+
+    Key design decisions:
+        - Two-head output: nli_head(256, 3) for Stage A + relevance_head(256, 1) for B+C.
+          Avoids cold-start weight reset between training stages.
+        - LayerNorm(4609) before fusion MLP normalizes cross-signal magnitudes.
+        - MaxSim z-scored per batch before concatenation.
+        - Inherits from BaseHead (not SequenceClassificationHead) because the
+          4-signal fusion forward is fundamentally different from classify-from-pooled.
+
+    Args:
+        hidden_size: Size of encoder hidden states (768 for ModernBERT-base)
+        dropout: Dropout probability for fusion MLP layers
+        pair_encoder: CrossAttentionPairEncoder for Signal 2 (ESIM cross-attention)
+
+    Training stages:
+        Stage A: nli_head primary (cross-entropy) + relevance_head auxiliary (0.1 * BCE)
+        Stage B+C: relevance_head only (pairwise margin / LambdaRank)
+    """
+
+    # Fusion MLP input dimension: Signal 1 (H) + Signal 2 (H) + Signal 3 (4H) + Signal 4 (1)
+    FUSION_SIGNALS = 4
+    MAXSIM_DIM = 1
+
+    def __init__(
+        self,
+        hidden_size: int = 768,
+        num_labels: int = 1,
+        dropout: float = 0.1,
+        problem_type: str = "regression",
+        pair_encoder: nn.Module | None = None,
+    ):
+        super().__init__(
+            hidden_size=hidden_size,
+            num_labels=num_labels,
+            dropout=dropout,
+            problem_type=problem_type,
+        )
+
+        self.pair_encoder = pair_encoder
+        self._use_pair_encoder = pair_encoder is not None
+
+        # --- Signal 1: CLS token projection ---
+        self.cls_proj = nn.Linear(hidden_size, hidden_size)
+
+        # --- Signal 3: Asymmetric embedding interaction ---
+        # Input: [q_emb, d_emb, q_emb*d_emb, |q_emb-d_emb|] = 4 * hidden_size
+        self.interaction_dim = hidden_size * 4
+
+        # --- Fusion MLP ---
+        # Input: Signal 1 (H) + Signal 2 (H) + Signal 3 (4H) + Signal 4 (1) = 6H + 1
+        fusion_input_dim = hidden_size * 6 + self.MAXSIM_DIM  # 4609 for H=768
+
+        self.fusion_input_ln = nn.LayerNorm(fusion_input_dim)
+        self.fusion_mlp = nn.Sequential(
+            nn.Linear(fusion_input_dim, 1024),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(1024, 256),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+
+        # Two-head output design:
+        # nli_head: Stage A 3-class NLI (discarded after Stage A)
+        # relevance_head: Stage B+C regression (warm from Stage A auxiliary)
+        self.nli_head = nn.Linear(256, 3)
+        self.relevance_head = nn.Linear(256, 1)
+
+        self._init_weights()
+
+    def _init_weights(self) -> None:
+        """Initialize weights with Xavier uniform (matches SequenceClassificationHead)."""
+        nn.init.xavier_uniform_(self.cls_proj.weight)
+        nn.init.zeros_(self.cls_proj.bias)
+        for module in self.fusion_mlp:
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                nn.init.zeros_(module.bias)
+        nn.init.xavier_uniform_(self.nli_head.weight)
+        nn.init.zeros_(self.nli_head.bias)
+        nn.init.xavier_uniform_(self.relevance_head.weight)
+        nn.init.zeros_(self.relevance_head.bias)
+
+    @staticmethod
+    def compute_maxsim(
+        text_a_hidden: torch.Tensor,
+        text_b_hidden: torch.Tensor,
+        text_a_mask: torch.Tensor | None = None,
+        text_b_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """
+        Compute ColBERT-style MaxSim token-level alignment score.
+
+        For each query token, finds the max similarity to any document token,
+        then averages across query tokens. Catches keyword-overlap-but-wrong-
+        semantics failures (e.g. S7-1: 'eating at restaurant' vs 'cooking show
+        about restaurants').
+
+        Args:
+            text_a_hidden: Query hidden states [B, q_len, H]
+            text_b_hidden: Document hidden states [B, d_len, H]
+            text_a_mask: Query attention mask [B, q_len]
+            text_b_mask: Document attention mask [B, d_len]
+
+        Returns:
+            Z-score normalized MaxSim scalar [B, 1]
+        """
+        # [B, q_len, d_len]
+        sim_matrix = torch.bmm(text_a_hidden, text_b_hidden.transpose(1, 2))
+
+        # Mask out padding tokens in document
+        if text_b_mask is not None:
+            sim_matrix = sim_matrix.masked_fill(
+                ~text_b_mask.unsqueeze(1).bool(), -1e9
+            )
+
+        # Max similarity per query token: [B, q_len]
+        maxsim_per_token = sim_matrix.max(dim=-1).values
+
+        # Masked mean across query tokens
+        if text_a_mask is not None:
+            mask_float = text_a_mask.float()
+            maxsim = (maxsim_per_token * mask_float).sum(1) / mask_float.sum(1).clamp(min=1)
+        else:
+            maxsim = maxsim_per_token.mean(1)
+
+        # Z-score normalize per batch to prevent magnitude mismatch
+        # with other signals (MaxSim is unbounded dot-product, others are bounded)
+        maxsim = maxsim.unsqueeze(-1)  # [B, 1]
+        if maxsim.size(0) > 1:
+            maxsim = (maxsim - maxsim.mean()) / (maxsim.std() + 1e-8)
+
+        return maxsim
+
+    @staticmethod
+    def compute_embedding_interaction(
+        query_embed: torch.Tensor,
+        doc_embed: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute asymmetric embedding interaction features (Signal 3).
+
+        Produces 4 complementary views of the query-document relationship:
+        concatenation captures raw representations, element-wise product captures
+        feature co-activation, absolute difference captures feature divergence.
+
+        Args:
+            query_embed: Query embedding from AgreementGatedHeadV2 [B, H]
+            doc_embed: Document embedding from AgreementGatedHeadV2 [B, H]
+
+        Returns:
+            Interaction features [B, 4H]
+        """
+        return torch.cat(
+            [
+                query_embed,
+                doc_embed,
+                query_embed * doc_embed,
+                (query_embed - doc_embed).abs(),
+            ],
+            dim=-1,
+        )
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+        pair_encoder: nn.Module | None = None,
+        text_a_hidden: torch.Tensor | None = None,
+        text_b_hidden: torch.Tensor | None = None,
+        text_a_mask: torch.Tensor | None = None,
+        text_b_mask: torch.Tensor | None = None,
+        query_embed: torch.Tensor | None = None,
+        doc_embed: torch.Tensor | None = None,
+        stage: str = "c",
+    ) -> dict[str, torch.Tensor]:
+        """
+        Forward pass fusing 4 signals into a relevance score.
+
+        Args:
+            hidden_states: Joint cross-encoder output [B, seq_len, H]
+            attention_mask: Joint attention mask [B, seq_len]
+            labels: Target labels. Stage A: [B] int (0/1/2 NLI).
+                    Stage B+C: [B] float (0.0-1.0 relevance).
+            pair_encoder: Override pair encoder (or uses self.pair_encoder)
+            text_a_hidden: Query hidden states for pair encoding [B, q_len, H]
+            text_b_hidden: Document hidden states for pair encoding [B, d_len, H]
+            text_a_mask: Query attention mask [B, q_len]
+            text_b_mask: Document attention mask [B, d_len]
+            query_embed: Query embedding from AgreementGatedHeadV2 [B, H]
+            doc_embed: Document embedding from AgreementGatedHeadV2 [B, H]
+            stage: Training stage ('a', 'b', 'c'). Controls which output head
+                   is used for loss computation.
+
+        Returns:
+            Dictionary with keys:
+                'logits': Relevance score [B, 1] (sigmoid-activated)
+                'nli_logits': 3-class NLI logits [B, 3] (only if stage='a')
+                'fused_repr': 256-dim fused representation [B, 256] (for analysis)
+                'loss': Scalar loss (if labels provided, Stage A cross-entropy only;
+                        LambdaRank/margin losses are applied externally in training loop)
+        """
+        batch_size = hidden_states.size(0)
+        device = hidden_states.device
+
+        # --- Signal 1: CLS projection ---
+        h_cls = self.cls_proj(hidden_states[:, 0])  # [B, H]
+        h_cls = torch.tanh(h_cls)
+
+        # --- Signal 2: Cross-attention pair encoding ---
+        active_pair_encoder = pair_encoder or self.pair_encoder
+        if (
+            active_pair_encoder is not None
+            and text_a_hidden is not None
+            and text_b_hidden is not None
+        ):
+            h_cross = active_pair_encoder(
+                text_a_hidden, text_b_hidden, text_a_mask, text_b_mask
+            )  # [B, H]
+        else:
+            # Fallback: zero vector (pair encoder unavailable)
+            h_cross = torch.zeros(batch_size, self.hidden_size, device=device)
+
+        # --- Signal 3: Asymmetric embedding interaction ---
+        if query_embed is not None and doc_embed is not None:
+            interaction = self.compute_embedding_interaction(query_embed, doc_embed)  # [B, 4H]
+        else:
+            # Fallback: zero vector (embeddings unavailable)
+            interaction = torch.zeros(batch_size, self.interaction_dim, device=device)
+
+        # --- Signal 4: ColBERT MaxSim ---
+        if text_a_hidden is not None and text_b_hidden is not None:
+            maxsim = self.compute_maxsim(
+                text_a_hidden, text_b_hidden, text_a_mask, text_b_mask
+            )  # [B, 1]
+        else:
+            maxsim = torch.zeros(batch_size, self.MAXSIM_DIM, device=device)
+
+        # --- Fusion ---
+        fusion_input = torch.cat([h_cls, h_cross, interaction, maxsim], dim=-1)  # [B, 6H+1]
+        fusion_input = self.fusion_input_ln(fusion_input)
+        fused_repr = self.fusion_mlp(fusion_input)  # [B, 256]
+
+        # --- Output heads ---
+        relevance_logits = self.relevance_head(fused_repr)  # [B, 1]
+        relevance_score = torch.sigmoid(relevance_logits)
+
+        output: dict[str, torch.Tensor] = {
+            "logits": relevance_score,
+            "relevance_logits_raw": relevance_logits,  # pre-sigmoid, for calibration
+            "fused_repr": fused_repr,
+        }
+
+        # Stage A: also compute NLI logits
+        if stage == "a":
+            nli_logits = self.nli_head(fused_repr)  # [B, 3]
+            output["nli_logits"] = nli_logits
+
+        # --- Loss computation ---
+        if labels is not None:
+            if stage == "a":
+                # Stage A: primary = 3-class NLI cross-entropy, auxiliary = relevance BCE warmup
+                nli_loss = F.cross_entropy(output["nli_logits"], labels.long())
+                # Auxiliary: train relevance_head with soft labels derived from NLI
+                # entailment (0) → 1.0, neutral (1) → 0.5, contradiction (2) → 0.0
+                soft_relevance = 1.0 - labels.float() * 0.5
+                aux_loss = F.binary_cross_entropy(
+                    relevance_score.squeeze(-1), soft_relevance
+                )
+                output["loss"] = nli_loss + 0.1 * aux_loss
+                output["nli_loss"] = nli_loss
+                output["aux_relevance_loss"] = aux_loss
+            else:
+                # Stage B+C: external loss (LambdaRank, margin) applied in training loop.
+                # Head only computes pointwise BCE as a baseline/fallback.
+                output["loss"] = F.binary_cross_entropy(
+                    relevance_score.squeeze(-1), labels.float()
+                )
+
+        return output
+
+    def relevance_score(self, logits: torch.Tensor) -> torch.Tensor:
+        """
+        Extract relevance score from forward output logits.
+
+        The logits from forward() are already sigmoid-activated, so this
+        is an identity operation. Provided for API consistency with the
+        NLI doc Option B design.
+
+        Args:
+            logits: The 'logits' value from forward() output dict [B, 1]
+
+        Returns:
+            Relevance scores [B, 1] in range [0.0, 1.0]
+        """
+        return logits
+
+
+# =============================================================================
 # Safety Head (Optional specialized head with calibration)
 # =============================================================================
 
@@ -4468,6 +4781,7 @@ __all__ = [
     "create_globalpointer_head",  # Factory function
     "EmbeddingHead",
     "NLIHead",
+    "MultiGranularityRelevanceHead",  # MGRH — SOTA cross-encoder re-ranking
     "SafetyHead",
     "EnhancedSafetyHead",  # NEW - v2
     "HierarchicalEmotionHead",  # NEW - v2 (Issue 3.6.6)

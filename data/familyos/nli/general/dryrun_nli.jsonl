@@ -1,0 +1,500 @@
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "The play was about American history.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "Nothing was damaged in the house.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Nobody showed up for the holiday.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The cake was chocolate flavored.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "A repair worker visited the home.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "A parent was multitasking in the evening.", "label": 0}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "Young people played in winter weather.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The fence needs replacement.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The nursery was recently painted blue.", "label": 1}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet had been leaking for weeks.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The father collected children from sports.", "label": 0}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The baby cried throughout the entire night.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The car worked perfectly all day.", "label": 2}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "The faucet is still broken.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "Soccer practice ends at five thirty.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "There was a disagreement about money recently.", "label": 0}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The park has a new playground section.", "label": 1}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "The car broke down on the way to school.", "hypothesis": "The mechanic quoted two hundred dollars.", "label": 1}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "There was no snow at all this winter.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "The family had a holiday meal together.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family canceled all planned activities.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "No relatives visited during the summer.", "label": 2}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family spent time outdoors on the weekend.", "label": 0}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The university has a strong engineering program.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "Good news arrived regarding higher education.", "label": 0}
+{"premise": "She received her college acceptance letter today.", "hypothesis": "The letter contained a rejection notice.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "A child began her education in the fall.", "label": 0}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "The plumber charges seventy dollars per hour.", "label": 1}
+{"premise": "The baby slept through the night for the first time.", "hypothesis": "The infant managed to sleep without waking.", "label": 0}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "The homework was about multiplication tables.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "The financial advisor suggested new investments.", "label": 1}
+{"premise": "My daughter started school last September.", "hypothesis": "The school is located three miles away.", "label": 1}
+{"premise": "Everyone gathered for Thanksgiving dinner.", "hypothesis": "Turkey was served as the main course.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "Grandma lives in a different state.", "label": 1}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "Nobody discussed household duties.", "label": 2}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "A pet caused damage inside the home.", "label": 0}
+{"premise": "My daughter started school last September.", "hypothesis": "The child has never attended any school.", "label": 2}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "The kids built a snowman in the front yard.", "hypothesis": "The snowman had a carrot nose.", "label": 1}
+{"premise": "The plumber came to fix the kitchen sink.", "hypothesis": "No repairs were needed in the kitchen.", "label": 2}
+{"premise": "Dad finally fixed the leaking faucet.", "hypothesis": "Home maintenance was completed.", "label": 0}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The family decided against getting a pet.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "An animal left the property without permission.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "The birthday was completely forgotten.", "label": 2}
+{"premise": "The car broke down on the way to school.", "hypothesis": "A vehicle had mechanical problems during commute.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "We had a big argument about finances yesterday.", "hypothesis": "Everyone agreed completely about the budget.", "label": 2}
+{"premise": "Dad picked up the kids from soccer practice.", "hypothesis": "The children walked home alone from practice.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "A new pet joined the household.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The family enrolled in a group activity.", "label": 0}
+{"premise": "We signed up for a family cooking class.", "hypothesis": "The cooking class meets on Wednesdays.", "label": 1}
+{"premise": "The cat knocked over the vase in the living room.", "hypothesis": "The vase was a wedding present.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The meeting lasted about thirty minutes.", "label": 1}
+{"premise": "The children performed in the school play.", "hypothesis": "No students participated in school events.", "label": 2}
+{"premise": "The dog escaped from the backyard again.", "hypothesis": "The dog has never left the yard.", "label": 2}
+{"premise": "Grandma arrived for her annual summer visit.", "hypothesis": "An elderly relative came to stay.", "label": 0}
+{"premise": "Mom cooked dinner while helping with homework.", "hypothesis": "Nobody was home in the evening.", "label": 2}
+{"premise": "The family went to the park on Saturday afternoon.", "hypothesis": "The family stayed indoors all weekend.", "label": 2}
+{"premise": "We adopted a rescue dog from the shelter.", "hypothesis": "The shelter had many cats as well.", "label": 1}
+{"premise": "We had a productive family meeting about chores.", "hypothesis": "The household discussed responsibilities.", "label": 0}
+{"premise": "The children performed in the school play.", "hypothesis": "Students participated in a school event.", "label": 0}
+{"premise": "We celebrated her birthday with a surprise party.", "hypothesis": "There was a celebration for someone special.", "label": 0}

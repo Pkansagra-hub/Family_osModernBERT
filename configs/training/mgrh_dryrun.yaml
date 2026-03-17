@@ -1,0 +1,158 @@
+# =============================================================================
+# MGRH Dry Run Configuration
+# =============================================================================
+# Inherits from embedding_heads_bakeoff.yaml but overrides mgrh_training
+# to use available data paths and small sample sizes for smoke testing.
+#
+# Usage:
+#   python scripts/training/train_embedding_heads_bakeoff.py \
+#       --config configs/training/mgrh_dryrun.yaml \
+#       --mgrh_train --mgrh_stage all --max_samples 500
+
+# Runtime
+runtime:
+  mode: bakeoff
+  student_checkpoint: checkpoints/distil_stage_b_bestema
+
+# Training global settings
+training:
+  bf16: false
+  flash_attention: false
+  tf32: false
+  seed: 42
+
+# Output
+output:
+  dir: outputs/mgrh-dryrun
+
+# =============================================================================
+# MGRH Training — all stages with dry-run-friendly data paths
+# =============================================================================
+mgrh_training:
+  enabled: true
+
+  head:
+    type: multi_granularity_relevance
+    hidden_size: 768
+    dropout: 0.1
+    use_pair_encoder: true
+    pair_encoder:
+      num_heads: 8
+      num_layers: 2
+      use_bidirectional: true
+      pooling_strategy: attention
+      dropout: 0.1
+    use_asymmetric_embeddings: true
+    use_maxsim: true
+    use_domain_saliency: true
+
+  base_checkpoint: checkpoints/distil_stage_b_bestema
+
+  freeze:
+    encoder: true
+    existing_heads: true
+    trainable_modules:
+      - relevance_head
+      - pair_encoder
+
+  stages:
+    stage_a:
+      name: general_nli_pretrain
+      data_root: data/familyos/nli/general
+      sources:
+        - name: dryrun_nli
+          path: dryrun_nli.jsonl
+          weight: 1.0
+      loss:
+        type: cross_entropy
+        label_smoothing: 0.0
+        contrastive_nli:
+          enabled: false        # disable for dry run speed
+      epochs: 3
+      lr_head: 2.0e-4
+      batch_size: 30
+      max_length: 128           # shorter for speed
+
+    stage_b:
+      name: domain_nli_adaptation
+      data_root: data/familyos/embeddings
+      sources:
+        - name: hard_negatives
+          path: hard_negatives
+          weight: 1.0
+      loss:
+        type: pairwise_margin
+        margin: 0.2
+      epochs: 3
+      lr_head: 1.0e-4
+      batch_size: 30
+      max_length: 256
+
+    bridge_bc:
+      name: bridge_b_to_c
+      data_root: data/familyos/nli/relevance
+      sources:
+        - name: human_benchmark
+          path: human_benchmark_listwise.jsonl
+          format: listwise
+          weight: 1.0
+      loss:
+        type: bridge_joint
+        pairwise_margin_weight: 0.7
+        relevance_bce_weight: 0.3
+        margin: 0.2
+      max_steps: 30             # short bridge for dry run
+      lr_head: 5.0e-5
+      lr_pair_encoder: 2.5e-5
+      batch_size: 30
+      max_length: 256
+
+    stage_c:
+      name: relevance_finetune
+      data_root: data/familyos
+      sources:
+        - name: human_benchmark_listwise
+          path: nli/relevance/human_benchmark_listwise.jsonl
+          format: listwise
+          weight: 1.0
+      loss:
+        type: combined_ranking
+        lambda_rank_weight: 1.0
+        pairwise_margin_weight: 0.3
+        margin: 0.2
+        ndcg_at: 10
+        r_drop:
+          enabled: true
+          alpha: 1.0
+      ance:
+        enabled: false          # disable for dry run speed
+      epochs: 3
+      lr_head: 1.0e-4
+      lr_pair_encoder: 5.0e-5
+      batch_size: 30
+      max_length: 256
+      calibration:
+        enabled: false          # skip calibration in dry run
+
+  evaluation:
+    selection_metric: spearman_correlation
+    gate_metrics:
+      spearman_correlation: 0.50
+      auc_roc: 0.80
+    eval_steps: 10              # evaluate frequently in dry run
+    save_steps: 10
+    ema:
+      enabled: true
+      decay: 0.995
+    early_stopping:
+      enabled: false            # disable early stopping for dry run
+      patience: 100
+
+# =============================================================================
+# Encoder Configuration (FROZEN)
+# =============================================================================
+encoder:
+  checkpoint: checkpoints/distil_stage_b_bestema
+  freeze: true
+  hidden_size: 768
+  dtype: float32
