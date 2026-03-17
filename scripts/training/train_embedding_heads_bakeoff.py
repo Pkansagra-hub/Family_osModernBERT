@@ -6716,15 +6716,16 @@ def evaluate_mgrh(
             )
 
         scores = output["logits"].squeeze(-1)
+        scores_raw = output["relevance_logits_raw"].squeeze(-1)
         grades = batch["grades"].to(device)
         group_sizes = batch["group_sizes"]
 
-        # Per-group ranking loss
+        # Per-group ranking loss — use raw logits for consistency with training
         if ranking_loss_fn is not None:
             offset = 0
             batch_loss = 0.0
             for gsize in group_sizes:
-                g_scores = scores[offset:offset + gsize]
+                g_scores = scores_raw[offset:offset + gsize]
                 g_grades = grades[offset:offset + gsize]
                 batch_loss += ranking_loss_fn(g_scores, g_grades).item()
                 offset += gsize
