@@ -5597,21 +5597,34 @@ class NLIDataset(Dataset):
         for src in sources:
             path = data_root / src["path"]
             weight = float(src.get("weight", 1.0))
-            if not path.exists():
+            if path.is_dir():
+                files = sorted(path.glob("*.jsonl"))
+            elif path.exists():
+                files = [path]
+            else:
                 logger.warning(f"  NLI source missing: {path}")
                 continue
             count = 0
-            with open(path, encoding="utf-8") as f:
-                for line in f:
-                    record = json.loads(line)
-                    self.samples.append({
-                        "premise": record["premise"],
-                        "hypothesis": record["hypothesis"],
-                        "label": int(record["label"]),
-                        "weight": weight,
-                        "source": src.get("name", path.stem),
-                    })
-                    count += 1
+            for fpath in files:
+                if fpath.name in ("hash_index.jsonl", "manifest.json"):
+                    continue
+                with open(fpath, encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            record = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        self.samples.append({
+                            "premise": record["premise"],
+                            "hypothesis": record["hypothesis"],
+                            "label": int(record["label"]),
+                            "weight": weight,
+                            "source": src.get("name", fpath.stem),
+                        })
+                        count += 1
             logger.info(f"  NLI source {path.name}: {count:,} samples (weight={weight})")
 
         if max_samples and len(self.samples) > max_samples:
@@ -5709,7 +5722,7 @@ class RelevanceListwiseDataset(Dataset):
 
             count = 0
             for fpath in files:
-                if fpath.name == "hash_index.jsonl":
+                if fpath.name in ("hash_index.jsonl", "manifest.json"):
                     continue
                 with open(fpath, encoding="utf-8") as f:
                     for line in f:
@@ -5761,6 +5774,8 @@ class RelevancePairwiseDataset(Dataset):
         for src in sources:
             path = data_root / src["path"]
             weight = float(src.get("weight", 1.0))
+            include_types = set(src.get("include_types", []))
+            hard_neg_weight = float(src.get("hard_negative_weight", 1.0))
             if path.is_dir():
                 files = sorted(path.glob("*.jsonl"))
             elif path.exists():
@@ -5770,20 +5785,33 @@ class RelevancePairwiseDataset(Dataset):
                 continue
 
             count = 0
+            filtered = 0
             for fpath in files:
-                if fpath.name == "hash_index.jsonl":
-                    continue  # skip hash index files
+                if fpath.name in ("hash_index.jsonl", "manifest.json"):
+                    continue
                 with open(fpath, encoding="utf-8") as f:
                     for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
                         try:
                             record = json.loads(line)
                         except json.JSONDecodeError:
                             continue
-                        record["_weight"] = weight
+                        # Filter by hard_negative_type if include_types specified
+                        if include_types:
+                            hn_type = record.get("hard_negative_type", "")
+                            if hn_type not in include_types:
+                                filtered += 1
+                                continue
+                        record["_weight"] = weight * hard_neg_weight
                         record["_source"] = src.get("name", fpath.stem)
                         self.samples.append(record)
                         count += 1
-            logger.info(f"  Pairwise source {path.name}: {count:,} records (weight={weight})")
+            msg = f"  Pairwise source {path.name}: {count:,} records (weight={weight})"
+            if filtered:
+                msg += f" (filtered {filtered:,} by include_types)"
+            logger.info(msg)
 
         if max_samples and len(self.samples) > max_samples:
             random.shuffle(self.samples)
@@ -5867,23 +5895,37 @@ class RelevanceListwiseCollator:
         self.max_length = max_length
 
     def __call__(self, features: list[dict]) -> dict[str, Any]:
-        # Each feature is a query group with episodes
+        # Each feature is a query group with episodes, OR a positive_pair
         all_queries: list[str] = []
         all_episodes: list[str] = []
         all_grades: list[float] = []
         group_sizes: list[int] = []
 
         for feat in features:
-            query = feat.get("query", "")
-            episodes = feat.get("episodes", [])
-            if not episodes:
-                continue
-            group_sizes.append(len(episodes))
-            for ep in episodes:
+            fmt = feat.get("_format", "listwise")
+
+            if fmt == "positive_pair":
+                # Convert query/document pair to a minimal listwise group
+                query = feat.get("query", feat.get("anchor", ""))
+                document = feat.get("document", feat.get("positive", ""))
+                if not query or not document:
+                    continue
+                group_sizes.append(1)
                 all_queries.append(query)
-                text = ep.get("text", ep.get("episode_text", ""))
-                all_episodes.append(text)
-                all_grades.append(float(ep.get("grade", 0)))
+                all_episodes.append(document)
+                all_grades.append(3.0)  # positive pair = max relevance
+            else:
+                # Standard listwise format with episodes
+                query = feat.get("query", "")
+                episodes = feat.get("episodes", [])
+                if not episodes:
+                    continue
+                group_sizes.append(len(episodes))
+                for ep in episodes:
+                    all_queries.append(query)
+                    text = ep.get("text", ep.get("episode_text", ""))
+                    all_episodes.append(text)
+                    all_grades.append(float(ep.get("grade", 0)))
 
         if not all_queries:
             return {"empty": True}

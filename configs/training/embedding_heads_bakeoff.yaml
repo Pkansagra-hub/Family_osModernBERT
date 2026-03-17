@@ -197,12 +197,13 @@ mgrh_training:
       num_layers: 2             # 2-layer ESIM for chain-of-alignment reasoning
       use_bidirectional: true
       pooling_strategy: attention
+      dropout: 0.1
     use_asymmetric_embeddings: true   # Signal 3 from AgreementGatedHeadV2
     use_maxsim: true                  # Signal 4: ColBERT-style token-level alignment
     use_domain_saliency: true         # TemporalHead + NERHead as attention weights
 
   # --- Checkpoint & freezing ---
-  base_checkpoint: checkpoints/distil_stage_b_bestema
+  base_checkpoint: /content/Modeling_studio/outputs/embedding-bakeoff/stage_b/best-ema
 
   freeze:
     encoder: true
@@ -242,6 +243,7 @@ mgrh_training:
           temperature: 0.05
       epochs: 5
       lr_head: 2.0e-4
+      lr_pair_encoder: 1.0e-4
       batch_size: 64
       max_length: 256
 
@@ -263,6 +265,7 @@ mgrh_training:
         margin: 0.2
       epochs: 5
       lr_head: 1.0e-4
+      lr_pair_encoder: 5.0e-5
       batch_size: 32
       max_length: 512    # query (~50 tok) + episode (~400 tok)
 
@@ -333,6 +336,7 @@ mgrh_training:
       enabled: true
       decay: 0.995
     early_stopping:
+      enabled: true
       patience: 5
       metric: spearman_correlation
 
