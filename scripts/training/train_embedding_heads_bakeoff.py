@@ -6892,11 +6892,13 @@ def evaluate_mgrh_pairwise(
 
         pos_scores = pos_out["logits"].squeeze(-1)
         neg_scores = neg_out["logits"].squeeze(-1)
+        pos_scores_raw = pos_out["relevance_logits_raw"].squeeze(-1)
+        neg_scores_raw = neg_out["relevance_logits_raw"].squeeze(-1)
 
         total_correct += (pos_scores > neg_scores).sum().item()
         total_samples += len(pos_scores)
-        total_margin_sum += (pos_scores - neg_scores).sum().item()
-        total_loss += F.relu(margin - (pos_scores - neg_scores)).mean().item()
+        total_margin_sum += (pos_scores_raw - neg_scores_raw).sum().item()
+        total_loss += F.relu(margin - (pos_scores_raw - neg_scores_raw)).mean().item()
         num_batches += 1
 
     accuracy = total_correct / total_samples if total_samples > 0 else 0.0
