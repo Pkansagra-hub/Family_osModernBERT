@@ -68,6 +68,7 @@ ENCODER_OPTIONAL_RUNTIME_FILES = [
     "embedding_metadata.json",
     "globalpointer_metadata.json",
     "pruning_metadata.json",
+    "mgrh_metadata.json",
 ]
 
 
