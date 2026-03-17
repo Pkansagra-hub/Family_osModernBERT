@@ -4,6 +4,16 @@
 
 ### Production Multi-Task Encoder for Family AI
 
+## What is FamilyOS?
+
+Today's AI assistants know nothing about you. Generic LLMs give the same answer to everyone — ignoring your family's health constraints, financial reality, and relationship dynamics.
+
+FamilyOS is a neuroscience-inspired cognitive OS that builds persistent, evolving memory of your family — so AI can make decisions that actually matter.
+
+**UltraBERT v4 is the NLU backbone powering FamilyOS** — a 149M param multitask encoder running 12 NLP tasks in a single 
+20ms forward pass: safety detection, emotion recognition, family entity extraction, intent classification, and more.
+
+
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.1+](https://img.shields.io/badge/pytorch-2.1+-ee4c2c.svg)](https://pytorch.org/)
 [![Flash Attention 2](https://img.shields.io/badge/Flash_Attention-2-orange.svg)](https://github.com/Dao-AILab/flash-attention)
