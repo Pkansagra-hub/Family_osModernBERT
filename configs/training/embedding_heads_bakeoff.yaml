@@ -244,8 +244,8 @@ mgrh_training:
       epochs: 5
       lr_head: 2.0e-4
       lr_pair_encoder: 1.0e-4
-      batch_size: 128
-      max_length: 256
+      batch_size: 512
+      max_length: 512
 
     stage_b:
       name: domain_nli_adaptation
