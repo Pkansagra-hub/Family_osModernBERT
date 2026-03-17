@@ -6364,8 +6364,10 @@ def mgrh_train_step_stage_b(
             stage="b",
         )
 
-        pos_scores = pos_out["logits"].squeeze(-1)
-        neg_scores = neg_out["logits"].squeeze(-1)
+        # Use RAW logits for margin loss — post-sigmoid [0,1] compresses
+        # differences to [-1,1] causing gradient vanishing with margin=0.2.
+        pos_scores = pos_out["relevance_logits_raw"].squeeze(-1)
+        neg_scores = neg_out["relevance_logits_raw"].squeeze(-1)
 
         # Pairwise margin loss: positive should score higher than negative by margin
         loss = F.relu(margin - (pos_scores - neg_scores)).mean()
@@ -6446,7 +6448,9 @@ def mgrh_train_step_stage_c(
             doc_embed=episode_embed,
             stage="c",
         )
-        scores1 = output1["logits"].squeeze(-1)
+        # Use RAW logits for ranking loss — post-sigmoid [0,1] scores
+        # compress gradients and create double-sigmoid with LambdaRank.
+        scores1 = output1["relevance_logits_raw"].squeeze(-1)
 
         # R-Drop: second forward pass with different dropout mask (Issue 4.4a)
         r_drop_enabled = r_drop_config and r_drop_config.get("enabled", False)
@@ -6464,7 +6468,7 @@ def mgrh_train_step_stage_c(
                 doc_embed=episode_embed,
                 stage="c",
             )
-            scores2 = output2["logits"].squeeze(-1)
+            scores2 = output2["relevance_logits_raw"].squeeze(-1)
 
         # Compute listwise ranking loss per query group
         total_ranking_loss = torch.tensor(0.0, device=device)
@@ -6492,16 +6496,29 @@ def mgrh_train_step_stage_c(
 
         loss = total_ranking_loss
 
-        # R-Drop KL divergence penalty
+        # R-Drop KL divergence penalty — within each query group
         kl_loss = torch.tensor(0.0, device=device)
         if r_drop_enabled:
-            # Symmetric KL divergence between two forward passes
-            p1 = F.log_softmax(scores1.unsqueeze(-1), dim=-1)
-            p2 = F.softmax(scores2.unsqueeze(-1), dim=-1)
-            q1 = F.softmax(scores1.unsqueeze(-1), dim=-1)
-            q2 = F.log_softmax(scores2.unsqueeze(-1), dim=-1)
-            kl_loss = (F.kl_div(p1, p2, reduction="batchmean") +
-                       F.kl_div(q2, q1, reduction="batchmean")) / 2
+            # Symmetric KL divergence between two forward passes.
+            # Softmax must be applied within each query group (not on a
+            # singleton last dim, which always produces 1.0 and zeroes KL).
+            offset_kl = 0
+            num_kl_groups = 0
+            for gsize in group_sizes:
+                g1 = scores1[offset_kl:offset_kl + gsize]
+                g2 = scores2[offset_kl:offset_kl + gsize]
+                p1 = F.log_softmax(g1, dim=-1)
+                p2 = F.softmax(g2, dim=-1)
+                q1 = F.softmax(g1, dim=-1)
+                q2 = F.log_softmax(g2, dim=-1)
+                kl_loss = kl_loss + (
+                    F.kl_div(p1, p2, reduction="sum") +
+                    F.kl_div(q2, q1, reduction="sum")
+                ) / (2.0 * gsize)
+                offset_kl += gsize
+                num_kl_groups += 1
+            if num_kl_groups > 0:
+                kl_loss = kl_loss / num_kl_groups
             loss = loss + r_drop_alpha * kl_loss
 
     return {
@@ -6560,7 +6577,7 @@ def mgrh_train_step_bridge(
             doc_embed=episode_embed,
             stage="c",
         )
-        scores = output["logits"].squeeze(-1)
+        # Use RAW logits for margin loss — post-sigmoid compresses gradients.
         raw_logits = output["relevance_logits_raw"].squeeze(-1)
 
         # Pairwise margin on relevant vs irrelevant within each group
@@ -6570,16 +6587,15 @@ def mgrh_train_step_bridge(
         num_groups = 0
 
         for gsize in group_sizes:
-            g_scores = scores[offset:offset + gsize]
             g_logits = raw_logits[offset:offset + gsize]
             g_grades = grades[offset:offset + gsize]
 
-            # Pairwise margin: high-grade vs low-grade
+            # Pairwise margin: high-grade vs low-grade — on raw logits
             pos_mask = g_grades > 1
             neg_mask = g_grades == 0
             if pos_mask.any() and neg_mask.any():
-                s_pos = g_scores[pos_mask].unsqueeze(1)
-                s_neg = g_scores[neg_mask].unsqueeze(0)
+                s_pos = g_logits[pos_mask].unsqueeze(1)
+                s_neg = g_logits[neg_mask].unsqueeze(0)
                 total_margin_loss = total_margin_loss + F.relu(margin - (s_pos - s_neg)).mean()
 
             # BCE with normalized grades — use logits for AMP safety

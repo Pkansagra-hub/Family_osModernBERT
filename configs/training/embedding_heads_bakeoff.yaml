@@ -276,7 +276,7 @@ mgrh_training:
       # smoothly instead of cold-switching.
       data_root: data/familyos/nli/relevance
       sources:
-        - path: human_benchmark_listwise.jsonl
+        - path: human_benchmark_listwise_v2.jsonl
           format: listwise
           weight: 1.0
       loss:
@@ -294,7 +294,7 @@ mgrh_training:
       name: relevance_finetune
       data_root: data/familyos
       sources:
-        - path: nli/relevance/human_benchmark_listwise.jsonl
+        - path: nli/relevance/human_benchmark_listwise_v2.jsonl
           format: listwise
           weight: 1.0
         - path: embeddings/mined_v2/query_doc
@@ -314,7 +314,7 @@ mgrh_training:
         refresh_every_n_epochs: 3
         mine_top_k: 20
         max_refresh_negatives: 5000
-      epochs: 10
+      epochs: 15              # increased from 10 — augmented v2 data has 3x episodes
       lr_head: 1.0e-4
       lr_pair_encoder: 5.0e-5
       batch_size: 128
