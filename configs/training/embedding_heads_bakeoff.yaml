@@ -297,9 +297,9 @@ mgrh_training:
         - path: nli/relevance/human_benchmark_listwise_v2.jsonl
           format: listwise
           weight: 1.0
-        - path: embeddings/mined_v2/query_doc
-          format: positive_pair
-          weight: 0.8
+        - path: nli/relevance/query_doc_listwise.jsonl
+          format: listwise
+          weight: 0.4          # 10,019 converted pairs; down-weighted vs 798-sample human benchmark
       loss:
         type: combined_ranking
         lambda_rank_weight: 1.0
