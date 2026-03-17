@@ -1192,8 +1192,8 @@ class MultiGranularityRelevanceHead(BaseHead):
                 # Auxiliary: train relevance_head with soft labels derived from NLI
                 # entailment (0) → 1.0, neutral (1) → 0.5, contradiction (2) → 0.0
                 soft_relevance = 1.0 - labels.float() * 0.5
-                aux_loss = F.binary_cross_entropy(
-                    relevance_score.squeeze(-1), soft_relevance
+                aux_loss = F.binary_cross_entropy_with_logits(
+                    relevance_logits.squeeze(-1), soft_relevance
                 )
                 output["loss"] = nli_loss + 0.1 * aux_loss
                 output["nli_loss"] = nli_loss
@@ -1201,8 +1201,8 @@ class MultiGranularityRelevanceHead(BaseHead):
             else:
                 # Stage B+C: external loss (LambdaRank, margin) applied in training loop.
                 # Head only computes pointwise BCE as a baseline/fallback.
-                output["loss"] = F.binary_cross_entropy(
-                    relevance_score.squeeze(-1), labels.float()
+                output["loss"] = F.binary_cross_entropy_with_logits(
+                    relevance_logits.squeeze(-1), labels.float()
                 )
 
         return output
