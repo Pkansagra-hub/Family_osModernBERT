@@ -151,7 +151,7 @@ def load_final_checkpoint(
         dropout=arch.get("dropout", 0.1),
         pair_encoder=pair_encoder,
     )
-    model.heads["mgrh"] = mgrh_head
+    model.heads["relevance"] = mgrh_head
 
     # Load weights
     state_dict = load_file(str(checkpoint_path / "model.safetensors"))
@@ -172,6 +172,16 @@ def load_final_checkpoint(
             for k, v in state_dict.items()
             if k.startswith(prefix)
         }
+        # Backward compat: old checkpoints saved MGRH under "heads.mgrh.*"
+        if not head_state and head_name == "relevance":
+            legacy_prefix = "heads.mgrh."
+            head_state = {
+                k.replace(legacy_prefix, ""): v
+                for k, v in state_dict.items()
+                if k.startswith(legacy_prefix)
+            }
+            if head_state:
+                logger.info("  Using legacy 'heads.mgrh.*' prefix for relevance head")
         if head_state:
             model.heads[head_name].load_state_dict(head_state, strict=True)
             loaded_heads.append(f"{head_name}({len(head_state)})")

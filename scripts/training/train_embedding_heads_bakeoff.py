@@ -6180,8 +6180,9 @@ def load_model_for_mgrh(
         pair_encoder=pair_encoder,
     )
 
-    # Register MGRH in the model's head dict (replaces NLI slot conceptually)
-    model.heads["mgrh"] = mgrh_head
+    # Register MGRH as "relevance" — must match production inference key
+    # (familyos_ultrabert/pytorch_inference.py expects heads["relevance"])
+    model.heads["relevance"] = mgrh_head
 
     mgrh_params = sum(p.numel() for p in mgrh_head.parameters())
     pair_enc_params = sum(p.numel() for p in pair_encoder.parameters())

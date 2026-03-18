@@ -92,6 +92,10 @@ from modeling_studio.models.heads_embedding import (  # noqa: E402
     create_embedding_head,
 )
 
+# Import MGRH components for checkpoint reload support
+from modeling_studio.models.heads import MultiGranularityRelevanceHead  # noqa: E402
+from modeling_studio.models.pair_encoder import CrossAttentionPairEncoder  # noqa: E402
+
 # Import decoder head (Stage C - Issue 14.1.2)
 # NOTE: MoE decoder deprecated due to Chinchilla scaling failure (22M tokens << 8.4B required)
 # Using pre-trained GPT-2 Medium with prefix injection instead
@@ -428,6 +432,11 @@ class ModernBertMultiTaskModel(PreTrainedModel):
         hidden_size = getattr(self.config, "hidden_size", 768)
 
         for capability in self.capabilities:
+            # MGRH (relevance) is handled separately via mgrh_metadata.json
+            # because it requires CrossAttentionPairEncoder construction.
+            if capability == Capability.RELEVANCE:
+                continue
+
             head_cls = CAPABILITY_TO_HEAD_TYPE.get(capability)
             if head_cls is None:
                 raise ValueError(f"Unknown capability: {capability}")
@@ -829,6 +838,40 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                     f"({type(model.heads[Capability.EMBEDDING.value]).__name__})"
                 )
 
+        # Restore MGRH head from mgrh_metadata.json if present.
+        # The MGRH head is not part of the standard capability registry — it is
+        # created from metadata (architecture params) and its weights are loaded
+        # from the state dict under the "heads.relevance.*" prefix.
+        mgrh_metadata_path = checkpoint_path / "mgrh_metadata.json"
+        if mgrh_metadata_path.exists():
+            with open(mgrh_metadata_path) as f:
+                mgrh_metadata = json.load(f)
+            setattr(model, "_checkpoint_mgrh_metadata", mgrh_metadata)
+
+            arch = mgrh_metadata.get("architecture", {})
+            pe_cfg = arch.get("pair_encoder", {})
+            hidden_size = getattr(config, "hidden_size", 768)
+
+            pair_encoder = CrossAttentionPairEncoder(
+                hidden_size=hidden_size,
+                num_heads=pe_cfg.get("num_heads", 8),
+                num_layers=pe_cfg.get("num_layers", 2),
+                dropout=pe_cfg.get("dropout", 0.1),
+                use_bidirectional=pe_cfg.get("use_bidirectional", True),
+                pooling_strategy=pe_cfg.get("pooling_strategy", "attention"),
+            )
+            mgrh_head = MultiGranularityRelevanceHead(
+                hidden_size=hidden_size,
+                dropout=arch.get("dropout", 0.1),
+                pair_encoder=pair_encoder,
+            )
+            model.heads[Capability.RELEVANCE.value] = mgrh_head
+            model.pair_encoder = pair_encoder
+            logger.info(
+                f"Restored MGRH head from mgrh_metadata.json "
+                f"(pair_encoder: {pe_cfg.get('num_layers', 2)} layers)"
+            )
+
         # Load state dict - try safetensors first, then pytorch format
         safetensors_path = checkpoint_path / "model.safetensors"
         pytorch_path = checkpoint_path / "pytorch_model.bin"
@@ -868,6 +911,9 @@ class ModernBertMultiTaskModel(PreTrainedModel):
             if key.startswith("encoder."):
                 encoder_state[key[8:]] = value  # Remove 'encoder.' prefix
             elif key.startswith("heads."):
+                # Backward compat: remap legacy "heads.mgrh.*" → "heads.relevance.*"
+                if key.startswith("heads.mgrh."):
+                    key = "heads.relevance." + key[len("heads.mgrh."):]
                 head_state[key] = value
             elif key.startswith("task_adapters."):
                 adapter_state[key] = value
@@ -1151,6 +1197,35 @@ class ModernBertMultiTaskModel(PreTrainedModel):
                 }
                 with open(os.path.join(save_directory, "embedding_metadata.json"), "w") as f:
                     json.dump(embedding_metadata, f, indent=2)
+
+        # Save MGRH metadata if present (architecture + calibration)
+        checkpoint_mgrh_metadata = getattr(self, "_checkpoint_mgrh_metadata", None)
+        if checkpoint_mgrh_metadata is not None:
+            with open(os.path.join(save_directory, "mgrh_metadata.json"), "w") as f:
+                json.dump(checkpoint_mgrh_metadata, f, indent=2)
+        elif Capability.RELEVANCE.value in self.heads:
+            mgrh_head = self.heads[Capability.RELEVANCE.value]
+            pe = getattr(mgrh_head, "pair_encoder", None)
+            mgrh_metadata = {
+                "architecture": {
+                    "hidden_size": getattr(mgrh_head, "hidden_size", 768),
+                    "dropout": getattr(mgrh_head, "dropout_rate", 0.1),
+                    "pair_encoder": {
+                        "num_heads": getattr(pe, "num_heads", 8) if pe else 8,
+                        "num_layers": getattr(pe, "num_layers", 2) if pe else 2,
+                        "dropout": getattr(pe, "dropout_rate", 0.1) if pe else 0.1,
+                        "use_bidirectional": getattr(pe, "use_bidirectional", True) if pe else True,
+                        "pooling_strategy": getattr(pe, "pooling_strategy", "attention") if pe else "attention",
+                    },
+                },
+                "calibration": {
+                    "temperature": 1.0,
+                    "maxsim_population_mean": getattr(mgrh_head, "_maxsim_pop_mean", None),
+                    "maxsim_population_std": getattr(mgrh_head, "_maxsim_pop_std", None),
+                },
+            }
+            with open(os.path.join(save_directory, "mgrh_metadata.json"), "w") as f:
+                json.dump(mgrh_metadata, f, indent=2)
 
     def get_input_embeddings(self) -> nn.Module:
         """Get input embeddings layer."""

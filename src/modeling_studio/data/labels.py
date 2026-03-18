@@ -806,6 +806,9 @@ class Capability(str, Enum):
     INTENT = "intent"  # NEW: User intent classification
     INTENT_V2 = "intent_v2"  # NEW: Multi-label intent classification
 
+    # Cross-encoder re-ranking (MGRH)
+    RELEVANCE = "relevance"  # MultiGranularityRelevanceHead
+
     # Generation capabilities (Stage C)
     COUNTERFACTUAL = "counterfactual"  # NEW: Counterfactual decoder
 
