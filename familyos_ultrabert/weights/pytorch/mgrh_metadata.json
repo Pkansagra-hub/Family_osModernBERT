@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-03-17T04:13:18.376780",
+  "timestamp": "2026-03-18T00:32:23.348124",
   "source": {
-    "base_checkpoint": "/content/Modeling_studio/outputs/embedding-bakeoff/stage_b/best-ema",
-    "mgrh_checkpoint": "/content/Modeling_studio/outputs/embedding-bakeoff/mgrh/stage_c/final",
+    "base_checkpoint": "outputs/embedding-bakeoff/stage_b/best-ema",
+    "mgrh_checkpoint": "outputs/embedding-bakeoff/mgrh/stage_c/best",
     "weights": "EMA (mgrh_head.pt saved from ema_model.module)"
   },
   "architecture": {
@@ -21,14 +21,19 @@
     "use_domain_saliency": true
   },
   "calibration": {
-    "temperature": 0.3,
-    "temperature_source": "Composite-optimal sweep on 400 holdout triplets (acc=95.0%, margin=0.4406)",
-    "training_temperature": 1.0542480945587158,
-    "maxsim_population_mean": 845.5621,
-    "maxsim_population_std": 60.7515
+    "temperature": 0.8184226751327515,
+    "maxsim_population_mean": 933.4485874056965,
+    "maxsim_population_std": 85.9805987457407
   },
-  "best_metrics": {},
-  "head_key": "mgrh",
+  "best_metrics": {
+    "spearman_correlation": 0.8278571428653402,
+    "auc_roc": 0.989476893512262,
+    "ndcg_at_10": 1.0,
+    "eval_loss": 5.0848016868138e-05,
+    "num_samples": 480,
+    "num_groups": 80
+  },
+  "head_key": "relevance",
   "total_params": 46333958,
   "pair_encoder_params": 40750080
 }

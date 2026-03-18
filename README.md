@@ -364,14 +364,72 @@ Release readout:
 - holdout slightly exceeds dev on `Recall@1`, `MRR`, and selection score
 - the released embedding head is optimized for FamilyOS retrieval rather than generic STS-only quality
 
-### Relevance Reranking (MGRH v4.0.8)
+### Relevance Reranking (MGRH v4.1.0)
 
-The **Multi-Granularity Relevance Head** (MGRH) is a 46.3M-parameter cross-encoder reranking head that fuses four complementary signals:
+The **Multi-Granularity Relevance Head** (MGRH) is a 46.3M-parameter cross-encoder reranking head that fuses four complementary signal granularities into a single calibrated relevance score.
 
-1. **CLS token** from joint cross-encoder sequence
-2. **CrossAttention** pair encoder (2-layer bidirectional ESIM with attention pooling)
-3. **Embedding interaction** (asymmetric `[q*d, |q-d|, q, d]`)
-4. **ColBERT MaxSim** (token-level alignment with population z-normalization)
+```text
+                  Multi-Granularity Relevance Head (MGRH)
+
+  query tokens [B, Lq, 768]       document tokens [B, Ld, 768]
+       |                                  |
+       +----------------------------------+
+       |         joint sequence            |
+       |       [CLS] q [SEP] d [SEP]      |
+       |                                   |
+       +-------+-------+-------+----------+
+       |       |       |       |
+       v       v       v       v
+    Signal 1  Signal 2  Signal 3  Signal 4
+    --------  --------  --------  --------
+     CLS      ESIM      AsymEmbed  MaxSim
+     pool     cross-    [q*d,     ColBERT
+     768-d    attention  |q-d|,   token-level
+              2-layer    q, d]    alignment
+              bidir      3072-d   z-normed
+              768-d               scalar
+       |       |       |       |
+       v       v       v       v
+    concat [768 + 768 + 3072 + 1] = 4609-d
+                   |
+                   v
+            fusion MLP (4609 -> 1024 -> 256)
+                   |
+          +--------+--------+
+          |                 |
+          v                 v
+     nli_head          relevance_head
+     (256 -> 3)        (256 -> 1 -> sigmoid)
+     entail/neut/      calibrated score
+     contradict        [0.0, 1.0]
+```
+
+**Signal details:**
+
+| Signal | Module | Dim | Purpose |
+|--------|--------|-----|---------|
+| CLS pool | Linear projection | 768 | Global sequence-level similarity |
+| CrossAttention (ESIM) | 2-layer bidirectional with attention pooling | 768 | Token-level alignment with context |
+| Asymmetric Embedding | `[q*d, \|q-d\|, q, d]` interaction | 3072 | Directional element-wise comparison |
+| ColBERT MaxSim | Token max-similarity with population z-norm | 1 | Fine-grained lexical overlap |
+
+#### Training Curriculum
+
+MGRH uses a 4-stage progressive curriculum that builds from classification through pairwise to full listwise ranking:
+
+| Stage | Name | Epochs | Loss | Data | Purpose |
+|-------|------|--------|------|------|---------|
+| **A** | NLI Warmup | 3 | CrossEntropy | MNLI + FamilyOS NLI pairs | Initialize cross-encoder backbone and NLI head |
+| **B** | Pairwise Margin | 5 | MarginRankingLoss (m=0.3) | Graded query-doc pairs (grade 0-3) | Learn score separation between relevance levels |
+| **Bridge** | Transition | 2 | 0.5 Margin + 0.5 LambdaRank | Mixed pairwise + listwise groups | Smooth transition to listwise objective |
+| **C** | LambdaRank Listwise | 8 | LambdaRank + ANCE mining | 800 query groups, 6 docs each | Full listwise ranking with hard-negative refresh |
+
+Key training features:
+- **ANCE hard-negative mining** refreshes every 3 epochs in Stage C
+- **Grade 2 oversampling** (8x) to address class imbalance
+- **Per-group Spearman** evaluation for listwise quality
+- **EMA checkpointing** for stable convergence
+- **Calibration temperature** (T=0.818) learned post-training
 
 ```python
 from familyos_ultrabert import Client
@@ -382,7 +440,7 @@ result = client.score_relevance(
     "Who picked up the kids from school?",
     "Mom picked up Anya and Rohan from Lincoln Elementary at 3pm."
 )
-print(result["score"])  # 0.85
+print(result["score"])  # 0.97
 
 # Batch reranking
 ranked = client.rerank(
@@ -394,51 +452,51 @@ ranked = client.rerank(
 
 #### Core Ranking Performance
 
-| Dataset | Spearman | AUC-ROC | nDCG@10 | Bi-Encoder Spearman | Lift |
-|---------|----------|---------|---------|---------------------|------|
-| Human Benchmark (798 groups) | **0.9043** | 0.8405 | **0.9867** | 0.3544 | **+0.5499** |
-| Holdout (79 groups) | **0.8481** | 0.8239 | 0.9802 | 0.2658 | **+0.5823** |
-| Dev (79 groups) | **0.8734** | 0.7721 | 0.9806 | 0.4177 | **+0.4557** |
+| Dataset | Spearman | AUC-ROC | nDCG@10 | Bi-Encoder Sp | Lift |
+|---------|----------|---------|---------|---------------|------|
+| Human Benchmark (798 groups) | **0.9090** | **0.9882** | **0.9997** | 0.8299 | +0.0791 |
+| Holdout (80 groups) | **0.9090** | **0.9900** | **0.9998** | 0.8260 | +0.0830 |
+| Dev (80 groups) | **0.9137** | **0.9896** | **1.0000** | 0.8317 | +0.0820 |
 
 #### Pairwise Discrimination
 
 | Dataset | Accuracy | Avg Margin | Bi-Encoder Acc | Samples |
 |---------|----------|------------|----------------|---------|
-| Hard Negatives (entity/temporal) | **87.77%** | 0.2400 | 93.90% | 3000 |
-| Wrong Person | **93.13%** | 0.1739 | 85.55% | 3000 |
-| Wrong Time | **91.53%** | 0.1470 | 34.60% | 3000 |
+| Hard Negatives (entity/temporal) | **97.50%** | 0.5740 | 93.90% | 3000 |
+| Wrong Person | **98.43%** | 0.4443 | 85.55% | 3000 |
+| Wrong Time | **94.40%** | 0.2431 | 34.60% | 3000 |
 
 #### Hard Negatives Breakdown
 
 | Slice | Accuracy | Margin | Samples |
 |-------|----------|--------|---------|
-| sentiment_flip | **96.13%** | 0.5136 | 776 |
-| temporal_shift | **88.03%** | 0.1763 | 735 |
-| entity_swap | **86.88%** | 0.1343 | 747 |
-| same_topic_different_event | **79.65%** | 0.1233 | 742 |
+| same_topic_different_event | **99.73%** | 0.7206 | 742 |
+| sentiment_flip | **98.71%** | 0.5650 | 776 |
+| temporal_shift | **99.05%** | 0.6679 | 735 |
+| entity_swap | **92.50%** | 0.3455 | 747 |
 
 #### Score Distribution by Relevance Grade
 
 | Grade | Description | Mean Score | Std | Count |
 |-------|-------------|------------|-----|-------|
-| 0 | irrelevant / harmful | 0.2978 | 0.1583 | 246 |
-| 1 | entity/temporal mismatch | 0.4471 | 0.1779 | 482 |
-| 2 | topically related, different event | 0.3730 | 0.2120 | 72 |
-| 3 | faithful paraphrase / match | **0.6533** | 0.1697 | 802 |
+| 0 | irrelevant / harmful | 0.0855 | 0.1819 | 1842 |
+| 1 | entity/temporal mismatch | 0.6243 | 0.2553 | 482 |
+| 2 | topically related, different event | 0.4021 | 0.2062 | 72 |
+| 3 | faithful paraphrase / match | **0.9749** | 0.0521 | 2398 |
 
-Grade 3 vs 0 separation: **0.3555** | ECE: 0.3223
+Grade 3 vs 0 separation: **0.8894** | ECE: **0.0300**
 
 #### Gate Check
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| Spearman | > 0.70 | **0.9043** | PASS |
-| AUC-ROC | > 0.85 | 0.8405 | FAIL |
-| nDCG@10 | > 0.83 | **0.9867** | PASS |
-| Holdout Spearman | > 0.50 | **0.8481** | PASS |
-| Holdout AUC | > 0.80 | **0.8239** | PASS |
+| Spearman | > 0.70 | **0.9090** | PASS |
+| AUC-ROC | > 0.85 | **0.9882** | PASS |
+| nDCG@10 | > 0.83 | **0.9997** | PASS |
+| Holdout Spearman | > 0.50 | **0.9090** | PASS |
+| Holdout AUC | > 0.80 | **0.9900** | PASS |
 
-**Overall: Production-ready with calibration caveat**
+**All 5 gate checks passed. Production-ready.**
 
 ### Throughput
 

@@ -4896,11 +4896,12 @@ class MultiGranularityRelevanceHead(BaseHead):
 
         maxsim = maxsim.unsqueeze(-1)
 
-        # Z-normalize: prefer population stats for consistency across batch sizes
-        if population_mean is not None and population_std is not None:
-            maxsim = (maxsim - population_mean) / (population_std + 1e-8)
-        elif maxsim.size(0) > 1:
+        # Z-normalize: batch z-norm for multi-doc batches (preserves trained behaviour),
+        # population z-norm only for single-pair scoring (batch_size=1)
+        if maxsim.size(0) > 1:
             maxsim = (maxsim - maxsim.mean()) / (maxsim.std() + 1e-8)
+        elif population_mean is not None and population_std is not None:
+            maxsim = (maxsim - population_mean) / (population_std + 1e-8)
 
         return maxsim
 
