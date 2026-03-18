@@ -1,3 +1,101 @@
+# FamilyOS UltraBERT v4.0.9 Release
+
+## MGRH Production Release — All Gate Checks Passed
+
+This release ships the production-ready **Multi-Granularity Relevance Head** (MGRH) with all 5 benchmark gate checks passing, 8 critical bug fixes, and a complete 4-stage training curriculum.
+
+### Added
+
+- **4-stage training curriculum**:
+  - **Stage A** (NLI Warmup): 3 epochs, CrossEntropy on MNLI + FamilyOS NLI pairs
+  - **Stage B** (Pairwise Margin): 5 epochs, MarginRankingLoss (m=0.3) on graded query-doc pairs
+  - **Stage Bridge** (Transition): 2 epochs, 0.5 Margin + 0.5 LambdaRank
+  - **Stage C** (LambdaRank Listwise): 8 epochs, LambdaRank + ANCE hard-negative mining every 3 epochs
+- **MaxSim population z-norm stats**: pre-computed from 798 benchmark groups (mean=933.45, std=85.98)
+- **Calibration temperature**: T=0.818 (learned post-training)
+- **Grade 2 oversampling** (8x) for class imbalance in training
+- **EMA checkpointing** for stable convergence
+
+### Fixed
+
+- **ANCE OOM crash (CRITICAL)**: `refresh_hard_negatives_ance()` was missing `@torch.no_grad()`, building computation graphs for every sample at epoch 4. Rewrote from per-sample loop to batched processing (16 groups/batch).
+- **Export head key mismatch**: Export script used `heads["mgrh"]` instead of `heads["relevance"]`. Fixed in export, metadata, and pair_encoder tensor paths.
+- **Safetensors shared tensor error**: `model.pair_encoder` and `model.heads["relevance"].pair_encoder` were the same object. Added `.clone()` for top-level pair_encoder tensor copies.
+- **MaxSim z-norm priority**: Population z-norm was applied before batch z-norm, degrading batched rerank. Reversed: batch z-norm preferred for rerank (preserves trained behaviour), population z-norm only for single-pair `score_relevance()`.
+- **LambdaRank ranking loss**: Fixed incorrect sorting in loss computation.
+- **Per-group Spearman evaluation**: Fixed eval metric to compute per-group correlation.
+- **Collator max_length**: Fixed padding bug in data collator.
+- **Query-doc drowning**: Fixed weight capping in training data.
+
+### Benchmark Results (MGRH v4.0.9)
+
+| Dataset | Spearman | AUC-ROC | nDCG@10 | Bi-Encoder Sp |
+|---------|----------|---------|---------|---------------|
+| Human Benchmark (798 groups) | **0.9090** | **0.9882** | **0.9997** | 0.8299 |
+| Holdout (80 groups) | **0.9090** | **0.9900** | **0.9998** | 0.8260 |
+| Dev (80 groups) | **0.9137** | **0.9896** | **1.0000** | 0.8317 |
+
+Pairwise: Hard Negatives **97.50%**, Wrong Person **98.43%**, Wrong Time **94.40%**.
+Grade 3 vs 0 separation: **0.889** | ECE: **0.030**.
+
+### Gate Check
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| Spearman | > 0.70 | **0.9090** | PASS |
+| AUC-ROC | > 0.85 | **0.9882** | PASS |
+| nDCG@10 | > 0.83 | **0.9997** | PASS |
+| Holdout Spearman | > 0.50 | **0.9090** | PASS |
+| Holdout AUC | > 0.80 | **0.9900** | PASS |
+
+### Inference API
+
+```python
+from familyos_ultrabert import Client
+
+client = Client()
+
+# Pointwise relevance scoring
+result = client.score_relevance(
+    "Who picked up the kids from school?",
+    "Mom picked up Anya and Rohan from Lincoln Elementary at 3pm."
+)
+print(result["score"])  # 0.97
+
+# Batch reranking (primary API for production)
+ranked = client.rerank(
+    "What did we do for grandma's birthday?",
+    ["We threw a surprise party for grandma.", "Dad went to work.", "It rained."],
+    top_k=2,
+)
+for item in ranked:
+    print(f"  {item['score']:.4f}  {item['text']}")
+
+# All other capabilities still work
+result = client.analyze("Mom picked up Anya from school at 3pm today.")
+print(result.sentiment)   # "neutral"
+print(result.intent)      # "log_memory"
+print(result.safety)      # "GREEN"
+print(result.entities)    # [KINSHIP: Mom, PERSON: Anya]
+print(result.temporal)    # [TIME: 3pm, DATE_REL: today]
+```
+
+### Architecture
+
+| Component | Params |
+|-----------|--------|
+| Encoder (ModernBERT-base, 22 layers) | 149,014,272 |
+| MGRH Head (4-signal fusion) | 46,333,958 |
+| **Total** | **195,348,230** |
+
+### Upgrade
+
+```bash
+pip install --upgrade familyos-ultrabert
+```
+
+---
+
 # FamilyOS UltraBERT v4.0.8 Release
 
 ## Multi-Granularity Relevance Head (MGRH) + Critical Inference Fixes
