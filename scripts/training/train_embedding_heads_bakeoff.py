@@ -7104,6 +7104,7 @@ def evaluate_mgrh_nli(
 
 
 @torch.no_grad()
+@torch.no_grad()
 def refresh_hard_negatives_ance(
     model: ModernBertMultiTaskModel,
     mgrh_head: MultiGranularityRelevanceHead,
@@ -7135,60 +7136,93 @@ def refresh_hard_negatives_ance(
     mgrh_head.eval()
     refreshed = 0
 
+    # Collect listwise samples that need scoring
+    listwise_indices: list[int] = []
     for i in range(len(dataset)):
         sample = dataset.samples[i]
         if sample.get("_format") != "listwise":
             continue
         episodes = sample.get("episodes", [])
         query = sample.get("query", "")
-        if not episodes or not query:
+        if not episodes or not query or len(episodes) < 2:
+            continue
+        listwise_indices.append(i)
+
+    if not listwise_indices:
+        logger.info("  ANCE: no listwise samples to refresh")
+        return 0
+
+    amp_context = (
+        autocast("cuda", dtype=amp_dtype, enabled=use_amp)
+        if device.type == "cuda"
+        else autocast("cpu", enabled=False)
+    )
+
+    # Process in batches of query groups to avoid OOM
+    GROUPS_PER_BATCH = 16
+    for batch_start in range(0, len(listwise_indices), GROUPS_PER_BATCH):
+        batch_indices = listwise_indices[batch_start:batch_start + GROUPS_PER_BATCH]
+
+        # Flatten all (query, episode) pairs across groups in this batch
+        all_queries: list[str] = []
+        all_episodes: list[str] = []
+        group_meta: list[tuple[int, int, list[float]]] = []  # (dataset_idx, n_episodes, grades)
+
+        for ds_idx in batch_indices:
+            sample = dataset.samples[ds_idx]
+            episodes = sample["episodes"]
+            query = sample["query"]
+            episode_texts = [ep.get("text", ep.get("episode_text", "")) for ep in episodes]
+            grades = [float(ep.get("grade", 0)) for ep in episodes]
+            n_ep = len(episode_texts)
+            group_meta.append((ds_idx, n_ep, grades))
+            all_queries.extend([query] * n_ep)
+            all_episodes.extend(episode_texts)
+
+        if not all_queries:
             continue
 
-        # Score all episodes with current model
-        episode_texts = [ep.get("text", ep.get("episode_text", "")) for ep in episodes]
-        grades = [float(ep.get("grade", 0)) for ep in episodes]
-
-        if len(episode_texts) < 2:
-            continue
-
-        # Batch encode
+        # Tokenize the flat batch
         joint_enc = tokenizer(
-            [query] * len(episode_texts), episode_texts,
+            all_queries, all_episodes,
             padding=True, truncation=True, max_length=max_length, return_tensors="pt",
         )
 
+        # Encode through frozen encoder
         joint_hidden = mgrh_encode_batch(
             model, joint_enc["input_ids"], joint_enc["attention_mask"],
             device, use_amp, amp_dtype,
         )
 
-        amp_context = (
-            autocast("cuda", dtype=amp_dtype, enabled=use_amp)
-            if device.type == "cuda"
-            else autocast("cpu", enabled=False)
-        )
+        # Score through MGRH head (CLS-only, signals 2-4 = zeros — fine for
+        # relative ranking within each group which is all ANCE needs)
         with amp_context:
             output = mgrh_head(
                 hidden_states=joint_hidden,
                 attention_mask=joint_enc["attention_mask"].to(device),
                 stage="c",
             )
-        scores = output["logits"].squeeze(-1).cpu().tolist()
+        all_scores = output["logits"].squeeze(-1).cpu().tolist()
 
-        # Find highest-scoring irrelevant episodes
-        scored_negs = [
-            (scores[j], j) for j in range(len(episodes))
-            if grades[j] == 0
-        ]
-        scored_negs.sort(reverse=True)
+        # Distribute scores back to groups and mark hard negatives
+        offset = 0
+        for ds_idx, n_ep, grades in group_meta:
+            group_scores = all_scores[offset:offset + n_ep]
+            offset += n_ep
 
-        # Mark top-k as hard negatives
-        for rank, (score, idx) in enumerate(scored_negs[:top_k]):
-            episodes[idx]["is_hard_negative"] = True
-            episodes[idx]["ance_score"] = score
-            refreshed += 1
+            scored_negs = [
+                (group_scores[j], j) for j in range(n_ep)
+                if grades[j] == 0
+            ]
+            scored_negs.sort(reverse=True)
 
-    logger.info(f"  ANCE: refreshed {refreshed:,} hard negatives")
+            episodes = dataset.samples[ds_idx]["episodes"]
+            for _rank, (score, idx) in enumerate(scored_negs[:top_k]):
+                episodes[idx]["is_hard_negative"] = True
+                episodes[idx]["ance_score"] = score
+                refreshed += 1
+
+    logger.info(f"  ANCE: refreshed {refreshed:,} hard negatives across {len(listwise_indices)} groups")
     return refreshed
 
 
