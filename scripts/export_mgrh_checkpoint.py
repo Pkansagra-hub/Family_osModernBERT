@@ -6,7 +6,7 @@ Takes:
   - mgrh_checkpoint: stage_c/best/ directory (mgrh_head.pt + pair_encoder.pt)
 
 Produces a checkpoint in the same format as stage_b/best-ema:
-  model.safetensors  — encoder + all heads (including mgrh under key "heads.mgrh.*")
+  model.safetensors  — encoder + all heads (including mgrh under key "heads.relevance.*")
   config.json        — model config
   tokenizer.*        — tokenizer files
   capabilities.json  — updated to include "relevance" capability
@@ -265,10 +265,11 @@ def main() -> None:
         logger.info("  pair_encoder.pt is consistent with mgrh_head.pt")
 
     # ------------------------------------------------------------------
-    # 4. Attach MGRH head to model under "mgrh" key
+    # 4. Attach MGRH head to model under "relevance" key
     # ------------------------------------------------------------------
-    model.heads["mgrh"] = mgrh_head
-    logger.info("  Attached MGRH head as model.heads['mgrh']")
+    model.heads["relevance"] = mgrh_head
+    model.pair_encoder = pair_encoder
+    logger.info("  Attached MGRH head as model.heads['relevance']")
 
     # ------------------------------------------------------------------
     # 5. Build merged state dict and save
@@ -282,6 +283,11 @@ def main() -> None:
     for head_name, head in model.heads.items():
         for name, param in head.state_dict().items():
             merged[f"heads.{head_name}.{name}"] = param.cpu()
+
+    # Also save pair_encoder at top level for load_checkpoint() compat
+    if hasattr(model, "pair_encoder") and model.pair_encoder is not None:
+        for name, param in model.pair_encoder.state_dict().items():
+            merged[f"pair_encoder.{name}"] = param.cpu()
 
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -327,12 +333,24 @@ def main() -> None:
     # ------------------------------------------------------------------
     # 8. Write mgrh_metadata.json
     # ------------------------------------------------------------------
-    # Load calibration temperature if saved
-    calibration_file = mgrh_path.parent / "final" / "calibration.pt"
+    # Load calibration temperature — try calibration.pt first, then mgrh_metadata.json
     temperature = None
+    maxsim_pop_mean = None
+    maxsim_pop_std = None
+    calibration_file = mgrh_path.parent / "final" / "calibration.pt"
     if calibration_file.exists():
         cal = torch.load(calibration_file, map_location="cpu", weights_only=True)
         temperature = float(cal.get("temperature", 1.0))
+    # Also read mgrh_metadata.json from stage output for MaxSim stats + temperature fallback
+    stage_meta_file = mgrh_path.parent / "mgrh_metadata.json"
+    if stage_meta_file.exists():
+        with open(stage_meta_file, encoding="utf-8") as f:
+            stage_meta = json.load(f)
+        cal_info = stage_meta.get("calibration", {})
+        if temperature is None and cal_info.get("temperature") is not None:
+            temperature = float(cal_info["temperature"])
+        maxsim_pop_mean = cal_info.get("maxsim_population_mean")
+        maxsim_pop_std = cal_info.get("maxsim_population_std")
 
     # Load best metrics
     best_metrics = {}
@@ -365,9 +383,11 @@ def main() -> None:
         },
         "calibration": {
             "temperature": temperature,
+            "maxsim_population_mean": maxsim_pop_mean,
+            "maxsim_population_std": maxsim_pop_std,
         },
         "best_metrics": best_metrics,
-        "head_key": "mgrh",
+        "head_key": "relevance",
         "total_params": sum(p.numel() for p in mgrh_head.parameters()),
         "pair_encoder_params": sum(p.numel() for p in pair_encoder.parameters()),
     }
