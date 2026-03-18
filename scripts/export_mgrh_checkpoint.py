@@ -284,10 +284,12 @@ def main() -> None:
         for name, param in head.state_dict().items():
             merged[f"heads.{head_name}.{name}"] = param.cpu()
 
-    # Also save pair_encoder at top level for load_checkpoint() compat
+    # Also save pair_encoder at top level for load_checkpoint() compat.
+    # Must .clone() because pair_encoder is a submodule of the MGRH head,
+    # so the tensors are shared — safetensors rejects shared memory.
     if hasattr(model, "pair_encoder") and model.pair_encoder is not None:
         for name, param in model.pair_encoder.state_dict().items():
-            merged[f"pair_encoder.{name}"] = param.cpu()
+            merged[f"pair_encoder.{name}"] = param.cpu().clone()
 
     output_path.mkdir(parents=True, exist_ok=True)
 
